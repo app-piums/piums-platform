@@ -3,16 +3,62 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface FieldError {
+  email?: string;
+  password?: string;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<FieldError>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case "email":
+        if (!value) return "El email es requerido";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Email inválido";
+        return "";
+      case "password":
+        if (!value) return "La contraseña es requerida";
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (field: string, value: string) => {
+    setTouched({ ...touched, [field]: true });
+    const error = validateField(field, value);
+    setErrors({ ...errors, [field]: error });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setGeneralError("");
+
+    // Validar todos los campos
+    const newErrors: FieldError = {
+      email: validateField("email", email),
+      password: validateField("password", password),
+    };
+
+    setErrors(newErrors);
+    setTouched({
+      email: true,
+      password: true,
+    });
+
+    // Si hay errores, no enviar
+    if (Object.values(newErrors).some((error) => error)) {
+      setGeneralError("Por favor corrige los errores antes de continuar");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -36,7 +82,7 @@ export default function LoginPage() {
       // Redirigir al dashboard o home
       router.push("/");
     } catch (err: any) {
-      setError(err.message);
+      setGeneralError(err.message);
     } finally {
       setLoading(false);
     }
@@ -55,19 +101,20 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          {generalError && (
             <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+              <p className="text-sm text-red-800 dark:text-red-200">{generalError}</p>
             </div>
           )}
 
           <div className="space-y-4">
+            {/* Email */}
             <div>
               <label
                 htmlFor="email"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Email
+                Email <span className="text-red-500">*</span>
               </label>
               <input
                 id="email"
@@ -77,17 +124,26 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500"
+                onBlur={(e) => handleBlur("email", e.target.value)}
+                className={`mt-1 block w-full rounded-md border px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                  touched.email && errors.email
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : "border-zinc-300 focus:border-zinc-500 focus:ring-zinc-500 dark:border-zinc-700"
+                }`}
                 placeholder="tu@email.com"
               />
+              {touched.email && errors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+              )}
             </div>
 
+            {/* Contraseña */}
             <div>
               <label
                 htmlFor="password"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Contraseña
+                Contraseña <span className="text-red-500">*</span>
               </label>
               <input
                 id="password"
@@ -97,9 +153,17 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500"
+                onBlur={(e) => handleBlur("password", e.target.value)}
+                className={`mt-1 block w-full rounded-md border px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                  touched.password && errors.password
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : "border-zinc-300 focus:border-zinc-500 focus:ring-zinc-500 dark:border-zinc-700"
+                }`}
                 placeholder="••••••••"
               />
+              {touched.password && errors.password && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
+              )}
             </div>
           </div>
 

@@ -5,30 +5,40 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://localhost:4001"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { nombre, email, password, pais, codigoPais, telefono } = body;
 
     // Validación básica
-    if (!email || !password) {
+    if (!nombre || !email || !password || !pais || !telefono) {
       return NextResponse.json(
-        { message: "Email y contraseña son requeridos" },
+        { message: "Todos los campos son requeridos" },
         { status: 400 }
       );
     }
 
-    // Llamar al auth-service
+    // Llamar al auth-service con todos los campos
     const response = await fetch(`${AUTH_SERVICE_URL}/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        nombre,
+        email,
+        password,
+        pais,
+        codigoPais,
+        telefono,
+      }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       return NextResponse.json(
-        { message: data.message || "Error al registrar usuario" },
+        { 
+          message: data.message || "Error al registrar usuario",
+          errors: data.errors || []
+        },
         { status: response.status }
       );
     }
