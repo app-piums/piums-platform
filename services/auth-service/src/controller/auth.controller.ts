@@ -4,7 +4,8 @@ import {
   comparePassword, 
   signToken, 
   signRefreshToken,
-  verifyRefreshToken
+  verifyRefreshToken,
+  verifyToken
 } from "../services/auth.service";
 import { registerSchema, loginSchema } from "../schemas/auth.schema";
 import { AppError } from "../middleware/errorHandler";
@@ -134,6 +135,43 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     const newToken = signToken({ id: user.id, email: user.email });
 
     res.json({ token: newToken });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const verify = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new AppError(401, "Token no proporcionado");
+    }
+
+    const token = authHeader.substring(7); // Remover "Bearer "
+    
+    // Verificar token
+    const decoded = verifyToken(token);
+    
+    if (!decoded || typeof decoded === 'string') {
+      throw new AppError(401, "Token inválido o expirado");
+    }
+
+    // Buscar usuario
+    const user = mockUsers.find(u => u.id === (decoded as any).id);
+
+    if (!user) {
+      throw new AppError(401, "Usuario no encontrado");
+    }
+
+    // Retornar información del usuario
+    res.json({
+      userId: user.id,
+      nombre: user.nombre,
+      email: user.email,
+      pais: user.pais,
+      telefono: user.telefono,
+    });
   } catch (error: any) {
     next(error);
   }
