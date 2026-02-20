@@ -31,6 +31,13 @@ enum PaymentStatus {
   PARTIALLY_REFUNDED
 }
 
+enum BookingItemType {
+  BASE      // Precio base del servicio
+  ADDON     // Extra/addon contratado
+  TRAVEL    // Cargo por desplazamiento
+  DISCOUNT  // Descuento aplicado
+}
+
 model Booking {
   id          String   @id @default(uuid())
   
@@ -126,6 +133,28 @@ model BookingStatusChange {
   @@map("booking_status_changes")
 }
 
+// Desglose detallado del precio de un booking
+model BookingItem {
+  id          String           @id @default(uuid())
+  bookingId   String
+  
+  type        BookingItemType  // Tipo de concepto (BASE, ADDON, TRAVEL, DISCOUNT)
+  name        String           // Nombre descriptivo del item
+  
+  qty         Int              @default(1) // Cantidad
+  unitPriceCents Int           // Precio unitario en centavos
+  totalPriceCents Int          // Precio total (qty × unitPriceCents)
+  
+  // Metadata adicional (ej: distancia para TRAVEL)
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([bookingId])
+  @@index([type])
+  @@map("booking_items")
+}
+
 // Disponibilidad bloqueada (para que artistas bloqueen días/horas específicas)
 model BlockedSlot {
   id          String   @id @default(uuid())
@@ -173,3 +202,22 @@ model AvailabilityConfig {
   
   @@map("availability_configs")
 }
+
+// Reservas de disponibilidad - bloqueo efectivo de agenda por booking confirmado
+model AvailabilityReservation {
+  id        String   @id @default(uuid())
+  artistId  String   // Artista cuya agenda se bloquea
+  bookingId String   @unique // Booking que genera el bloqueo (1:1)
+  
+  startAt   DateTime // Fecha y hora de inicio del bloqueo
+  endAt     DateTime // Fecha y hora de fin del bloqueo
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([startAt, endAt])
+  @@index([artistId, startAt, endAt]) // Para búsquedas de disponibilidad
+  @@map("availability_reservations")
+}
+

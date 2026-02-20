@@ -17,6 +17,12 @@ enum PricingType {
   CUSTOM      // Personalizado / cotización
 }
 
+enum PricingModel {
+  FIXED              // Precio fijo, sin variables
+  BASE_PLUS_HOURLY   // Precio base + costo por hora/minuto adicional
+  PACKAGE            // Paquete con minutos incluidos
+}
+
 enum ServiceStatus {
   ACTIVE
   INACTIVE
@@ -78,6 +84,10 @@ model Service {
   // Extras y add-ons
   addons      ServiceAddon[]
   
+  // Pricing avanzado y reglas de viaje
+  pricing     ServicePricing?
+  travelRules ServiceTravelRules?
+  
   // Disponibilidad y estado
   status      ServiceStatus    @default(ACTIVE)
   isAvailable Boolean          @default(true)
@@ -120,6 +130,7 @@ model ServiceAddon {
   description String?
   price       Int              // Precio adicional en centavos
   
+  isRequired  Boolean  @default(false) // Si es obligatorio
   isOptional  Boolean  @default(true)
   isDefault   Boolean  @default(false) // Se incluye por default
   
@@ -162,4 +173,52 @@ model ServicePackage {
   @@index([artistId])
   @@index([isActive])
   @@map("service_packages")
+}
+
+// Pricing avanzado - Define cómo se calcula el precio del servicio
+model ServicePricing {
+  id          String       @id @default(uuid())
+  serviceId   String       @unique
+  service     Service      @relation(fields: [serviceId], references: [id])
+  
+  pricingModel     PricingModel // Modelo de cálculo
+  currency         String       @default("MXN")
+  
+  // Precio base (siempre requerido)
+  basePriceCents   Int          // Precio base en centavos
+  
+  // Para BASE_PLUS_HOURLY y PACKAGE
+  includedMinutes  Int?         // Minutos incluidos en el precio base
+  extraMinutePriceCents Int?    // Precio por minuto adicional en centavos
+  
+  // Anticipación mínima para reservar
+  minNoticeHours   Int?         // Horas mínimas de anticipación
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([serviceId])
+  @@map("service_pricing")
+}
+
+// Reglas de viaje/desplazamiento del servicio
+model ServiceTravelRules {
+  id          String   @id @default(uuid())
+  serviceId   String   @unique
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  // Kilómetros incluidos sin costo adicional
+  includedKm  Int?     // null = sin límite gratuito
+  
+  // Precio por kilómetro adicional
+  pricePerKmCents Int? // Costo en centavos
+  
+  // Distancia máxima permitida
+  maxDistanceKm   Int? // null = sin límite
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([serviceId])
+  @@map("service_travel_rules")
 }

@@ -80,8 +80,9 @@ model Artist {
   portfolio      PortfolioItem[]
   certifications Certification[]
   
-  // Disponibilidad
-  availability   Availability[]
+  // Disponibilidad (nuevo sistema)
+  availabilityRules ArtistAvailabilityRule[]
+  blackouts         ArtistBlackout[]
   
   // Redes sociales
   website       String?
@@ -153,24 +154,42 @@ model Certification {
   @@map("certifications")
 }
 
-model Availability {
+// Horarios regulares de trabajo del artista
+model ArtistAvailabilityRule {
   id        String    @id @default(uuid())
   artistId  String
   artist    Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
   
-  dayOfWeek DayOfWeek
-  startTime String    // Formato: "09:00"
-  endTime   String    // Formato: "18:00"
+  dayOfWeek DayOfWeek // Día de la semana
+  startTime String    // Formato: "09:00" - Hora de inicio
+  endTime   String    // Formato: "18:00" - Hora de fin
   
-  isAvailable Boolean @default(true)
+  isActive  Boolean   @default(true) // Permite desactivar sin eliminar
   
-  // Fechas específicas bloqueadas (opcional)
-  blockedDates DateTime[] // Dates when artist is not available
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@index([artistId])
+  @@index([dayOfWeek])
+  @@index([artistId, dayOfWeek, isActive])
+  @@map("artist_availability_rules")
+}
+
+// Bloqueos puntuales en la agenda del artista
+model ArtistBlackout {
+  id        String   @id @default(uuid())
+  artistId  String
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  
+  startAt   DateTime // Fecha y hora de inicio del bloqueo
+  endAt     DateTime // Fecha y hora de fin del bloqueo
+  reason    String?  // Motivo del bloqueo (vacaciones, personal, etc)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   @@index([artistId])
-  @@index([dayOfWeek])
-  @@map("availability")
+  @@index([startAt, endAt])
+  @@index([artistId, startAt, endAt]) // Para búsquedas de disponibilidad
+  @@map("artist_blackouts")
 }
