@@ -1,0 +1,244 @@
+// This is your Prisma schema file for search-service
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Search Index Models
+// ============================================================================
+
+// Artist Search Index - Denormalized data for fast search
+model ArtistIndex {
+  id          String   @id
+  
+  // Basic Info
+  name        String
+  email       String?
+  
+  // Profile Data
+  bio         String?  @db.Text
+  specialties String[] // Array of specialties
+  
+  // Location
+  city        String?
+  state       String?
+  country     String   @default("Mexico")
+  
+  // Ratings & Stats
+  averageRating     Float  @default(0)
+  totalReviews      Int    @default(0)
+  totalBookings     Int    @default(0)
+  responseRate      Float  @default(0)
+  
+  // Pricing
+  hourlyRateMin     Float?
+  hourlyRateMax     Float?
+  
+  // Status
+  isVerified        Boolean @default(false)
+  isActive          Boolean @default(true)
+  isAvailable       Boolean @default(true)
+  
+  // Services offered
+  servicesCount     Int     @default(0)
+  serviceIds        String[] // Array of service IDs
+  serviceTitles     String[] // Array of service titles for search
+  
+  // Full-text search fields
+  searchVector      Unsupported("tsvector")?
+  
+  // Metadata
+  lastSyncedAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([name])
+  @@index([city])
+  @@index([state])
+  @@index([averageRating])
+  @@index([hourlyRateMin])
+  @@index([isActive])
+  @@index([isAvailable])
+}
+
+// Service Search Index - Denormalized data for fast search
+model ServiceIndex {
+  id            String   @id
+  
+  // Artist Info
+  artistId      String
+  artistName    String
+  
+  // Service Info
+  title         String
+  description   String   @db.Text
+  category      String
+  tags          String[] // Array of tags
+  
+  // Pricing
+  price         Float
+  currency      String   @default("MXN")
+  pricingType   String   // HOURLY, FIXED, VARIABLE
+  
+  // Location
+  city          String?
+  state         String?
+  country       String   @default("Mexico")
+  
+  // Service Details
+  duration      Int?     // Duration in minutes
+  capacity      Int?     // Max people
+  
+  // Artist Stats (for ranking)
+  artistRating      Float    @default(0)
+  artistReviews     Int      @default(0)
+  artistBookings    Int      @default(0)
+  
+  // Status
+  isActive          Boolean  @default(true)
+  isAvailable       Boolean  @default(true)
+  
+  // Booking Stats
+  totalBookings     Int      @default(0)
+  
+  // Full-text search fields
+  searchVector      Unsupported("tsvector")?
+  
+  // Metadata
+  lastSyncedAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([category])
+  @@index([price])
+  @@index([artistRating])
+  @@index([isActive])
+  @@index([isAvailable])
+  @@index([city])
+}
+
+// ============================================================================
+// Search Analytics Models
+// ============================================================================
+
+// Search Query Log - Track what users are searching for
+model SearchQuery {
+  id            String   @id @default(uuid())
+  
+  // Query Info
+  query         String
+  queryType     SearchQueryType
+  
+  // Filters Applied
+  filters       Json?    // Store filters as JSON
+  
+  // Results
+  resultsCount  Int
+  
+  // User Info (optional)
+  userId        String?
+  userRole      String?  // CLIENT, ARTIST
+  
+  // Performance
+  responseTime  Int?     // Response time in ms
+  
+  // Engagement
+  clickedResultId   String? // Which result was clicked
+  clickPosition     Int?    // Position in results
+  
+  // Metadata
+  userAgent     String?
+  ipAddress     String?
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([query])
+  @@index([queryType])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Popular Searches - Aggregated data
+model PopularSearch {
+  id            String   @id @default(uuid())
+  
+  query         String   @unique
+  queryType     SearchQueryType
+  
+  // Stats
+  searchCount   Int      @default(1)
+  clickCount    Int      @default(0)
+  
+  // Time period
+  period        String   // daily, weekly, monthly
+  periodStart   DateTime
+  periodEnd     DateTime
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([searchCount(sort: Desc)])
+  @@index([period])
+}
+
+// ============================================================================
+// Indexing Status Model
+// ============================================================================
+
+model IndexStatus {
+  id                String   @id @default(uuid())
+  
+  indexType         IndexType
+  
+  // Stats
+  totalRecords      Int      @default(0)
+  lastIndexedId     String?
+  
+  // Status
+  status            IndexingStatus @default(IDLE)
+  progress          Float    @default(0) // 0-100
+  
+  // Timing
+  lastIndexedAt     DateTime?
+  lastFullIndexAt   DateTime?
+  nextScheduledAt   DateTime?
+  
+  // Errors
+  lastError         String?  @db.Text
+  errorCount        Int      @default(0)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([indexType])
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum SearchQueryType {
+  ARTIST
+  SERVICE
+  AUTOCOMPLETE
+  MIXED
+}
+
+enum IndexType {
+  ARTISTS
+  SERVICES
+}
+
+enum IndexingStatus {
+  IDLE
+  INDEXING
+  FAILED
+  COMPLETED
+}

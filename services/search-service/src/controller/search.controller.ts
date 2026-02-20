@@ -1,0 +1,123 @@
+import { Request, Response, NextFunction } from 'express';
+import { searchService } from '../services/search.service';
+import {
+  searchArtistsSchema,
+  searchServicesSchema,
+  autocompleteSchema,
+  indexArtistSchema,
+  indexServiceSchema,
+  bulkIndexSchema
+} from '../schemas/search.schema';
+
+export const searchController = {
+  // Search artists
+  async searchArtists(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = searchArtistsSchema.parse(req.query);
+      const result = await searchService.searchArtists(filters);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Search services
+  async searchServices(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = searchServicesSchema.parse(req.query);
+      const result = await searchService.searchServices(filters);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Autocomplete
+  async autocomplete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const input = autocompleteSchema.parse(req.query);
+      const result = await searchService.autocomplete(input);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Index single artist
+  async indexArtist(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { artistId } = indexArtistSchema.parse(req.body);
+      const result = await searchService.indexArtist(artistId);
+      res.json({
+        message: 'Artista indexado exitosamente',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Index single service
+  async indexService(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { serviceId } = indexServiceSchema.parse(req.body);
+      const result = await searchService.indexService(serviceId);
+      res.json({
+        message: 'Servicio indexado exitosamente',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Bulk index
+  async bulkIndex(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { type, batchSize } = bulkIndexSchema.parse(req.body);
+
+      // Start indexing asynchronously
+      if (type === 'artists' || type === 'all') {
+        searchService.bulkIndexArtists(batchSize!).catch(error => {
+          console.error('Bulk artist indexing failed:', error);
+        });
+      }
+
+      if (type === 'services' || type === 'all') {
+        searchService.bulkIndexServices(batchSize!).catch(error => {
+          console.error('Bulk service indexing failed:', error);
+        });
+      }
+
+      res.json({
+        message: 'Indexación iniciada en segundo plano',
+        type,
+        batchSize
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Get index status
+  async getIndexStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { type } = req.query;
+      const status = await searchService.getIndexStatus(type as any);
+      res.json(status);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Get popular searches
+  async getPopularSearches(req: Request, res: Response, next: NextFunction) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const popular = await searchService.getPopularSearches(limit);
+      res.json(popular);
+    } catch (error) {
+      next(error);
+    }
+  }
+};
