@@ -1,0 +1,165 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PricingType {
+  FIXED       // Precio fijo
+  HOURLY      // Por hora
+  PER_SESSION // Por sesión
+  CUSTOM      // Personalizado / cotización
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model ServiceCategory {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String?  // URL o nombre del icono
+  
+  // Jerarquía (categorías anidadas)
+  parentId    String?
+  parent      ServiceCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subcategories ServiceCategory[] @relation("CategoryHierarchy")
+  
+  // Relación con servicios
+  services    Service[]
+  
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([parentId])
+  @@map("service_categories")
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  artistId    String   // Referencia al artista que ofrece este servicio
+  
+  // Información básica
+  name        String
+  slug        String
+  description String   @db.Text
+  
+  // Categoría
+  categoryId  String
+  category    ServiceCategory @relation(fields: [categoryId], references: [id])
+  
+  // Pricing
+  pricingType PricingType
+  basePrice   Int              // Precio base en centavos
+  currency    String           @default("MXN")
+  
+  // Duración (en minutos)
+  durationMin Int?             // Duración mínima
+  durationMax Int?             // Duración máxima (si aplica)
+  
+  // Imágenes
+  images      String[]         // Array de URLs
+  thumbnail   String?
+  
+  // Extras y add-ons
+  addons      ServiceAddon[]
+  
+  // Disponibilidad y estado
+  status      ServiceStatus    @default(ACTIVE)
+  isAvailable Boolean          @default(true)
+  isFeatured  Boolean          @default(false)
+  
+  // Requisitos
+  requiresDeposit     Boolean  @default(false)
+  depositAmount       Int?     // Monto fijo del depósito en centavos
+  depositPercentage   Int?     // O porcentaje del precio
+  requiresConsultation Boolean @default(false)
+  
+  // Políticas
+  cancellationPolicy  String?  @db.Text
+  termsAndConditions  String?  @db.Text
+  
+  // SEO
+  tags        String[]
+  
+  // Estadísticas
+  viewCount   Int      @default(0)
+  bookingCount Int     @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([artistId, slug])
+  @@index([artistId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([pricingType])
+  @@map("services")
+}
+
+model ServiceAddon {
+  id          String   @id @default(uuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  price       Int              // Precio adicional en centavos
+  
+  isOptional  Boolean  @default(true)
+  isDefault   Boolean  @default(false) // Se incluye por default
+  
+  order       Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([serviceId])
+  @@map("service_addons")
+}
+
+// Modelo para paquetes/combos (múltiples servicios)
+model ServicePackage {
+  id          String   @id @default(uuid())
+  artistId    String   // Artista que ofrece el paquete
+  
+  name        String
+  description String   @db.Text
+  
+  // Servicios incluidos (array de service IDs)
+  serviceIds  String[]
+  
+  // Pricing del paquete
+  originalPrice Int    // Suma de precios individuales
+  packagePrice  Int    // Precio con descuento
+  savings       Int    // Ahorro calculado
+  currency      String @default("MXN")
+  
+  // Disponibilidad
+  isActive    Boolean  @default(true)
+  validFrom   DateTime?
+  validUntil  DateTime?
+  
+  // Imagen
+  thumbnail   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([isActive])
+  @@map("service_packages")
+}
