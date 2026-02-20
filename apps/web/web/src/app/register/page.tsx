@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { countries, type Country } from "../../lib/countries";
 import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../components/PasswordStrengthIndicator";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface FieldError {
   nombre?: string;
@@ -17,7 +18,9 @@ interface FieldError {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
+  const formRef = useRef<HTMLFormElement>(null);
   
   // Form fields
   const [nombre, setNombre] = useState("");
@@ -27,6 +30,7 @@ export default function RegisterPage() {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [telefono, setTelefono] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   
   // UI state
   const [errors, setErrors] = useState<FieldError>({});
@@ -34,6 +38,15 @@ export default function RegisterPage() {
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Auto-focus en primer campo con error
+  useEffect(() => {
+    const firstErrorField = Object.keys(errors).find(key => errors[key as keyof FieldError]);
+    if (firstErrorField) {
+      const element = document.getElementById(firstErrorField);
+      element?.focus();
+    }
+  }, [errors]);
 
   const validateField = (field: string, value: string | boolean): string => {
     switch (field) {
@@ -177,6 +190,7 @@ export default function RegisterPage() {
           codigoPais: selectedCountry?.dialCode,
           telefono,
         }),
+        credentials: 'include', // 🔒 Importante para cookies httpOnly
       });
 
       const data = await response.json();
@@ -185,8 +199,19 @@ export default function RegisterPage() {
         throw new Error(data.message || "Ocurrió un error al crear tu cuenta. Intenta nuevamente.");
       }
 
-      localStorage.setItem("token", data.token);
-      router.push("/");
+      // 🔒 Token se guarda automáticamente en httpOnly cookie
+      // Actualizar estado global de autenticación
+      if (data.user) {
+        login(data.user);
+      }
+      
+      // ✅ Mostrar feedback de éxito
+      setShowSuccess(true);
+      
+      // Redirigir después de 1.5 segundos
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     } catch (err: any) {
       setGeneralError(err.message);
     } finally {
@@ -225,10 +250,21 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" ref={formRef}>
             {generalError && (
               <div className="rounded-lg bg-red-50 border border-red-200 p-4 dark:bg-red-900/20 dark:border-red-800">
                 <p className="text-sm text-red-800 dark:text-red-200">{generalError}</p>
+              </div>
+            )}
+
+            {showSuccess && (
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4 dark:bg-green-900/20 dark:border-green-800">
+                <div className="flex items-center gap-2">
+                  <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="text-sm text-green-800 dark:text-green-200">¡Cuenta creada exitosamente! Redirigiendo...</p>
+                </div>
               </div>
             )}
 
