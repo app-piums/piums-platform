@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Notification Model
+// ============================================================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  
+  // Receptor
+  userId    String
+  
+  // Tipo y canal
+  type      NotificationType
+  channel   NotificationChannel
+  
+  // Contenido
+  title     String
+  message   String   @db.Text
+  data      Json?    // Datos adicionales (bookingId, artistId, etc.)
+  
+  // Email specific
+  emailTo   String?
+  emailSubject String?
+  emailHtml String?  @db.Text
+  
+  // SMS specific
+  phoneNumber String?
+  
+  // Push specific
+  fcmToken  String?
+  
+  // Estado
+  status    NotificationStatus @default(PENDING)
+  sentAt    DateTime?
+  readAt    DateTime?
+  
+  // Reintentos
+  retries   Int      @default(0)
+  maxRetries Int     @default(3)
+  lastError String?  @db.Text
+  
+  // Scheduling
+  scheduledFor DateTime?
+  
+  // Metadata
+  priority  String   @default("normal") // low, normal, high, urgent
+  category  String?  // booking, payment, review, system
+  
+  // Template usado
+  templateId String?
+  template   NotificationTemplate? @relation(fields: [templateId], references: [id])
+  
+  // Soft delete para auditorías
+  deletedAt  DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([scheduledFor])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// Notification Template Model
+// ============================================================================
+
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  
+  // Identificador único del template
+  key         String   @unique // e.g., "booking_confirmed", "booking_reminder_24h"
+  
+  // Nombre y descripción
+  name        String
+  description String?
+  
+  // Tipo de notificación
+  type        NotificationType
+  
+  // Contenido del template (con placeholders)
+  title       String
+  message     String   @db.Text
+  
+  // Email template
+  emailSubject String?
+  emailHtml   String?  @db.Text
+  
+  // Variables disponibles (JSON array)
+  variables   Json?    // ["userName", "bookingDate", "artistName"]
+  
+  // Configuración
+  isActive    Boolean  @default(true)
+  priority    String   @default("normal")
+  category    String?
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relación
+  notifications Notification[]
+  
+  @@index([key])
+  @@index([type])
+}
+
+// ============================================================================
+// User Notification Preferences Model
+// ============================================================================
+
+model UserNotificationPreference {
+  id        String   @id @default(uuid())
+  
+  userId    String   @unique
+  
+  // Canales habilitados
+  emailEnabled  Boolean @default(true)
+  smsEnabled    Boolean @default(false)
+  pushEnabled   Boolean @default(true)
+  
+  // Preferencias por categoría
+  bookingNotifications  Boolean @default(true)
+  paymentNotifications  Boolean @default(true)
+  reviewNotifications   Boolean @default(true)
+  marketingNotifications Boolean @default(false)
+  
+  // Horario de no molestar (Do Not Disturb)
+  dndEnabled    Boolean @default(false)
+  dndStartHour  Int?    // 0-23
+  dndEndHour    Int?    // 0-23
+  
+  // Zona horaria
+  timezone      String  @default("America/Mexico_City")
+  
+  // Contacto
+  email         String?
+  phoneNumber   String?
+  fcmTokens     Json?   // Array de tokens FCM para push
+  
+  // Soft delete para auditorías
+  deletedAt     DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ============================================================================
+// Notification Log Model (para auditoría)
+// ============================================================================
+
+model NotificationLog {
+  id            String   @id @default(uuid())
+  
+  notificationId String
+  
+  // Evento
+  event         String   // sent, failed, read, delivered
+  
+  // Detalles
+  details       Json?
+  errorMessage  String?  @db.Text
+  
+  // Provider info (para email/sms)
+  provider      String?  // nodemailer, twilio, fcm
+  providerId    String?  // Message ID del provider
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([notificationId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_REJECTED
+  BOOKING_CANCELLED
+  BOOKING_REMINDER_24H
+  BOOKING_REMINDER_2H
+  BOOKING_COMPLETED
+  BOOKING_NO_SHOW
+  
+  PAYMENT_RECEIVED
+  PAYMENT_REMINDER
+  PAYMENT_REFUNDED
+  
+  REVIEW_REQUEST
+  REVIEW_RECEIVED
+  REVIEW_RESPONSE
+  
+  MESSAGE_RECEIVED
+  
+  SYSTEM_NOTIFICATION
+  MARKETING
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SCHEDULED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
