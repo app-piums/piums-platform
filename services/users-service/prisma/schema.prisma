@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  authId    String   @unique // Referencia al user ID del auth-service
+  email     String   @unique
+  nombre    String
+  avatar    String?
+  bio       String?
+  telefono  String?
+  pais      String?
+  
+  // Preferencias
+  language  String   @default("es")
+  timezone  String   @default("America/Mexico_City")
+  notificationsEnabled Boolean @default(true)
+  emailNotifications   Boolean @default(true)
+  smsNotifications     Boolean @default(false)
+  pushNotifications    Boolean @default(true)
+  
+  // Direcciones
+  addresses Address[]
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete
+  lastLoginAt DateTime?
+  
+  @@index([authId])
+  @@index([email])
+  @@map("users")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  label     String   // "Casa", "Trabajo", etc
+  street    String
+  city      String
+  state     String
+  country   String
+  zipCode   String
+  lat       Float?
+  lng       Float?
+  
+  isDefault Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@map("addresses")
+}
