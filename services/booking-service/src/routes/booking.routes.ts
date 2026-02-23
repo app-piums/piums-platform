@@ -35,6 +35,17 @@ router.get(
 );
 
 /**
+ * GET /api/bookings/by-code/:code
+ * Obtener reserva por código (ej: PIU-2026-000123)
+ * Requiere autenticación (cliente o artista)
+ */
+router.get(
+  "/bookings/by-code/:code",
+  authenticateToken,
+  bookingController.getBookingByCode.bind(bookingController)
+);
+
+/**
  * GET /api/bookings
  * Buscar reservas con filtros
  * Requiere autenticación

@@ -54,6 +54,27 @@ export class BookingController {
     }
   }
 
+  async getBookingByCode(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { code } = req.params;
+      const booking = await bookingService.getBookingByCode(code);
+
+      // Verificar permisos
+      const userId = req.user?.id;
+      if (
+        userId &&
+        booking.clientId !== userId &&
+        booking.artistId !== userId
+      ) {
+        return res.status(403).json({ message: "No tienes permiso para ver esta reserva" });
+      }
+
+      res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async searchBookings(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const query = {

@@ -252,6 +252,73 @@ model WebhookEvent {
 }
 
 // ============================================================================
+// Payout Model (pagos a artistas)
+// ============================================================================
+
+model Payout {
+  id          String   @id @default(uuid())
+  
+  // Artist (relación con artists-service)
+  artistId    String
+  
+  // Relaciones con pagos/reservas
+  bookingId   String?  // Si es específico de una reserva
+  paymentId   String?  // Pago original del cliente
+  
+  // Stripe Connect
+  stripeTransferId String? @unique  // Transfer a Stripe Connect account
+  stripePayoutId   String? @unique  // Payout final a cuenta bancaria del artista
+  stripeAccountId  String?          // Stripe Connect Account ID del artista
+  
+  // Monto
+  amount      Int      // En centavos (lo que recibe el artista)
+  currency    String   @default("MXN")
+  
+  // Estado
+  status      PayoutStatus @default(PENDING)
+  
+  // Tipo de payout
+  payoutType  PayoutType   @default(BOOKING_PAYMENT)
+  
+  // Fees y cálculos
+  originalAmount    Int?     // Monto original antes de fees
+  platformFee       Int?     // Fee de la plataforma
+  stripeFee         Int?     // Fee de Stripe
+  
+  // Programación
+  scheduledFor      DateTime? // Fecha programada para el pago
+  processedAt       DateTime? // Cuándo se procesó realmente
+  
+  // Failure info
+  failedAt          DateTime?
+  failureCode       String?
+  failureMessage    String?   @db.Text
+  
+  // Descripción
+  description       String?   @db.Text
+  
+  // Metadata adicional
+  metadata          Json?
+  
+  // Notas internas
+  internalNotes     String?   @db.Text
+  
+  // Soft delete para auditorías
+  deletedAt         DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([artistId])
+  @@index([bookingId])
+  @@index([paymentId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdAt])
+  @@map("payouts")
+}
+
+// ============================================================================
 // Enums
 // ============================================================================
 
@@ -287,4 +354,23 @@ enum RefundStatus {
   SUCCEEDED     // Exitoso
   FAILED        // Fallido
   CANCELLED     // Cancelado
+}
+
+enum PayoutStatus {
+  PENDING       // Pendiente de procesar
+  SCHEDULED     // Programado para fecha futura
+  PROCESSING    // En proceso de transferencia
+  IN_TRANSIT    // En tránsito (Stripe lo está procesando)
+  COMPLETED     // Completado exitosamente
+  FAILED        // Falló el pago
+  CANCELLED     // Cancelado manualmente
+  REVERSED      // Revertido (chargeback o disputa)
+}
+
+enum PayoutType {
+  BOOKING_PAYMENT   // Pago por reserva completada
+  MANUAL            // Pago manual/ajuste
+  ADJUSTMENT        // Ajuste de saldo
+  BONUS             // Bono o incentivo
+  REFUND_REVERSAL   // Reversión de reembolso
 }

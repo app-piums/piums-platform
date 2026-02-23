@@ -284,6 +284,146 @@ export class StripeProvider {
       throw error;
     }
   }
+
+  // ==================== STRIPE CONNECT ====================
+
+  /**
+   * Crear Transfer a cuenta Stripe Connect
+   */
+  async createTransfer(params: {
+    amount: number;
+    currency: string;
+    destination: string; // Stripe Connect Account ID
+    description?: string;
+    metadata?: Record<string, string>;
+    sourceTransaction?: string; // Charge ID opcional
+  }): Promise<Stripe.Transfer> {
+    try {
+      const transfer = await stripe.transfers.create({
+        amount: params.amount,
+        currency: params.currency.toLowerCase(),
+        destination: params.destination,
+        description: params.description,
+        metadata: params.metadata || {},
+        ...(params.sourceTransaction && {
+          source_transaction: params.sourceTransaction,
+        }),
+      });
+
+      logger.info("Transfer creado", "STRIPE_PROVIDER", {
+        transferId: transfer.id,
+        amount: params.amount,
+        destination: params.destination,
+      });
+
+      return transfer;
+    } catch (error: any) {
+      logger.error("Error creando transfer", "STRIPE_PROVIDER", {
+        error: error.message,
+        code: error.code,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Recuperar Transfer
+   */
+  async retrieveTransfer(transferId: string): Promise<Stripe.Transfer> {
+    try {
+      return await stripe.transfers.retrieve(transferId);
+    } catch (error: any) {
+      logger.error("Error recuperando transfer", "STRIPE_PROVIDER", {
+        transferId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Crear Payout (retiro a cuenta bancaria del artista)
+   * Nota: Este método se ejecuta en el contexto de la cuenta Connect del artista
+   */
+  async createPayout(
+    params: {
+      amount: number;
+      currency: string;
+      description?: string;
+      metadata?: Record<string, string>;
+    },
+    stripeAccountId: string
+  ): Promise<Stripe.Payout> {
+    try {
+      const payout = await stripe.payouts.create(
+        {
+          amount: params.amount,
+          currency: params.currency.toLowerCase(),
+          description: params.description,
+          metadata: params.metadata || {},
+        },
+        {
+          stripeAccount: stripeAccountId,
+        }
+      );
+
+      logger.info("Payout creado", "STRIPE_PROVIDER", {
+        payoutId: payout.id,
+        amount: params.amount,
+        stripeAccountId,
+      });
+
+      return payout;
+    } catch (error: any) {
+      logger.error("Error creando payout", "STRIPE_PROVIDER", {
+        error: error.message,
+        code: error.code,
+        stripeAccountId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Recuperar Payout
+   */
+  async retrievePayout(
+    payoutId: string,
+    stripeAccountId?: string
+  ): Promise<Stripe.Payout> {
+    try {
+      const options = stripeAccountId
+        ? { stripeAccount: stripeAccountId }
+        : {};
+      return await stripe.payouts.retrieve(payoutId, options);
+    } catch (error: any) {
+      logger.error("Error recuperando payout", "STRIPE_PROVIDER", {
+        payoutId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener balance de cuenta Connect
+   */
+  async getAccountBalance(
+    stripeAccountId: string
+  ): Promise<Stripe.Balance> {
+    try {
+      return await stripe.balance.retrieve({
+        stripeAccount: stripeAccountId,
+      });
+    } catch (error: any) {
+      logger.error("Error obteniendo balance", "STRIPE_PROVIDER", {
+        stripeAccountId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
 }
 
 export const stripeProvider = new StripeProvider();
+

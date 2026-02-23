@@ -40,6 +40,7 @@ enum BookingItemType {
 
 model Booking {
   id          String   @id @default(uuid())
+  code        String?  @unique // Código legible único (ej: PIU-2026-000123)
   
   // Relaciones con otros servicios
   clientId    String   // ID del usuario (users-service)
@@ -62,6 +63,9 @@ model Booking {
   addonsPrice    Int          @default(0) // Precio de addons en centavos
   totalPrice     Int          // Precio total en centavos
   currency       String       @default("MXN")
+  
+  // Snapshot del quote completo al momento de la reserva (inmutable)
+  quoteSnapshot  Json?        // Incluye: items[], breakdown, totales
   
   depositRequired Boolean     @default(false)
   depositAmount   Int?        // Monto del depósito en centavos
@@ -110,6 +114,7 @@ model Booking {
   @@index([status])
   @@index([scheduledDate])
   @@index([paymentStatus])
+  @@index([code]) // Búsqueda rápida por código
   @@map("bookings")
 }
 

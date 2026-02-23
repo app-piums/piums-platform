@@ -3,6 +3,8 @@ import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { notificationsClient } from "../clients/notifications.client";
 import { paymentsClient } from "../clients/payments.client";
+import { catalogClient } from "../clients/catalog.client";
+import { generateBookingCode } from "./booking-code.service";
 
 const prisma = new PrismaClient();
 
@@ -64,22 +66,36 @@ export class BookingService {
       throw new AppError(409, "El horario solicitado no está disponible");
     }
 
-    // TODO: Obtener precio del servicio desde catalog-service
-    // Por ahora usamos valores de ejemplo
-    const servicePrice = 100000; // $1000 MXN en centavos
-    const addonsPrice = 0; // Calcular según los addons seleccionados
-    const totalPrice = servicePrice + addonsPrice;
+    // Generar código único para el booking
+    const code = await generateBookingCode();
+
+    // Obtener precio del servicio desde catalog-service
+    const priceQuote = await catalogClient.calculatePrice({
+      serviceId: data.serviceId,
+      durationMinutes: data.durationMinutes,
+      selectedAddonIds: data.selectedAddons || [],
+      distanceKm: data.locationLat && data.locationLng ? undefined : 0, // TODO: calcular distancia real
+    });
+
+    if (!priceQuote) {
+      throw new AppError(500, "No se pudo calcular el precio del servicio");
+    }
+
+    const servicePrice = priceQuote.breakdown.baseCents;
+    const addonsPrice = priceQuote.breakdown.addonsCents + priceQuote.breakdown.travelCents;
+    const totalPrice = priceQuote.totalCents;
 
     // Calcular depósito si es requerido
     const depositRequired = config.requiresDeposit;
-    const depositAmount = depositRequired ? Math.floor(totalPrice * 0.3) : 0;
+    const depositAmount = priceQuote.depositRequiredCents || (depositRequired ? Math.floor(totalPrice * 0.3) : 0);
 
     // Determinar estado inicial
     const initialStatus = config.autoConfirm ? "CONFIRMED" : "PENDING";
 
-    // Crear la reserva
+    // Crear la reserva con código y quote snapshot
     const booking = await prisma.booking.create({
       data: {
+        code, // Código único generado
         clientId: data.clientId,
         artistId: data.artistId,
         serviceId: data.serviceId,
@@ -92,6 +108,7 @@ export class BookingService {
         servicePrice,
         addonsPrice,
         totalPrice,
+        quoteSnapshot: priceQuote as any, // Guardar quote completo
         depositRequired,
         depositAmount,
         selectedAddons: data.selectedAddons || [],
@@ -108,6 +125,26 @@ export class BookingService {
       data.clientId,
       "Reserva creada"
     );
+
+    // Crear booking items desde el quote
+    if (priceQuote.items && priceQuote.items.length > 0) {
+      await prisma.bookingItem.createMany({
+        data: priceQuote.items.map(item => ({
+          bookingId: booking.id,
+          type: item.type,
+          name: item.name,
+          qty: item.qty,
+          unitPriceCents: item.unitPriceCents,
+          totalPriceCents: item.totalPriceCents,
+          metadata: item.metadata || {},
+        })),
+      });
+
+      logger.info("BookingItems creados desde quote", "BOOKING_SERVICE", {
+        bookingId: booking.id,
+        itemsCount: priceQuote.items.length,
+      });
+    }
 
     // Si se requiere depósito, crear Payment Intent
     let paymentIntent = null;
@@ -211,6 +248,27 @@ export class BookingService {
 
     if (!booking) {
       throw new AppError(404, "Reserva no encontrada");
+    }
+
+    return booking;
+  }
+
+  /**
+   * Obtener reserva por código
+   */
+  async getBookingByCode(code: string) {
+    const booking = await prisma.booking.findUnique({
+      where: { code },
+      include: {
+        statusHistory: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+    });
+
+    if (!booking) {
+      throw new AppError(404, `Reserva no encontrada con código: ${code}`);
     }
 
     return booking;
