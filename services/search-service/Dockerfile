@@ -43,11 +43,11 @@ COPY --from=builder /app/prisma ./prisma
 ENV NODE_ENV=production
 
 # Exponer puerto
-EXPOSE 4001
+EXPOSE 4009
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:4009/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Comando para iniciar
-CMD ["sh", "-c", "if [ -f 'prisma/schema.prisma' ]; then npx prisma db push --url=\"$DATABASE_URL\"; fi && node dist/index.js"]
+CMD ["sh", "-c", "if [ -f 'prisma/schema.prisma' ]; then npx prisma db push; fi && node dist/index.js"]

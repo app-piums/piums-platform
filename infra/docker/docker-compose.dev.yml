@@ -16,14 +16,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - piums-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U piums"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - piums-network
 
   redis:
     image: redis:7-alpine
@@ -32,13 +31,13 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - piums-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - piums-network
 
   # ============================================================================
   # API Gateway
@@ -102,9 +101,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ../../services/auth-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -123,9 +119,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/users-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -144,9 +137,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/artists-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -165,9 +155,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/catalog-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -188,9 +175,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/payments-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -209,9 +193,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/reviews-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -233,9 +214,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ../../services/notifications-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -254,9 +232,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/booking-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
@@ -278,9 +253,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ../../services/search-service:/app
-      - /app/node_modules
     networks:
       - piums-network
     restart: unless-stopped
