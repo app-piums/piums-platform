@@ -7,6 +7,9 @@ import { apiLimiter } from "./middleware/rateLimiter";
 import healthRoutes from "./routes/health.routes";
 import catalogRoutes from "./routes/catalog.routes";
 import pricingRoutes from "./routes/pricing.routes";
+import mediaRoutes from "./routes/media.routes";
+import categoryRoutes from "./routes/category.routes";
+import locationRoutes from "./routes/location.routes";
 
 // Cargar variables de entorno
 dotenv.config();
@@ -55,6 +58,9 @@ app.use((req, res, next) => {
 app.use("/health", healthRoutes);
 app.use("/api", catalogRoutes);
 app.use("/api/pricing", pricingRoutes);
+app.use("/api", mediaRoutes);
+app.use("/api", categoryRoutes);
+app.use("/api", locationRoutes);
 
 // Ruta 404
 app.use((req, res) => {

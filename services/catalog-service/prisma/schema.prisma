@@ -31,27 +31,53 @@ enum ServiceStatus {
 
 model ServiceCategory {
   id          String   @id @default(uuid())
+  
+  // Identificación
   name        String
   slug        String   @unique
   description String?  @db.Text
   icon        String?  // URL o nombre del icono
+  image       String?  // Imagen/banner de la categoría
   
   // Jerarquía (categorías anidadas)
   parentId    String?
   parent      ServiceCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   subcategories ServiceCategory[] @relation("CategoryHierarchy")
   
+  // Nivel en la jerarquía (0 = raíz, 1 = subcategoría, etc.)
+  level       Int      @default(0)
+  
+  // Path completo de la categoría (ej: "arte/pintura/oleo")
+  path        String?
+  
   // Relación con servicios
   services    Service[]
   
+  // Configuración y display
   order       Int      @default(0)
   isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  
+  // SEO y metadatos
+  metaTitle       String?
+  metaDescription String?
+  keywords        String[]
+  
+  // Estadísticas
+  serviceCount    Int      @default(0) // Número de servicios en esta categoría
+  
+  // Colores y branding
+  primaryColor    String?  // Hex color primary
+  secondaryColor  String?  // Hex color secondary
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   @@index([slug])
   @@index([parentId])
+  @@index([path])
+  @@index([level])
+  @@index([isActive, isFeatured])
   @@map("service_categories")
 }
 
@@ -221,4 +247,216 @@ model ServiceTravelRules {
   
   @@index([serviceId])
   @@map("service_travel_rules")
+}
+
+// ============================================================================
+// Cities - Sistema formal de ciudades con coordenadas
+// ============================================================================
+
+model Country {
+  id          String   @id @default(uuid())
+  
+  // Identificación
+  name        String   // Nombre completo
+  shortName   String   // Nombre corto (ej: "México", "USA")
+  code        String   @unique // Código ISO 3166-1 alpha-2 (ej: "MX", "US")
+  code3       String?  // Código ISO 3166-1 alpha-3 (ej: "MEX", "USA")
+  
+  // Geografía
+  continent   String   // "América", "Europa", "Asia", etc.
+  region      String?  // Sub-región (ej: "América del Norte")
+  
+  // Códigos de teléfono
+  phoneCode   String   // Código de teléfono (ej: "+52", "+1")
+  
+  // Moneda
+  currency    String   // Código de moneda (ej: "MXN", "USD")
+  currencySymbol String? // Símbolo (ej: "$", "€", "£")
+  
+  // Idioma
+  languages   String[] // Códigos de idiomas (ej: ["es", "en"])
+  
+  // Estados/provincias
+  states      State[]
+  
+  // Metadata
+  isActive    Boolean  @default(true)
+  isPopular   Boolean  @default(false) // Para destacar en listas
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([code])
+  @@index([isActive, isPopular])
+  @@map("countries")
+}
+
+model State {
+  id          String   @id @default(uuid())
+  
+  // País
+  countryId   String
+  country     Country  @relation(fields: [countryId], references: [id])
+  
+  // Identificación
+  name        String   // Nombre completo del estado
+  shortName   String?  // Abreviación (ej: "CDMX", "CA")
+  code        String   // Código único del estado
+  
+  // Ciudades
+  cities      City[]
+  
+  // Metadata
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([countryId, code])
+  @@index([countryId])
+  @@index([code])
+  @@map("states")
+}
+
+model City {
+  id          String   @id @default(uuid())
+  
+  // Ubicación administrativa
+  stateId     String
+  state       State    @relation(fields: [stateId], references: [id])
+  
+  // Identificación
+  name        String   // Nombre de la ciudad
+  slug        String   @unique // URL-friendly
+  
+  // Coordenadas (centro de la ciudad)
+  latitude    Float
+  longitude   Float
+  
+  // Zona horaria
+  timezone    String?  // IANA timezone (ej: "America/Mexico_City")
+  
+  // Población
+  population  Int?     // Número de habitantes
+  
+  // Clasificación
+  isCapital   Boolean  @default(false) // Capital del estado/país
+  isMetro     Boolean  @default(false) // Zona metropolitana importante
+  
+  // Alias y nombres alternativos
+  aliases     String[] // Nombres alternativos (ej: "CDMX", "Ciudad de México")
+  
+  // Metadata
+  isActive    Boolean  @default(true)
+  isPopular   Boolean  @default(false) // Para destacar en búsquedas
+  
+  // SEO
+  description String?  @db.Text
+  image       String?  // URL de imagen representativa
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([stateId, name])
+  @@index([stateId])
+  @@index([slug])
+  @@index([latitude, longitude])
+  @@index([isActive, isPopular])
+  @@map("cities")
+}
+
+// ============================================================================
+// Media Assets - Sistema polimórfico de archivos multimedia
+// ============================================================================
+
+enum MediaType {
+  IMAGE        // Imagen
+  VIDEO        // Video
+  AUDIO        // Audio
+  DOCUMENT     // Documento (PDF, etc.)
+  OTHER        // Otro tipo
+}
+
+enum MediaEntityType {
+  ARTIST       // Portfolio de artista
+  SERVICE      // Galería de servicio
+  BOOKING      // Evidencia de reserva
+  REVIEW       // Fotos de reseña
+  DISPUTE      // Evidencia de disputa
+  PROFILE      // Foto de perfil/cover
+  CATEGORY     // Imagen de categoría
+  CERTIFICATION // Certificado escaneado
+  OTHER        // Otra entidad
+}
+
+enum MediaStatus {
+  UPLOADING    // En proceso de subida
+  PROCESSING   // Procesando (resize, encoding, etc.)
+  READY        // Listo para uso
+  FAILED       // Falló el procesamiento
+  DELETED      // Marcado como eliminado (soft delete)
+}
+
+model MediaAsset {
+  id          String   @id @default(uuid())
+  
+  // Tipo de media
+  mediaType   MediaType
+  status      MediaStatus @default(UPLOADING)
+  
+  // Relación polimórfica (qué entidad "posee" este media)
+  entityType  MediaEntityType
+  entityId    String   // ID de la entidad (artistId, serviceId, bookingId, etc.)
+  
+  // URLs del archivo
+  originalUrl String   // URL del archivo original
+  url         String   // URL del archivo procesado/optimizado
+  thumbnailUrl String? // URL del thumbnail (para videos/images)
+  
+  // Metadata del archivo
+  filename    String   // Nombre original del archivo
+  mimeType    String   // Tipo MIME (image/jpeg, video/mp4, etc.)
+  fileSize    Int      // Tamaño en bytes
+  
+  // Dimensiones (si aplica)
+  width       Int?
+  height      Int?
+  duration    Int?     // Duración en segundos (para video/audio)
+  
+  // Información adicional
+  title       String?
+  description String?  @db.Text
+  altText     String?  // Texto alternativo para accesibilidad
+  
+  // Ordenamiento y display
+  order       Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  isPublic    Boolean  @default(true)
+  
+  // Storage info (para manejo interno)
+  storageProvider String? // "s3", "cloudinary", "local", etc.
+  storageKey      String? // Key/path en el storage provider
+  storageBucket   String? // Bucket name (si aplica)
+  
+  // Tags y categorización
+  tags        String[]
+  
+  // Metadata adicional (JSON flexible)
+  metadata    Json?    // Puede contener: exif data, GPS, color palette, etc.
+  
+  // Propietario/uploader
+  uploadedBy  String   // userId que subió el archivo
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([entityType, entityId])
+  @@index([mediaType])
+  @@index([status])
+  @@index([uploadedBy])
+  @@index([entityType, entityId, mediaType])
+  @@map("media_assets")
 }

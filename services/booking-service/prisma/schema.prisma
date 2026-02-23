@@ -226,3 +226,115 @@ model AvailabilityReservation {
   @@map("availability_reservations")
 }
 
+// ============================================================================
+// Disputes - Sistema de disputas y resolución de conflictos
+// ============================================================================
+
+enum DisputeType {
+  CANCELLATION      // Disputa por cancelación
+  QUALITY           // Disputa por calidad del servicio
+  REFUND            // Solicitud de reembolso
+  NO_SHOW           // Cliente no se presentó (artista reporta)
+  ARTIST_NO_SHOW    // Artista no se presentó (cliente reporta)
+  PRICING           // Disputa sobre precio/cargos
+  BEHAVIOR          // Comportamiento inapropiado
+  OTHER             // Otro tipo de disputa
+}
+
+enum DisputeStatus {
+  OPEN              // Recién abierta
+  IN_REVIEW         // Bajo revisión por staff
+  AWAITING_INFO     // Esperando información adicional
+  RESOLVED          // Resuelta
+  CLOSED            // Cerrada sin resolución
+  ESCALATED         // Escalada a nivel superior
+}
+
+enum DisputeResolution {
+  FULL_REFUND       // Reembolso completo
+  PARTIAL_REFUND    // Reembolso parcial
+  NO_REFUND         // Sin reembolso
+  CREDIT            // Crédito para futura reserva
+  WARNING           // Advertencia al usuario/artista
+  SUSPENSION        // Suspensión temporal
+  BAN               // Expulsión permanente
+  NO_ACTION         // Sin acción necesaria
+}
+
+model Dispute {
+  id            String   @id @default(uuid())
+  
+  // Relaciones
+  bookingId     String
+  reportedBy    String           // userId del que reporta (cliente o artista)
+  reportedAgainst String?        // userId del reportado (opcional)
+  
+  // Tipo y estado
+  disputeType   DisputeType
+  status        DisputeStatus    @default(OPEN)
+  
+  // Detalles
+  subject       String           // Título corto
+  description   String           @db.Text
+  
+  // Resolución
+  resolution    DisputeResolution?
+  resolutionNotes String?        @db.Text
+  resolvedBy    String?          // staffId que resolvió
+  resolvedAt    DateTime?
+  
+  // Evidencia
+  evidence      Json?            // URLs de fotos, documentos, etc.
+  
+  // Prioridad
+  priority      Int              @default(0) // 0=normal, 1=alta, 2=urgente
+  
+  // Mensajes/comunicación
+  messages      DisputeMessage[]
+  
+  // Reembolso (si aplica)
+  refundAmount  Int?             // Monto reembolsado en centavos
+  refundIssued  Boolean          @default(false)
+  refundIssuedAt DateTime?
+  
+  // Soft delete para auditorías
+  deletedAt     DateTime?
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  @@index([bookingId])
+  @@index([reportedBy])
+  @@index([status])
+  @@index([disputeType])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("disputes")
+}
+
+// Mensajes dentro de una disputa (comunicación entre partes y staff)
+model DisputeMessage {
+  id          String   @id @default(uuid())
+  disputeId   String
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  
+  senderId    String   // userId o staffId
+  senderType  String   // "client", "artist", "staff"
+  
+  message     String   @db.Text
+  attachments Json?    // URLs de archivos adjuntos
+  
+  // Si es una actualización de estado
+  isStatusUpdate Boolean @default(false)
+  oldStatus   DisputeStatus?
+  newStatus   DisputeStatus?
+  
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([disputeId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("dispute_messages")
+}

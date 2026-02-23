@@ -10,6 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProfileType {
+  USER      // Usuario cliente regular
+  ARTIST    // Usuario artista
+  BOTH      // Usuario que es cliente y artista
+}
+
+enum ProfileVisibility {
+  PUBLIC    // Perfil visible para todos
+  PRIVATE   // Perfil visible solo para contactos/reservas
+  HIDDEN    // Perfil oculto
+}
+
 model User {
   id        String   @id @default(uuid())
   authId    String   @unique // Referencia al user ID del auth-service
@@ -19,6 +31,9 @@ model User {
   bio       String?
   telefono  String?
   pais      String?
+  
+  // Relación con perfil público consolidado
+  profile   Profile?
   
   // Preferencias
   language  String   @default("es")
@@ -40,6 +55,79 @@ model User {
   @@index([authId])
   @@index([email])
   @@map("users")
+}
+
+// ============================================================================
+// Profile - Perfil público consolidado (para users y artists)
+// ============================================================================
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique // Relación 1:1 con User
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Identificación externa (para artists principalmente)
+  artistId    String?  @unique // Si es artista, referencia a artists-service
+  
+  // Información pública básica
+  displayName String   // Nombre público a mostrar
+  slug        String   @unique // URL-friendly: @username
+  avatar      String?
+  coverPhoto  String?
+  bio         String?  @db.Text
+  tagline     String?  // Frase corta descriptiva
+  
+  // Tipo de perfil
+  profileType ProfileType @default(USER)
+  visibility  ProfileVisibility @default(PUBLIC)
+  
+  // Ubicación pública (ciudad/país, no dirección exacta)
+  city        String?
+  state       String?
+  country     String?
+  
+  // Enlaces sociales
+  website     String?
+  instagram   String?
+  facebook    String?
+  twitter     String?
+  linkedin    String?
+  youtube     String?
+  tiktok      String?
+  
+  // Estadísticas públicas
+  followersCount   Int @default(0)
+  followingCount   Int @default(0)
+  totalBookings    Int @default(0)
+  totalReviews     Int @default(0)
+  averageRating    Float @default(0.0)
+  
+  // Verificación
+  isVerified       Boolean @default(false)
+  verifiedAt       DateTime?
+  verificationBadge String? // "artist", "top_seller", "pro", etc.
+  
+  // SEO y búsqueda
+  keywords    String[] // Palabras clave para búsqueda
+  categories  String[] // Categorías/tags del perfil
+  
+  // Anuncios/destacados
+  isFeatured  Boolean @default(false)
+  isPremium   Boolean @default(false)
+  
+  // Metadata
+  viewCount   Int @default(0)
+  lastActive  DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([profileType])
+  @@index([city, country])
+  @@index([isVerified])
+  @@index([isFeatured])
+  @@map("profiles")
 }
 
 model Address {
