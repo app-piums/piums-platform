@@ -53,6 +53,7 @@ model Booking {
   location        String?  // Dirección de la cita
   locationLat     Float?
   locationLng     Float?
+  cityId          String?  // Referencia a City (catalog-service)
   
   // Estado
   status         BookingStatus @default(PENDING)
@@ -73,6 +74,7 @@ model Booking {
   
   paymentStatus   PaymentStatus @default(PENDING)
   paymentIntentId String?     // ID del Payment Intent de Stripe (payments-service)
+  paymentId       String?     // Referencia al Payment completado (payments-service)
   paidAmount      Int          @default(0)
   paidAt          DateTime?
   paymentMethod   String?
@@ -114,6 +116,8 @@ model Booking {
   @@index([status])
   @@index([scheduledDate])
   @@index([paymentStatus])
+  @@index([paymentId])
+  @@index([cityId])
   @@index([code]) // Búsqueda rápida por código
   @@map("bookings")
 }

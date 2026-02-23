@@ -48,13 +48,15 @@ model Artist {
   bio       String?
   
   // Categoría y especialidades
-  category      ArtistCategory
-  specialties   String[] // Array de especialidades específicas
+  category      ArtistCategory // Mantener por compatibilidad
+  categoryId    String?   // Referencia a ServiceCategory (catalog-service)
+  specialties   String[]  // Array de especialidades específicas
   yearsExperience Int     @default(0)
   
   // Ubicación y cobertura
   country       String
-  city          String
+  city          String   // Nombre legible (mantener por compatibilidad)
+  cityId        String?  // Referencia formal a City (catalog-service)
   state         String?
   address       String?
   lat           Float?
@@ -104,8 +106,10 @@ model Artist {
   @@index([authId])
   @@index([email])
   @@index([category])
+  @@index([categoryId])
   @@index([verificationStatus])
   @@index([city, country])
+  @@index([cityId])
   @@index([lat, lng])
   @@map("artists")
 }

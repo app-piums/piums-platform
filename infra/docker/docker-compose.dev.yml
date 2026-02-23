@@ -1,0 +1,304 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Databases
+  # ============================================================================
+  
+  postgres:
+    image: postgres:16-alpine
+    container_name: piums-postgres
+    environment:
+      POSTGRES_USER: piums
+      POSTGRES_PASSWORD: piums_dev_password
+      POSTGRES_DB: piums_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U piums"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - piums-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: piums-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - piums-network
+
+  # ============================================================================
+  # API Gateway
+  # ============================================================================
+  
+  gateway:
+    build:
+      context: ../../apps/gateway
+      dockerfile: Dockerfile
+    container_name: piums-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      ALLOWED_ORIGINS: http://localhost:3001,http://localhost:3002
+      AUTH_SERVICE_URL: http://auth-service:4001
+      USERS_SERVICE_URL: http://users-service:4002
+      ARTISTS_SERVICE_URL: http://artists-service:4003
+      CATALOG_SERVICE_URL: http://catalog-service:4004
+      PAYMENTS_SERVICE_URL: http://payments-service:4005
+      REVIEWS_SERVICE_URL: http://reviews-service:4006
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
+      BOOKING_SERVICE_URL: http://booking-service:4008
+      SEARCH_SERVICE_URL: http://search-service:4009
+    depends_on:
+      - auth-service
+      - users-service
+      - artists-service
+      - catalog-service
+      - booking-service
+      - payments-service
+      - reviews-service
+      - notifications-service
+      - search-service
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Microservices
+  # ============================================================================
+
+  auth-service:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    container_name: piums-auth-service
+    ports:
+      - "4001:4001"
+    environment:
+      NODE_ENV: development
+      PORT: 4001
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_auth
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      REFRESH_SECRET: dev_refresh_secret_CHANGE_IN_PRODUCTION
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../services/auth-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  users-service:
+    build:
+      context: ../../services/users-service
+      dockerfile: Dockerfile
+    container_name: piums-users-service
+    ports:
+      - "4002:4002"
+    environment:
+      NODE_ENV: development
+      PORT: 4002
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/users-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  artists-service:
+    build:
+      context: ../../services/artists-service
+      dockerfile: Dockerfile
+    container_name: piums-artists-service
+    ports:
+      - "4003:4003"
+    environment:
+      NODE_ENV: development
+      PORT: 4003
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_artists
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/artists-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  catalog-service:
+    build:
+      context: ../../services/catalog-service
+      dockerfile: Dockerfile
+    container_name: piums-catalog-service
+    ports:
+      - "4004:4004"
+    environment:
+      NODE_ENV: development
+      PORT: 4004
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_catalog
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/catalog-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  payments-service:
+    build:
+      context: ../../services/payments-service
+      dockerfile: Dockerfile
+    container_name: piums-payments-service
+    ports:
+      - "4005:4005"
+    environment:
+      NODE_ENV: development
+      PORT: 4005
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_payments
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_changeme}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/payments-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  reviews-service:
+    build:
+      context: ../../services/reviews-service
+      dockerfile: Dockerfile
+    container_name: piums-reviews-service
+    ports:
+      - "4006:4006"
+    environment:
+      NODE_ENV: development
+      PORT: 4006
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_reviews
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/reviews-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  notifications-service:
+    build:
+      context: ../../services/notifications-service
+      dockerfile: Dockerfile
+    container_name: piums-notifications-service
+    ports:
+      - "4007:4007"
+    environment:
+      NODE_ENV: development
+      PORT: 4007
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_notifications
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../services/notifications-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  booking-service:
+    build:
+      context: ../../services/booking-service
+      dockerfile: Dockerfile
+    container_name: piums-booking-service
+    ports:
+      - "4008:4008"
+    environment:
+      NODE_ENV: development
+      PORT: 4008
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_bookings
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/booking-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  search-service:
+    build:
+      context: ../../services/search-service
+      dockerfile: Dockerfile
+    container_name: piums-search-service
+    ports:
+      - "4009:4009"
+    environment:
+      NODE_ENV: development
+      PORT: 4009
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_search
+      ARTISTS_SERVICE_URL: http://artists-service:4003
+      CATALOG_SERVICE_URL: http://catalog-service:4004
+      REVIEWS_SERVICE_URL: http://reviews-service:4006
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/search-service:/app
+      - /app/node_modules
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+
+networks:
+  piums-network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

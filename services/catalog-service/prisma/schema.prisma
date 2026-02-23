@@ -94,6 +94,9 @@ model Service {
   categoryId  String
   category    ServiceCategory @relation(fields: [categoryId], references: [id])
   
+  // Ubicación (si el servicio es local/presencial)
+  cityId      String?  // Referencia a City si el servicio está atado a una ciudad específica
+  
   // Pricing
   pricingType PricingType
   basePrice   Int              // Precio base en centavos
@@ -142,6 +145,7 @@ model Service {
   @@unique([artistId, slug])
   @@index([artistId])
   @@index([categoryId])
+  @@index([cityId])
   @@index([status])
   @@index([pricingType])
   @@map("services")

@@ -37,10 +37,10 @@ model Review {
   id          String   @id @default(uuid())
   
   // Relaciones con otros servicios (IDs externos)
-  bookingId   String   @unique // ID del booking (booking-service)
+  bookingId   String?  @unique // ID del booking (booking-service) - OPCIONAL para reviews sin reserva
   clientId    String   // ID del cliente que dejó la reseña (users-service)
   artistId    String   // ID del artista reseñado (artists-service)
-  serviceId   String   // ID del servicio contratado (catalog-service)
+  serviceId   String?  // ID del servicio contratado (catalog-service) - opcional
   
   // Calificación (1-5 estrellas)
   rating      Int      // 1, 2, 3, 4, 5
@@ -72,6 +72,7 @@ model Review {
   @@index([artistId])
   @@index([clientId])
   @@index([serviceId])
+  @@index([bookingId])
   @@index([rating])
   @@index([status])
   @@index([createdAt])

@@ -263,7 +263,7 @@ model Payout {
   
   // Relaciones con pagos/reservas
   bookingId   String?  // Si es específico de una reserva
-  paymentId   String?  // Pago original del cliente
+  paymentId   String?  // Pago original del cliente (referencia a Payment.id)
   
   // Stripe Connect
   stripeTransferId String? @unique  // Transfer a Stripe Connect account

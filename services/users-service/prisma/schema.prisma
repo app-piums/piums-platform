@@ -46,6 +46,10 @@ model User {
   // Direcciones
   addresses Address[]
   
+  // Relaciones sociales
+  favorites Favorite[]
+  following Follow[] @relation("UserFollows")
+  
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -82,7 +86,8 @@ model Profile {
   visibility  ProfileVisibility @default(PUBLIC)
   
   // Ubicación pública (ciudad/país, no dirección exacta)
-  city        String?
+  city        String?  // Nombre legible (mantener por compatibilidad)
+  cityId      String?  // Referencia formal a City (catalog-service)
   state       String?
   country     String?
   
@@ -125,6 +130,7 @@ model Profile {
   @@index([slug])
   @@index([profileType])
   @@index([city, country])
+  @@index([cityId])
   @@index([isVerified])
   @@index([isFeatured])
   @@map("profiles")
@@ -151,4 +157,176 @@ model Address {
   
   @@index([userId])
   @@map("addresses")
+}
+
+// ============================================================================
+// Favorite/Wishlist System
+// ============================================================================
+
+enum FavoriteEntityType {
+  ARTIST
+  SERVICE
+  PACKAGE
+}
+
+model Favorite {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relación polimórfica
+  entityType  FavoriteEntityType
+  entityId    String   // artistId, serviceId, packageId
+  
+  // Metadata
+  notes       String?  @db.Text // Notas personales del usuario
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([userId, entityType, entityId]) // Un usuario no puede guardar lo mismo dos veces
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("favorites")
+}
+
+// ============================================================================
+// Follow System (seguir artistas)
+// ============================================================================
+
+model Follow {
+  id          String   @id @default(uuid())
+  
+  followerId  String   // userId que sigue
+  follower    User     @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  
+  followingId String   // artistId que es seguido (referencia a artists-service)
+  
+  // Notificaciones
+  notifyNewServices Boolean @default(true)
+  notifySpecialOffers Boolean @default(true)
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([createdAt])
+  @@map("follows")
+}
+
+// ============================================================================
+// Messaging System (chat entre usuarios y artistas)
+// ============================================================================
+
+enum ConversationType {
+  DIRECT          // Conversación directa 1:1
+  BOOKING_RELATED // Relacionada a una reserva específica
+  SUPPORT         // Soporte con admin/staff
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  BLOCKED
+}
+
+model Conversation {
+  id          String   @id @default(uuid())
+  
+  // Participantes
+  participant1Id String // userId o artistId
+  participant2Id String // userId o artistId
+  
+  // Tipo y contexto
+  type        ConversationType @default(DIRECT)
+  bookingId   String?  // Si es relacionada a una reserva
+  
+  // Estado
+  status      ConversationStatus @default(ACTIVE)
+  
+  // Mensajes
+  messages    Message[]
+  
+  // Última actividad
+  lastMessageAt DateTime?
+  lastMessagePreview String? // Preview del último mensaje
+  
+  // Contadores de no leídos (por participante)
+  unreadCountP1 Int @default(0)
+  unreadCountP2 Int @default(0)
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([participant1Id, participant2Id, bookingId]) // Evitar conversaciones duplicadas
+  @@index([participant1Id])
+  @@index([participant2Id])
+  @@index([bookingId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  BOOKING_REQUEST
+  BOOKING_UPDATE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Message {
+  id            String   @id @default(uuid())
+  conversationId String
+  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  // Remitente
+  senderId      String   // userId que envió el mensaje
+  
+  // Contenido
+  type          MessageType @default(TEXT)
+  content       String   @db.Text
+  
+  // Archivos adjuntos
+  attachments   Json?    // Array de URLs y metadata
+  
+  // Estado
+  status        MessageStatus @default(SENT)
+  
+  // Lectura
+  readAt        DateTime?
+  deliveredAt   DateTime?
+  
+  // Respuesta a otro mensaje (threading)
+  replyToId     String?
+  
+  // Soft delete
+  deletedAt     DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([status])
+  @@map("messages")
 }
