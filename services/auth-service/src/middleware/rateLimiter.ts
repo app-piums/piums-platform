@@ -1,9 +1,9 @@
 import rateLimit from "express-rate-limit";
 
-// Rate limiter para login: 5 intentos por 15 minutos
+// Rate limiter para login: DESHABILITADO PARA DESARROLLO
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // 5 intentos máximo
+  max: 1000, // 1000 intentos máximo (prácticamente deshabilitado)
   message: {
     status: "error",
     message: "Demasiados intentos de inicio de sesión. Por favor intenta nuevamente en 15 minutos.",
@@ -12,10 +12,10 @@ export const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter para registro: 3 intentos por hora
+// Rate limiter para registro: DESHABILITADO PARA DESARROLLO
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
-  max: 3, // 3 intentos máximo
+  max: 1000, // 1000 intentos máximo (prácticamente deshabilitado)
   message: {
     status: "error",
     message: "Demasiados intentos de registro. Por favor intenta nuevamente en 1 hora.",
@@ -24,10 +24,10 @@ export const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter general para la API
+// Rate limiter general para la API: DESHABILITADO PARA DESARROLLO
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests máximo
+  max: 10000, // 10000 requests máximo (prácticamente deshabilitado)
   message: {
     status: "error",
     message: "Demasiadas solicitudes desde esta IP. Por favor intenta nuevamente más tarde.",

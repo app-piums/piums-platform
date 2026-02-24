@@ -3,22 +3,27 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
+import { DatePicker } from '@/components/DatePicker';
+import { TimeSlots } from '@/components/TimeSlots';
+import { Modal, ConfirmModal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
-import type { Artist, Service } from '@piums/sdk';
+import type { Artist, ArtistProfile, Service, TimeSlot } from '@piums/sdk';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'payment' | 'confirmation';
 
 function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   
   const artistId = searchParams.get('artistId');
   const serviceId = searchParams.get('serviceId');
@@ -26,15 +31,18 @@ function BookingContent() {
   const [step, setStep] = useState<BookingStep>('service');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [artist, setArtist] = useState<Artist | null>(null);
+  const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   
   // Form state
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showCancellationPolicy, setShowCancellationPolicy] = useState(false);
   
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -53,15 +61,12 @@ function BookingContent() {
       setLoading(true);
       
       // Mock data
-      const mockArtist: Artist = {
+      const mockArtist: ArtistProfile = {
         id: artistId!,
-        userId: 'user-1',
         nombre: 'María García',
-        slug: 'maria-garcia',
-        bio: 'Fotógrafa profesional',
-        avatar: '',
-        category: 'Fotografía',
-        cityId: 'Ciudad de México',
+        imagenPerfil: '',
+        categoria: 'Fotografía',
+        ciudad: 'Ciudad de México',
         rating: 4.8,
         reviewsCount: 47,
         bookingsCount: 156,
@@ -128,43 +133,81 @@ function BookingContent() {
   };
 
   const handleDateTimeNext = () => {
-    if (selectedDate && selectedTime) {
+    if (selectedDate && selectedTime && selectedTimeSlot) {
       setStep('details');
     }
   };
 
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(undefined);
+    setSelectedTimeSlot(undefined);
+  };
+
+  const handleTimeSelect = (time: string, slot: TimeSlot) => {
+    setSelectedTime(time);
+    setSelectedTimeSlot(slot);
+  };
+
   const handleDetailsNext = () => {
     if (location) {
-      setStep('payment');
+      // Mostrar modal de confirmación antes de continuar
+      setShowConfirmModal(true);
     }
   };
 
-  const handleSubmitBooking = async () => {
-    if (!selectedService || !artist) return;
+  const handleConfirmBooking = async () => {
+    if (!selectedService || !artist || !user || !selectedTimeSlot) return;
     
     try {
       setSubmitting(true);
       
-      const scheduledAt = new Date(`${selectedDate}T${selectedTime}`).toISOString();
+      // Calcular fecha/hora de fin basado en duración del servicio
+      const endTime = new Date(new Date(selectedTimeSlot.startTime).getTime() + selectedService.duration * 60000);
       
-      // Create booking
-      // const booking = await sdk.createBooking({
-      //   artistId: artist.id,
-      //   serviceId: selectedService.id,
-      //   scheduledAt,
-      //   notes,
-      // });
+      // Validar disponibilidad antes de crear la reserva
+      const availabilityCheck = await sdk.checkAvailability(
+        artist.id,
+        selectedTimeSlot.startTime,
+        endTime.toISOString()
+      );
       
-      // Mock success
-      setTimeout(() => {
-        setStep('confirmation');
+      if (availabilityCheck.hasReservation) {
+        setShowConfirmModal(false);
         setSubmitting(false);
-      }, 1500);
+        alert('Lo sentimos, este horario ya no está disponible. Por favor selecciona otro horario.');
+        // Volver al paso de fecha/hora para que el usuario seleccione otro slot
+        setStep('datetime');
+        setSelectedTime(undefined);
+        setSelectedTimeSlot(undefined);
+        return;
+      }
       
-    } catch (error) {
+      // Preparar payload
+      const payload = {
+        clientId: user.id,
+        artistId: artist.id,
+        serviceId: selectedService.id,
+        scheduledDate: selectedTimeSlot.startTime,
+        durationMinutes: selectedService.duration,
+        location,
+        clientNotes: notes,
+      };
+      
+      // Crear booking usando SDK
+      const booking = await sdk.createBooking(payload);
+      
+      // Cerrar modal
+      setShowConfirmModal(false);
+      
+      // Redirigir a página de confirmación
+      router.push(`/booking/confirmation/${booking.id}`);
+    } catch (error: any) {
       console.error('Error creating booking:', error);
+      setShowConfirmModal(false);
+      alert(error.message || 'Error al crear la reserva. Por favor intenta de nuevo.');
+    } finally {
       setSubmitting(false);
-      alert('Error al crear la reserva. Por favor intenta de nuevo.');
     }
   };
 
@@ -187,37 +230,7 @@ function BookingContent() {
             Ver Artistas
           </Button>
         </div>
-      </div>
-    );
-  }
-
-  if (step === 'confirmation') {
-    return (
-      <div>
-        <Navbar />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <Card className="text-center">
-            <CardContent className="py-12">
-              <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Reserva Confirmada!</h2>
-              <p className="text-gray-600 mb-6">
-                Tu reserva con {artist.nombre} ha sido confirmada. Recibirás un correo con los detalles.
-              </p>
-              <div className="space-y-3">
-                <Button fullWidth onClick={() => router.push('/bookings')}>
-                  Ver Mis Reservas
-                </Button>
-                <Button fullWidth variant="outline" onClick={() => router.push('/dashboard')}>
-                  Ir al Dashboard
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Footer />
       </div>
     );
   }
@@ -227,6 +240,15 @@ function BookingContent() {
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumbs 
+          items={[
+            { label: 'Inicio', href: '/' },
+            { label: 'Artistas', href: '/artists' },
+            { label: 'Nueva Reserva' }
+          ]}
+          className="mb-6"
+        />
+        
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Nueva Reserva</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -309,28 +331,42 @@ function BookingContent() {
                 {/* Date & Time */}
                 {step === 'datetime' && (
                   <>
-                    <CardTitle className="mb-4">Fecha y Hora</CardTitle>
-                    <div className="space-y-4">
-                      <Input
-                        type="date"
-                        label="Fecha del Evento"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                      <Input
-                        type="time"
-                        label="Hora de Inicio"
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                      />
-                      <div className="flex gap-3">
+                    <CardTitle className="mb-4">Selecciona Fecha y Hora</CardTitle>
+                    <div className="space-y-6">
+                      {/* Date Picker */}
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">1. Elige una fecha disponible</h3>
+                        {artistId && (
+                          <DatePicker
+                            artistId={artistId}
+                            selectedDate={selectedDate}
+                            onDateSelect={handleDateSelect}
+                            minDate={new Date()}
+                          />
+                        )}
+                      </div>
+
+                      {/* Time Slots */}
+                      {selectedDate && artistId && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-700 mb-3">2. Elige un horario</h3>
+                          <TimeSlots
+                            artistId={artistId}
+                            selectedDate={selectedDate}
+                            selectedTime={selectedTime}
+                            onTimeSelect={handleTimeSelect}
+                          />
+                        </div>
+                      )}
+
+                      {/* Navigation Buttons */}
+                      <div className="flex gap-3 pt-4">
                         <Button variant="outline" onClick={() => setStep('service')} fullWidth>
                           Atrás
                         </Button>
                         <Button
                           onClick={handleDateTimeNext}
-                          disabled={!selectedDate || !selectedTime}
+                          disabled={!selectedDate || !selectedTime || !selectedTimeSlot}
                           fullWidth
                         >
                           Continuar
@@ -402,13 +438,46 @@ function BookingContent() {
                         </div>
                       </div>
 
+                      {/* Política de Cancelación */}
+                      <div className="border-t border-gray-200 pt-4">
+                        <button
+                          onClick={() => setShowCancellationPolicy(!showCancellationPolicy)}
+                          className="flex items-center justify-between w-full text-left"
+                        >
+                          <h4 className="font-medium text-gray-900">Política de Cancelación</h4>
+                          <svg
+                            className={`h-5 w-5 text-gray-500 transition-transform ${showCancellationPolicy ? 'rotate-180' : ''}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showCancellationPolicy && (
+                          <div className="mt-3 space-y-2 text-sm text-gray-600">
+                            <p>
+                              • Puedes cancelar hasta 48 horas antes del evento sin costo.
+                            </p>
+                            <p>
+                              • Cancelaciones entre 24-48 horas tienen un cargo del 25%.
+                            </p>
+                            <p>
+                              • Cancelaciones con menos de 24 horas no son reembolsables.
+                            </p>
+                            <p>
+                              • El artista puede reagendar en caso de emergencia.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="flex gap-3">
                         <Button variant="outline" onClick={() => setStep('details')} fullWidth>
                           Atrás
                         </Button>
                         <Button
-                          onClick={handleSubmitBooking}
-                          loading={submitting}
+                          onClick={() => setShowConfirmModal(true)}
                           disabled={submitting}
                           fullWidth
                         >
@@ -429,10 +498,10 @@ function BookingContent() {
               <CardContent>
                 {/* Artist Info */}
                 <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-200">
-                  <Avatar src={artist.avatar} fallback={artist.nombre} size="md" />
+                  <Avatar src={artist.imagenPerfil} fallback={artist.nombre} size="md" />
                   <div>
                     <p className="font-medium text-gray-900">{artist.nombre}</p>
-                    <p className="text-sm text-gray-600">{artist.category}</p>
+                    <p className="text-sm text-gray-600">{artist.categoria}</p>
                   </div>
                 </div>
 
@@ -449,14 +518,16 @@ function BookingContent() {
                   <div className="mb-4 pb-4 border-b border-gray-200">
                     <p className="text-sm text-gray-600 mb-1">Fecha y Hora</p>
                     <p className="font-medium text-gray-900">
-                      {new Date(selectedDate).toLocaleDateString('es-MX', {
+                      {selectedDate.toLocaleDateString('es-MX', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
                       })}
                     </p>
-                    <p className="text-sm text-gray-600">{selectedTime}</p>
+                    <p className="text-sm text-gray-600">
+                      {selectedTime}
+                    </p>
                   </div>
                 )}
 
@@ -484,6 +555,25 @@ function BookingContent() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Confirmación */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmBooking}
+        title="Confirmar Reserva"
+        message={
+          selectedService && selectedDate && selectedTime
+            ? `¿Confirmas la reserva de "${selectedService.name}" con ${artist.nombre} el ${selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} a las ${selectedTime}?`
+            : '¿Estás seguro de que deseas crear esta reserva?'
+        }
+        confirmLabel="Sí, confirmar"
+        cancelLabel="Revisar"
+        variant="info"
+        isLoading={submitting}
+      />
+
+      <Footer />
     </div>
   );
 }

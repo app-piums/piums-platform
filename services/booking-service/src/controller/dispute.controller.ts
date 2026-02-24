@@ -49,7 +49,7 @@ export class DisputeController {
       const { id } = req.params;
       const userId = req.user!.userId;
 
-      const dispute = await disputeService.getDisputeById(id);
+      const dispute = await disputeService.getDisputeById(id as string);
 
       // Verificar permisos - solo las partes involucradas o staff pueden ver
       const isInvolved =
@@ -139,7 +139,7 @@ export class DisputeController {
       }
 
       const dispute = await disputeService.updateDisputeStatus(
-        id,
+        id as string,
         status as DisputeStatus,
         staffId,
         notes
@@ -177,7 +177,7 @@ export class DisputeController {
       }
 
       const dispute = await disputeService.resolveDispute({
-        disputeId: id,
+        disputeId: id as string,
         resolution: resolution as DisputeResolution,
         resolutionNotes,
         resolvedBy: staffId,
@@ -207,7 +207,7 @@ export class DisputeController {
       }
 
       // Verificar que el usuario está involucrado en la disputa
-      const dispute = await disputeService.getDisputeById(id);
+      const dispute = await disputeService.getDisputeById(id as string);
       const isInvolved =
         dispute.reportedBy === userId ||
         dispute.reportedAgainst === userId ||
@@ -229,7 +229,7 @@ export class DisputeController {
       }
 
       const disputeMessage = await disputeService.addMessage({
-        disputeId: id,
+        disputeId: id as string,
         senderId: userId,
         senderType,
         message,
@@ -261,7 +261,7 @@ export class DisputeController {
         return res.status(400).json({ error: "reason es requerido" });
       }
 
-      const dispute = await disputeService.escalateDispute(id, staffId, reason);
+      const dispute = await disputeService.escalateDispute(id as string, staffId, reason);
 
       res.json({
         message: "Disputa escalada",
@@ -291,7 +291,7 @@ export class DisputeController {
         return res.status(400).json({ error: "reason es requerido" });
       }
 
-      const dispute = await disputeService.closeDispute(id, staffId, reason);
+      const dispute = await disputeService.closeDispute(id as string, staffId, reason);
 
       res.json({
         message: "Disputa cerrada",

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Solicitud de Reserva</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .notification-badge {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .notification-badge svg {
+            width: 80px;
+            height: 80px;
+        }
+        .booking-code {
+            text-align: center;
+            background-color: #fff9e6;
+            border: 2px solid #ffd966;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .booking-code p {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .booking-code h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #d97706;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .client-info {
+            display: flex;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .client-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 15px;
+            background-color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .client-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 5px 0;
+        }
+        .client-email {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .details-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .detail-row {
+            margin-bottom: 15px;
+        }
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .detail-value {
+            color: #666;
+            font-size: 16px;
+        }
+        .price-highlight {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .price-highlight p {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .price-highlight h2 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .notes-box {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .notes-box p {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            color: #92400e;
+            font-size: 14px;
+        }
+        .notes-box div {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .button {
+            flex: 1;
+            display: inline-block;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+        }
+        .button-accept {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: #ffffff !important;
+        }
+        .button-reject {
+            background-color: #f3f4f6;
+            color: #374151 !important;
+            border: 2px solid #e5e7eb;
+        }
+        .urgent-notice {
+            background-color: #fef2f2;
+            border: 2px solid #fca5a5;
+           border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .urgent-notice p {
+            margin: 0;
+            color: #991b1b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #d97706;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Nueva Solicitud de Reserva</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Notification Icon -->
+            <div class="notification-badge">
+                <svg fill="#f59e0b" viewBox="0 0 24 24">
+                    <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </div>
+
+            <!-- Booking Code -->
+            <div class="booking-code">
+                <p>Código de Solicitud</p>
+                <h2>{{bookingCode}}</h2>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 30px;">
+                Hola <strong>{{artistName}}</strong>,<br><br>
+                Tienes una nueva solicitud de reserva. Por favor revisa los detalles y confirma tu disponibilidad.
+            </p>
+
+            <!-- Client Info -->
+            <div class="client-info">
+                <div class="client-avatar">{{clientInitial}}</div>
+                <div>
+                    <p class="client-name">{{clientName}}</p>
+                    <p class="client-email">{{clientEmail}}</p>
+                </div>
+            </div>
+
+            <!-- Booking Details -->
+            <div class="details-box">
+                <div class="detail-row">
+                    <div class="detail-label">Servicio Solicitado</div>
+                    <div class="detail-value">{{serviceName}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Fecha</div>
+                    <div class="detail-value">{{bookingDate}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Hora de Inicio</div>
+                    <div class="detail-value">{{bookingTime}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Duración</div>
+                    <div class="detail-value">{{duration}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Ubicación</div>
+                    <div class="detail-value">{{location}}</div>
+                </div>
+            </div>
+
+            <!-- Price -->
+            <div class="price-highlight">
+                <p>Ingreso por este servicio</p>
+                <h2>{{totalPrice}}</h2>
+            </div>
+
+            <!-- Client Notes -->
+            {{#if hasNotes}}
+            <div class="notes-box">
+                <p>Notas del Cliente:</p>
+                <div>{{clientNotes}}</div>
+            </div>
+            {{/if}}
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="{{acceptUrl}}" class="button button-accept">Aceptar Reserva</a>
+                <a href="{{rejectUrl}}" class="button button-reject">Rechazar</a>
+            </div>
+
+            <!-- Urgent Notice -->
+            <div class="urgent-notice">
+                <p>
+                    ⏰ <strong>Por favor responde dentro de 24 horas.</strong> Si no confirmas la reserva, se cancelará automáticamente y el cliente será notificado.
+                </p>
+            </div>
+
+            <!-- Additional Info -->
+            <p style="font-size: 14px; color: #999; margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
+                Puedes gestionar todas tus reservas desde tu panel de artista. Si tienes alguna pregunta sobre esta solicitud, contacta directamente al cliente o a nuestro equipo de soporte.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                © 2026 Piums Platform. Todos los derechos reservados.<br>
+                <a href="{{dashboardUrl}}">Panel de Artista</a> • 
+                <a href="{{bookingsUrl}}">Mis Reservas</a> • 
+                <a href="{{helpUrl}}">Soporte</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

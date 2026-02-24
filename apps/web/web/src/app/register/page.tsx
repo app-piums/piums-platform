@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { countries, type Country } from "../../lib/countries";
 import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../components/PasswordStrengthIndicator";
 import { useAuth } from "../../contexts/AuthContext";
+import { Footer } from "@/components/Footer";
 
 interface FieldError {
   nombre?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
+  role?: string;
   pais?: string;
   telefono?: string;
   terms?: string;
@@ -27,10 +29,14 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<'cliente' | 'artista'>('cliente');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [telefono, setTelefono] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt' | null>(null);
+  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
   
   // UI state
   const [errors, setErrors] = useState<FieldError>({});
@@ -75,6 +81,10 @@ export default function RegisterPage() {
         if (value !== password) 
           return "Las contraseñas no coinciden";
         return "";
+      case "role":
+        if (!value || typeof value !== 'string') 
+          return "Selecciona un tipo de cuenta";
+        return "";
       case "pais":
         if (!selectedCountry) 
           return "Selecciona tu país";
@@ -112,6 +122,7 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
+      role: validateField("role", role),
     };
     
     return !Object.values(step1Errors).some(error => error);
@@ -124,6 +135,7 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
+      role: validateField("role", role),
     };
 
     setErrors(step1Errors);
@@ -132,6 +144,7 @@ export default function RegisterPage() {
       email: true,
       password: true,
       confirmPassword: true,
+      role: true,
     });
 
     if (Object.values(step1Errors).some(error => error)) {
@@ -141,6 +154,57 @@ export default function RegisterPage() {
 
     setGeneralError("");
     setStep(2);
+  };
+
+  const requestLocationPermission = async () => {
+    try {
+      if (!navigator.geolocation) {
+        console.log('Geolocalización no disponible en este navegador');
+        return;
+      }
+
+      // Intentar obtener la ubicación actual (sin bloquear la UI)
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(location);
+          setLocationPermission('granted');
+          console.log('📍 Ubicación obtenida:', location);
+          
+          // TODO: Enviar la ubicación al backend
+          // fetch('/api/user/location', { 
+          //   method: 'POST', 
+          //   body: JSON.stringify(location),
+          //   credentials: 'include'
+          // })
+        },
+        (error) => {
+          console.log('ℹ️ Usuario no permitió ubicación:', error.message);
+          setLocationPermission('denied');
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } catch (error) {
+      console.error('Error solicitando ubicación:', error);
+    }
+  };
+
+  const handleSkipLocation = () => {
+    setShowLocationModal(false);
+    router.push("/dashboard");
+  };
+
+  const handleAcceptLocation = async () => {
+    await requestLocationPermission();
+    setShowLocationModal(false);
+    router.push("/dashboard");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,6 +217,7 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
+      role: validateField("role", role),
       pais: validateField("pais", ""),
       telefono: validateField("telefono", telefono),
       terms: validateField("terms", acceptTerms),
@@ -164,6 +229,7 @@ export default function RegisterPage() {
       email: true,
       password: true,
       confirmPassword: true,
+      role: true,
       pais: true,
       telefono: true,
       terms: true,
@@ -186,6 +252,7 @@ export default function RegisterPage() {
           nombre,
           email,
           password,
+          role,
           pais: selectedCountry?.name,
           codigoPais: selectedCountry?.dialCode,
           telefono,
@@ -208,10 +275,10 @@ export default function RegisterPage() {
       // ✅ Mostrar feedback de éxito
       setShowSuccess(true);
       
-      // Redirigir después de 1.5 segundos
+      // Mostrar modal de ubicación después de 1 segundo
       setTimeout(() => {
-        router.push("/");
-      }, 1500);
+        setShowLocationModal(true);
+      }, 1000);
     } catch (err: any) {
       setGeneralError(err.message);
     } finally {
@@ -220,7 +287,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 py-12 px-4 dark:from-zinc-950 dark:to-zinc-900">
+    <>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 py-12 px-4 dark:from-zinc-950 dark:to-zinc-900">
       <div className="w-full max-w-md">
         {/* Progress indicator */}
         <div className="mb-6">
@@ -396,6 +464,82 @@ export default function RegisterPage() {
                   )}
                 </div>
 
+                {/* Selector de Rol */}
+                <div>
+                  <label
+                    htmlFor="role"
+                    className="block text-sm font-medium text-zinc-700 mb-3 dark:text-zinc-300"
+                  >
+                    ¿Cómo quieres usar Piums? <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Opción Cliente */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRole('cliente');
+                        handleBlur('role', 'cliente');
+                      }}
+                      className={`relative rounded-lg border-2 p-4 text-left transition-all ${
+                        role === 'cliente'
+                          ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-800'
+                          : 'border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
+                      }`}
+                    >
+                      {role === 'cliente' && (
+                        <div className="absolute top-2 right-2">
+                          <svg className="h-5 w-5 text-zinc-900 dark:text-zinc-50" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="flex flex-col items-center text-center">
+                        <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 dark:bg-blue-900">
+                          <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">Cliente</span>
+                        <span className="text-xs text-zinc-600 mt-1 dark:text-zinc-400">Buscar y contratar artistas</span>
+                      </div>
+                    </button>
+
+                    {/* Opción Artista */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRole('artista');
+                        handleBlur('role', 'artista');
+                      }}
+                      className={`relative rounded-lg border-2 p-4 text-left transition-all ${
+                        role === 'artista'
+                          ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-800'
+                          : 'border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
+                      }`}
+                    >
+                      {role === 'artista' && (
+                        <div className="absolute top-2 right-2">
+                          <svg className="h-5 w-5 text-zinc-900 dark:text-zinc-50" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="flex flex-col items-center text-center">
+                        <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center mb-3 dark:bg-purple-900">
+                          <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                        </div>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">Artista</span>
+                        <span className="text-xs text-zinc-600 mt-1 dark:text-zinc-400">Ofrecer mis servicios</span>
+                      </div>
+                    </button>
+                  </div>
+                  {touched.role && errors.role && (
+                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.role}</p>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={handleNextStep}
@@ -555,6 +699,51 @@ export default function RegisterPage() {
           </form>
         </div>
       </div>
+
+      {/* Modal de Permiso de Ubicación */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 dark:bg-zinc-900">
+            <div className="text-center mb-6">
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 dark:bg-blue-900">
+                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-zinc-50">
+                Permiso de Ubicación
+              </h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                {role === 'artista' 
+                  ? 'Necesitamos tu ubicación para mostrarte oportunidades cerca de ti y ayudarte a gestionar tus servicios localmente.'
+                  : 'Activar tu ubicación nos ayudará a mostrarte los mejores artistas cerca de ti y mejorar tu experiencia.'}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleAcceptLocation}
+                className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                Permitir Ubicación
+              </button>
+              <button
+                onClick={handleSkipLocation}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                Ahora No
+              </button>
+            </div>
+
+            <p className="mt-4 text-xs text-center text-zinc-500 dark:text-zinc-500">
+              Puedes cambiar esto más tarde en la configuración
+            </p>
+          </div>
+        </div>
+      )}
+    <Footer />
+  </>
     </div>
   );
 }

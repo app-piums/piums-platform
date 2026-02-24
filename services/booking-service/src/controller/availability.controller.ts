@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { 
   checkReservationConflict, 
-  getArtistReservations 
+  getArtistReservations,
+  getMonthlyCalendar,
+  getDailyTimeSlots,
 } from '../services/availability.service';
 
 /**
@@ -77,6 +79,81 @@ export const getArtistAvailability = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting artist reservations:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * GET /api/availability/calendar
+ * Obtiene días ocupados y bloqueados para un mes específico
+ */
+export const getCalendar = async (req: Request, res: Response) => {
+  try {
+    const { artistId, year, month } = req.query;
+
+    if (!artistId || !year || !month) {
+      return res.status(400).json({
+        error: 'Missing required parameters: artistId, year, month',
+      });
+    }
+
+    const yearNum = parseInt(year as string);
+    const monthNum = parseInt(month as string);
+
+    if (isNaN(yearNum) || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      return res.status(400).json({
+        error: 'Invalid year or month',
+      });
+    }
+
+    const calendar = await getMonthlyCalendar(artistId as string, yearNum, monthNum);
+
+    return res.json({
+      artistId,
+      year: yearNum,
+      month: monthNum,
+      ...calendar,
+    });
+  } catch (error) {
+    console.error('Error getting calendar:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * GET /api/availability/time-slots
+ * Obtiene slots de tiempo disponibles para una fecha específica
+ */
+export const getTimeSlots = async (req: Request, res: Response) => {
+  try {
+    const { artistId, date } = req.query;
+
+    if (!artistId || !date) {
+      return res.status(400).json({
+        error: 'Missing required parameters: artistId, date',
+      });
+    }
+
+    const targetDate = new Date(date as string);
+
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({
+        error: 'Invalid date format',
+      });
+    }
+
+    const timeSlots = await getDailyTimeSlots(artistId as string, targetDate);
+
+    return res.json({
+      artistId,
+      ...timeSlots,
+    });
+  } catch (error) {
+    console.error('Error getting time slots:', error);
     return res.status(500).json({
       error: 'Internal server error',
     });

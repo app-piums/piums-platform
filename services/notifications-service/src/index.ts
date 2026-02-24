@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import healthRoutes from './routes/health.routes';
 import notificationRoutes from './routes/notification.routes';
+import bookingRoutes from './routes/booking.routes';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +40,7 @@ app.use((req, res, next) => {
 
 app.use(healthRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications/booking', bookingRoutes);
 
 // 404 handler
 app.use((req, res) => {

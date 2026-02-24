@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -52,37 +54,71 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       // TODO: Implementar llamadas reales al API
-      // Por ahora mostramos datos de ejemplo
+      // Por ahora mostramos datos de ejemplo adaptados al rol
       setTimeout(() => {
-        setStats({
-          bookingsCount: 5,
-          activeBookings: 2,
-          completedBookings: 3,
-          favoritesCount: 8,
-        });
-        setRecentActivity([
-          {
-            id: '1',
-            type: 'booking',
-            title: 'Nueva reserva confirmada',
-            description: 'Tu reserva con María García ha sido confirmada',
-            date: '2026-02-20',
-          },
-          {
-            id: '2',
-            type: 'review',
-            title: 'Nueva reseña recibida',
-            description: 'Juan Pérez dejó una reseña de 5 estrellas',
-            date: '2026-02-19',
-          },
-          {
-            id: '3',
-            type: 'favorite',
-            title: 'Artista agregado a favoritos',
-            description: 'Agregaste a Carlos López a tus favoritos',
-            date: '2026-02-18',
-          },
-        ]);
+        if (user?.role === 'artista') {
+          // Datos para artistas
+          setStats({
+            bookingsCount: 12, // Total de reservas recibidas
+            activeBookings: 3, // Reservas activas
+            completedBookings: 9, // Reservas completadas
+            favoritesCount: 24, // Clientes que te favoritearon
+          });
+          setRecentActivity([
+            {
+              id: '1',
+              type: 'booking',
+              title: 'Nueva solicitud de reserva',
+              description: 'Juan Pérez solicitó una reserva para el 25 de febrero',
+              date: '2026-02-20',
+            },
+            {
+              id: '2',
+              type: 'review',
+              title: 'Nueva reseña recibida',
+              description: 'María García dejó una reseña de 5 estrellas',
+              date: '2026-02-19',
+            },
+            {
+              id: '3',
+              type: 'favorite',
+              title: 'Nuevo seguidor',
+              description: 'Carlos López agregó tu perfil a favoritos',
+              date: '2026-02-18',
+            },
+          ]);
+        } else {
+          // Datos para clientes
+          setStats({
+            bookingsCount: 5,
+            activeBookings: 2,
+            completedBookings: 3,
+            favoritesCount: 8,
+          });
+          setRecentActivity([
+            {
+              id: '1',
+              type: 'booking',
+              title: 'Nueva reserva confirmada',
+              description: 'Tu reserva con María García ha sido confirmada',
+              date: '2026-02-20',
+            },
+            {
+              id: '2',
+              type: 'review',
+              title: 'Nueva reseña recibida',
+              description: 'Juan Pérez dejó una reseña de 5 estrellas',
+              date: '2026-02-19',
+            },
+            {
+              id: '3',
+              type: 'favorite',
+              title: 'Artista agregado a favoritos',
+              description: 'Agregaste a Carlos López a tus favoritos',
+              date: '2026-02-18',
+            },
+          ]);
+        }
         setLoadingData(false);
       }, 1000);
     } catch (error) {
@@ -109,14 +145,33 @@ export default function DashboardPage() {
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumbs 
+          items={[
+            { label: 'Inicio', href: '/' },
+            { label: 'Dashboard' }
+          ]}
+          className="mb-6"
+        />
+        
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Bienvenido, {user?.nombre}
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Aquí tienes un resumen de tu actividad en Piums
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Bienvenido, {user?.nombre}
+              </h1>
+              <p className="mt-2 text-gray-600">
+                {user?.role === 'artista' 
+                  ? 'Panel de control para gestionar tus servicios y reservas'
+                  : 'Aquí tienes un resumen de tu actividad en Piums'}
+              </p>
+            </div>
+            {user?.role && (
+              <Badge variant={user.role === 'artista' ? 'purple' : 'blue'}>
+                {user.role === 'artista' ? '🎵 Artista' : '👤 Cliente'}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -125,7 +180,9 @@ export default function DashboardPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Reservas Totales</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    {user?.role === 'artista' ? 'Reservas Recibidas' : 'Reservas Totales'}
+                  </p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">{stats.bookingsCount}</p>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -141,7 +198,9 @@ export default function DashboardPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Activas</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    {user?.role === 'artista' ? 'Pendientes' : 'Activas'}
+                  </p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">{stats.activeBookings}</p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -173,7 +232,9 @@ export default function DashboardPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Favoritos</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    {user?.role === 'artista' ? 'Seguidores' : 'Favoritos'}
+                  </p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">{stats.favoritesCount}</p>
                 </div>
                 <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -233,21 +294,44 @@ export default function DashboardPage() {
               <CardTitle className="mb-4">Acciones Rápidas</CardTitle>
               <CardContent>
                 <div className="space-y-3">
-                  <Link href="/artists">
-                    <Button fullWidth variant="primary">
-                      Buscar Artistas
-                    </Button>
-                  </Link>
-                  <Link href="/bookings">
-                    <Button fullWidth variant="outline">
-                      Ver Mis Reservas
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button fullWidth variant="ghost">
-                      Editar Perfil
-                    </Button>
-                  </Link>
+                  {user?.role === 'artista' ? (
+                    <>
+                      <Link href="/profile">
+                        <Button fullWidth variant="primary">
+                          Editar Mi Perfil Artístico
+                        </Button>
+                      </Link>
+                      <Link href="/bookings">
+                        <Button fullWidth variant="outline">
+                          Ver Solicitudes
+                        </Button>
+                      </Link>
+                      <Button fullWidth variant="ghost">
+                        Gestionar Servicios
+                      </Button>
+                      <Button fullWidth variant="ghost">
+                        Configurar Disponibilidad
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/artists">
+                        <Button fullWidth variant="primary">
+                          Buscar Artistas
+                        </Button>
+                      </Link>
+                      <Link href="/bookings">
+                        <Button fullWidth variant="outline">
+                          Ver Mis Reservas
+                        </Button>
+                      </Link>
+                      <Link href="/profile">
+                        <Button fullWidth variant="ghost">
+                          Editar Perfil
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -264,7 +348,10 @@ export default function DashboardPage() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">Consejo del día</h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      ¿Sabías que puedes guardar artistas en favoritos para encontrarlos más rápido?
+                      {user?.role === 'artista' 
+                        ? '💡 Completa tu perfil con fotos y reseñas para atraer más clientes'
+                        : '💡 ¿Sabías que puedes guardar artistas en favoritos para encontrarlos más rápido?'}
+      <Footer />
                     </p>
                   </div>
                 </div>

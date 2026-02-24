@@ -1,0 +1,22 @@
+{
+  "name": "@piums/sdk",
+  "version": "1.0.0",
+  "description": "Piums Platform SDK - TypeScript client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "piums",
+    "sdk"
+  ],
+  "author": "Piums Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "type": "commonjs"
+}

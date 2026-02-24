@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { bookingService } from "../services/booking.service";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { notifyBookingCreated } from "../utils/notifications";
+import { generateBookingPDF } from "../utils/pdf";
 import {
   createBookingSchema,
   updateBookingSchema,
@@ -25,6 +27,35 @@ export class BookingController {
       const booking = await bookingService.createBooking({
         ...validatedData,
         scheduledDate: new Date(validatedData.scheduledDate),
+      });
+
+      // Enviar notificaciones de forma asíncrona (no bloquea la respuesta)
+      // TODO: Obtener datos completos de cliente y artista desde users-service y artists-service
+      notifyBookingCreated({
+        bookingId: booking.id,
+        bookingCode: booking.code || `PIU-${new Date().getFullYear()}-${booking.id.slice(0, 6)}`,
+        clientId: booking.clientId,
+        clientName: 'Cliente', // TODO: Obtener desde users-service
+        clientEmail: 'client@example.com', // TODO: Obtener desde users-service
+        artistId: booking.artistId,
+        artistName: 'Artista', // TODO: Obtener desde artists-service
+        artistEmail: 'artist@example.com', // TODO: Obtener desde artists-service
+        artistCategory: 'Categoría', // TODO: Obtener desde artists-service
+        artistImage: '', // TODO: Obtener desde artists-service
+        serviceName: 'Servicio', // TODO: Obtener desde catalog-service
+        scheduledDate: booking.scheduledDate.toISOString(),
+        durationMinutes: booking.durationMinutes,
+        location: booking.location || 'Sin ubicación',
+        servicePrice: booking.servicePrice,
+        addonsPrice: booking.addonsPrice,
+        totalPrice: booking.totalPrice,
+        currency: booking.currency,
+        depositRequired: booking.depositRequired,
+        depositAmount: booking.depositAmount,
+        clientNotes: booking.clientNotes,
+      }).catch(err => {
+        console.error('Error sending booking notifications:', err);
+        // No lanzar el error para no bloquear la respuesta
       });
 
       res.status(201).json(booking);
@@ -341,6 +372,50 @@ export class BookingController {
       );
 
       res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Genera y descarga un PDF con los detalles de la reserva
+   * GET /api/bookings/:id/pdf
+   */
+  async downloadBookingPDF(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const booking = await bookingService.getBookingById(id);
+
+      // Verificar permisos: solo cliente, artista o admin pueden descargar
+      const userId = req.user?.id;
+      if (
+        userId &&
+        booking.clientId !== userId &&
+        booking.artistId !== userId
+      ) {
+        return res.status(403).json({ message: "No tienes permiso para descargar este PDF" });
+      }
+
+      // TODO: Obtener datos completos de cliente, artista y servicio
+      const bookingData = {
+        ...booking,
+        clientName: 'Cliente', // TODO: Obtener desde users-service
+        artistName: 'Artista', // TODO: Obtener desde artists-service
+        artistCategory: 'Categoría', // TODO: Obtener desde artists-service
+        serviceName: 'Servicio', // TODO: Obtener desde catalog-service
+      };
+
+      // Generar PDF
+      const pdfDoc = generateBookingPDF(bookingData);
+
+      // Configurar headers para descarga
+      const fileName = `reserva-${booking.code || booking.id.slice(0, 8)}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+      // Stream el PDF a la respuesta
+      pdfDoc.pipe(res);
+      pdfDoc.end();
     } catch (error) {
       next(error);
     }

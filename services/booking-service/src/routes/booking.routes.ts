@@ -219,4 +219,15 @@ router.get(
   bookingController.getBookingStats.bind(bookingController)
 );
 
+/**
+ * GET /api/bookings/:id/pdf
+ * Descargar PDF con detalles de la reserva
+ * Requiere autenticación (cliente o artista)
+ */
+router.get(
+  "/bookings/:id/pdf",
+  authenticateToken,
+  bookingController.downloadBookingPDF.bind(bookingController)
+);
+
 export default router;

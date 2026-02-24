@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Footer } from "@/components/Footer";
 
 interface FieldError {
   email?: string;
@@ -10,6 +12,7 @@ interface FieldError {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldError>({});
@@ -41,7 +44,6 @@ export default function LoginPage() {
     e.preventDefault();
     setGeneralError("");
 
-    // Validar todos los campos
     const newErrors: FieldError = {
       email: validateField("email", email),
       password: validateField("password", password),
@@ -53,7 +55,6 @@ export default function LoginPage() {
       password: true,
     });
 
-    // Si hay errores, no enviar
     if (Object.values(newErrors).some((error) => error)) {
       setGeneralError("Por favor corrige los errores antes de continuar");
       return;
@@ -68,6 +69,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -76,11 +78,19 @@ export default function LoginPage() {
         throw new Error(data.message || "Error al iniciar sesión");
       }
 
-      // Guardar token en localStorage
-      localStorage.setItem("token", data.token);
+      // Guardar token si viene en la respuesta (backup si no hay httpOnly cookie)
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // Actualizar estado global de autenticación
+      if (data.user) {
+        login(data.user);
+      }
+
+      // Redirigir al dashboard usando Next.js router (SPA navigation)
+      router.push("/dashboard");
       
-      // Redirigir al dashboard o home
-      router.push("/");
     } catch (err: any) {
       setGeneralError(err.message);
     } finally {
@@ -89,7 +99,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+    <>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
         <div>
           <h2 className="text-center text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -108,7 +119,6 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-4">
-            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -137,7 +147,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Contraseña */}
             <div>
               <label
                 htmlFor="password"
@@ -190,6 +199,8 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+    <Footer />
+  </>
     </div>
   );
 }

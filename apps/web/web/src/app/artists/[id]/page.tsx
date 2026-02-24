@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { Lightbox } from '@/components/Lightbox';
 import { Loading } from '@/components/Loading';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -19,148 +22,96 @@ export default function ArtistProfilePage() {
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     loadArtistData();
   }, [artistId]);
 
+  useEffect(() => {
+    if (activeTab === 'reviews' && reviews.length === 0) {
+      loadReviews(1);
+    }
+  }, [activeTab]);
+
   const loadArtistData = async () => {
     try {
       setLoading(true);
       
-      // Try to load from API
-      // const artistData = await sdk.getArtistById(artistId);
-      // const servicesData = await sdk.getServicesByArtist(artistId);
-      // const reviewsData = await sdk.getReviewsByArtist(artistId);
+      // Load artist profile
+      const artistData = await sdk.getArtist(artistId);
       
-      // Mock data for development
-      const mockArtist: ArtistProfile = {
-        id: artistId,
-        userId: 'user-1',
-        nombre: 'María García',
-        slug: 'maria-garcia',
-        bio: 'Fotógrafa profesional especializada en eventos sociales y bodas. Con más de 8 años de experiencia capturando momentos únicos e irrepetibles. Mi estilo se caracteriza por ser natural, emotivo y artístico.',
-        avatar: '',
-        coverPhoto: '',
-        category: 'Fotografía',
-        cityId: 'Ciudad de México',
-        experienceYears: 8,
-        rating: 4.8,
-        reviewsCount: 47,
-        bookingsCount: 156,
-        isVerified: true,
-        isActive: true,
-        isPremium: true,
-        createdAt: new Date().toISOString(),
-        certifications: [
-          {
-            id: '1',
-            artistId,
-            name: 'Certificación Internacional de Fotografía',
-            issuer: 'ICP',
-            issueDate: '2020-06-15',
-          }
-        ],
-        portfolio: [
-          {
-            id: '1',
-            artistId,
-            title: 'Boda en Jardín',
-            description: 'Sesión de boda al aire libre',
-            imageUrl: '',
-            order: 1,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            artistId,
-            title: 'XV Años',
-            description: 'Celebración de quinceaños',
-            imageUrl: '',
-            order: 2,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '3',
-            artistId,
-            title: 'Evento Corporativo',
-            description: 'Cobertura de evento empresarial',
-            imageUrl: '',
-            order: 3,
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      };
+      if (!artistData) {
+        setArtist(null);
+        setLoading(false);
+        return;
+      }
 
-      const mockServices: Service[] = [
-        {
-          id: '1',
-          artistId,
-          name: 'Cobertura de Boda Completa',
-          description: 'Incluye cobertura de 8 horas, entrega de 300+ fotos editadas, álbum digital',
-          basePrice: 15000,
-          duration: 480,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          artistId,
-          name: 'Sesión de XV Años',
-          description: 'Cobertura de 6 horas, 200+ fotos editadas, álbum digital',
-          basePrice: 10000,
-          duration: 360,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          artistId,
-          name: 'Evento Corporativo',
-          description: 'Cobertura de 4 horas, 150+ fotos editadas',
-          basePrice: 8000,
-          duration: 240,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-      ];
+      setArtist(artistData);
 
-      const mockReviews: Review[] = [
-        {
-          id: '1',
-          userId: 'user-2',
-          artistId,
-          rating: 5,
-          comment: '¡Excelente fotógrafa! Capturó todos los momentos especiales de nuestra boda. Muy profesional y amable.',
-          createdAt: '2026-02-15',
-        },
-        {
-          id: '2',
-          userId: 'user-3',
-          artistId,
-          rating: 5,
-          comment: 'Las fotos de los XV años de mi hija quedaron hermosas. Superó nuestras expectativas.',
-          createdAt: '2026-02-10',
-        },
-        {
-          id: '3',
-          userId: 'user-4',
-          artistId,
-          rating: 4,
-          comment: 'Muy buen trabajo en nuestro evento corporativo. Puntual y profesional.',
-          createdAt: '2026-02-05',
-        },
-      ];
-
-      setArtist(mockArtist);
-      setServices(mockServices);
-      setReviews(mockReviews);
+      // Load services in parallel
+      const servicesData = await sdk.getArtistServices(artistId);
+      setServices(servicesData);
     } catch (error) {
       console.error('Error loading artist:', error);
+      setArtist(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReviews = async (page: number) => {
+    try {
+      setLoadingReviews(true);
+      const { reviews: reviewsData, total, totalPages } = await sdk.getArtistReviews(artistId, page, 5);
+      
+      if (page === 1) {
+        setReviews(reviewsData);
+      } else {
+        setReviews(prev => [...prev, ...reviewsData]);
+      }
+      
+      setReviewsTotal(total);
+      setReviewsPage(page);
+      setReviewsTotalPages(totalPages);
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleLoadMoreReviews = () => {
+    if (reviewsPage < reviewsTotalPages) {
+      loadReviews(reviewsPage + 1);
+    }
+  };
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const nextImage = () => {
+    if (artist?.portfolio && lightboxIndex < artist.portfolio.length - 1) {
+      setLightboxIndex(lightboxIndex + 1);
+    }
+  };
+
+  const prevImage = () => {
+    if (lightboxIndex > 0) {
+      setLightboxIndex(lightboxIndex - 1);
     }
   };
 
@@ -193,11 +144,36 @@ export default function ArtistProfilePage() {
     );
   }
 
+  const portfolioImages = artist.portfolio?.map(item => ({
+    url: item.imageUrl || '/placeholder-image.jpg',
+    title: item.title,
+    description: item.description
+  })) || [];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
+      {/* Lightbox */}
+      {lightboxOpen && portfolioImages.length > 0 && (
+        <Lightbox
+          images={portfolioImages}
+          currentIndex={lightboxIndex}
+          onClose={closeLightbox}
+          onNext={nextImage}
+          onPrev={prevImage}
+        />
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumbs 
+          items={[
+            { label: 'Inicio', href: '/' },
+            { label: 'Artistas', href: '/artists' },
+            { label: artist?.nombre || 'Perfil' }
+          ]}
+          className="mb-6"
+        />
         {/* Cover Photo */}
         <div className="relative h-64 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg overflow-hidden mb-8">
           {artist.coverPhoto && (
@@ -328,82 +304,146 @@ export default function ArtistProfilePage() {
 
             {activeTab === 'services' && (
               <div className="space-y-4">
-                {services.map((service) => (
-                  <Card key={service.id}>
+                {services.length === 0 ? (
+                  <Card>
                     <CardContent>
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-blue-600">${service.basePrice.toLocaleString()}</p>
-                          <p className="text-sm text-gray-500">{Math.floor(service.duration / 60)} horas</p>
-                        </div>
-                      </div>
-                      <Button onClick={() => router.push(`/booking?artistId=${artist.id}&serviceId=${service.id}`)} fullWidth>
-                        Reservar
-                      </Button>
+                      <p className="text-gray-600 text-center py-8">
+                        Este artista aún no ha publicado servicios
+                      </p>
                     </CardContent>
                   </Card>
-                ))}
+                ) : (
+                  services.map((service) => (
+                    <Card key={service.id}>
+                      <CardContent>
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-blue-600">${service.basePrice.toLocaleString()}</p>
+                            <p className="text-sm text-gray-500">{Math.floor(service.duration / 60)} horas</p>
+                          </div>
+                        </div>
+                        <Button onClick={() => router.push(`/booking?artistId=${artist.id}&serviceId=${service.id}`)} fullWidth>
+                          Reservar
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             )}
 
             {activeTab === 'portfolio' && (
               <div className="grid grid-cols-2 gap-4">
-                {artist.portfolio && artist.portfolio.map((item) => (
-                  <Card key={item.id} padding="none" className="overflow-hidden">
-                    <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <p className="font-medium text-gray-900">{item.title}</p>
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      )}
-                    </div>
+                {artist.portfolio && artist.portfolio.length > 0 ? (
+                  artist.portfolio.map((item, index) => (
+                    <Card 
+                      key={item.id} 
+                      padding="none" 
+                      className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => openLightbox(index)}
+                    >
+                      <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="font-medium text-gray-900">{item.title}</p>
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                        )}
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <Card className="col-span-2">
+                    <CardContent>
+                      <p className="text-gray-600 text-center py-8">
+                        Este artista aún no ha publicado trabajos en su portafolio
+                      </p>
+                    </CardContent>
                   </Card>
-                ))}
+                )}
               </div>
             )}
 
             {activeTab === 'reviews' && (
               <div className="space-y-4">
-                {reviews.map((review) => (
-                  <Card key={review.id}>
+                {loadingReviews && reviews.length === 0 ? (
+                  <Card>
                     <CardContent>
-                      <div className="flex items-center space-x-3 mb-3">
-                        <Avatar fallback="U" size="sm" />
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">Usuario</p>
-                          <div className="flex items-center mt-1">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <svg
-                                key={i}
-                                className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
-                          </div>
-                        </div>
-                        <span className="text-sm text-gray-500">{review.createdAt}</span>
+                      <div className="flex justify-center py-8">
+                        <Loading />
                       </div>
-                      {review.comment && (
-                        <p className="text-gray-700">{review.comment}</p>
-                      )}
                     </CardContent>
                   </Card>
-                ))}
+                ) : reviews.length === 0 ? (
+                  <Card>
+                    <CardContent>
+                      <p className="text-gray-600 text-center py-8">
+                        Este artista aún no tiene reseñas
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    {reviews.map((review) => (
+                      <Card key={review.id}>
+                        <CardContent>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <Avatar fallback="U" size="sm" />
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">Usuario</p>
+                              <div className="flex items-center mt-1">
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <svg
+                                    key={i}
+                                    className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString('es-MX', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          {review.comment && (
+                            <p className="text-gray-700">{review.comment}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    
+                    {/* Load More Button */}
+                    {reviewsPage < reviewsTotalPages && (
+                      <div className="text-center pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={handleLoadMoreReviews}
+                          disabled={loadingReviews}
+                        >
+                          {loadingReviews ? 'Cargando...' : `Ver más reseñas (${reviewsTotal - reviews.length} restantes)`}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -429,6 +469,7 @@ export default function ArtistProfilePage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

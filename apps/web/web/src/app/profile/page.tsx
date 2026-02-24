@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -137,6 +139,15 @@ export default function ProfilePage() {
       <Navbar />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumbs 
+          items={[
+            { label: 'Inicio', href: '/' },
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Mi Perfil' }
+          ]}
+          className="mb-6"
+        />
+        
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Mi Perfil</h1>
 
         {/* Avatar Section */}
@@ -350,6 +361,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }

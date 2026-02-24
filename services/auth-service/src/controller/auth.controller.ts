@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
   try {
     // Validar datos con Zod
     const validatedData = registerSchema.parse(req.body);
-    const { nombre, email, password, pais, codigoPais, telefono } = validatedData;
+    const { nombre, email, password, role, pais, codigoPais, telefono } = validatedData;
 
     // 🔴 Validar unicidad de email
     const existingUser = mockUsers.find(u => u.email === email);
@@ -35,6 +35,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       nombre,
       email,
       passwordHash, // 🔴 Guardamos el hash
+      role, // 🔴 Guardamos el rol
       pais,
       telefono: `${codigoPais}${telefono}`,
       createdAt: new Date(),
@@ -48,7 +49,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     });
 
     // Generar tokens
-    const token = signToken({ id: user.id, email: user.email });
+    const token = signToken({ id: user.id, email: user.email, role: user.role });
     const refreshToken = signRefreshToken({ id: user.id });
 
     // No enviar el passwordHash al cliente
@@ -92,7 +93,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     logger.info("Login exitoso", "AUTH_CONTROLLER", { userId: user.id, email });
 
     // Generar tokens
-    const token = signToken({ id: user.id, email: user.email });
+    const token = signToken({ id: user.id, email: user.email, role: user.role });
     const refreshToken = signRefreshToken({ id: user.id });
 
     res.json({ 
@@ -102,6 +103,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         id: user.id,
         nombre: user.nombre,
         email: user.email,
+        role: user.role,
       }
     });
   } catch (error: any) {
@@ -169,6 +171,7 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
       userId: user.id,
       nombre: user.nombre,
       email: user.email,
+      role: user.role,
       pais: user.pais,
       telefono: user.telefono,
     });
