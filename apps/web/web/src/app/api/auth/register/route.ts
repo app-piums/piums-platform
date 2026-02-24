@@ -6,10 +6,10 @@ const FETCH_TIMEOUT = 10000; // 10 segundos
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nombre, email, password, pais, codigoPais, telefono } = body;
+    const { nombre, email, password, role, pais, codigoPais, telefono } = body;
 
     // Validación básica
-    if (!nombre || !email || !password || !pais || !telefono) {
+    if (!nombre || !email || !password || !role || !pais || !telefono) {
       return NextResponse.json(
         { message: "Todos los campos son requeridos" },
         { status: 400 }
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
     try {
-      // Llamar al auth-service con todos los campos
+      // Llamar directamente al auth-service
       const response = await fetch(`${AUTH_SERVICE_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
           nombre,
           email,
           password,
+          role,
           pais,
           codigoPais,
           telefono,

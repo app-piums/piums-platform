@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "No autenticado" }, { status: 401 });
     }
 
-    // Verificar token con el servicio de autenticación
-    const response = await fetch(`${AUTH_SERVICE_URL}/api/auth/verify`, {
+    // Verificar token directamente con auth-service
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
