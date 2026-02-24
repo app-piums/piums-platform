@@ -21,7 +21,7 @@ import { createArtistLimiter, updateLimiter, searchLimiter } from "../middleware
 const router = Router();
 
 // Búsqueda pública (con rate limit)
-router.get("/search", searchLimiter, searchArtists);
+router.get("/search", searchLimiter as any, searchArtists);
 
 // Perfil público
 router.get("/:id", getArtistProfile);
@@ -29,13 +29,13 @@ router.get("/:id/portfolio", getPortfolio);
 router.get("/:id/availability", getAvailability);
 
 // Rutas protegidas - Crear artista
-router.post("/", authenticateToken, createArtistLimiter, createArtist);
+router.post("/", authenticateToken, createArtistLimiter as any, createArtist);
 
 // Rutas protegidas - Mi perfil
 router.get("/me/profile", authenticateToken, getMyArtistProfile);
 
 // Rutas protegidas - Actualizar perfil (solo el dueño)
-router.put("/:id", authenticateToken, authorizeArtistOwner, updateLimiter, updateArtistProfile);
+router.put("/:id", authenticateToken, authorizeArtistOwner, updateLimiter as any, updateArtistProfile);
 router.delete("/:id", authenticateToken, authorizeArtistOwner, deleteArtistProfile);
 
 // Portfolio (solo el dueño puede modificar)

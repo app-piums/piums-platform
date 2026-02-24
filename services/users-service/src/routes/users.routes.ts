@@ -20,8 +20,8 @@ router.post("/", createUser); // Solo para uso interno
 // Rutas protegidas
 router.get("/me", authenticateToken, getMyProfile);
 router.get("/:id", authenticateToken, getUserProfile);
-router.put("/:id", authenticateToken, authorizeOwner, updateLimiter, updateUserProfile);
-router.delete("/:id", authenticateToken, authorizeOwner, deleteLimiter, deleteUserAccount);
+router.put("/:id", authenticateToken, authorizeOwner, updateLimiter as any, updateUserProfile);
+router.delete("/:id", authenticateToken, authorizeOwner, deleteLimiter as any, deleteUserAccount);
 
 // Direcciones
 router.post("/:id/addresses", authenticateToken, authorizeOwner, addAddress);

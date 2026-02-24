@@ -16,7 +16,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-app.use(apiLimiter);
+app.use(apiLimiter as any);
 
 // Rutas
 app.use("/health", healthRoutes);
