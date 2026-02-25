@@ -1,6 +1,6 @@
 {
   "name": "@piums/sdk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Piums Platform SDK - TypeScript client for API Gateway",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

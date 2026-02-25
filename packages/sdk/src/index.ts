@@ -160,6 +160,156 @@ export interface AvailabilityCheckResult {
   bookingId?: string;
 }
 
+// ==================== PAYMENT TYPES ====================
+
+export interface PaymentIntent {
+  id: string;
+  stripePaymentIntentId: string;
+  userId: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  clientSecret?: string;
+  paymentMethods: string[];
+  description?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Payment {
+  id: string;
+  paymentIntentId: string;
+  stripePaymentId: string;
+  userId: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentMethod: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface Refund {
+  id: string;
+  paymentId: string;
+  stripeRefundId: string;
+  amount: number;
+  currency: string;
+  reason?: string;
+  status: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface CreatePaymentIntentPayload {
+  bookingId?: string;
+  amount: number;
+  currency?: string;
+  description?: string;
+  paymentMethods?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ConfirmPaymentPayload {
+  paymentIntentId: string;
+}
+
+export interface CreateRefundPayload {
+  paymentId: string;
+  amount?: number;
+  reason?: string;
+  metadata?: Record<string, any>;
+}
+
+// ==================== REVIEW TYPES ====================
+
+export interface ReviewPhoto {
+  id: string;
+  reviewId: string;
+  url: string;
+  caption?: string;
+  order: number;
+}
+
+export interface ReviewResponse {
+  id: string;
+  reviewId: string;
+  artistId: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewDetailed {
+  id: string;
+  bookingId: string;
+  clientId: string;
+  artistId: string;
+  serviceId: string;
+  rating: number;
+  comment?: string;
+  status: string;
+  isVerified: boolean;
+  helpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+  photos?: ReviewPhoto[];
+  response?: ReviewResponse;
+}
+
+export interface CreateReviewPayload {
+  bookingId: string;
+  rating: number;
+  comment?: string;
+  photos?: Array<{ url: string; caption?: string }>;
+}
+
+export interface UpdateReviewPayload {
+  rating?: number;
+  comment?: string;
+}
+
+export interface MarkHelpfulPayload {
+  isHelpful: boolean;
+}
+
+export interface ReportReviewPayload {
+  reason: string;
+  description?: string;
+}
+
+export interface RespondReviewPayload {
+  message: string;
+}
+
+export interface FilterReviewsParams {
+  artistId?: string;
+  clientId?: string;
+  serviceId?: string;
+  rating?: number;
+  status?: string;
+  hasComment?: boolean;
+  hasPhotos?: boolean;
+  sortBy?: 'recent' | 'rating_high' | 'rating_low' | 'helpful';
+  page?: number;
+  limit?: number;
+}
+
+export interface ArtistRating {
+  artistId: string;
+  totalReviews: number;
+  averageRating: number;
+  rating1: number;
+  rating2: number;
+  rating3: number;
+  rating4: number;
+  rating5: number;
+  lastUpdated: string;
+}
+
 class PiumsSDK {
   private baseUrl: string;
 
@@ -396,6 +546,376 @@ class PiumsSDK {
       return await response.json();
     } catch (error) {
       console.error('Error fetching booking:', error);
+      return null;
+    }
+  }
+
+  // ==================== PAYMENT METHODS ====================
+
+  /**
+   * Crea un Payment Intent para procesar un pago
+   * @param payload Datos del pago
+   */
+  async createPaymentIntent(payload: CreatePaymentIntentPayload): Promise<PaymentIntent> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/payment-intents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirma un Payment Intent
+   * @param paymentIntentId ID del payment intent
+   */
+  async confirmPayment(paymentIntentId: string): Promise<PaymentIntent> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/payment-intents/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ paymentIntentId }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene un pago por ID
+   * @param paymentId ID del pago
+   */
+  async getPaymentById(paymentId: string): Promise<Payment | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/payments/${paymentId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching payment:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Crea un reembolso para un pago
+   * @param payload Datos del reembolso
+   */
+  async refundPayment(payload: CreateRefundPayload): Promise<Refund> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/refunds`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating refund:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene un reembolso por ID
+   * @param refundId ID del reembolso
+   */
+  async getRefundById(refundId: string): Promise<Refund | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/refunds/${refundId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching refund:', error);
+      return null;
+    }
+  }
+
+  // ==================== REVIEW METHODS ====================
+
+  /**
+   * Crea una nueva reseña para un booking completado
+   * @param payload Datos de la reseña
+   */
+  async createReview(payload: CreateReviewPayload): Promise<ReviewDetailed> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lista reseñas con filtros
+   * @param filters Filtros para la búsqueda
+   */
+  async listReviews(filters?: FilterReviewsParams): Promise<{ reviews: ReviewDetailed[]; total: number; page: number; totalPages: number }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters?.artistId) queryParams.append('artistId', filters.artistId);
+      if (filters?.clientId) queryParams.append('clientId', filters.clientId);
+      if (filters?.serviceId) queryParams.append('serviceId', filters.serviceId);
+      if (filters?.rating) queryParams.append('rating', filters.rating.toString());
+      if (filters?.status) queryParams.append('status', filters.status);
+      if (filters?.hasComment !== undefined) queryParams.append('hasComment', filters.hasComment.toString());
+      if (filters?.hasPhotos !== undefined) queryParams.append('hasPhotos', filters.hasPhotos.toString());
+      if (filters?.sortBy) queryParams.append('sortBy', filters.sortBy);
+      if (filters?.page) queryParams.append('page', filters.page.toString());
+      if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/reviews/reviews?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing reviews:', error);
+      return { reviews: [], total: 0, page: 1, totalPages: 0 };
+    }
+  }
+
+  /**
+   * Obtiene una reseña por ID
+   * @param reviewId ID de la reseña
+   */
+  async getReviewById(reviewId: string): Promise<ReviewDetailed | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching review:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Actualiza una reseña existente (solo autor, 24hrs después de creado)
+   * @param reviewId ID de la reseña
+   * @param payload Nuevos datos
+   */
+  async updateReview(reviewId: string, payload: UpdateReviewPayload): Promise<ReviewDetailed> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina una reseña (soft delete)
+   * @param reviewId ID de la reseña
+   */
+  async deleteReview(reviewId: string): Promise<{ message: string; review: ReviewDetailed }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una reseña como útil o no útil
+   * @param reviewId ID de la reseña
+   * @param isHelpful Si es útil o no
+   */
+  async markHelpful(reviewId: string, isHelpful: boolean): Promise<{ success: boolean; helpfulCount: number }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}/helpful`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ isHelpful }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking review as helpful:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reporta una reseña como inapropiada
+   * @param reviewId ID de la reseña
+   * @param payload Datos del reporte
+   */
+  async reportReview(reviewId: string, payload: ReportReviewPayload): Promise<{ message: string; reportId: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error reporting review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Responde a una reseña (solo artistas)
+   * @param reviewId ID de la reseña
+   * @param message Mensaje de respuesta
+   */
+  async respondToReview(reviewId: string, message: string): Promise<ReviewResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error responding to review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las estadísticas de rating de un artista
+   * @param artistId ID del artista
+   */
+  async getArtistRating(artistId: string): Promise<ArtistRating | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/artists/${artistId}/rating`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist rating:', error);
       return null;
     }
   }
