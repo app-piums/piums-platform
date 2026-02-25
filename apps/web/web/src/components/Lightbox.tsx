@@ -1,112 +1,77 @@
-import React, { useEffect } from 'react';
+'use client';
 
-interface LightboxProps {
+import React from 'react';
+import YARLightbox from 'yet-another-react-lightbox';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+import Counter from 'yet-another-react-lightbox/plugins/counter';
+import 'yet-another-react-lightbox/styles.css';
+import 'yet-another-react-lightbox/plugins/counter.css';
+
+interface LightboxComponentProps {
+  isOpen: boolean;
+  onClose: () => void;
+  slides: Array<{ src: string; alt?: string; title?: string; description?: string }>;
+  index: number;
+}
+
+export const LightboxComponent: React.FC<LightboxComponentProps> = ({
+  isOpen,
+  onClose,
+  slides,
+  index,
+}) => {
+  return (
+    <YARLightbox
+      open={isOpen}
+      close={onClose}
+      slides={slides}
+      index={index}
+      plugins={[Zoom, Counter]}
+      carousel={{
+        finite: slides.length <= 1,
+      }}
+      render={{
+        buttonPrev: slides.length <= 1 ? () => null : undefined,
+        buttonNext: slides.length <= 1 ? () => null : undefined,
+      }}
+      zoom={{
+        maxZoomPixelRatio: 3,
+        scrollToZoom: true,
+      }}
+      counter={{
+        container: { style: { top: 'unset', bottom: 0 } },
+      }}
+    />
+  );
+};
+
+// Keep backward compatibility with old Lightbox component
+interface LegacyLightboxProps {
   images: Array<{ url: string; title?: string; description?: string }>;
   currentIndex: number;
   onClose: () => void;
-  onNext: () => void;
-  onPrev: () => void;
+  onNext?: () => void;
+  onPrev?: () => void;
 }
 
-export const Lightbox: React.FC<LightboxProps> = ({
+export const Lightbox: React.FC<LegacyLightboxProps> = ({
   images,
   currentIndex,
   onClose,
-  onNext,
-  onPrev,
 }) => {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, onNext, onPrev]);
-
-  const currentImage = images[currentIndex];
+  const slides = images.map(img => ({
+    src: img.url,
+    alt: img.title || 'Image',
+    title: img.title,
+    description: img.description,
+  }));
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center"
-      onClick={onClose}
-    >
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
-        aria-label="Cerrar"
-      >
-        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      {/* Previous button */}
-      {currentIndex > 0 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrev();
-          }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-50 bg-black bg-opacity-50 rounded-full p-2"
-          aria-label="Anterior"
-        >
-          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-      )}
-
-      {/* Next button */}
-      {currentIndex < images.length - 1 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onNext();
-          }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-50 bg-black bg-opacity-50 rounded-full p-2"
-          aria-label="Siguiente"
-        >
-          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      )}
-
-      {/* Image container */}
-      <div
-        className="max-w-7xl max-h-screen w-full px-4 flex flex-col items-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Image */}
-        <div className="relative w-full flex items-center justify-center" style={{ maxHeight: 'calc(100vh - 150px)' }}>
-          <img
-            src={currentImage.url || '/placeholder-image.jpg'}
-            alt={currentImage.title || `Imagen ${currentIndex + 1}`}
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
-
-        {/* Image info */}
-        {(currentImage.title || currentImage.description) && (
-          <div className="mt-4 text-center text-white">
-            {currentImage.title && (
-              <h3 className="text-xl font-semibold mb-2">{currentImage.title}</h3>
-            )}
-            {currentImage.description && (
-              <p className="text-gray-300 text-sm">{currentImage.description}</p>
-            )}
-          </div>
-        )}
-
-        {/* Counter */}
-        <div className="mt-4 text-white text-sm">
-          {currentIndex + 1} / {images.length}
-        </div>
-      </div>
-    </div>
+    <LightboxComponent
+      isOpen={true}
+      onClose={onClose}
+      slides={slides}
+      index={currentIndex}
+    />
   );
 };

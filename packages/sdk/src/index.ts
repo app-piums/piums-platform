@@ -310,6 +310,43 @@ export interface ArtistRating {
   lastUpdated: string;
 }
 
+// ==================== CHAT TYPES ====================
+
+export interface Conversation {
+  id: string;
+  userId: string;
+  artistId: string;
+  bookingId?: string;
+  lastMessageAt: string;
+  messages?: Message[];
+  unreadCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderType: string; // user, artist
+  content: string;
+  type: string; // text, image, file
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface CreateConversationPayload {
+  artistId: string;
+  bookingId?: string;
+}
+
+export interface SendMessagePayload {
+  conversationId: string;
+  content: string;
+  type?: string;
+}
+
 class PiumsSDK {
   private baseUrl: string;
 
@@ -1179,6 +1216,216 @@ class PiumsSDK {
       return await response.json();
     } catch (error) {
       console.error('Error declining booking:', error);
+      throw error;
+    }
+  }
+
+  // ==================== CHAT METHODS ====================
+
+  /**
+   * Lista las conversaciones del usuario
+   * @param page Página actual
+   * @param limit Cantidad por página
+   */
+  async getConversations(page: number = 1, limit: number = 20): Promise<{
+    conversations: Conversation[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/chat/conversations?${params.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene una conversación específica con sus mensajes
+   * @param conversationId ID de la conversación
+   */
+  async getConversation(conversationId: string): Promise<{ conversation: Conversation }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/conversations/${conversationId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crea una nueva conversación
+   * @param payload Datos de la conversación
+   */
+  async createConversation(payload: CreateConversationPayload): Promise<{ conversation: Conversation }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene los mensajes de una conversación
+   * @param conversationId ID de la conversación
+   * @param page Página actual
+   * @param limit Cantidad por página
+   */
+  async getMessages(conversationId: string, page: number = 1, limit: number = 50): Promise<{
+    messages: Message[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/chat/messages/${conversationId}?${params.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envía un mensaje (REST API - también disponible via WebSocket)
+   * @param payload Datos del mensaje
+   */
+  async sendMessage(payload: SendMessagePayload): Promise<{ message: Message }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca un mensaje como leído
+   * @param messageId ID del mensaje
+   */
+  async markMessageAsRead(messageId: string): Promise<{ message: Message }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/messages/${messageId}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una conversación completa como leída
+   * @param conversationId ID de la conversación
+   */
+  async markConversationAsRead(conversationId: string): Promise<{ message: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/conversations/${conversationId}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el contador de mensajes no leídos
+   */
+  async getUnreadCount(): Promise<{ unreadCount: number }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/messages/unread-count`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
       throw error;
     }
   }
