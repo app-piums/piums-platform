@@ -49,6 +49,28 @@ export class NotificationController {
     }
   }
 
+  /**
+   * Endpoint simple para enviar emails con templates
+   * Uso interno para comunicación entre servicios
+   */
+  async sendTemplateEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { to, template, variables } = req.body;
+
+      if (!to || !template) {
+        return res.status(400).json({
+          error: 'Los campos "to" y "template" son requeridos'
+        });
+      }
+
+      const result = await notificationService.sendTemplateEmail(to, template, variables || {});
+
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ============================================================================
   // Notification Queries
   // ============================================================================

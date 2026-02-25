@@ -176,6 +176,72 @@ export class NotificationService {
     }
   }
 
+  /**
+   * Método simple para enviar emails con templates HTML desde filesystem
+   * Uso interno para comunicación entre servicios
+   */
+  async sendTemplateEmail(to: string, template: string, variables: Record<string, any>) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      // Mapeo de templates a archivos HTML
+      const templateFiles: Record<string, string> = {
+        'password-reset': 'password-reset.html',
+        'email-verification': 'email-verification.html',
+        'payment-confirmation': 'payment-confirmation.html',
+        'review-request': 'review-request.html',
+      };
+
+      const templateFile = templateFiles[template];
+      if (!templateFile) {
+        throw new AppError(`Template '${template}' no encontrado`, 404);
+      }
+
+      // Leer archivo de template
+      const templatePath = path.join(__dirname, '../templates', templateFile);
+      if (!fs.existsSync(templatePath)) {
+        throw new AppError(`Archivo de template '${templateFile}' no encontrado`, 404);
+      }
+
+      let htmlContent = fs.readFileSync(templatePath, 'utf-8');
+
+      // Reemplazar variables
+      Object.keys(variables).forEach(key => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        htmlContent = htmlContent.replace(regex, variables[key] || '');
+      });
+
+      // Determinar subject según template
+      const subjects: Record<string, string> = {
+        'password-reset': 'Recupera tu contraseña - Piums',
+        'email-verification': '¡Bienvenido a Piums! Verifica tu email',
+        'payment-confirmation': 'Confirmación de pago - Piums',
+        'review-request': '¿Cómo fue tu experiencia? Comparte tu opinión',
+      };
+
+      const subject = subjects[template] || 'Notificación - Piums';
+
+      // Enviar email
+      const result = await emailProvider.sendEmail({
+        to,
+        subject,
+        html: htmlContent,
+      });
+
+      logger.info('Template email sent', 'NOTIFICATION_SERVICE', {
+        to,
+        template,
+        success: result.success,
+      });
+
+      return result;
+    } catch (error: any) {
+      logger.error('Failed to send template email', 'NOTIFICATION_SERVICE', error);
+      throw error;
+    }
+  }
+
   // ============================================================================
   // Process Notification (actually send via provider)
   // ============================================================================

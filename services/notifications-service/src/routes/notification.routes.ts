@@ -14,6 +14,16 @@ const router = Router();
 // ============================================================================
 
 /**
+ * POST /api/notifications/send-template-email
+ * Send email from template (internal use, no auth required)
+ * Used by other microservices like auth-service
+ */
+router.post(
+  '/send-template-email',
+  notificationController.sendTemplateEmail.bind(notificationController)
+);
+
+/**
  * POST /api/notifications/send
  * Send a single notification
  * Auth: Required
