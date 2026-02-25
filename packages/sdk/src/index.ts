@@ -1017,6 +1017,171 @@ class PiumsSDK {
       return null;
     }
   }
+
+  // ==================== ARTIST DASHBOARD METHODS ====================
+
+  /**
+   * Obtiene el perfil del artista autenticado (para dashboard)
+   */
+  async getArtistProfile(): Promise<ArtistProfile> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.artist;
+    } catch (error) {
+      console.error('Error fetching artist profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza el perfil del artista autenticado
+   * @param data Datos a actualizar
+   */
+  async updateArtistProfile(data: Partial<ArtistProfile>): Promise<ArtistProfile> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.artist;
+    } catch (error) {
+      console.error('Error updating artist profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las estadísticas del dashboard del artista
+   */
+  async getArtistStats(): Promise<{
+    artistId: string;
+    bookings: { total: number; thisMonth: number; pending: number; confirmed: number; completed: number };
+    revenue: { total: number; thisMonth: number; currency: string };
+    rating: { average: number; totalReviews: number };
+    upcomingBookings: Booking[];
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/stats`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.stats;
+    } catch (error) {
+      console.error('Error fetching artist stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las reservas recibidas por el artista
+   * @param filters Filtros de búsqueda
+   */
+  async getArtistBookings(filters?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ bookings: Booking[]; total: number; page: number; totalPages: number; artistId: string }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const url = `${this.baseUrl}/artists/dashboard/me/bookings${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist bookings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Acepta una reserva (solo artistas)
+   * @param bookingId ID de la reserva
+   */
+  async acceptBooking(bookingId: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/accept`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error accepting booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rechaza una reserva (solo artistas)
+   * @param bookingId ID de la reserva
+   * @param reason Razón del rechazo (opcional)
+   */
+  async declineBooking(bookingId: string, reason?: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/decline`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error declining booking:', error);
+      throw error;
+    }
+  }
 }
 
 export const sdk = new PiumsSDK();

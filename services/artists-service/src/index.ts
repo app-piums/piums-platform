@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import artistsRoutes from "./routes/artists.routes";
+import artistDashboardRoutes from "./routes/artist-dashboard.routes";
 import healthRoutes from "./routes/health.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
@@ -20,6 +21,7 @@ app.use(apiLimiter);
 
 // Rutas
 app.use("/health", healthRoutes);
+app.use("/api/artists/dashboard", artistDashboardRoutes);
 app.use("/api/artists", artistsRoutes);
 
 // Middleware de error handling (debe ir al final)
