@@ -7,6 +7,7 @@ import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { ArtistCard } from '@/components/ArtistCard';
+import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -152,8 +153,6 @@ export default function ArtistsPage() {
   };
 
   const hasActiveFilters = searchQuery || selectedCategory || selectedCity;
-  const startResult = (page - 1) * 12 + 1;
-  const endResult = Math.min(page * 12, total);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -250,13 +249,6 @@ export default function ArtistsPage() {
           </div>
         ) : (
           <>
-            {/* Results count indicator */}
-            {total > 0 && (
-              <div className="mb-4 text-sm text-gray-600">
-                Mostrando {startResult}-{endResult} de {total} resultados
-              </div>
-            )}
-
             {/* Artists Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {artists?.map((artist) => (
@@ -266,79 +258,14 @@ export default function ArtistsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Results info on left */}
-                <div className="text-sm text-gray-600">
-                  Página {page} de {totalPages}
-                </div>
-
-                {/* Pagination controls in center */}
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={() => handlePageChange(page - 1)}
-                    disabled={page === 1}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Anterior
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                      // Show first page, last page, current page and neighbors
-                      let pageNum: number;
-                      
-                      if (totalPages <= 7) {
-                        // Show all pages
-                        pageNum = i + 1;
-                      } else if (page <= 4) {
-                        // Near start
-                        if (i < 5) pageNum = i + 1;
-                        else if (i === 5) return <span key="ellipsis1" className="px-2 text-gray-400">...</span>;
-                        else pageNum = totalPages;
-                      } else if (page >= totalPages - 3) {
-                        // Near end
-                        if (i === 0) pageNum = 1;
-                        else if (i === 1) return <span key="ellipsis1" className="px-2 text-gray-400">...</span>;
-                        else pageNum = totalPages - (6 - i);
-                      } else {
-                        // Middle
-                        if (i === 0) pageNum = 1;
-                        else if (i === 1) return <span key="ellipsis1" className="px-2 text-gray-400">...</span>;
-                        else if (i === 5) return <span key="ellipsis2" className="px-2 text-gray-400">...</span>;
-                        else if (i === 6) pageNum = totalPages;
-                        else pageNum = page + i - 3;
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`min-w-[2.5rem] px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            pageNum === page
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  
-                  <Button
-                    onClick={() => handlePageChange(page + 1)}
-                    disabled={page === totalPages}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Siguiente
-                  </Button>
-                </div>
-
-                {/* Empty space for balance on right */}
-                <div className="hidden sm:block w-32"></div>
-              </div>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={total}
+                itemsPerPage={12}
+                onPageChange={handlePageChange}
+                showResultsInfo={true}
+              />
             )}
           </>
         )}

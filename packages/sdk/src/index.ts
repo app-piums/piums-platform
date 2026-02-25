@@ -550,6 +550,104 @@ class PiumsSDK {
     }
   }
 
+  /**
+   * Lista todas las reservas del usuario autenticado
+   * @param filters Filtros opcionales
+   */
+  async listBookings(filters?: {
+    status?: string;
+    artistId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ bookings: Booking[]; total: number; page: number; totalPages: number }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.artistId) params.append('artistId', filters.artistId);
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const url = `${this.baseUrl}/booking/my-bookings${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing bookings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancela una reserva
+   * @param bookingId ID de la reserva
+   * @param reason Razón de cancelación (opcional)
+   */
+  async cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza la fecha de una reserva
+   * @param bookingId ID de la reserva
+   * @param scheduledDate Nueva fecha
+   */
+  async updateBookingDate(
+    bookingId: string,
+    scheduledDate: string
+  ): Promise<Booking> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ scheduledDate }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating booking date:', error);
+      throw error;
+    }
+  }
+
   // ==================== PAYMENT METHODS ====================
 
   /**
