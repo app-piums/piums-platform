@@ -1,0 +1,39 @@
+import { Router } from 'express';
+import { isAdmin } from '../middleware/isAdmin';
+import {
+  getStats,
+  getUsers,
+  toggleBlockUser,
+  getArtists,
+  verifyArtist,
+  getBookings,
+  getReports,
+  resolveReport,
+  getUserDetail
+} from '../controller/admin.controller';
+
+const router = Router();
+
+// Todos los endpoints requieren rol admin
+router.use(isAdmin);
+
+// Stats
+router.get('/stats', getStats);
+
+// Users management
+router.get('/users', getUsers);
+router.get('/users/:id', getUserDetail);
+router.patch('/users/:id/block', toggleBlockUser);
+
+// Artists management
+router.get('/artists', getArtists);
+router.patch('/artists/:id/verify', verifyArtist);
+
+// Bookings overview
+router.get('/bookings', getBookings);
+
+// Reports management
+router.get('/reports', getReports);
+router.patch('/reports/:id/resolve', resolveReport);
+
+export default router;

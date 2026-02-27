@@ -347,6 +347,96 @@ export interface SendMessagePayload {
   type?: string;
 }
 
+// ==================== ADMIN TYPES ====================
+
+export interface AdminStats {
+  totalUsers: number;
+  totalArtists: number;
+  totalBookings: number;
+  totalRevenue: number;
+  recentUsers: number;
+  bookingsThisMonth: number;
+  revenueThisMonth: number;
+  pendingReports: number;
+  bookingsByMonth: Array<{ month: string; count: number }>;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+  isBlocked: boolean;
+  isVerified: boolean;
+  createdAt: string;
+  lastLogin?: string;
+  bookingsCount?: number;
+  reviewsCount?: number;
+  reportsCount?: number;
+}
+
+export interface AdminArtist extends AdminUser {
+  category?: string;
+  rating?: number;
+  reviewsCount?: number;
+  bookingsCount?: number;
+}
+
+export interface AdminBooking {
+  id: string;
+  userId: string;
+  artistId: string;
+  userName: string;
+  artistName: string;
+  service: string;
+  date: string;
+  status: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface AdminReport {
+  id: string;
+  type: string;
+  reporterId: string;
+  reporterName: string;
+  targetId: string;
+  targetType: string;
+  reason: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  content?: string;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminArtistsResponse {
+  artists: AdminArtist[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminBookingsResponse {
+  bookings: AdminBooking[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminReportsResponse {
+  reports: AdminReport[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 class PiumsSDK {
   private baseUrl: string;
 
@@ -1426,6 +1516,237 @@ class PiumsSDK {
       return await response.json();
     } catch (error) {
       console.error('Error fetching unread count:', error);
+      throw error;
+    }
+  }
+
+  // ==================== ADMIN METHODS ====================
+
+  /**
+   * Obtiene estadísticas generales del admin
+   * (Solo admins)
+   */
+  async getAdminStats(): Promise<AdminStats> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/stats`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de usuarios
+   * (Solo admins)
+   */
+  async getAdminUsers(params?: { page?: number; limit?: number; search?: string; role?: string }): Promise<AdminUsersResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.role) queryParams.append('role', params.role);
+
+      const response = await fetch(`${this.baseUrl}/admin/users?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin users:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene detalle de un usuario
+   * (Solo admins)
+   */
+  async getAdminUserDetail(userId: string): Promise<AdminUser> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/users/${userId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user detail:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bloquea o desbloquea un usuario
+   * (Solo admins)
+   */
+  async toggleBlockUser(userId: string, isBlocked: boolean, reason?: string): Promise<{ message: string; user: AdminUser }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/users/${userId}/block`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isBlocked, reason })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error toggling user block:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de artistas
+   * (Solo admins)
+   */
+  async getAdminArtists(params?: { page?: number; limit?: number; search?: string; verified?: string }): Promise<AdminArtistsResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.verified !== undefined) queryParams.append('verified', params.verified);
+
+      const response = await fetch(`${this.baseUrl}/admin/artists?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin artists:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica o desverifica un artista
+   * (Solo admins)
+   */
+  async verifyArtist(artistId: string, isVerified: boolean): Promise<{ message: string; artist: AdminArtist }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/artists/${artistId}/verify`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isVerified })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error verifying artist:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de todas las reservas
+   * (Solo admins)
+   */
+  async getAdminBookings(params?: { page?: number; limit?: number; status?: string }): Promise<AdminBookingsResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+
+      const response = await fetch(`${this.baseUrl}/admin/bookings?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin bookings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de reportes
+   * (Solo admins)
+   */
+  async getAdminReports(params?: { page?: number; limit?: number; status?: string }): Promise<AdminReportsResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+
+      const response = await fetch(`${this.baseUrl}/admin/reports?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin reports:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resuelve un reporte
+   * (Solo admins)
+   */
+  async resolveReport(reportId: string, action: 'approve' | 'reject' | 'delete_content', reason?: string): Promise<{ message: string; reportId: string; action: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/reports/${reportId}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action, reason })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error resolving report:', error);
       throw error;
     }
   }

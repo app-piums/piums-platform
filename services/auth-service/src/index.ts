@@ -1,22 +1,44 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import session from "express-session";
+import passport from "passport";
 import authRoutes from "./routes/auth.routes";
+import adminRoutes from "./routes/admin.routes";
+import oauthRoutes from "./routes/oauth.routes";
 import healthRoutes from "./routes/health.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { logger } from "./utils/logger";
+import { configureGoogleStrategy } from "./strategies/google.strategy";
+import { configureFacebookStrategy } from "./strategies/facebook.strategy";
 
 const app = express();
 
+// Configurar estrategias OAuth
+configureGoogleStrategy();
+configureFacebookStrategy();
+
 // Middlewares globales
-app.use(cors());
+app.use(cors({ credentials: true, origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'] }));
 app.use(express.json());
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'piums-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(apiLimiter); // Rate limiting general
 
 // Rutas
 app.use("/health", healthRoutes);
 app.use("/auth", authRoutes);
+app.use("/auth", oauthRoutes); // OAuth routes under /auth
+app.use("/admin", adminRoutes);
 
 // Middleware de error handling (debe ir al final)
 app.use(errorHandler);
