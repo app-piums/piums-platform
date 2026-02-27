@@ -2,31 +2,55 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useInView } from 'react-intersection-observer';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { ArtistCard } from '@/components/ArtistCard';
-import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { sdk } from '@piums/sdk';
-import type { Artist, SearchResults } from '@piums/sdk';
+import { useInfiniteArtists, type ArtistsFilters } from '@/hooks/useInfiniteArtists';
 
 export default function ArtistsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
+  
+  // Filters for the query
+  const filters: ArtistsFilters = {
+    q: searchQuery || undefined,
+    category: selectedCategory || undefined,
+    cityId: selectedCity || undefined,
+  };
+
+  // Use infinite query
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteArtists(filters);
+
+  // Intersection observer for infinite scroll
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: '100px',
+  });
+
+  // Auto-fetch when scroll into view
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Categories (hardcoded for now)
   const categories = [
@@ -45,16 +69,14 @@ export default function ArtistsPage() {
     { value: '3', label: 'Monterrey' },
   ];
 
-  // Update URL with current filters and page
-  const updateURL = (params: { page?: number; category?: string; location?: string; q?: string }) => {
+  // Update URL with current filters
+  const updateURL = (params: { category?: string; location?: string; q?: string }) => {
     const urlParams = new URLSearchParams();
     
-    const currentPage = params.page ?? page;
     const currentCategory = params.category ?? selectedCategory;
     const currentLocation = params.location ?? selectedCity;
     const currentQuery = params.q ?? searchQuery;
     
-    if (currentPage > 1) urlParams.set('page', currentPage.toString());
     if (currentCategory) urlParams.set('category', currentCategory);
     if (currentLocation) urlParams.set('location', currentLocation);
     if (currentQuery) urlParams.set('q', currentQuery);
@@ -67,92 +89,29 @@ export default function ArtistsPage() {
     setSearchQuery('');
     setSelectedCategory('');
     setSelectedCity('');
-    setPage(1);
     router.push('/artists');
-  };
-
-  useEffect(() => {
-    loadArtists();
-  }, [page, selectedCategory, selectedCity]);
-
-  const loadArtists = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const params: any = {
-        page,
-        limit: 12,
-      };
-      
-      if (selectedCategory) params.category = selectedCategory;
-      if (selectedCity) params.cityId = selectedCity;
-      if (searchQuery) params.q = searchQuery;
-
-      const result = await sdk.getArtists(params);
-      setArtists(result.artists);
-      setTotalPages(result.totalPages);
-      setTotal(result.total || result.artists.length);
-      
-      // Update URL after successful load
-      updateURL({});
-    } catch (err: any) {
-      console.error('Error loading artists:', err);
-      
-      // Mock data for development
-      const mockTotal = 48;
-      const mockArtists: Artist[] = Array.from({ length: 12 }, (_, i) => ({
-        id: `artist-${(page - 1) * 12 + i + 1}`,
-        userId: `user-${i + 1}`,
-        nombre: `Artista ${(page - 1) * 12 + i + 1}`,
-        slug: `artista-${i + 1}`,
-        bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.',
-        category: categories[Math.floor(Math.random() * (categories.length - 1)) + 1].label,
-        rating: 4 + Math.random(),
-        reviewsCount: Math.floor(Math.random() * 50) + 5,
-        bookingsCount: Math.floor(Math.random() * 100) + 10,
-        experienceYears: Math.floor(Math.random() * 10) + 2,
-        isVerified: Math.random() > 0.5,
-        isActive: true,
-        isPremium: Math.random() > 0.7,
-        createdAt: new Date().toISOString(),
-        cityId: 'Ciudad de México',
-      }));
-      
-      setArtists(mockArtists);
-      setTotalPages(Math.ceil(mockTotal / 12));
-      setTotal(mockTotal);
-      
-      // Update URL even with mock data
-      updateURL({});
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1);
-    updateURL({ page: 1 });
+    updateURL({});
   };
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
-    setPage(1);
+    updateURL({ category: value });
   };
 
   const handleCityChange = (value: string) => {
     setSelectedCity(value);
-    setPage(1);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    updateURL({ page: newPage });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateURL({ location: value });
   };
 
   const hasActiveFilters = searchQuery || selectedCategory || selectedCity;
+
+  // Flatten all pages into a single array of artists
+  const allArtists = data?.pages.flatMap((page) => page.artists) ?? [];
+  const totalArtists = data?.pages[0]?.total ?? 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -230,16 +189,16 @@ export default function ArtistsPage() {
         </div>
 
         {/* Results */}
-        {loading ? (
+        {isLoading && allArtists.length === 0 ? (
           <Loading />
-        ) : error ? (
+        ) : isError ? (
           <div className="text-center py-12">
-            <p className="text-red-600">{error}</p>
-            <Button onClick={loadArtists} className="mt-4">
+            <p className="text-red-600">Error al cargar artistas</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
               Intentar de nuevo
             </Button>
           </div>
-        ) : !artists || artists.length === 0 ? (
+        ) : allArtists.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -251,21 +210,38 @@ export default function ArtistsPage() {
           <>
             {/* Artists Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {artists?.map((artist) => (
+              {allArtists.map((artist) => (
                 <ArtistCard key={artist.id} artist={artist} />
               ))}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                totalItems={total}
-                itemsPerPage={12}
-                onPageChange={handlePageChange}
-                showResultsInfo={true}
-              />
+            {/* Infinite Scroll Trigger */}
+            {hasNextPage && (
+              <div ref={loadMoreRef} className="flex justify-center py-8">
+                {isFetchingNextPage ? (
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-900"></div>
+                    <span className="text-gray-600">Cargando más artistas...</span>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => fetchNextPage()}
+                    variant="outline"
+                    className="px-8"
+                  >
+                    Cargar más
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* End of results indicator */}
+            {!hasNextPage && allArtists.length > 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm">
+                  Has visto todos los {totalArtists} artistas disponibles
+                </p>
+              </div>
             )}
           </>
         )}
