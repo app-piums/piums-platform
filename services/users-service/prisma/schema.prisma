@@ -1,0 +1,332 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProfileType {
+  USER      // Usuario cliente regular
+  ARTIST    // Usuario artista
+  BOTH      // Usuario que es cliente y artista
+}
+
+enum ProfileVisibility {
+  PUBLIC    // Perfil visible para todos
+  PRIVATE   // Perfil visible solo para contactos/reservas
+  HIDDEN    // Perfil oculto
+}
+
+model User {
+  id        String   @id @default(uuid())
+  authId    String   @unique // Referencia al user ID del auth-service
+  email     String   @unique
+  nombre    String
+  avatar    String?
+  bio       String?
+  telefono  String?
+  pais      String?
+  
+  // Relación con perfil público consolidado
+  profile   Profile?
+  
+  // Preferencias
+  language  String   @default("es")
+  timezone  String   @default("America/Mexico_City")
+  notificationsEnabled Boolean @default(true)
+  emailNotifications   Boolean @default(true)
+  smsNotifications     Boolean @default(false)
+  pushNotifications    Boolean @default(true)
+  
+  // Direcciones
+  addresses Address[]
+  
+  // Relaciones sociales
+  favorites Favorite[]
+  following Follow[] @relation("UserFollows")
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete
+  lastLoginAt DateTime?
+  
+  @@index([authId])
+  @@index([email])
+  @@map("users")
+}
+
+// ============================================================================
+// Profile - Perfil público consolidado (para users y artists)
+// ============================================================================
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique // Relación 1:1 con User
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Identificación externa (para artists principalmente)
+  artistId    String?  @unique // Si es artista, referencia a artists-service
+  
+  // Información pública básica
+  displayName String   // Nombre público a mostrar
+  slug        String   @unique // URL-friendly: @username
+  avatar      String?
+  coverPhoto  String?
+  bio         String?  @db.Text
+  tagline     String?  // Frase corta descriptiva
+  
+  // Tipo de perfil
+  profileType ProfileType @default(USER)
+  visibility  ProfileVisibility @default(PUBLIC)
+  
+  // Ubicación pública (ciudad/país, no dirección exacta)
+  city        String?  // Nombre legible (mantener por compatibilidad)
+  cityId      String?  // Referencia formal a City (catalog-service)
+  state       String?
+  country     String?
+  
+  // Enlaces sociales
+  website     String?
+  instagram   String?
+  facebook    String?
+  twitter     String?
+  linkedin    String?
+  youtube     String?
+  tiktok      String?
+  
+  // Estadísticas públicas
+  followersCount   Int @default(0)
+  followingCount   Int @default(0)
+  totalBookings    Int @default(0)
+  totalReviews     Int @default(0)
+  averageRating    Float @default(0.0)
+  
+  // Verificación
+  isVerified       Boolean @default(false)
+  verifiedAt       DateTime?
+  verificationBadge String? // "artist", "top_seller", "pro", etc.
+  
+  // SEO y búsqueda
+  keywords    String[] // Palabras clave para búsqueda
+  categories  String[] // Categorías/tags del perfil
+  
+  // Anuncios/destacados
+  isFeatured  Boolean @default(false)
+  isPremium   Boolean @default(false)
+  
+  // Metadata
+  viewCount   Int @default(0)
+  lastActive  DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([profileType])
+  @@index([city, country])
+  @@index([cityId])
+  @@index([isVerified])
+  @@index([isFeatured])
+  @@map("profiles")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  label     String   // "Casa", "Trabajo", etc
+  street    String
+  city      String
+  state     String
+  country   String
+  zipCode   String
+  lat       Float?
+  lng       Float?
+  
+  isDefault Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ============================================================================
+// Favorite/Wishlist System
+// ============================================================================
+
+enum FavoriteEntityType {
+  ARTIST
+  SERVICE
+  PACKAGE
+}
+
+model Favorite {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relación polimórfica
+  entityType  FavoriteEntityType
+  entityId    String   // artistId, serviceId, packageId
+  
+  // Metadata
+  notes       String?  @db.Text // Notas personales del usuario
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([userId, entityType, entityId]) // Un usuario no puede guardar lo mismo dos veces
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("favorites")
+}
+
+// ============================================================================
+// Follow System (seguir artistas)
+// ============================================================================
+
+model Follow {
+  id          String   @id @default(uuid())
+  
+  followerId  String   // userId que sigue
+  follower    User     @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  
+  followingId String   // artistId que es seguido (referencia a artists-service)
+  
+  // Notificaciones
+  notifyNewServices Boolean @default(true)
+  notifySpecialOffers Boolean @default(true)
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([createdAt])
+  @@map("follows")
+}
+
+// ============================================================================
+// Messaging System (chat entre usuarios y artistas)
+// ============================================================================
+
+enum ConversationType {
+  DIRECT          // Conversación directa 1:1
+  BOOKING_RELATED // Relacionada a una reserva específica
+  SUPPORT         // Soporte con admin/staff
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  BLOCKED
+}
+
+model Conversation {
+  id          String   @id @default(uuid())
+  
+  // Participantes
+  participant1Id String // userId o artistId
+  participant2Id String // userId o artistId
+  
+  // Tipo y contexto
+  type        ConversationType @default(DIRECT)
+  bookingId   String?  // Si es relacionada a una reserva
+  
+  // Estado
+  status      ConversationStatus @default(ACTIVE)
+  
+  // Mensajes
+  messages    Message[]
+  
+  // Última actividad
+  lastMessageAt DateTime?
+  lastMessagePreview String? // Preview del último mensaje
+  
+  // Contadores de no leídos (por participante)
+  unreadCountP1 Int @default(0)
+  unreadCountP2 Int @default(0)
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([participant1Id, participant2Id, bookingId]) // Evitar conversaciones duplicadas
+  @@index([participant1Id])
+  @@index([participant2Id])
+  @@index([bookingId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  BOOKING_REQUEST
+  BOOKING_UPDATE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Message {
+  id            String   @id @default(uuid())
+  conversationId String
+  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  // Remitente
+  senderId      String   // userId que envió el mensaje
+  
+  // Contenido
+  type          MessageType @default(TEXT)
+  content       String   @db.Text
+  
+  // Archivos adjuntos
+  attachments   Json?    // Array de URLs y metadata
+  
+  // Estado
+  status        MessageStatus @default(SENT)
+  
+  // Lectura
+  readAt        DateTime?
+  deliveredAt   DateTime?
+  
+  // Respuesta a otro mensaje (threading)
+  replyToId     String?
+  
+  // Soft delete
+  deletedAt     DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([status])
+  @@map("messages")
+}

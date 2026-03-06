@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#9333EA" rx="96"/>
+  
+  <!-- Letter P -->
+  <path d="M140 128H240C291.92 128 334 170.08 334 222C334 273.92 291.92 316 240 316H200V384H140V128ZM200 256H240C260.43 256 277 239.43 277 219C277 198.57 260.43 182 240 182H200V256Z" fill="white"/>
+  
+  <!-- Musical note accent -->
+  <circle cx="380" cy="340" r="30" fill="#FCD34D"/>
+  <rect x="380" y="210" width="12" height="130" fill="#FCD34D"/>
+  <circle cx="380" cy="210" r="8" fill="#FCD34D"/>
+</svg>

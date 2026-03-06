@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ArtistCategory {
+  MUSICO
+  TATUADOR
+  FOTOGRAFO
+  MAQUILLADOR
+  DJ
+  PINTOR
+  ESCULTOR
+  OTRO
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum DayOfWeek {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+model Artist {
+  id        String   @id @default(uuid())
+  authId    String   @unique // Referencia al user ID del auth-service
+  email     String   @unique
+  nombre    String
+  artistName String? // Nombre artístico
+  avatar    String?
+  bio       String?
+  
+  // Categoría y especialidades
+  category      ArtistCategory // Mantener por compatibilidad
+  categoryId    String?   // Referencia a ServiceCategory (catalog-service)
+  specialties   String[]  // Array de especialidades específicas
+  yearsExperience Int     @default(0)
+  
+  // Ubicación y cobertura
+  country       String
+  city          String   // Nombre legible (mantener por compatibilidad)
+  cityId        String?  // Referencia formal a City (catalog-service)
+  state         String?
+  address       String?
+  lat           Float?
+  lng           Float?
+  coverageRadius Int      @default(10) // Radio en kilómetros
+  
+  // Pricing
+  hourlyRateMin  Int?     // Precio mínimo por hora en centavos
+  hourlyRateMax  Int?     // Precio máximo por hora en centavos
+  currency       String   @default("MXN")
+  
+  // Políticas
+  cancellationPolicy String? @db.Text
+  requiresDeposit    Boolean @default(false)
+  depositPercentage  Int?    // Porcentaje de anticipo
+  
+  // Verificación y estado
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt         DateTime?
+  rejectionReason    String?
+  
+  // Portfolio y certificaciones
+  portfolio      PortfolioItem[]
+  certifications Certification[]
+  
+  // Disponibilidad (nuevo sistema)
+  availabilityRules ArtistAvailabilityRule[]
+  blackouts         ArtistBlackout[]
+  
+  // Redes sociales
+  website       String?
+  instagram     String?
+  facebook      String?
+  youtube       String?
+  tiktok        String?
+  
+  // Metadata
+  isActive      Boolean  @default(true)
+  rating        Float    @default(0.0)
+  reviewCount   Int      @default(0)
+  bookingCount  Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime? // Soft delete
+  
+  @@index([authId])
+  @@index([email])
+  @@index([category])
+  @@index([categoryId])
+  @@index([verificationStatus])
+  @@index([city, country])
+  @@index([cityId])
+  @@index([lat, lng])
+  @@map("artists")
+}
+
+model PortfolioItem {
+  id          String   @id @default(uuid())
+  artistId    String
+  artist      Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?  @db.Text
+  type        String   // "image", "video", "audio"
+  url         String   // URL del archivo
+  thumbnailUrl String? // Thumbnail para videos
+  
+  category    String?  // Categoría del trabajo (ej: "Tatuaje Realista", "Retrato", etc)
+  tags        String[] // Tags para búsqueda
+  
+  order       Int      @default(0) // Orden de visualización
+  isFeatured  Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([type])
+  @@map("portfolio_items")
+}
+
+model Certification {
+  id          String   @id @default(uuid())
+  artistId    String
+  artist      Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  
+  title       String
+  issuer      String   // Institución emisora
+  description String?  @db.Text
+  documentUrl String?  // URL del certificado
+  
+  issuedAt    DateTime
+  expiresAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([artistId])
+  @@map("certifications")
+}
+
+// Horarios regulares de trabajo del artista
+model ArtistAvailabilityRule {
+  id        String    @id @default(uuid())
+  artistId  String
+  artist    Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek DayOfWeek // Día de la semana
+  startTime String    // Formato: "09:00" - Hora de inicio
+  endTime   String    // Formato: "18:00" - Hora de fin
+  
+  isActive  Boolean   @default(true) // Permite desactivar sin eliminar
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@index([artistId])
+  @@index([dayOfWeek])
+  @@index([artistId, dayOfWeek, isActive])
+  @@map("artist_availability_rules")
+}
+
+// Bloqueos puntuales en la agenda del artista
+model ArtistBlackout {
+  id        String   @id @default(uuid())
+  artistId  String
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  
+  startAt   DateTime // Fecha y hora de inicio del bloqueo
+  endAt     DateTime // Fecha y hora de fin del bloqueo
+  reason    String?  // Motivo del bloqueo (vacaciones, personal, etc)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([startAt, endAt])
+  @@index([artistId, startAt, endAt]) // Para búsquedas de disponibilidad
+  @@map("artist_blackouts")
+}

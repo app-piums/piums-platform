@@ -1,0 +1,48 @@
+{
+  "name": "notifications-service",
+  "version": "1.0.0",
+  "description": "Microservicio de notificaciones para la plataforma Piums",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "notifications",
+    "email",
+    "sms",
+    "push",
+    "microservice"
+  ],
+  "author": "Piums Team",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.19.2",
+    "@sendgrid/mail": "^8.1.6",
+    "bullmq": "^5.70.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "ioredis": "^5.9.3",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.17",
+    "twilio": "^5.4.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.5",
+    "@types/nodemailer": "^6.4.17",
+    "pg": "^8.18.0",
+    "prisma": "^6.19.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

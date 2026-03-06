@@ -1,0 +1,203 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Avatar } from '@/components/ui/Avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { sdk } from '@piums/sdk';
+
+export default function PersonalInfoTab() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    telefono: '',
+    direccion: '',
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        nombre: user.nombre || '',
+        email: user.email || '',
+        telefono: '',
+        direccion: '',
+      });
+    }
+  }, [user]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      
+      // TODO: Call API to update profile
+      // const userId = user?.id;
+      // await sdk.updateProfile(userId, formData);
+      
+      setTimeout(() => {
+        setLoading(false);
+        setEditing(false);
+        alert('Perfil actualizado correctamente');
+      }, 1000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setLoading(false);
+      alert('Error al actualizar el perfil');
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Información Personal</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Administra tu información personal y foto de perfil
+          </p>
+        </div>
+        {!editing && (
+          <Button onClick={() => setEditing(true)}>
+            Editar Perfil
+          </Button>
+        )}
+      </div>
+
+      {/* Avatar Section */}
+      <div className="mb-8 pb-8 border-b border-gray-200">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Foto de perfil
+        </label>
+        <div className="flex items-center gap-6">
+          <Avatar
+            src={undefined}
+            fallback={user?.nombre?.[0].toUpperCase() || 'U'}
+            size="xl"
+          />
+          <div className="flex-1">
+            <div className="flex gap-3">
+              <Button size="sm" variant="outline">
+                Cambiar foto
+              </Button>
+              <Button size="sm" variant="ghost">
+                Eliminar
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              JPG, PNG o GIF. Máximo 2MB.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Info Form */}
+      <form onSubmit={handleSaveProfile}>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre completo <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="nombre"
+                name="nombre"
+                type="text"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                disabled={!editing}
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Correo electrónico <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                disabled={!editing}
+                required
+              />
+              {!editing && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Para cambiar tu correo, contáctanos
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-2">
+                Teléfono
+              </label>
+              <Input
+                id="telefono"
+                name="telefono"
+                type="tel"
+                value={formData.telefono}
+                onChange={handleInputChange}
+                disabled={!editing}
+                placeholder="+52 ###-###-####"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="direccion" className="block text-sm font-medium text-gray-700 mb-2">
+                Dirección
+              </label>
+              <Input
+                id="direccion"
+                name="direccion"
+                type="text"
+                value={formData.direccion}
+                onChange={handleInputChange}
+                disabled={!editing}
+                placeholder="Calle, Ciudad, Estado"
+              />
+            </div>
+          </div>
+        </div>
+
+        {editing && (
+          <div className="mt-8 flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setEditing(false);
+                if (user) {
+                  setFormData({
+                    nombre: user.nombre || '',
+                    email: user.email || '',
+                    telefono: '',
+                    direccion: '',
+                  });
+                }
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}

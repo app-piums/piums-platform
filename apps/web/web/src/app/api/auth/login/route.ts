@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Llamar al auth-service
+    // Llamar directamente al auth-service
     const response = await fetch(`${AUTH_SERVICE_URL}/auth/login`, {
       method: "POST",
       headers: {

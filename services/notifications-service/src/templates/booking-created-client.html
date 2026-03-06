@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Reserva</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .success-icon {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .success-icon svg {
+            width: 80px;
+            height: 80px;
+        }
+        .booking-code {
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .booking-code p {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .booking-code h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #667eea;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .details-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .detail-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #666;
+            font-size: 16px;
+        }
+        .artist-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .artist-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .artist-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 5px 0;
+        }
+        .artist-category {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .price-box {
+            background-color: #fff9e6;
+            border: 2px solid #ffd966;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .price-label {
+            color: #666;
+        }
+        .price-value {
+            font-weight: 600;
+            color: #333;
+        }
+        .price-total {
+            border-top: 2px solid #ffd966;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        .price-total .price-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .price-total .price-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .next-steps {
+            margin-top: 30px;
+        }
+        .next-steps h3 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .step {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .step-number {
+            background-color: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .step-text {
+            color: #666;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>¡Reserva Creada con Éxito!</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Success Icon -->
+            <div class="success-icon">
+                <svg fill="#10B981" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </div>
+
+            <!-- Booking Code -->
+            <div class="booking-code">
+                <p>Código de Reserva</p>
+                <h2>{{bookingCode}}</h2>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 30px;">
+                Hola <strong>{{clientName}}</strong>,<br><br>
+                Tu solicitud de reserva ha sido creada exitosamente. El artista revisará tu solicitud y te confirmará próximamente.
+            </p>
+
+            <!-- Artist Info -->
+            <div class="artist-info">
+                <img src="{{artistImage}}" alt="{{artistName}}" class="artist-avatar">
+                <div>
+                    <p class="artist-name">{{artistName}}</p>
+                    <p class="artist-category">{{artistCategory}}</p>
+                </div>
+            </div>
+
+            <!-- Booking Details -->
+            <div class="details-box">
+                <div class="detail-row">
+                    <div class="detail-label">Servicio</div>
+                    <div class="detail-value">{{serviceName}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Fecha</div>
+                    <div class="detail-value">{{bookingDate}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Hora</div>
+                    <div class="detail-value">{{bookingTime}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Duración</div>
+                    <div class="detail-value">{{duration}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Ubicación</div>
+                    <div class="detail-value">{{location}}</div>
+                </div>
+            </div>
+
+            <!-- Price Box -->
+            <div class="price-box">
+                <div class="price-row">
+                    <span class="price-label">Precio del servicio</span>
+                    <span class="price-value">{{servicePrice}}</span>
+                </div>
+                {{#if hasAddons}}
+                <div class="price-row">
+                    <span class="price-label">Extras</span>
+                    <span class="price-value">{{addonsPrice}}</span>
+                </div>
+                {{/if}}
+                <div class="price-row price-total">
+                    <span class="price-label">Total</span>
+                    <span class="price-value">{{totalPrice}}</span>
+                </div>
+                {{#if depositRequired}}
+                <p style="margin-top: 15px; font-size: 14px; color: #d97706;">
+                    ⚠️ Se requiere un depósito de {{depositAmount}} para confirmar la reserva.
+                </p>
+                {{/if}}
+            </div>
+
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>Próximos Pasos</h3>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-text">
+                        Recibirás un correo cuando el artista confirme tu reserva
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-text">
+                        Te enviaremos recordatorios antes de tu cita
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-text">
+                        Puedes contactar al artista directamente desde tu panel
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="button-container">
+                <a href="{{bookingUrl}}" class="button">Ver Mi Reserva</a>
+            </div>
+
+            <!-- Additional Info -->
+            <p style="font-size: 14px; color: #999; margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
+                Si tienes alguna pregunta o necesitas hacer cambios, puedes gestionar tu reserva desde tu panel de usuario o contactarnos directamente.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                © 2026 Piums Platform. Todos los derechos reservados.<br>
+                <a href="{{dashboardUrl}}">Mi Panel</a> • 
+                <a href="{{helpUrl}}">Centro de Ayuda</a> • 
+                <a href="{{unsubscribeUrl}}">Cancelar suscripción</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

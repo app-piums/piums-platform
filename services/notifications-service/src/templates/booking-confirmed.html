@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva Confirmada</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .success-icon {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .success-icon svg {
+            width: 100px;
+            height: 100px;
+        }
+        .confirmed-badge {
+            text-align: center;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .confirmed-badge p {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .confirmed-badge h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .artist-info {
+            display: flex;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .artist-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin-right: 20px;
+        }
+        .artist-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 5px 0;
+        }
+        .artist-category {
+            font-size: 14px;
+            color: #666;
+            margin: 0 0 5px 0;
+        }
+        .artist-rating {
+            color: #f59e0b;
+            font-size: 14px;
+        }
+        .details-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .detail-row {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detail-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .detail-value {
+            color: #666;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .highlight-box p {
+            margin: 0;
+            color: #1e40af;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .calendar-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .calendar-button {
+            flex: 1;
+            display: inline-block;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            background-color: #f3f4f6;
+            color: #374151 !important;
+            border: 2px solid #e5e7eb;
+        }
+        .primary-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .button-container {
+            margin: 30px 0;
+        }
+        .info-section {
+            background-color: #f0fdf4;
+            border-radius: 8px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .info-section h3 {
+            font-size: 18px;
+            color: #166534;
+            margin: 0 0 15px 0;
+        }
+        .info-item {
+            display: flex;
+            margin-bottom: 12px;
+        }
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        .info-icon {
+            margin-right: 10px;
+            color: #16a34a;
+        }
+        .info-text {
+            color: #166534;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .calendar-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>¡Tu Reserva Está Confirmada!</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Success Icon -->
+            <div class="success-icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke="#10B981" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+
+            <!-- Confirmed Badge -->
+            <div class="confirmed-badge">
+                <p>Código de Reserva Confirmada</p>
+                <h2>{{bookingCode}}</h2>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 30px;">
+                ¡Excelentes noticias, <strong>{{clientName}}</strong>!<br><br>
+                {{artistName}} ha confirmado tu reserva. Tu experiencia está programada y lista. Te enviaremos recordatorios antes de la fecha.
+            </p>
+
+            <!-- Artist Info -->
+            <div class="artist-info">
+                <img src="{{artistImage}}" alt="{{artistName}}" class="artist-avatar">
+                <div>
+                    <p class="artist-name">{{artistName}}</p>
+                    <p class="artist-category">{{artistCategory}}</p>
+                    <p class="artist-rating">⭐ {{artistRating}} • {{reviewCount}} reseñas</p>
+                </div>
+            </div>
+
+            <!-- Booking Details -->
+            <div class="details-box">
+                <div class="detail-row">
+                    <div class="detail-label">📅 Fecha y Hora</div>
+                    <div class="detail-value">{{bookingDate}} a las {{bookingTime}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">⏱️ Duración</div>
+                    <div class="detail-value">{{duration}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">📍 Ubicación</div>
+                    <div class="detail-value">{{location}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">🎨 Servicio</div>
+                    <div class="detail-value">{{serviceName}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">💰 Total</div>
+                    <div class="detail-value" style="font-weight: 600; color: #10B981;">{{totalPrice}}</div>
+                </div>
+            </div>
+
+            <!-- Payment Info if required -->
+            {{#if depositRequired}}
+            <div class="highlight-box">
+                <p>
+                    💳 <strong>Pago requerido:</strong> Para asegurar tu reserva, necesitas pagar un depósito de {{depositAmount}}. 
+                    Puedes realizarlo desde tu panel de reservas.
+                </p>
+            </div>
+            {{/if}}
+
+            <!-- Calendar Actions -->
+            <div class="calendar-actions">
+                <a href="{{googleCalendarUrl}}" class="calendar-button">📅 Google Calendar</a>
+                <a href="{{appleCalendarUrl}}" class="calendar-button">🍎 Apple Calendar</a>
+            </div>
+
+            <!-- Primary CTA -->
+            <div class="button-container">
+                <a href="{{bookingUrl}}" class="primary-button">Ver Detalles de la Reserva</a>
+            </div>
+
+            <!-- What to Expect -->
+            <div class="info-section">
+                <h3>Qué Esperar</h3>
+                <div class="info-item">
+                    <span class="info-icon">📧</span>
+                    <span class="info-text">Recibirás un recordatorio 24 horas antes de tu cita</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">⏰</span>
+                    <span class="info-text">Te enviaremos otro recordatorio 2 horas antes</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">💬</span>
+                    <span class="info-text">Puedes contactar al artista directamente desde tu panel</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">📸</span>
+                    <span class="info-text">Después del servicio, podrás dejar una reseña</span>
+                </div>
+            </div>
+
+            <!-- Additional Options -->
+            <p style="font-size: 14px; color: #999; margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+                ¿Necesitas cancelar o modificar? Puedes hacerlo desde tu panel hasta 48 horas antes de la cita sin cargo.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                © 2026 Piums Platform. Todos los derechos reservados.<br>
+                <a href="{{dashboardUrl}}">Mi Panel</a> • 
+                <a href="{{bookingsUrl}}">Mis Reservas</a> • 
+                <a href="{{helpUrl}}">Centro de Ayuda</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

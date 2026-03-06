@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Tu Cita es en 2 Horas!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .urgent-icon {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .urgent-icon svg {
+            width: 100px;
+            height: 100px;
+        }
+        .countdown-box {
+            text-align: center;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 3px solid #ef4444;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .countdown-box p {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #991b1b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .countdown-box h2 {
+            margin: 0;
+            font-size: 52px;
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .countdown-box .subtitle {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            color: #ef4444;
+        }
+        .quick-info {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .info-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .info-icon {
+            font-size: 40px;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        .info-content {
+            flex: 1;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .location-box {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .location-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .location-box p {
+            margin: 0 0 20px 0;
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        .location-box a {
+            display: inline-block;
+            background-color: white;
+            color: #059669 !important;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .checklist {
+            background-color: #fffbeb;
+            border: 2px solid #fcd34d;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .checklist h3 {
+            margin: 0 0 15px 0;
+            color: #92400e;
+            font-size: 16px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        .checklist-item:last-child {
+            margin-bottom: 0;
+        }
+        .checklist-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f59e0b;
+            border-radius: 4px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .checklist-text {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .artist-contact {
+            background-color: #f0f9ff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .artist-contact p {
+            margin: 0 0 15px 0;
+            color: #1e40af;
+            font-size: 15px;
+        }
+        .artist-contact a {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .emergency-box {
+            background-color: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .emergency-box p {
+            margin: 0;
+            color: #991b1b;
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: center;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #ef4444;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .countdown-box h2 {
+                font-size: 42px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>¡Tu Cita es PRONTO!</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Urgent Icon -->
+            <div class="urgent-icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+
+            <!-- Countdown -->
+            <div class="countdown-box">
+                <p>Tu cita es en</p>
+                <h2>2 HORAS</h2>
+                <p class="subtitle">Es hora de prepararse</p>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 30px; text-align: center;">
+                <strong>{{clientName}}</strong>, tu cita está a punto de comenzar.<br>
+                Aquí está toda la información que necesitas:
+            </p>
+
+            <!-- Quick Info -->
+            <div class="quick-info">
+                <div class="info-row">
+                    <div class="info-icon">⏰</div>
+                    <div class="info-content">
+                        <div class="info-label">Hora de Inicio</div>
+                        <div class="info-value">{{bookingTime}}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon">👤</div>
+                    <div class="info-content">
+                        <div class="info-label">Con</div>
+                        <div class="info-value">{{artistName}}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon">🎨</div>
+                    <div class="info-content">
+                        <div class="info-label">Servicio</div>
+                        <div class="info-value">{{serviceName}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location with Maps -->
+            <div class="location-box">
+                <h3>📍 Dirígete a:</h3>
+                <p>{{location}}</p>
+                <a href="{{mapsUrl}}" target="_blank">Abrir en Google Maps</a>
+            </div>
+
+            <!-- Pre-Appointment Checklist -->
+            <div class="checklist">
+                <h3>✅ Lista de Verificación</h3>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox"></div>
+                    <div class="checklist-text">Revisa la ubicación y el tiempo de viaje</div>
+                </div>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox"></div>
+                    <div class="checklist-text">Lleva tu identificación y confirmación de reserva</div>
+                </div>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox"></div>
+                    <div class="checklist-text">Prepara el método de pago acordado</div>
+                </div>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox"></div>
+                    <div class="checklist-text">Llega 5-10 minutos antes</div>
+                </div>
+            </div>
+
+            <!-- Artist Contact -->
+            <div class="artist-contact">
+                <p>¿Necesitas contactar a {{artistName}}?</p>
+                <a href="{{contactUrl}}">Enviar Mensaje</a>
+            </div>
+
+            <!-- Emergency Notice -->
+            <div class="emergency-box">
+                <p>
+                    ⚠️ <strong>¿No puedes asistir?</strong><br>
+                    Por favor contacta a {{artistName}} o a nuestro equipo de soporte lo antes posible. 
+                    Las cancelaciones de último minuto pueden tener cargos.
+                </p>
+            </div>
+
+            <!-- Booking Code -->
+            <p style="font-size: 12px; color: #999; margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+                Código de reserva: <strong>{{bookingCode}}</strong><br>
+                <a href="{{bookingUrl}}" style="color: #667eea;">Ver detalles completos</a>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                © 2026 Piums Platform. Todos los derechos reservados.<br>
+                <a href="{{dashboardUrl}}">Mi Panel</a> • 
+                <a href="{{bookingsUrl}}">Mis Reservas</a> • 
+                <a href="{{supportUrl}}">Soporte Urgente</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
