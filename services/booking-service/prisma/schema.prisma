@@ -17,6 +17,7 @@ enum BookingStatus {
   PAYMENT_COMPLETED // Pago completado
   IN_PROGRESS       // En progreso (día de la cita)
   COMPLETED         // Completada exitosamente
+  RESCHEDULED       // Reprogramada
   CANCELLED_CLIENT  // Cancelada por el cliente
   CANCELLED_ARTIST  // Cancelada por el artista
   REJECTED          // Rechazada por el artista
@@ -92,6 +93,12 @@ model Booking {
   cancelledBy     String?      // userId que canceló
   cancellationReason String?   @db.Text
   refundAmount    Int?         // Monto reembolsado en centavos
+  
+  // Reprogramación
+  rescheduledAt   DateTime?
+  rescheduledBy   String?      // userId que reprogramó
+  rescheduleReason String?     @db.Text
+  rescheduleCount Int          @default(0) // Contador de reprogramaciones
   
   // Confirmación
   confirmedAt     DateTime?

@@ -229,6 +229,27 @@ export class StripeProvider {
   }
 
   /**
+   * Detach Payment Method (desconectar de customer)
+   */
+  async detachPaymentMethod(paymentMethodId: string): Promise<Stripe.PaymentMethod> {
+    try {
+      const paymentMethod = await stripe.paymentMethods.detach(paymentMethodId);
+
+      logger.info("Payment Method detached", "STRIPE_PROVIDER", {
+        paymentMethodId,
+      });
+
+      return paymentMethod;
+    } catch (error: any) {
+      logger.error("Error detaching Payment Method", "STRIPE_PROVIDER", {
+        paymentMethodId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Verificar Webhook Signature
    */
   verifyWebhookSignature(

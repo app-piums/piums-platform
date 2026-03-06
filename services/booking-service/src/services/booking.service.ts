@@ -626,6 +626,187 @@ export class BookingService {
   }
 
   /**
+   * Reprogramar reserva
+   */
+  async rescheduleBooking(
+    id: string,
+    userId: string,
+    newDate: string,
+    newTime: string,
+    reason?: string
+  ) {
+    const booking = await this.getBookingById(id);
+
+    // Verificar permisos (solo cliente o artista)
+    const isClient = booking.clientId === userId;
+    const isArtist = booking.artistId === userId;
+
+    if (!isClient && !isArtist) {
+      throw new AppError(403, "No tienes permiso para reprogramar esta reserva");
+    }
+
+    // Verificar estado (solo PENDING, CONFIRMED, o RESCHEDULED pueden reprogramarse)
+    if (!["PENDING", "CONFIRMED", "RESCHEDULED"].includes(booking.status)) {
+      throw new AppError(400, "Esta reserva no puede ser reprogramada");
+    }
+
+    // Combinar fecha y hora
+    const datePart = new Date(newDate);
+    const [hours, minutes] = newTime.split(':').map(Number);
+    const newScheduledDate = new Date(
+      datePart.getFullYear(),
+      datePart.getMonth(),
+      datePart.getDate(),
+      hours,
+      minutes,
+      0
+    );
+
+    // Validar que la nueva fecha sea futura
+    if (newScheduledDate <= new Date()) {
+      throw new AppError(400, "La nueva fecha debe ser en el futuro");
+    }
+
+    // Verificar límite de cambios (máximo 2 reprogramaciones)
+    const rescheduleCount = booking.rescheduleCount || 0;
+    if (rescheduleCount >= 2) {
+      throw new AppError(400, "Has alcanzado el límite de reprogramaciones para esta reserva");
+    }
+
+    // Verificar ventana de cambio (no permitir <24h antes)
+    const hoursUntilOriginalBooking =
+      (booking.scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60);
+
+    if (hoursUntilOriginalBooking < 24) {
+      throw new AppError(
+        400,
+        "No puedes reprogramar con menos de 24 horas de anticipación"
+      );
+    }
+
+    // Obtener configuración del artista
+    const config = await this.getArtistConfig(booking.artistId);
+
+    // Validar tiempo de anticipación mínimo
+    const hoursUntilNewBooking =
+      (newScheduledDate.getTime() - Date.now()) / (1000 * 60 * 60);
+
+    if (hoursUntilNewBooking < config.minAdvanceHours) {
+      throw new AppError(
+        400,
+        `Debes reprogramar con al menos ${config.minAdvanceHours} horas de anticipación`
+      );
+    }
+
+    // Verificar disponibilidad en la nueva fecha/hora
+    const endTime = new Date(
+      newScheduledDate.getTime() + booking.durationMinutes * 60 * 1000
+    );
+    const isAvailable = await this.checkAvailability(
+      booking.artistId,
+      newScheduledDate,
+      endTime,
+      id // Excluir el booking actual de la verificación
+    );
+
+    if (!isAvailable) {
+      throw new AppError(409, "El nuevo horario no está disponible");
+    }
+
+    // Actualizar la reserva
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        scheduledDate: newScheduledDate,
+        status: "RESCHEDULED",
+        rescheduledAt: new Date(),
+        rescheduledBy: userId,
+        rescheduleReason: reason,
+        rescheduleCount: rescheduleCount + 1,
+      },
+    });
+
+    // Registrar cambio de estado
+    await this.recordStatusChange(
+      id,
+      booking.status,
+      "RESCHEDULED",
+      userId,
+      reason || "Reserva reprogramada"
+    );
+
+    logger.info("Reserva reprogramada", "BOOKING_SERVICE", {
+      bookingId: id,
+      userId,
+      by: isClient ? "client" : "artist",
+      originalDate: booking.scheduledDate.toISOString(),
+      newDate: newScheduledDate.toISOString(),
+      rescheduleCount: rescheduleCount + 1,
+    });
+
+    // Enviar notificaciones
+    if (isClient) {
+      // Notificar al artista
+      notificationsClient.sendNotification({
+        userId: booking.artistId,
+        type: "BOOKING_RESCHEDULED",
+        channel: "IN_APP",
+        title: "Reserva Reprogramada",
+        message: `El cliente ha reprogramado una reserva para el ${newScheduledDate.toLocaleDateString()}`,
+        data: {
+          bookingId: id,
+          originalDate: booking.scheduledDate.toISOString(),
+          newDate: newScheduledDate.toISOString(),
+          reason: reason || "",
+        },
+      });
+
+      notificationsClient.sendNotification({
+        userId: booking.artistId,
+        type: "BOOKING_RESCHEDULED",
+        channel: "EMAIL",
+        title: "Reserva Reprogramada",
+        message: `El cliente ha reprogramado una reserva para el ${newScheduledDate.toLocaleDateString()} a las ${newTime}`,
+        data: {
+          bookingId: id,
+          originalDate: booking.scheduledDate.toISOString(),
+          newDate: newScheduledDate.toISOString(),
+        },
+      });
+    } else {
+      // Notificar al cliente
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: "BOOKING_RESCHEDULED",
+        channel: "IN_APP",
+        title: "Reserva Reprogramada",
+        message: `Tu reserva ha sido reprogramada para el ${newScheduledDate.toLocaleDateString()}`,
+        data: {
+          bookingId: id,
+          originalDate: booking.scheduledDate.toISOString(),
+          newDate: newScheduledDate.toISOString(),
+          reason: reason || "",
+        },
+      });
+
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: "BOOKING_RESCHEDULED",
+        channel: "EMAIL",
+        title: "Reserva Reprogramada",
+        message: `El artista ha reprogramado tu reserva para el ${newScheduledDate.toLocaleDateString()} a las ${newTime}`,
+        data: {
+          bookingId: id,
+          originalDate: booking.scheduledDate.toISOString(),
+          newDate: newScheduledDate.toISOString(),
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  /**
    * Cambiar estado de reserva
    */
   async changeStatus(

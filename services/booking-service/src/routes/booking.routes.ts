@@ -102,6 +102,18 @@ router.post(
 );
 
 /**
+ * PATCH /api/bookings/:id/reschedule
+ * Reprogramar reserva
+ * Requiere autenticación (cliente o artista)
+ */
+router.patch(
+  "/bookings/:id/reschedule",
+  authenticateToken,
+  updateLimiter,
+  bookingController.rescheduleBooking.bind(bookingController)
+);
+
+/**
  * PATCH /api/bookings/:id/status
  * Cambiar estado de reserva
  * Requiere autenticación (artista)

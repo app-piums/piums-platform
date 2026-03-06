@@ -16,6 +16,7 @@ import {
   checkAvailabilitySchema,
   searchBookingsSchema,
 } from "../schemas/booking.schema";
+import { rescheduleBookingSchema } from "../schemas/reschedule.schema";
 
 export class BookingController {
   // ==================== RESERVAS ====================
@@ -416,6 +417,36 @@ export class BookingController {
       // Stream el PDF a la respuesta
       pdfDoc.pipe(res);
       pdfDoc.end();
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==================== RESCHEDULE ====================
+
+  async rescheduleBooking(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const validatedData = rescheduleBookingSchema.parse(req.body);
+
+      const booking = await bookingService.rescheduleBooking(
+        id,
+        userId,
+        validatedData.newDate,
+        validatedData.newTime,
+        validatedData.reason
+      );
+
+      res.json({
+        message: "Reserva reprogramada exitosamente",
+        booking,
+      });
     } catch (error) {
       next(error);
     }

@@ -8,6 +8,7 @@ import { apiLimiter } from "./middleware/rateLimiter";
 // Routes
 import healthRoutes from "./routes/health.routes";
 import paymentRoutes from "./routes/payment.routes";
+import paymentMethodRoutes from "./routes/paymentMethod.routes";
 import payoutRoutes from "./routes/payout.routes";
 import webhookRoutes from "./routes/webhook.routes";
 
@@ -52,6 +53,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/health", healthRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentMethodRoutes);
 app.use("/api", payoutRoutes);
 
 // Error handler (debe ser el último middleware)
