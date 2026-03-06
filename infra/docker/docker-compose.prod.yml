@@ -7,11 +7,11 @@ services:
   
   postgres:
     image: postgres:16-alpine
-    container_name: piums-postgres-staging
+    container_name: piums-postgres-prod
     environment:
-      POSTGRES_USER: piums_staging
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: piums_staging
+      POSTGRES_DB: piums_production
     ports:
       - "5432:5432"
     volumes:
@@ -20,15 +20,20 @@ services:
     networks:
       - piums-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U piums_staging"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
 
   redis:
     image: redis:7-alpine
-    container_name: piums-redis-staging
+    container_name: piums-redis-prod
     command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
@@ -41,19 +46,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   # ============================================================================
   # API Gateway
   # ============================================================================
   
   gateway:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-gateway:${IMAGE_TAG:-staging}
-    container_name: piums-gateway-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-gateway:${IMAGE_TAG:-latest}
+    container_name: piums-gateway-prod
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
@@ -78,25 +88,35 @@ services:
       - search-service
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   # ============================================================================
   # Microservices
   # ============================================================================
 
   auth-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-auth-service:${IMAGE_TAG:-staging}
-    container_name: piums-auth-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-auth-service:${IMAGE_TAG:-latest}
+    container_name: piums-auth-service-prod
     ports:
       - "4001:4001"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4001
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_auth
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_auth
       JWT_SECRET: ${JWT_SECRET}
       REFRESH_SECRET: ${REFRESH_SECRET}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -104,17 +124,22 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   users-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-users-service:${IMAGE_TAG:-staging}
-    container_name: piums-users-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-users-service:${IMAGE_TAG:-latest}
+    container_name: piums-users-service-prod
     ports:
       - "4002:4002"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4002
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_users
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_users
       JWT_SECRET: ${JWT_SECRET}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
@@ -124,17 +149,22 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   artists-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-artists-service:${IMAGE_TAG:-staging}
-    container_name: piums-artists-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-artists-service:${IMAGE_TAG:-latest}
+    container_name: piums-artists-service-prod
     ports:
       - "4003:4003"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4003
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_artists
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_artists
       JWT_SECRET: ${JWT_SECRET}
       BOOKING_SERVICE_URL: http://booking-service:4008
       PAYMENTS_SERVICE_URL: http://payments-service:4005
@@ -143,34 +173,44 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   catalog-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-catalog-service:${IMAGE_TAG:-staging}
-    container_name: piums-catalog-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-catalog-service:${IMAGE_TAG:-latest}
+    container_name: piums-catalog-service-prod
     ports:
       - "4004:4004"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4004
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_catalog
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_catalog
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   booking-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-booking-service:${IMAGE_TAG:-staging}
-    container_name: piums-booking-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-booking-service:${IMAGE_TAG:-latest}
+    container_name: piums-booking-service-prod
     ports:
       - "4008:4008"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4008
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_bookings
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_bookings
       JWT_SECRET: ${JWT_SECRET}
       CATALOG_SERVICE_URL: http://catalog-service:4004
       PAYMENTS_SERVICE_URL: http://payments-service:4005
@@ -180,59 +220,76 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   payments-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-payments-service:${IMAGE_TAG:-staging}
-    container_name: piums-payments-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-payments-service:${IMAGE_TAG:-latest}
+    container_name: piums-payments-service-prod
     ports:
       - "4005:4005"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4005
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_payments
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_payments
       JWT_SECRET: ${JWT_SECRET}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   reviews-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-reviews-service:${IMAGE_TAG:-staging}
-    container_name: piums-reviews-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-reviews-service:${IMAGE_TAG:-latest}
+    container_name: piums-reviews-service-prod
     ports:
       - "4006:4006"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4006
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_reviews
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_reviews
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   notifications-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-notifications-service:${IMAGE_TAG:-staging}
-    container_name: piums-notifications-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-notifications-service:${IMAGE_TAG:-latest}
+    container_name: piums-notifications-service-prod
     ports:
       - "4007:4007"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4007
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_notifications
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_notifications
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
     depends_on:
       postgres:
         condition: service_healthy
@@ -240,17 +297,22 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   search-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-search-service:${IMAGE_TAG:-staging}
-    container_name: piums-search-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-search-service:${IMAGE_TAG:-latest}
+    container_name: piums-search-service-prod
     ports:
       - "4009:4009"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4009
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_search
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_search
       JWT_SECRET: ${JWT_SECRET}
       ARTISTS_SERVICE_URL: http://artists-service:4003
       CATALOG_SERVICE_URL: http://catalog-service:4004
@@ -260,17 +322,22 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   chat-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-chat-service:${IMAGE_TAG:-staging}
-    container_name: piums-chat-service-staging
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-chat-service:${IMAGE_TAG:-latest}
+    container_name: piums-chat-service-prod
     ports:
       - "4010:4010"
     environment:
-      NODE_ENV: staging
+      NODE_ENV: production
       PORT: 4010
-      DATABASE_URL: postgresql://piums_staging:${POSTGRES_PASSWORD}@postgres:5432/piums_chat
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/piums_chat
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     depends_on:
@@ -280,7 +347,12 @@ services:
         condition: service_healthy
     networks:
       - piums-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 # ============================================================================
 # Networks

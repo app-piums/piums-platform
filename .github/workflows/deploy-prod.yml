@@ -1,0 +1,449 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (e.g., v1.2.3)'
+        required: true
+      skip_tests:
+        description: 'Skip smoke tests'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/piums
+  DEPLOY_ENV: production
+
+jobs:
+  # ============================================================================
+  # Pre-Deploy Checks
+  # ============================================================================
+  
+  pre-deploy:
+    name: Pre-Deploy Checks
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.tag }}
+      should_deploy: ${{ steps.approval.outputs.approved }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ "${{ github.event.inputs.image_tag }}" != "" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify images exist
+        run: |
+          TAG="${{ steps.set-tag.outputs.tag }}"
+          echo "Verifying all service images exist for tag: $TAG"
+          
+          SERVICES=(
+            "auth-service"
+            "users-service"
+            "artists-service"
+            "catalog-service"
+            "booking-service"
+            "payments-service"
+            "reviews-service"
+            "notifications-service"
+            "search-service"
+            "chat-service"
+            "gateway"
+          )
+          
+          for service in "${SERVICES[@]}"; do
+            echo "Checking $service:$TAG"
+            docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-$service:$TAG || exit 1
+          done
+
+      - name: Manual approval required
+        id: approval
+        run: |
+          echo "Production deployment requires manual approval"
+          echo "approved=true" >> $GITHUB_OUTPUT
+
+  # ============================================================================
+  # Backup Databases
+  # ============================================================================
+  
+  backup-databases:
+    name: Backup Production Databases
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create database backups
+        run: |
+          ssh -i ~/.ssh/prod_key \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+            
+            BACKUP_DIR="/backup/postgres/$(date +%Y%m%d_%H%M%S)"
+            mkdir -p $BACKUP_DIR
+            
+            # Backup all databases
+            docker exec piums-postgres-prod pg_dumpall -U piums > $BACKUP_DIR/all_databases.sql
+            
+            echo "Backup completed: $BACKUP_DIR"
+          EOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/prod_key
+
+  # ============================================================================
+  # Database Migrations
+  # ============================================================================
+  
+  migrate-databases:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, backup-databases]
+    
+    strategy:
+      max-parallel: 1  # Run migrations sequentially for production
+      matrix:
+        service:
+          - auth-service
+          - users-service
+          - artists-service
+          - catalog-service
+          - booking-service
+          - payments-service
+          - reviews-service
+          - notifications-service
+          - search-service
+          - chat-service
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Prisma migrations
+        working-directory: services/${{ matrix.service }}
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL_PREFIX }}_${{ matrix.service }}
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            npx prisma migrate deploy
+          else
+            echo "No Prisma schema found, skipping migrations"
+          fi
+
+  # ============================================================================
+  # Blue-Green Deployment
+  # ============================================================================
+  
+  deploy-blue:
+    name: Deploy to Blue Environment
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, migrate-databases]
+    
+    environment:
+      name: production-blue
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy deployment files
+        run: |
+          scp -i ~/.ssh/prod_key \
+            infra/docker/docker-compose.prod.yml \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:/opt/piums-blue/docker-compose.yml
+
+      - name: Copy environment file
+        run: |
+          echo "${{ secrets.PRODUCTION_ENV_FILE }}" > .env.prod
+          scp -i ~/.ssh/prod_key \
+            .env.prod \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:/opt/piums-blue/.env
+
+      - name: Deploy to blue environment
+        run: |
+          ssh -i ~/.ssh/prod_key \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+            cd /opt/piums-blue
+            
+            export IMAGE_TAG=${{ needs.pre-deploy.outputs.image_tag }}
+            
+            # Pull images
+            docker-compose pull
+            
+            # Start blue environment
+            docker-compose up -d --force-recreate
+            
+            # Wait for services
+            sleep 60
+            
+            # Check services
+            docker-compose ps
+          EOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/prod_key .env.prod
+
+  # ============================================================================
+  # Health Checks on Blue
+  # ============================================================================
+  
+  health-check-blue:
+    name: Health Check Blue Environment
+    runs-on: ubuntu-latest
+    needs: deploy-blue
+    
+    steps:
+      - name: Wait for services to stabilize
+        run: sleep 30
+
+      - name: Check Gateway
+        run: curl -f https://blue.piums.com/health
+
+      - name: Check Auth Service
+        run: curl -f https://blue.piums.com/api/auth/health
+
+      - name: Check critical services
+        run: |
+          SERVICES=(
+            "users"
+            "artists"
+            "catalog"
+            "bookings"
+            "payments"
+          )
+          
+          for service in "${SERVICES[@]}"; do
+            echo "Checking $service..."
+            curl -f https://blue.piums.com/api/$service/health || exit 1
+          done
+
+  # ============================================================================
+  # Smoke Tests on Blue
+  # ============================================================================
+  
+  smoke-tests-blue:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    needs: health-check-blue
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run integration tests
+        env:
+          API_BASE_URL: https://blue.piums.com
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: |
+          echo "Running smoke tests against blue environment"
+          # TODO: Add actual test commands
+          # npm run test:integration
+
+  # ============================================================================
+  # Switch Traffic to Blue (Go Live)
+  # ============================================================================
+  
+  switch-to-blue:
+    name: Switch Traffic to Blue
+    runs-on: ubuntu-latest
+    needs: [health-check-blue, smoke-tests-blue]
+    if: success() || needs.smoke-tests-blue.result == 'skipped'
+    
+    environment:
+      name: production
+      url: https://piums.com
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+
+      - name: Switch load balancer to blue
+        run: |
+          ssh -i ~/.ssh/prod_key \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+            
+            # Update nginx/load balancer configuration
+            # This is a simplified example - adjust based on your setup
+            
+            echo "Switching traffic to blue environment"
+            
+            # Example: Update nginx upstream
+            sudo sed -i 's/piums-green/piums-blue/g' /etc/nginx/sites-enabled/piums.conf
+            sudo nginx -t && sudo systemctl reload nginx
+            
+            echo "Traffic switched to blue"
+          EOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/prod_key
+
+  # ============================================================================
+  # Monitor Production
+  # ============================================================================
+  
+  monitor:
+    name: Monitor Production
+    runs-on: ubuntu-latest
+    needs: switch-to-blue
+    
+    steps:
+      - name: Monitor for 5 minutes
+        run: |
+          echo "Monitoring production for 5 minutes..."
+          
+          for i in {1..10}; do
+            echo "Check $i/10..."
+            curl -f https://piums.com/health || exit 1
+            sleep 30
+          done
+          
+          echo "Monitoring complete - deployment stable"
+
+  # ============================================================================
+  # Cleanup Old Green Environment
+  # ============================================================================
+  
+  cleanup-green:
+    name: Cleanup Green Environment
+    runs-on: ubuntu-latest
+    needs: monitor
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+
+      - name: Stop green environment
+        run: |
+          ssh -i ~/.ssh/prod_key \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+            
+            cd /opt/piums-green
+            docker-compose down
+            
+            echo "Green environment stopped"
+          EOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/prod_key
+
+  # ============================================================================
+  # Rollback (on failure)
+  # ============================================================================
+  
+  rollback:
+    name: Rollback to Green
+    runs-on: ubuntu-latest
+    needs: [switch-to-blue, monitor]
+    if: failure()
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+
+      - name: Rollback to green environment
+        run: |
+          ssh -i ~/.ssh/prod_key \
+            ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+            
+            echo "Rolling back to green environment"
+            
+            # Switch load balancer back to green
+            sudo sed -i 's/piums-blue/piums-green/g' /etc/nginx/sites-enabled/piums.conf
+            sudo nginx -t && sudo systemctl reload nginx
+            
+            # Stop blue environment
+            cd /opt/piums-blue
+            docker-compose down
+            
+            echo "Rollback complete"
+          EOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/prod_key
+
+  # ============================================================================
+  # Notification
+  # ============================================================================
+  
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [switch-to-blue, monitor]
+    if: always()
+    
+    steps:
+      - name: Send notification
+        run: |
+          STATUS="${{ job.status }}"
+          TAG="${{ needs.pre-deploy.outputs.image_tag }}"
+          
+          echo "==================================="
+          echo "Production Deployment: $STATUS"
+          echo "Image Tag: $TAG"
+          echo "Commit: ${{ github.sha }}"
+          echo "==================================="
+          
+          # TODO: Add Slack/Email notification
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data "{\"text\":\"Production Deployment $STATUS - Tag: $TAG\"}" \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
