@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piums Platform API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css">
+    <link rel="icon" type="image/png" href="https://piums.com/favicon.png">
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .topbar {
+            background-color: #6366f1 !important;
+        }
+
+        .swagger-ui .topbar .download-url-wrapper {
+            display: none;
+        }
+
+        .swagger-ui .info {
+            margin: 30px 0;
+        }
+
+        .swagger-ui .info .title {
+            font-size: 36px;
+            color: #6366f1;
+        }
+
+        .swagger-ui .scheme-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        /* Custom branding */
+        .topbar-wrapper img {
+            content: url('https://piums.com/logo.png');
+        }
+        
+        .swagger-ui .btn.authorize {
+            background-color: #6366f1;
+            border-color: #6366f1;
+        }
+
+        .swagger-ui .btn.authorize:hover {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            // Get current environment
+            const hostname = window.location.hostname;
+            let defaultServer;
+            
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                defaultServer = 'http://localhost:3000';
+            } else if (hostname.includes('staging')) {
+                defaultServer = 'https://staging.piums.com';
+            } else {
+                defaultServer = 'https://piums.com';
+            }
+
+            // Begin Swagger UI call region
+            const ui = SwaggerUIBundle({
+                url: "./openapi.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                displayRequestDuration: true,
+                filter: true,
+                tryItOutEnabled: true,
+                persistAuthorization: true,
+                
+                // Custom configuration
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                
+                // OAuth2 configuration (if needed in the future)
+                oauth2RedirectUrl: window.location.origin + '/oauth2-redirect.html',
+                
+                // Interceptor para agregar headers adicionales
+                requestInterceptor: (req) => {
+                    // Agregar header de versión de API
+                    req.headers['X-API-Version'] = '1.0';
+                    
+                    // Log para debugging (solo en desarrollo)
+                    if (hostname === 'localhost') {
+                        console.log('Request:', req);
+                    }
+                    
+                    return req;
+                },
+                
+                responseInterceptor: (res) => {
+                    // Log para debugging (solo en desarrollo)
+                    if (hostname === 'localhost') {
+                        console.log('Response:', res);
+                    }
+                    
+                    return res;
+                },
+                
+                // Configuración de servidores
+                onComplete: () => {
+                    console.log('Swagger UI loaded successfully');
+                    console.log('Default server:', defaultServer);
+                }
+            });
+
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>
