@@ -1,11 +1,15 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export const configureGoogleStrategy = () => {
+  // Solo configurar si existen las credenciales
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    logger.warn('Google OAuth credentials not configured, skipping Google strategy', 'OAUTH');
+    return;
+  }
+
   passport.use(
     new GoogleStrategy(
       {

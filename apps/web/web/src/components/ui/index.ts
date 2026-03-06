@@ -5,3 +5,8 @@ export { Badge } from './Badge';
 export { Avatar } from './Avatar';
 export { Modal, ModalFooter } from './Modal';
 export { Select } from './Select';
+export { Progress } from './Progress';
+export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
+export { Tabs, TabPanel } from './Tabs';
+export { MetricCard } from './MetricCard';
+export { Calendar } from './Calendar';

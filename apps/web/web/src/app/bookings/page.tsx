@@ -6,17 +6,17 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
-import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Tabs, TabPanel } from '@/components/ui/Tabs';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { BookingCard } from '@/components/booking/BookingCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import type { Booking } from '@piums/sdk';
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { ModifyDateModal } from '@/components/bookings/ModifyDateModal';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
-import { BookingStatusTimeline } from '@/components/bookings/BookingStatusTimeline';
 
 export default function BookingsPage() {
   const router = useRouter();
@@ -156,19 +156,28 @@ export default function BookingsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: 'default' | 'success' | 'warning' | 'danger' | 'info', label: string }> = {
-      PENDING: { variant: 'warning', label: 'Pendiente' },
-      CONFIRMED: { variant: 'success', label: 'Confirmada' },
-      IN_PROGRESS: { variant: 'info', label: 'En Progreso' },
-      COMPLETED: { variant: 'success', label: 'Completada' },
-      CANCELLED: { variant: 'danger', label: 'Cancelada' },
-    };
-    const config = variants[status] || { variant: 'default', label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
+  // Transform booking to BookingCard format
+  const transformBooking = (booking: Booking) => ({
+    id: booking.id,
+    code: booking.code || 'N/A',
+    status: booking.status.toLowerCase() as 'pending' | 'confirmed' | 'in-progress' | 'completed' | 'cancelled' | 'rejected',
+    artist: {
+      name: `Artista #${booking.artistId.slice(-3)}`,
+      avatar: undefined, // Will use fallback
+      rating: undefined,
+    },
+    date: booking.scheduledDate,
+    time: new Date(booking.scheduledDate).toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    location: 'Por definir',
+    duration: 'Por definir',
+    amount: booking.totalPrice,
+    currency: booking.currency,
+  });
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div>
         <Navbar />
@@ -191,216 +200,162 @@ export default function BookingsPage() {
           className="mb-6"
         />
         
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mis Reservas</h1>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Mis Reservas</h1>
+            <p className="mt-1 text-gray-600">
+              {filteredBookings.length} {filteredBookings.length === 1 ? 'reserva' : 'reservas'} 
+              {activeTab !== 'all' && ` ${
+                activeTab === 'active' ? 'activas' : 
+                activeTab === 'completed' ? 'completadas' : 
+                'canceladas'
+              }`}
+            </p>
+          </div>
           <Button onClick={() => router.push('/artists')}>
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
             Nueva Reserva
           </Button>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="flex space-x-8">
-            {(['all', 'active', 'completed', 'cancelled'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab === 'all' && 'Todas'}
-                {tab === 'active' && 'Activas'}
-                {tab === 'completed' && 'Completadas'}
-                {tab === 'cancelled' && 'Canceladas'}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Search Filter */}
+        {/* Search */}
         <div className="mb-6">
-          <div className="max-w-md">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-              Buscar reserva
-            </label>
-            <input
-              type="text"
-              id="search"
-              placeholder="Código de reserva o ID..."
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <Input
+            placeholder="Buscar por código de reserva o ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            leftIcon={
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            }
+            className="max-w-md"
+          />
         </div>
 
-        {/* Bookings List */}
-        {filteredBookings.length === 0 ? (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No hay reservas</h3>
-            <p className="mt-1 text-gray-500">
-              {searchQuery
-                ? 'No se encontraron reservas con ese criterio de búsqueda.'
-                : activeTab === 'all'
-                ? 'Aún no tienes reservas. ¡Encuentra artistas increíbles!'
-                : `No tienes reservas ${activeTab === 'active' ? 'activas' : activeTab === 'completed' ? 'completadas' : 'canceladas'}.`}
-            </p>
-            <Button onClick={() => router.push('/artists')} className="mt-4">
-              Explorar Artistas
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {filteredBookings.map((booking) => {
-              const countdown = getCountdown(booking.scheduledDate);
-              const isUpcoming = new Date(booking.scheduledDate) > new Date();
-              const canCancel = ['PENDING', 'CONFIRMED'].includes(booking.status);
-              const canModify = ['PENDING', 'CONFIRMED'].includes(booking.status);
-              const canReview = booking.status === 'COMPLETED';
+        {/* Tabs */}
+        <Tabs
+          tabs={[
+            { 
+              id: 'all', 
+              label: 'Todas',
+              count: bookings.length,
+            },
+            { 
+              id: 'active', 
+              label: 'Activas',
+              count: bookings.filter(b => ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)).length,
+            },
+            { 
+              id: 'completed', 
+              label: 'Completadas',
+              count: bookings.filter(b => b.status === 'COMPLETED').length,
+            },
+            { 
+              id: 'cancelled', 
+              label: 'Canceladas',
+              count: bookings.filter(b => b.status === 'CANCELLED').length,
+            },
+          ]}
+          defaultTab={activeTab}
+          onChange={(tabId) => setActiveTab(tabId as 'all' | 'active' | 'completed' | 'cancelled')}
+          variant="line"
+        />
 
-              return (
-                <Card key={booking.id} hover>
-                  <CardContent>
-                    {/* Countdown Banner for upcoming active bookings */}
-                    {isUpcoming && ['CONFIRMED', 'IN_PROGRESS'].includes(booking.status) && countdown && (
-                      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 mb-4 rounded">
-                        <div className="flex items-center">
-                          <svg
-                            className="h-5 w-5 text-blue-400 mr-2"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <p className="text-sm font-medium text-blue-700">{countdown}</p>
-                        </div>
-                      </div>
-                    )}
+        {/* Tab Content */}
+        <TabPanel id={activeTab} activeTab={activeTab}>
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          ) : filteredBookings.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 text-center py-16 px-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {searchQuery ? 'No se encontraron reservas' : 'No hay reservas'}
+              </h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                {searchQuery
+                  ? 'No se encontraron reservas con ese criterio de búsqueda. Intenta con otro término.'
+                  : activeTab === 'all'
+                  ? 'Aún no tienes reservas. ¡Encuentra artistas increíbles y comienza a reservar!'
+                  : `No tienes reservas ${
+                      activeTab === 'active' ? 'activas' : 
+                      activeTab === 'completed' ? 'completadas' : 
+                      'canceladas'
+                    } en este momento.`}
+              </p>
+              {!searchQuery && (
+                <Button onClick={() => router.push('/artist')}>
+                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Explorar Artistas
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((booking) => {
+                const canCancel = ['PENDING', 'CONFIRMED'].includes(booking.status);
+                const canReview = booking.status === 'COMPLETED';
+                
+                const actions = [];
+                
+                // View Details button
+                actions.push({
+                  label: 'Ver Detalles',
+                  onClick: () => router.push(`/bookings/${booking.id}`),
+                  variant: 'outline' as const,
+                });
+                
+                // Confirm button (only for pending)
+                if (booking.status === 'PENDING') {
+                  actions.push({
+                    label: 'Confirmar',
+                    onClick: () => alert('Próximamente - Confirmar reserva'),
+                    variant: 'primary' as const,
+                  });
+                }
+                
+                // Cancel button
+                if (canCancel) {
+                  actions.push({
+                    label: 'Cancelar',
+                    onClick: () => openCancelModal(booking),
+                    variant: 'ghost' as const,
+                  });
+                }
+                
+                // Review button
+                if (canReview) {
+                  actions.push({
+                    label: 'Dejar Reseña',
+                    onClick: () => openReviewModal(booking),
+                    variant: 'primary' as const,
+                  });
+                }
 
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
-                        {/* Artist Avatar - Mock */}
-                        <Avatar fallback="A" size="lg" />
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              Artista #{booking.artistId.slice(-3)}
-                            </h3>
-                            {getStatusBadge(booking.status)}
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 mb-3">
-                            Código de reserva: <span className="font-mono text-blue-600">{booking.code || 'N/A'}</span>
-                          </p>
-                          
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <span>
-                                {new Date(booking.scheduledDate).toLocaleDateString('es-MX', {
-                                  weekday: 'long',
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                })}
-                              </span>
-                            </div>
-                            
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span>
-                                {new Date(booking.scheduledDate).toLocaleTimeString('es-MX', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Status Timeline */}
-                          <BookingStatusTimeline
-                            status={booking.status}
-                            createdAt={booking.createdAt}
-                            confirmedAt={undefined}
-                            completedAt={undefined}
-                            cancelledAt={undefined}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 md:mt-0 md:ml-6 flex flex-col items-end space-y-3">
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">
-                            ${booking.totalPrice.toLocaleString()}
-                          </p>
-                          <p className="text-sm text-gray-500">{booking.currency}</p>
-                        </div>
-                        
-                        <div className="flex flex-col gap-2 w-full md:w-auto">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => router.push(`/bookings/${booking.id}`)}
-                            className="w-full"
-                          >
-                            Ver Detalles
-                          </Button>
-                          
-                          {canModify && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openModifyDateModal(booking)}
-                              className="w-full"
-                            >
-                              Modificar Fecha
-                            </Button>
-                          )}
-                          
-                          {canCancel && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openCancelModal(booking)}
-                              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              Cancelar Reserva
-                            </Button>
-                          )}
-                          
-                          {canReview && (
-                            <Button
-                              size="sm"
-                              onClick={() => openReviewModal(booking)}
-                              className="w-full"
-                            >
-                              Dejar Reseña
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                return (
+                  <BookingCard
+                    key={booking.id}
+                    {...transformBooking(booking)}
+                    actions={actions}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </TabPanel>
       </div>
 
       {/* Modals */}

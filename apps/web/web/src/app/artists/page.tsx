@@ -149,9 +149,9 @@ export default function ArtistsPage() {
               </Button>
             )}
           </div>
-          {!loading && total > 0 && (
+          {!isLoading && totalArtists > 0 && (
             <p className="mt-3 text-sm text-gray-500 font-medium">
-              {total} {total === 1 ? 'artista encontrado' : 'artistas encontrados'}
+              {totalArtists} {totalArtists === 1 ? 'artista encontrado' : 'artistas encontrados'}
             </p>
           )}
         </div>

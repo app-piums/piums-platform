@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { Footer } from "@/components/Footer";
 
@@ -103,6 +104,16 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
         <div>
+          <div className="flex justify-center mb-6">
+            <Image 
+              src="/logo.jpg" 
+              alt="Piúms" 
+              width={150} 
+              height={50}
+              priority
+              className="h-12 w-auto"
+            />
+          </div>
           <h2 className="text-center text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             Iniciar sesión
           </h2>
@@ -255,8 +266,8 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+    </div>
     <Footer />
   </>
-    </div>
   );
 }

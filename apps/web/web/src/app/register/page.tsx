@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { countries, type Country } from "../../lib/countries";
 import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../components/PasswordStrengthIndicator";
 import { useAuth } from "../../contexts/AuthContext";
@@ -302,7 +303,7 @@ export default function RegisterPage() {
           </div>
           <div className="h-2 bg-zinc-200 rounded-full overflow-hidden dark:bg-zinc-700">
             <div
-              className="h-full bg-zinc-900 transition-all duration-300 dark:bg-zinc-50"
+              className="h-full bg-[#FF6A00] transition-all duration-300"
               style={{ width: `${(step / 2) * 100}%` }}
             />
           </div>
@@ -310,6 +311,16 @@ export default function RegisterPage() {
 
         <div className="space-y-6 rounded-xl bg-white p-8 shadow-xl dark:bg-zinc-900">
           <div className="text-center">
+            <div className="flex justify-center mb-6">
+              <Image 
+                src="/logo.jpg" 
+                alt="Piúms" 
+                width={150} 
+                height={50}
+                priority
+                className="h-12 w-auto"
+              />
+            </div>
             <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
               Crear cuenta
             </h2>
@@ -482,13 +493,13 @@ export default function RegisterPage() {
                       }}
                       className={`relative rounded-lg border-2 p-4 text-left transition-all ${
                         role === 'cliente'
-                          ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-800'
+                          ? 'border-[#FF6A00] bg-[#FF6A00]/5 ring-2 ring-[#FF6A00]/20'
                           : 'border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
                       }`}
                     >
                       {role === 'cliente' && (
                         <div className="absolute top-2 right-2">
-                          <svg className="h-5 w-5 text-zinc-900 dark:text-zinc-50" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="h-5 w-5 text-[#FF6A00]" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
                         </div>
@@ -513,13 +524,13 @@ export default function RegisterPage() {
                       }}
                       className={`relative rounded-lg border-2 p-4 text-left transition-all ${
                         role === 'artista'
-                          ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-800'
+                          ? 'border-[#FF6A00] bg-[#FF6A00]/5 ring-2 ring-[#FF6A00]/20'
                           : 'border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
                       }`}
                     >
                       {role === 'artista' && (
                         <div className="absolute top-2 right-2">
-                          <svg className="h-5 w-5 text-zinc-900 dark:text-zinc-50" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="h-5 w-5 text-[#FF6A00]" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
                         </div>
@@ -742,8 +753,8 @@ export default function RegisterPage() {
           </div>
         </div>
       )}
+    </div>
     <Footer />
   </>
-    </div>
   );
 }

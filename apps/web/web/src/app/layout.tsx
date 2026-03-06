@@ -40,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <meta name="theme-color" content="#9333EA" />
+        <meta name="theme-color" content="#FF6A00" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Piums" />

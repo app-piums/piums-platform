@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 interface RefreshTokenPayload {
   id: string;

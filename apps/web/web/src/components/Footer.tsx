@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const Footer: React.FC = () => {
   return (
@@ -8,7 +9,15 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Columna 1: Sobre Piums */}
           <div>
-            <h3 className="text-white font-bold text-lg mb-4">🎵 Piums</h3>
+            <div className="mb-4">
+              <Image 
+                src="/logo-white.png" 
+                alt="Piúms" 
+                width={100} 
+                height={35}
+                className="h-9 w-auto"
+              />
+            </div>
             <p className="text-sm text-gray-400 mb-4">
               La plataforma que conecta artistas profesionales con clientes que buscan servicios excepcionales para sus eventos.
             </p>

@@ -258,7 +258,7 @@ export default function ArtistProfilePage() {
                 onClick={() => setActiveTab(tab as any)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-[#FF6A00] text-[#FF6A00]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -286,7 +286,7 @@ export default function ArtistProfilePage() {
                       <div className="space-y-2">
                         {artist.certifications.map((cert) => (
                           <div key={cert.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <svg className="h-6 w-6 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-6 w-6 text-[#00AEEF] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                             </svg>
                             <div>
@@ -322,7 +322,7 @@ export default function ArtistProfilePage() {
                             <p className="text-sm text-gray-600 mt-1">{service.description}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-blue-600">${service.basePrice.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-[#FF6A00]">${service.basePrice.toLocaleString()}</p>
                             <p className="text-sm text-gray-500">{Math.floor(service.duration / 60)} horas</p>
                           </div>
                         </div>

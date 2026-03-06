@@ -1,11 +1,15 @@
 import passport from 'passport';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
-import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export const configureFacebookStrategy = () => {
+  // Solo configurar si existen las credenciales
+  if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
+   logger.warn('Facebook OAuth credentials not configured, skipping Facebook strategy', 'OAUTH');
+    return;
+  }
+
   passport.use(
     new FacebookStrategy(
       {

@@ -1,9 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/isAdmin';
-import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // GET /api/admin/stats - Métricas generales
 export const getStats = async (req: AuthRequest, res: Response, next: NextFunction) => {

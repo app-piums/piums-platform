@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Avatar } from './ui/Avatar';
 import { Button } from './ui/Button';
@@ -23,7 +24,14 @@ export const Navbar: React.FC = () => {
           {/* Logo & Nav Links */}
           <div className="flex">
             <Link href="/dashboard" className="flex items-center">
-              <span className="text-2xl font-bold text-blue-600">Piums</span>
+              <Image 
+                src="/logo.jpg" 
+                alt="Piúms" 
+                width={120} 
+                height={40}
+                priority
+                className="h-10 w-auto"
+              />
             </Link>
             
             <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
@@ -31,7 +39,7 @@ export const Navbar: React.FC = () => {
                 href="/dashboard"
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname === '/dashboard'
-                    ? 'text-blue-600 bg-blue-50'
+                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -41,27 +49,17 @@ export const Navbar: React.FC = () => {
                 href="/artists"
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname?.startsWith('/artists')
-                    ? 'text-blue-600 bg-blue-50'
+                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
                 Artistas
               </Link>
               <Link
-                href="/search"
-                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  pathname === '/search'
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                Buscar
-              </Link>
-              <Link
                 href="/bookings"
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname?.startsWith('/bookings')
-                    ? 'text-blue-600 bg-blue-50'
+                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -78,7 +76,7 @@ export const Navbar: React.FC = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 hover:opacity-80"
                 >
-                  <Avatar src={user.avatar} fallback={user.nombre} size="sm" />
+                  <Avatar src={undefined} fallback={user.nombre} size="sm" />
                   <span className="hidden sm:block text-sm font-medium text-gray-700">
                     {user.nombre}
                   </span>

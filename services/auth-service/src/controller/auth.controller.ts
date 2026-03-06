@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import { 
   hashPassword, 
@@ -12,8 +11,7 @@ import { tokenService } from "../services/token.service";
 import { passwordService } from "../services/password.service";
 import { verificationService } from "../services/verification.service";
 import { notificationsClient } from "../clients/notifications.client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {

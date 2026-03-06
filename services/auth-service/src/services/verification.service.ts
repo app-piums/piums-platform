@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export class VerificationService {
   /**
