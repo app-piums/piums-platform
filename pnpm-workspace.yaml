@@ -1,5 +1,6 @@
 packages:
   - "apps/*"
-  - "apps/web/web"
+  - "apps/web-client/web"
+  - "apps/web-artist/web"
   - "services/*"
   - "packages/*"

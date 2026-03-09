@@ -140,6 +140,10 @@ Piums Platform es un marketplace completo que conecta clientes con artistas call
 - **HTTP Client**: Axios
 - **Testing**: Jest + React Testing Library
 
+**Aplicaciones Web Separadas:**
+- **web-client** (Port 3000): Aplicación para clientes - búsqueda de artistas, reservas, pagos
+- **web-artist** (Port 3001): Dashboard para artistas - gestión de servicios, calendario, reseñas
+
 ### DevOps
 
 - **Containerization**: Docker + Docker Compose
@@ -366,8 +370,12 @@ pnpm dev
 cd services/users-service
 pnpm dev
 
-# Terminal 4: Frontend
-cd apps/web/web
+# Terminal 4: Web Client (Clientes)
+cd apps/web-client/web
+pnpm dev
+
+# Terminal 5: Web Artist (Artistas)
+cd apps/web-artist/web
 pnpm dev
 ```
 
@@ -387,7 +395,8 @@ pnpm dev
 ### URLs de Desarrollo
 
 - **Gateway**: http://localhost:3000
-- **Frontend**: http://localhost:3001
+- **Web Client (Clientes)**: http://localhost:3000
+- **Web Artist (Artistas)**: http://localhost:3001
 - **API Docs**: http://localhost:3000/docs
 - **Auth Service**: http://localhost:4001
 - **Users Service**: http://localhost:4002
