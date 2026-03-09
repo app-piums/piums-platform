@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { 
   register, 
+  registerArtist,
+  registerClient,
   login, 
   refreshToken, 
   verify,
@@ -24,6 +26,8 @@ const router = Router();
 
 // Autenticación básica
 router.post("/register", registerLimiter, register);
+router.post("/register/artist", registerLimiter, registerArtist);
+router.post("/register/client", registerLimiter, registerClient);
 router.post("/login", loginLimiter, login);
 router.post("/refresh", refreshTokenLimiter, refreshToken);
 router.post("/verify", verify);

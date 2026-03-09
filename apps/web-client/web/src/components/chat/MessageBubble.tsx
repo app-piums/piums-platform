@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Message } from '@/../../packages/sdk/src';
+import { Message } from '@/types/chat';
 
 interface MessageBubbleProps {
   message: Message;

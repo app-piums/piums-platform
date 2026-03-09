@@ -7,60 +7,154 @@ import { usePathname } from 'next/navigation';
 interface DashboardTab {
   id: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   href: string;
+  badge?: number;
 }
 
 const tabs: DashboardTab[] = [
-  { id: 'overview', label: 'Vista General', icon: '📊', href: '/artist/dashboard' },
-  { id: 'bookings', label: 'Reservas', icon: '📅', href: '/artist/dashboard/bookings' },
-  { id: 'calendar', label: 'Calendario', icon: '🗓️', href: '/artist/dashboard/calendar' },
-  { id: 'services', label: 'Servicios', icon: '⚙️', href: '/artist/dashboard/services' },
-  { id: 'reviews', label: 'Reviews', icon: '⭐', href: '/artist/dashboard/reviews' },
-  { id: 'settings', label: 'Configuración', icon: '⚙️', href: '/artist/dashboard/settings' },
+  { 
+    id: 'overview', 
+    label: 'Dashboard', 
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>, 
+    href: '/artist/dashboard' 
+  },
+  { 
+    id: 'gigs', 
+    label: 'My Gigs', 
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>, 
+    href: '/artist/dashboard/bookings' 
+  },
+  { 
+    id: 'messages', 
+    label: 'Messages', 
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, 
+    href: '/chat',
+    badge: 3
+  },
+  { 
+    id: 'schedule', 
+    label: 'Schedule', 
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, 
+    href: '/artist/dashboard/calendar' 
+  },
+];
+
+const financeLinks = [
+  {
+    id: 'wallet',
+    label: 'Wallet',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
+    href: '/artist/dashboard/wallet'
+  },
+  {
+    id: 'invoices',
+    label: 'Invoices',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+    href: '/artist/dashboard/invoices'
+  }
 ];
 
 export const DashboardSidebar: React.FC = () => {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-6">Dashboard de Artista</h2>
+    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+      {/* Logo */}
+      <div className="p-6 border-b border-gray-100">
+        <Link href="/artist/dashboard" className="flex items-center gap-2">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">P</span>
+          </div>
+          <span className="text-xl font-bold text-gray-900">PIUMS</span>
+        </Link>
       </div>
       
-      <nav className="px-3">
-        {tabs.map((tab) => {
-          const isActive = pathname === tab.href;
-          
-          return (
-            <Link
-              key={tab.id}
-              href={tab.href}
-              className={`
-                flex items-center gap-3 px-4 py-3 mb-2 rounded-lg text-sm font-medium transition-colors
-                ${
-                  isActive
-                    ? 'bg-purple-100 text-purple-700 shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }
-              `}
-            >
-              <span className="text-xl">{tab.icon}</span>
-              <span>{tab.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Main Menu */}
+      <div className="flex-1 px-4 py-6">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+          Main Menu
+        </p>
+        <nav className="space-y-1">
+          {tabs.map((tab) => {
+            const isActive = pathname === tab.href;
+            
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={`
+                  flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                  ${
+                    isActive
+                      ? 'bg-orange-50 text-orange-600'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>
+                    {tab.icon}
+                  </div>
+                  <span>{tab.label}</span>
+                </div>
+                {tab.badge && (
+                  <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {tab.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <span>←</span>
-          <span>Volver a Dashboard</span>
-        </Link>
+        {/* Finance Section */}
+        <div className="mt-8">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+            Finance
+          </p>
+          <nav className="space-y-1">
+            {financeLinks.map((link) => {
+              const isActive = pathname === link.href;
+              
+              return (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                    ${
+                      isActive
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>
+                    {link.icon}
+                  </div>
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* User Profile */}
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+            AM
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-gray-900">Alex Morgan</p>
+            <p className="text-xs text-gray-500">Pro Creative</p>
+          </div>
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </div>
     </aside>
   );

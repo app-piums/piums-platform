@@ -21,8 +21,8 @@ app.use(apiLimiter);
 
 // Rutas
 app.use("/health", healthRoutes);
-app.use("/api/artists/dashboard", artistDashboardRoutes);
-app.use("/api/artists", artistsRoutes);
+app.use("/artists/dashboard", artistDashboardRoutes);
+app.use("/artists", artistsRoutes);
 
 // Middleware de error handling (debe ir al final)
 app.use(errorHandler);

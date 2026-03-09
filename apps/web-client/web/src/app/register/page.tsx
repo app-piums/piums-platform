@@ -13,9 +13,6 @@ interface FieldError {
   email?: string;
   password?: string;
   confirmPassword?: string;
-  role?: string;
-  pais?: string;
-  telefono?: string;
   terms?: string;
 }
 
@@ -30,7 +27,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<'cliente' | 'artista'>('cliente');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [telefono, setTelefono] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -82,10 +78,6 @@ export default function RegisterPage() {
         if (value !== password) 
           return "Las contraseñas no coinciden";
         return "";
-      case "role":
-        if (!value || typeof value !== 'string') 
-          return "Selecciona un tipo de cuenta";
-        return "";
       case "pais":
         if (!selectedCountry) 
           return "Selecciona tu país";
@@ -123,7 +115,6 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
-      role: validateField("role", role),
     };
     
     return !Object.values(step1Errors).some(error => error);
@@ -136,7 +127,6 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
-      role: validateField("role", role),
     };
 
     setErrors(step1Errors);
@@ -145,7 +135,6 @@ export default function RegisterPage() {
       email: true,
       password: true,
       confirmPassword: true,
-      role: true,
     });
 
     if (Object.values(step1Errors).some(error => error)) {
@@ -199,13 +188,13 @@ export default function RegisterPage() {
 
   const handleSkipLocation = () => {
     setShowLocationModal(false);
-    router.push("/dashboard");
+    window.location.href = "/onboarding";
   };
 
   const handleAcceptLocation = async () => {
     await requestLocationPermission();
     setShowLocationModal(false);
-    router.push("/dashboard");
+    window.location.href = "/onboarding";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -218,9 +207,6 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
-      role: validateField("role", role),
-      pais: validateField("pais", ""),
-      telefono: validateField("telefono", telefono),
       terms: validateField("terms", acceptTerms),
     };
 
@@ -230,9 +216,6 @@ export default function RegisterPage() {
       email: true,
       password: true,
       confirmPassword: true,
-      role: true,
-      pais: true,
-      telefono: true,
       terms: true,
     });
 
@@ -253,10 +236,6 @@ export default function RegisterPage() {
           nombre,
           email,
           password,
-          role,
-          pais: selectedCountry?.name,
-          codigoPais: selectedCountry?.dialCode,
-          telefono,
         }),
         credentials: 'include', // 🔒 Importante para cookies httpOnly
       });
@@ -322,10 +301,10 @@ export default function RegisterPage() {
               />
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Crear cuenta
+              Descubre artistas increíbles
             </h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Únete a Piums y comienza tu viaje musical
+              Crea tu cuenta gratis para reservar los mejores artistas
             </p>
           </div>
 
@@ -475,82 +454,6 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                {/* Selector de Rol */}
-                <div>
-                  <label
-                    htmlFor="role"
-                    className="block text-sm font-medium text-zinc-700 mb-3 dark:text-zinc-300"
-                  >
-                    ¿Cómo quieres usar Piums? <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Opción Cliente */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRole('cliente');
-                        handleBlur('role', 'cliente');
-                      }}
-                      className={`relative rounded-lg border-2 p-4 text-left transition-all ${
-                        role === 'cliente'
-                          ? 'border-[#FF6A00] bg-[#FF6A00]/5 ring-2 ring-[#FF6A00]/20'
-                          : 'border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
-                      }`}
-                    >
-                      {role === 'cliente' && (
-                        <div className="absolute top-2 right-2">
-                          <svg className="h-5 w-5 text-[#FF6A00]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                      <div className="flex flex-col items-center text-center">
-                        <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 dark:bg-blue-900">
-                          <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">Cliente</span>
-                        <span className="text-xs text-zinc-600 mt-1 dark:text-zinc-400">Buscar y contratar artistas</span>
-                      </div>
-                    </button>
-
-                    {/* Opción Artista */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRole('artista');
-                        handleBlur('role', 'artista');
-                      }}
-                      className={`relative rounded-lg border-2 p-4 text-left transition-all ${
-                        role === 'artista'
-                          ? 'border-[#FF6A00] bg-[#FF6A00]/5 ring-2 ring-[#FF6A00]/20'
-                          : 'border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
-                      }`}
-                    >
-                      {role === 'artista' && (
-                        <div className="absolute top-2 right-2">
-                          <svg className="h-5 w-5 text-[#FF6A00]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                      <div className="flex flex-col items-center text-center">
-                        <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center mb-3 dark:bg-purple-900">
-                          <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                          </svg>
-                        </div>
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">Artista</span>
-                        <span className="text-xs text-zinc-600 mt-1 dark:text-zinc-400">Ofrecer mis servicios</span>
-                      </div>
-                    </button>
-                  </div>
-                  {touched.role && errors.role && (
-                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.role}</p>
-                  )}
-                </div>
-
                 <button
                   type="button"
                   onClick={handleNextStep}
@@ -696,16 +599,24 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <div className="text-center text-sm pt-4 border-t border-zinc-200 dark:border-zinc-800">
-              <span className="text-zinc-600 dark:text-zinc-400">
-                ¿Ya tienes cuenta?{" "}
-              </span>
-              <a
-                href="/login"
-                className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
-              >
-                Inicia sesión aquí
-              </a>
+            <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="text-center text-sm">
+                <span className="text-zinc-600 dark:text-zinc-400">¿Ya tienes cuenta? </span>
+                <a href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
+                  Inicia sesión aquí
+                </a>
+              </div>
+              <div className="text-center">
+                <a
+                  href={process.env.NEXT_PUBLIC_ARTIST_APP_URL || 'http://127.0.0.1:3001/register'}
+                  className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                  ¿Eres artista? Únete a <span className="font-semibold ml-0.5">Piums for Artists</span>
+                </a>
+              </div>
             </div>
           </form>
         </div>
@@ -726,9 +637,7 @@ export default function RegisterPage() {
                 Permiso de Ubicación
               </h3>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {role === 'artista' 
-                  ? 'Necesitamos tu ubicación para mostrarte oportunidades cerca de ti y ayudarte a gestionar tus servicios localmente.'
-                  : 'Activar tu ubicación nos ayudará a mostrarte los mejores artistas cerca de ti y mejorar tu experiencia.'}
+                Activar tu ubicación nos ayudará a mostrarte los mejores artistas cerca de ti y mejorar tu experiencia.
               </p>
             </div>
 

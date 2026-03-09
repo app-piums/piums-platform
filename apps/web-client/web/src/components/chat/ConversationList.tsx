@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Conversation } from '@/../../packages/sdk/src';
+import { Conversation } from '@/types/chat';
 
 interface ConversationListProps {
   conversations: Conversation[];

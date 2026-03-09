@@ -4,7 +4,7 @@ import {
   hashPassword, 
   comparePassword
 } from "../services/auth.service";
-import { registerSchema, loginSchema } from "../schemas/auth.schema";
+import { registerSchema, registerArtistSchema, registerClientSchema, loginSchema } from "../schemas/auth.schema";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { tokenService } from "../services/token.service";
@@ -13,121 +13,120 @@ import { verificationService } from "../services/verification.service";
 import { notificationsClient } from "../clients/notifications.client";
 import { prisma } from "../lib/prisma";
 
+// ─────────────────────────────────────────────────────────────────────────
+// Helper interno: crea el usuario, genera tokens y devuelve la respuesta
+// ─────────────────────────────────────────────────────────────────────────
+async function createUserAndRespond(
+  req: Request,
+  res: Response,
+  nombre: string,
+  email: string,
+  password: string,
+  role: string
+) {
+  // Validar unicidad de email
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    throw new AppError(409, "Este correo electrónico ya está registrado");
+  }
+
+  const passwordHash = await hashPassword(password);
+  const isDev = process.env.NODE_ENV !== 'production';
+  const userStatus = isDev ? 'ACTIVE' : 'PENDING_EMAIL';
+
+  const user = await prisma.user.create({
+    data: {
+      nombre,
+      email,
+      passwordHash,
+      role,             // ✅ Guardar rol correcto (artista / cliente)
+      emailVerified: isDev,
+      status: userStatus,
+    },
+  });
+
+  logger.info("Usuario registrado", "AUTH_CONTROLLER", { userId: user.id, email: user.email, role: user.role });
+
+  // Email de verificación solo en producción
+  if (!isDev) {
+    try {
+      const verificationResult = await verificationService.createVerificationToken(
+        user.id, email, req.ip, req.get('user-agent')
+      );
+      await notificationsClient.sendVerificationEmail(email, nombre, verificationResult.token);
+    } catch (emailError: any) {
+      logger.warn("No se pudo enviar email de verificación", "AUTH_CONTROLLER", { message: emailError.message });
+    }
+  }
+
+  // Generar tokens
+  const jti = crypto.randomUUID();
+  const token = tokenService.signAccessToken({ id: user.id, email: user.email, jti });
+  const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
+
+  await tokenService.createRefreshToken(user.id, refreshToken, req.ip, req.get('user-agent'));
+  await prisma.session.create({
+    data: { jti, userId: user.id, ipAddress: req.ip, userAgent: req.get('user-agent'), expiresAt: new Date(Date.now() + 3600 * 1000) },
+  });
+
+  try {
+    await prisma.auditLog.create({
+      data: { userId: user.id, action: 'USER_REGISTERED', entity: 'User', entityId: user.id, ipAddress: req.ip, userAgent: req.get('user-agent'), success: true },
+    });
+  } catch (auditError: any) {
+    logger.warn("No se pudo crear audit log", "AUTH_CONTROLLER", { message: auditError.message });
+  }
+
+  const redirectUrl = role === 'artista'
+    ? (process.env.ARTIST_APP_URL || 'http://localhost:3001')
+    : (process.env.CLIENT_APP_URL || 'http://localhost:3002');
+
+  const { passwordHash: _, ...userResponse } = user;
+
+  return res.status(201).json({
+    user: userResponse,
+    token,
+    refreshToken,
+    redirectUrl,
+    message: isDev ? 'Usuario registrado exitosamente.' : 'Usuario registrado. Por favor verifica tu email.',
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// POST /auth/register  (genérico – mantiene compatibilidad)
+// ─────────────────────────────────────────────────────────────────────────
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Validar datos con Zod
-    const validatedData = registerSchema.parse(req.body);
-    const { nombre, email, password } = validatedData;
-
-    // Validar unicidad de email
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new AppError(400, "Este correo electrónico ya está registrado");
-    }
-
-    // Hash de contraseña
-    const passwordHash = await hashPassword(password);
-
-    // Crear usuario con Prisma
-    const user = await prisma.user.create({
-      data: {
-        nombre,
-        email,
-        passwordHash,
-        emailVerified: false,
-        status: 'PENDING_EMAIL', // Usuario debe verificar email
-      },
-    });
-
-    logger.info("Usuario registrado exitosamente", "AUTH_CONTROLLER", { 
-      userId: user.id, 
-      email: user.email 
-    });
-
-    // Generar token de verificación de email
-    const verificationResult = await verificationService.createVerificationToken(
-      user.id,
-      email,
-      req.ip,
-      req.get('user-agent')
-    );
-
-    // Enviar email de verificación
-    try {
-      await notificationsClient.sendVerificationEmail(
-        email,
-        nombre,
-        verificationResult.token
-      );
-    } catch (emailError: any) {
-      logger.error("Error enviando email de verificación", "AUTH_CONTROLLER", emailError);
-      // No lanzamos error, el usuario puede solicitar reenvío
-    }
-
-    // Generar tokens JWT
-    const jti = crypto.randomUUID();
-    const token = tokenService.signAccessToken({
-      id: user.id,
-      email: user.email,
-      jti,
-    });
-    const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
-
-    // Guardar refresh token en BD
-    await tokenService.createRefreshToken(
-      user.id,
-      refreshToken,
-      req.ip,
-      req.get('user-agent')
-    );
-
-    // Crear sesión
-    await prisma.session.create({
-      data: {
-        jti,
-        userId: user.id,
-        ipAddress: req.ip,
-        userAgent: req.get('user-agent'),
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos
-      },
-    });
-
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'USER_REGISTERED',
-        entity: 'User',
-        entityId: user.id,
-        ipAddress: req.ip,
-        userAgent: req.get('user-agent'),
-        success: true,
-      },
-    });
-
-    // Determinar URL de redirección basada en el rol del usuario
-    let redirectUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
-    
-    if (user.role === 'artist') {
-      redirectUrl = process.env.ARTIST_APP_URL || 'http://localhost:3001';
-    } else if (user.role === 'admin') {
-      redirectUrl = process.env.ADMIN_APP_URL || 'http://localhost:3002';
-    }
-
-    // No enviar el passwordHash al cliente
-    const { passwordHash: _, ...userResponse } = user;
-
-    res.status(201).json({ 
-      user: userResponse, 
-      token,
-      refreshToken,
-      redirectUrl,
-      message: 'Usuario registrado. Por favor verifica tu email.' 
-    });
+    const { nombre, email, password, role } = registerSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, role);
   } catch (error: any) {
+    logger.error("Error en registro genérico", "AUTH_CONTROLLER", { message: error.message });
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// POST /auth/register/artist  → rol fijo: artista
+// ─────────────────────────────────────────────────────────────────────────
+export const registerArtist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { nombre, email, password } = registerArtistSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, 'artista');
+  } catch (error: any) {
+    logger.error("Error en registro de artista", "AUTH_CONTROLLER", { message: error.message });
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// POST /auth/register/client  → rol fijo: cliente
+// ─────────────────────────────────────────────────────────────────────────
+export const registerClient = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { nombre, email, password } = registerClientSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, 'cliente');
+  } catch (error: any) {
+    logger.error("Error en registro de cliente", "AUTH_CONTROLLER", { message: error.message });
     next(error);
   }
 };
@@ -322,6 +321,7 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
         nombre: true,
         email: true,
         emailVerified: true,
+        role: true,
         status: true,
       },
     });

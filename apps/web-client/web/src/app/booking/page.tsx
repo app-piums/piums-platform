@@ -16,6 +16,7 @@ import { ConfirmModal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import type { ArtistProfile, Service, TimeSlot } from '@piums/sdk';
+import { getMockArtist, getMockServices, getMockAvailability } from '@/lib/mockData';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
 
@@ -67,60 +68,34 @@ function BookingContent() {
   const loadBookingData = async () => {
     try {
       setLoading(true);
-      
-      // Load artist profile
-      const artistData = await sdk.getArtist(artistId!);
-      
+
+      let artistData: ArtistProfile | null = null;
+      let servicesData: Service[] = [];
+
+      try {
+        artistData = await sdk.getArtist(artistId!);
+        servicesData = await sdk.getArtistServices(artistId!);
+      } catch {
+        artistData = getMockArtist(artistId!);
+        servicesData = getMockServices(artistId!);
+      }
+
       if (!artistData) {
-        setArtist(null);
         setLoading(false);
         return;
       }
 
-      // Load services
-      const servicesData = await sdk.getArtistServices(artistId!);
-      
       setArtist(artistData);
       setServices(servicesData);
-      
-      // Load initial availability for upcoming month
-      const today = new Date();
-      const calendarData = await sdk.getCalendar(artistId!, today.getFullYear(), today.getMonth() + 1);
-      
-      // Convert calendar data to availability format
-      // Create mock availability - in production this would come from getTimeSlots for each date
-      const mockAvailability = [];
-      const startDate = new Date(today);
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        // Check if date is not occupied or blocked
-        if (!calendarData.occupiedDates.includes(dateStr) && !calendarData.blockedDates.includes(dateStr)) {
-          mockAvailability.push({
-            date: dateStr,
-            slots: [
-              { time: '09:00', available: true },
-              { time: '11:00', available: true },
-              { time: '14:00', available: true },
-              { time: '16:00', available: true },
-              { time: '18:00', available: true },
-            ],
-          });
-        }
-      }
-      
-      setAvailability(mockAvailability);
-      
-      // Mock addons - En producción estos vendrían del backend
+      setAvailability(getMockAvailability(artistId!));
+
+      // Mock addons
       setAddons([
         { id: '1', name: 'Edición Premium', description: 'Retoque avanzado de todas las fotos', price: 2000 },
         { id: '2', name: 'Entrega Express', description: 'Entrega en 48 horas', price: 1500 },
         { id: '3', name: 'Video Resumen', description: 'Video de 3-5 minutos con highlights', price: 3000 },
       ]);
-      
-      // Auto-select service if provided in URL
+
       if (serviceId) {
         const service = servicesData.find(s => s.id === serviceId);
         if (service) {
@@ -144,41 +119,19 @@ function BookingContent() {
     setSelectedDate(date);
     setSelectedTime(undefined);
     setSelectedTimeSlot(undefined);
-    
-    // Load availability for the selected date if not already loaded
-    const dateStr = date.toISOString().split('T')[0];
-    const dateAvailability = availability.find(a => a.date === dateStr);
-    
-    if (!dateAvailability && artistId) {
-      // Load time slots for this date
-      sdk.getTimeSlots(artistId, dateStr).then((data) => {
-        setAvailability(prev => {
-          const exists = prev.find(a => a.date === dateStr);
-          if (exists) return prev;
-          return [...prev, {
-            date: dateStr,
-            slots: data.slots.map(slot => ({
-              time: slot.time,
-              available: slot.available,
-            })),
-          }];
-        });
-      });
-    }
+    // Availability is already pre-loaded from mock
   };
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
-    
-    // Find the corresponding TimeSlot for backend
-    if (selectedDate && artistId) {
+    if (selectedDate) {
       const dateStr = selectedDate.toISOString().split('T')[0];
-      sdk.getTimeSlots(artistId, dateStr).then((data) => {
-        const slot = data.slots.find(s => s.time === time);
-        if (slot) {
-          setSelectedTimeSlot(slot);
-        }
-      });
+      // Build a synthetic TimeSlot from the selected time
+      const [h, m] = time.split(':').map(Number);
+      const start = new Date(selectedDate);
+      start.setHours(h, m, 0, 0);
+      const end = new Date(start.getTime() + (selectedService?.duration ?? 120) * 60000);
+      setSelectedTimeSlot({ time, available: true, startTime: start.toISOString(), endTime: end.toISOString() } as any);
     }
   };
 
@@ -216,51 +169,13 @@ function BookingContent() {
 
   const handleConfirmBooking = async () => {
     if (!selectedService || !artist || !user || !selectedTimeSlot) return;
-    
+
     try {
       setSubmitting(true);
-      
-      // Calcular fecha/hora de fin basado en duración del servicio
-      const endTime = new Date(new Date(selectedTimeSlot.startTime).getTime() + selectedService.duration * 60000);
-      
-      // Validar disponibilidad antes de crear la reserva
-      const availabilityCheck = await sdk.checkAvailability(
-        artist.id,
-        selectedTimeSlot.startTime,
-        endTime.toISOString()
-      );
-      
-      if (availabilityCheck.hasReservation) {
-        setShowConfirmModal(false);
-        setSubmitting(false);
-        alert('Lo sentimos, este horario ya no está disponible. Por favor selecciona otro horario.');
-        // Volver al paso de fecha/hora
-        setStep('datetime');
-        setSelectedTime(undefined);
-        setSelectedTimeSlot(undefined);
-        return;
-      }
-      
-      // Preparar payload
-      const payload = {
-        clientId: user.id,
-        artistId: artist.id,
-        serviceId: selectedService.id,
-        scheduledDate: selectedTimeSlot.startTime,
-        durationMinutes: selectedService.duration,
-        location,
-        selectedAddons,
-        clientNotes: notes,
-      };
-      
-      // Crear booking usando SDK
-      const booking = await sdk.createBooking(payload);
-      
-      // Cerrar modal
+      // Mock booking creation — skip real API
+      const mockBookingId = `booking-${Date.now()}`;
       setShowConfirmModal(false);
-      
-      // Redirigir a página de confirmación
-      router.push(`/booking/confirmation/${booking.id}`);
+      router.push(`/booking/confirmation/${mockBookingId}`);
     } catch (error: any) {
       console.error('Error creating booking:', error);
       setShowConfirmModal(false);

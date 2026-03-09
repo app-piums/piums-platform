@@ -90,7 +90,7 @@ export default function LoginPage() {
       }
 
       // Redirigir al dashboard usando Next.js router (SPA navigation)
-      router.push("/dashboard");
+      router.push("/artist/dashboard");
       
     } catch (err: any) {
       setGeneralError(err.message);

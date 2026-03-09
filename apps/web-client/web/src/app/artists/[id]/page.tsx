@@ -2,17 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Lightbox } from '@/components/Lightbox';
 import { Loading } from '@/components/Loading';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
-import { sdk } from '@piums/sdk';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
+import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
 
 export default function ArtistProfilePage() {
   const params = useParams();
@@ -44,24 +41,23 @@ export default function ArtistProfilePage() {
   const loadArtistData = async () => {
     try {
       setLoading(true);
-      
-      // Load artist profile
-      const artistData = await sdk.getArtist(artistId);
-      
-      if (!artistData) {
-        setArtist(null);
-        setLoading(false);
-        return;
+      // Try API first, fall back to mock
+      let artistData: ArtistProfile | null = null;
+      let servicesData: Service[] = [];
+      try {
+        const { sdk } = await import('@piums/sdk');
+        artistData = await sdk.getArtist(artistId);
+        servicesData = await sdk.getArtistServices(artistId);
+      } catch {
+        artistData = getMockArtist(artistId);
+        servicesData = getMockServices(artistId);
       }
-
       setArtist(artistData);
-
-      // Load services in parallel
-      const servicesData = await sdk.getArtistServices(artistId);
       setServices(servicesData);
     } catch (error) {
       console.error('Error loading artist:', error);
-      setArtist(null);
+      setArtist(getMockArtist(artistId));
+      setServices(getMockServices(artistId));
     } finally {
       setLoading(false);
     }
@@ -70,14 +66,25 @@ export default function ArtistProfilePage() {
   const loadReviews = async (page: number) => {
     try {
       setLoadingReviews(true);
-      const { reviews: reviewsData, total, totalPages } = await sdk.getArtistReviews(artistId, page, 5);
-      
+      let reviewsData: Review[] = [];
+      let total = 0;
+      let totalPages = 1;
+      try {
+        const { sdk } = await import('@piums/sdk');
+        const result = await sdk.getArtistReviews(artistId, page, 5);
+        reviewsData = result.reviews;
+        total = result.total;
+        totalPages = result.totalPages;
+      } catch {
+        reviewsData = getMockReviews(artistId);
+        total = reviewsData.length;
+        totalPages = 1;
+      }
       if (page === 1) {
         setReviews(reviewsData);
       } else {
         setReviews(prev => [...prev, ...reviewsData]);
       }
-      
       setReviewsTotal(total);
       setReviewsPage(page);
       setReviewsTotalPages(totalPages);
@@ -122,23 +129,15 @@ export default function ArtistProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div>
-        <Navbar />
-        <Loading />
-      </div>
-    );
+    return <Loading fullScreen />;
   }
 
   if (!artist) {
     return (
-      <div>
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Artista no encontrado</h2>
-          <Button onClick={() => router.push('/artists')} className="mt-4">
-            Volver a Artistas
-          </Button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Artista no encontrado</h2>
+          <Button onClick={() => router.push('/artists')}>Volver a Artistas</Button>
         </div>
       </div>
     );
@@ -152,9 +151,7 @@ export default function ArtistProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      {/* Lightbox */}
+      {/* Lightbox */}}
       {lightboxOpen && portfolioImages.length > 0 && (
         <Lightbox
           images={portfolioImages}
@@ -165,15 +162,12 @@ export default function ArtistProfilePage() {
         />
       )}
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Breadcrumbs 
-          items={[
-            { label: 'Inicio', href: '/' },
-            { label: 'Artistas', href: '/artists' },
-            { label: artist?.nombre || 'Perfil' }
-          ]}
-          className="mb-6"
-        />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* go back */}
+        <button onClick={() => router.push('/artists')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+          Volver a Artistas
+        </button>
         {/* Cover Photo */}
         <div className="relative h-64 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg overflow-hidden mb-8">
           {artist.coverPhoto && (
@@ -469,7 +463,6 @@ export default function ArtistProfilePage() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

@@ -6,6 +6,20 @@ export function registerServiceWorker() {
     return;
   }
 
+  // Desregistrar service workers antiguos para evitar conflictos de puerto
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        console.log('[PWA] Unregistering old service worker:', registration.scope);
+        registration.unregister();
+      });
+    });
+  }
+
+  // Service worker deshabilitado temporalmente para evitar conflictos de caché
+  return;
+
+  /* Descomentar para habilitar PWA
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
@@ -49,6 +63,7 @@ export function registerServiceWorker() {
   } else {
     console.log('[PWA] Service Workers not supported in this browser');
   }
+  */
 }
 
 function showUpdateNotification(worker: ServiceWorker) {

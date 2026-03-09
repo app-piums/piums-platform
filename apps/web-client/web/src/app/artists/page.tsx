@@ -3,18 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { ArtistCard } from '@/components/ArtistCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useInfiniteArtists, type ArtistsFilters } from '@/hooks/useInfiniteArtists';
+import ClientSidebar from '@/components/ClientSidebar';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ArtistsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -114,19 +114,11 @@ export default function ArtistsPage() {
   const totalArtists = data?.pages[0]?.total ?? 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumbs */}
-        <Breadcrumbs 
-          items={[
-            { label: 'Inicio', href: '/' },
-            { label: 'Artistas' }
-          ]}
-          className="mb-6"
-        />
+    <div className="flex min-h-screen bg-gray-50">
+      <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
 
+      <div className="flex-1 overflow-y-auto">
+      <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -246,7 +238,7 @@ export default function ArtistsPage() {
           </>
         )}
       </div>
-      <Footer />
+      </div>
     </div>
   );
 }

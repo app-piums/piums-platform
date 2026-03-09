@@ -6,12 +6,12 @@ const FETCH_TIMEOUT = 10000; // 10 segundos
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nombre, email, password, role, pais, codigoPais, telefono } = body;
+    const { nombre, email, password } = body;
 
     // Validación básica
-    if (!nombre || !email || !password || !role || !pais || !telefono) {
+    if (!nombre || !email || !password) {
       return NextResponse.json(
-        { message: "Todos los campos son requeridos" },
+        { message: "Nombre, email y contraseña son requeridos" },
         { status: 400 }
       );
     }
@@ -21,21 +21,13 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
     try {
-      // Llamar directamente al auth-service
-      const response = await fetch(`${AUTH_SERVICE_URL}/auth/register`, {
+      // Llamar al endpoint específico de artistas (rol fijo server-side)
+      const response = await fetch(`${AUTH_SERVICE_URL}/auth/register/artist`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          nombre,
-          email,
-          password,
-          role,
-          pais,
-          codigoPais,
-          telefono,
-        }),
+        body: JSON.stringify({ nombre, email, password }),
         signal: controller.signal,
       });
 
@@ -71,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Token de acceso (1 hora)
-      responseWithCookies.cookies.set('token', data.token, {
+      responseWithCookies.cookies.set('auth_token', data.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -79,7 +71,16 @@ export async function POST(request: NextRequest) {
         path: '/',
       });
 
-      // 🔒 Refresh token (7 días) - ahora se guarda
+      // Establecer cookie de rol — siempre 'artista' en web-artist
+      responseWithCookies.cookies.set('user_role', 'artista', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600, // 1 hora
+        path: '/',
+      });
+
+      // 🔒 Refresh token (7 días)
       if (data.refreshToken) {
         responseWithCookies.cookies.set('refreshToken', data.refreshToken, {
           httpOnly: true,
@@ -89,6 +90,72 @@ export async function POST(request: NextRequest) {
           path: '/',
         });
       }
+
+      return responseWithCookies;
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      // Manejar timeout específicamente
+      if (fetchError.name === 'AbortError') {
+        return NextResponse.json(
+          { message: "La solicitud tardó demasiado. Por favor intenta nuevamente." },
+          { status: 504 }
+        );
+      }
+      
+      throw fetchError;
+    }
+  } catch (error: any) {
+    // 🔒 No loguear password - solo el mensaje de error
+    console.error("Error en registro:", error.message || "Error desconocido");
+    
+    return NextResponse.json(
+      { message: "Error interno del servidor" },
+      { status: 500 }
+    );
+  }
+}
+
+
+      clearTimeout(timeoutId);
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 🔒 Manejar error 409 (email duplicado) específicamente
+        if (response.status === 409) {
+          return NextResponse.json(
+            { message: "Este correo electrónico ya está registrado" },
+            { status: 409 }
+          );
+        }
+
+        return NextResponse.json(
+          { 
+            message: data.message || "Error al registrar usuario",
+            errors: data.errors || []
+          },
+          { status: response.status }
+        );
+      }
+
+      // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
+      const responseWithCookies = NextResponse.json(
+        { 
+          success: true,
+          user: data.user,
+          message: "Cuenta creada exitosamente"
+        },
+        { status: 201 }
+      );
+
+      // Token de acceso (1 hora)
+      responseWithCookies.cookies.set('auth_token', data.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600, // 1 hora
+        path: '/',
+      });
 
       return responseWithCookies;
     } catch (fetchError: any) {

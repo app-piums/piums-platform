@@ -129,7 +129,7 @@ export default function RegisterPage() {
       
       // Redirect to dashboard
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/artist/dashboard");
       }, 1500);
     } catch (err: any) {
       setGeneralError(err.message);

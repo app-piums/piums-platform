@@ -440,7 +440,7 @@ export interface AdminReportsResponse {
 class PiumsSDK {
   private baseUrl: string;
 
-  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api') {
+  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || '/api') {
     this.baseUrl = baseUrl;
   }
 

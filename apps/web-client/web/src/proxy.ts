@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const userRole = request.cookies.get('user_role')?.value;
 
   // Si el usuario es artista, redirigir a la app de artistas
-  if (token && userRole === 'artist') {
+  if (token && userRole === 'artista') {
     const artistUrl = process.env.NEXT_PUBLIC_ARTIST_URL || 'http://localhost:3001';
     return NextResponse.redirect(new URL(request.nextUrl.pathname, artistUrl));
   }
@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Proteger rutas que requieren autenticación
-  const protectedRoutes = ['/dashboard', '/bookings', '/profile', '/chat'];
+  const protectedRoutes = ['/dashboard', '/bookings', '/profile', '/chat', '/onboarding', '/services'];
   const isProtectedRoute = protectedRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   );

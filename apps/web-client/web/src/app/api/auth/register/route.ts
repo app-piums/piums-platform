@@ -6,12 +6,12 @@ const FETCH_TIMEOUT = 10000; // 10 segundos
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nombre, email, password, role, pais, codigoPais, telefono } = body;
+    const { nombre, email, password } = body;
 
     // Validación básica
-    if (!nombre || !email || !password || !role || !pais || !telefono) {
+    if (!nombre || !email || !password) {
       return NextResponse.json(
-        { message: "Todos los campos son requeridos" },
+        { message: "Nombre, email y contraseña son requeridos" },
         { status: 400 }
       );
     }
@@ -21,21 +21,13 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
     try {
-      // Llamar directamente al auth-service
-      const response = await fetch(`${AUTH_SERVICE_URL}/auth/register`, {
+      // Llamar al endpoint específico de clientes (rol fijo server-side)
+      const response = await fetch(`${AUTH_SERVICE_URL}/auth/register/client`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          nombre,
-          email,
-          password,
-          role,
-          pais,
-          codigoPais,
-          telefono,
-        }),
+        body: JSON.stringify({ nombre, email, password }),
         signal: controller.signal,
       });
 
@@ -71,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Token de acceso (1 hora)
-      responseWithCookies.cookies.set('token', data.token, {
+      responseWithCookies.cookies.set('auth_token', data.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -79,7 +71,16 @@ export async function POST(request: NextRequest) {
         path: '/',
       });
 
-      // 🔒 Refresh token (7 días) - ahora se guarda
+      // Establecer cookie de rol — siempre 'cliente' en web-client
+      responseWithCookies.cookies.set('user_role', 'cliente', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600,
+        path: '/',
+      });
+
+      // 🔒 Refresh token (7 días)
       if (data.refreshToken) {
         responseWithCookies.cookies.set('refreshToken', data.refreshToken, {
           httpOnly: true,

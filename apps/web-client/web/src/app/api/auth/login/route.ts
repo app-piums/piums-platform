@@ -33,7 +33,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data);
+    // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
+    const nextResponse = NextResponse.json(
+      { success: true, user: data.user, message: "Sesión iniciada" },
+      { status: 200 }
+    );
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "strict" as const,
+      path: "/",
+    };
+
+    // Token de acceso (1 hora)
+    nextResponse.cookies.set("auth_token", data.token, {
+      ...cookieOptions,
+      maxAge: 3600,
+    });
+
+    // Rol del usuario
+    nextResponse.cookies.set("user_role", data.user?.role ?? "cliente", {
+      ...cookieOptions,
+      maxAge: 3600,
+    });
+
+    // Refresh token (7 días)
+    if (data.refreshToken) {
+      nextResponse.cookies.set("refreshToken", data.refreshToken, {
+        ...cookieOptions,
+        maxAge: 604800,
+      });
+    }
+
+    return nextResponse;
   } catch (error) {
     console.error("Error en login:", error);
     return NextResponse.json(

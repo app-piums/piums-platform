@@ -1,7 +1,7 @@
 // Piums Service Worker
-// Version: 1.0.0
+// Version: 1.0.2
 
-const CACHE_VERSION = 'piums-v1.0.0';
+const CACHE_VERSION = 'piums-v1.0.2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -83,22 +83,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip API calls (let them go to network)
+  // Skip API calls entirely — let the browser handle them natively so
+  // cookies (httpOnly, SameSite=strict) are always forwarded correctly.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .catch(() => {
-          // If network fails, return offline message
-          return new Response(
-            JSON.stringify({ error: 'Sin conexión a internet' }),
-            {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({ 'Content-Type': 'application/json' }),
-            }
-          );
-        })
-    );
     return;
   }
 
@@ -132,12 +119,15 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful responses
-          const responseClone = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-            limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE.dynamic);
-          });
+          // Only cache clean 200 responses — skip redirects and opaque responses
+          // to avoid the "opaqueredirect" error when proxy redirects to /login.
+          if (response.status === 200 && response.type === 'basic') {
+            const responseClone = response.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+              limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE.dynamic);
+            });
+          }
           return response;
         })
         .catch(() => {

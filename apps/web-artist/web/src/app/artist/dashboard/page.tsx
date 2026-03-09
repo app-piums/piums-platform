@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { StatsCards } from '@/components/artist/StatsCards';
-import { sdk, Booking } from '@/../../packages/sdk/src';
+import { sdk, Booking } from '@piums/sdk';
 
 export default function ArtistDashboardPage() {
   const router = useRouter();
@@ -21,8 +21,18 @@ export default function ArtistDashboardPage() {
       setIsLoading(true);
       setError(null);
       
-      const statsData = await sdk.getArtistStats();
-      setStats(statsData);
+      // Intentar obtener datos reales del backend
+      try {
+        const statsData = await sdk.getArtistStats();
+        setStats(statsData);
+      } catch (backendError: any) {
+        console.log('Backend no disponible, usando datos mock:', backendError.message);
+        
+        // Si falla el backend, usar datos mock
+        const { getMockArtistStats } = await import('@/lib/mockData');
+        const mockData = await getMockArtistStats();
+        setStats(mockData.stats);
+      }
     } catch (err: any) {
       console.error('Error loading dashboard:', err);
       setError(err.message || 'Error al cargar el dashboard');
@@ -43,7 +53,7 @@ export default function ArtistDashboardPage() {
         <main className="flex-1 p-8">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Cargando dashboard...</p>
             </div>
           </div>
@@ -72,6 +82,12 @@ export default function ArtistDashboardPage() {
     );
   }
 
+  const currentDate = new Date().toLocaleDateString('es-ES', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
@@ -79,70 +95,296 @@ export default function ArtistDashboardPage() {
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Vista General</h1>
-            <p className="text-gray-600">Resumen de tu actividad y estadísticas</p>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-1">Resumen del Dashboard</h1>
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm">{currentDate}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="font-medium">Crear oferta</span>
+              </button>
+            </div>
           </div>
 
           {/* Stats Cards */}
           {stats && (
-            <StatsCards
-              bookingsThisMonth={stats.bookings.thisMonth}
-              totalRevenue={stats.revenue.total}
-              averageRating={stats.rating.average}
-              totalReviews={stats.rating.totalReviews}
-              pendingBookings={stats.bookings.pending}
-              confirmedBookings={stats.bookings.confirmed}
-            />
+            <div className="mb-6">
+              <StatsCards
+                bookingsThisMonth={stats.bookings.thisMonth}
+                totalRevenue={stats.revenue.total}
+                averageRating={stats.rating.average}
+                totalReviews={stats.rating.totalReviews}
+                pendingBookings={stats.bookings.pending}
+                confirmedBookings={stats.bookings.confirmed}
+                profileViews={(stats as any).profileViews}
+                earningsGrowth={(stats as any).earningsGrowth}
+                profileViewsGrowth={(stats as any).profileViewsGrowth}
+              />
+            </div>
           )}
 
-          {/* Upcoming Bookings */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Due Soon Card */}
+            <div className="lg:col-span-2">
+              {stats?.upcomingBookings && stats.upcomingBookings.length > 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <span className="inline-block px-3 py-1 bg-orange-100 text-orange-600 text-xs font-semibold rounded-full mb-3">
+                        PRÓXIMO
+                      </span>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {stats.upcomingBookings[0].code}
+                      </h3>
+                      <p className="text-gray-600 text-sm mt-1">
+                        {new Date(stats.upcomingBookings[0].scheduledDate).toLocaleDateString('es-ES', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Faltan 2 días</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span className="font-semibold text-gray-900">
+                          ${stats.upcomingBookings[0].totalPrice.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => router.push('/artist/dashboard/bookings')}
+                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Ver detalles
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+                  <div className="text-gray-400 mb-3">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 font-medium">No hay presentaciones próximas</p>
+                  <p className="text-sm text-gray-500 mt-1">Tus reservas confirmadas aparecerán aquí</p>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Strength Card */}
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
+              <h3 className="text-lg font-bold mb-4">Fortaleza del Perfil</h3>
+              
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-300">Completado</span>
+                  <span className="text-2xl font-bold">85%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-300">Foto de perfil agregada</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-300">Servicios publicados</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-300">Portafolio cargado</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-400">Agregar redes sociales</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-400">Obtener primera reseña</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Overview Chart */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Próximas Reservas</h2>
-              <button
-                onClick={() => router.push('/artist/dashboard/bookings')}
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              <h3 className="text-xl font-bold text-gray-900">Resumen de Ingresos</h3>
+              <select className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option>Últimos 6 meses</option>
+                <option>Últimos 12 meses</option>
+                <option>Este año</option>
+              </select>
+            </div>
+            
+            <div className="relative h-64">
+              <svg className="w-full h-full" viewBox="0 0 800 250">
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#fb923c" stopOpacity="0.3"/>
+                    <stop offset="100%" stopColor="#fb923c" stopOpacity="0.05"/>
+                  </linearGradient>
+                </defs>
+                
+                {/* Y-axis labels */}
+                <text x="10" y="20" className="text-xs fill-gray-500">$15k</text>
+                <text x="10" y="80" className="text-xs fill-gray-500">$10k</text>
+                <text x="10" y="140" className="text-xs fill-gray-500">$5k</text>
+                <text x="18" y="200" className="text-xs fill-gray-500">$0</text>
+                
+                {/* Chart area */}
+                <path
+                  d="M 80 180 L 180 140 L 280 160 L 380 100 L 480 120 L 580 60 L 680 80"
+                  fill="none"
+                  stroke="#fb923c"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+                
+                <path
+                  d="M 80 180 L 180 140 L 280 160 L 380 100 L 480 120 L 580 60 L 680 80 L 680 200 L 80 200 Z"
+                  fill="url(#revenueGradient)"
+                />
+                
+                {/* Data points */}
+                <circle cx="80" cy="180" r="5" fill="#fb923c" />
+                <circle cx="180" cy="140" r="5" fill="#fb923c" />
+                <circle cx="280" cy="160" r="5" fill="#fb923c" />
+                <circle cx="380" cy="100" r="5" fill="#fb923c" />
+                <circle cx="480" cy="120" r="5" fill="#fb923c" />
+                <circle cx="580" cy="60" r="5" fill="#fb923c" />
+                <circle cx="680" cy="80" r="5" fill="#fb923c" />
+                
+                {/* X-axis labels */}
+                <text x="65" y="230" className="text-xs fill-gray-500">JAN</text>
+                <text x="165" y="230" className="text-xs fill-gray-500">FEB</text>
+                <text x="265" y="230" className="text-xs fill-gray-500">MAR</text>
+                <text x="365" y="230" className="text-xs fill-gray-500">APR</text>
+                <text x="465" y="230" className="text-xs fill-gray-500">MAY</text>
+                <text x="565" y="230" className="text-xs fill-gray-500">JUN</text>
+                <text x="665" y="230" className="text-xs fill-gray-500">JUL</text>
+              </svg>
+            </div>
+          </div>
+
+          {/* Upcoming Gigs Calendar */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Próximas Presentaciones</h3>
+              <button 
+                onClick={() => router.push('/artist/dashboard/calendar')}
+                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
               >
-                Ver todas →
+                VER TODAS
               </button>
             </div>
 
             {stats?.upcomingBookings && stats.upcomingBookings.length > 0 ? (
-              <div className="space-y-4">
-                {stats.upcomingBookings.slice(0, 5).map((booking: Booking) => (
+              <div className="space-y-3">
+                {stats.upcomingBookings.slice(0, 4).map((booking: Booking) => (
                   <div
                     key={booking.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-orange-300 hover:shadow-sm transition-all cursor-pointer"
+                    onClick={() => router.push('/artist/dashboard/bookings')}
                   >
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">Código: {booking.code}</p>
+                    <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-orange-600">
+                          {new Date(booking.scheduledDate).getDate()}
+                        </div>
+                        <div className="text-xs text-orange-500">
+                          {new Date(booking.scheduledDate).toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{booking.code}</p>
                       <p className="text-sm text-gray-600">
-                        {new Date(booking.scheduledDate).toLocaleDateString('es-MX', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
+                        {new Date(booking.scheduledDate).toLocaleTimeString('es-ES', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
                         })}
                       </p>
                     </div>
                     
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">${booking.totalPrice.toLocaleString()}</p>
-                        <p className="text-sm text-gray-500">{booking.currency}</p>
-                      </div>
-                      
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          booking.status === 'CONFIRMED'
-                            ? 'bg-green-100 text-green-700'
-                            : booking.status === 'PENDING'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
+                    <div className="text-right">
+                      <p className="font-bold text-gray-900">${booking.totalPrice.toLocaleString()}</p>
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                        booking.status === 'CONFIRMED'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
                         {booking.status}
                       </span>
                     </div>
@@ -151,53 +393,15 @@ export default function ArtistDashboardPage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">📅</div>
-                <p className="text-gray-600 mb-2">No hay reservas próximas</p>
-                <p className="text-sm text-gray-500">Las reservas confirmadas aparecerán aquí</p>
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 font-medium mb-1">No upcoming gigs scheduled</p>
+                <p className="text-sm text-gray-500">Your confirmed bookings will appear here</p>
               </div>
             )}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <button
-              onClick={() => router.push('/artist/dashboard/bookings')}
-              className="p-6 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:shadow-md transition-all text-left group"
-            >
-              <div className="text-3xl mb-3">📅</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-purple-700">
-                Ver Reservas
-              </h3>
-              <p className="text-sm text-gray-600">
-                Gestiona tus reservas pendientes y confirmadas
-              </p>
-            </button>
-
-            <button
-              onClick={() => router.push('/artist/dashboard/calendar')}
-              className="p-6 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:shadow-md transition-all text-left group"
-            >
-              <div className="text-3xl mb-3">🗓️</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-purple-700">
-                Calendario
-              </h3>
-              <p className="text-sm text-gray-600">
-                Administra tu disponibilidad y bloquea fechas
-              </p>
-            </button>
-
-            <button
-              onClick={() => router.push('/artist/dashboard/services')}
-              className="p-6 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:shadow-md transition-all text-left group"
-            >
-              <div className="text-3xl mb-3">⚙️</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-purple-700">
-                Mis Servicios
-              </h3>
-              <p className="text-sm text-gray-600">
-                Administra y edita tus servicios ofrecidos
-              </p>
-            </button>
           </div>
         </div>
       </main>

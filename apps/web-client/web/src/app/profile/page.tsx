@@ -2,11 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { useAuth } from '@/contexts/AuthContext';
+import ClientSidebar from '@/components/ClientSidebar';
 
 // Import tab components
 import PersonalInfoTab from './personal/page';
@@ -27,12 +25,7 @@ export default function ProfilePage() {
   }, [authLoading, isAuthenticated, router]);
 
   if (authLoading) {
-    return (
-      <div>
-        <Navbar />
-        <Loading />
-      </div>
-    );
+    return <Loading fullScreen />;
   }
 
   const tabs = [
@@ -61,20 +54,11 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Breadcrumbs 
-          items={[
-            { label: 'Inicio', href: '/' },
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Mi Perfil' }
-          ]}
-          className="mb-6"
-        />
-        
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Mi Perfil</h1>
+    <div className="flex min-h-screen bg-gray-50">
+      <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+
+      <div className="flex-1 overflow-y-auto p-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">Mi Perfil</h1>
 
         {/* Tabs Navigation */}
         <div className="bg-white rounded-lg shadow-sm mb-6">
@@ -101,8 +85,6 @@ export default function ProfilePage() {
           {renderTabContent()}
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 }

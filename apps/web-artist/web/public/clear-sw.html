@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiando Service Worker - Piums</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #FF6A00;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #FF6A00;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #e55f00;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔧 Limpiando Service Worker</h1>
+        <p>Esta página eliminará todos los Service Workers y cachés para solucionar el problema del puerto 3000.</p>
+        
+        <div id="status" class="status warning">
+            ⏳ Iniciando limpieza...
+        </div>
+        
+        <div id="log" class="log"></div>
+        
+        <button onclick="window.location.href='http://localhost:3001'">
+            ✅ Ir a la Aplicación (Puerto 3001)
+        </button>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message) {
+            log.innerHTML += message + '<br>';
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function clearEverything() {
+            try {
+                // 1. Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    addLog('📍 Buscando Service Workers...');
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    
+                    if (registrations.length === 0) {
+                        addLog('✅ No hay Service Workers registrados');
+                    } else {
+                        addLog(`📦 Encontrados ${registrations.length} Service Worker(s)`);
+                        
+                        for (let registration of registrations) {
+                            addLog(`🗑️ Desregistrando: ${registration.scope}`);
+                            await registration.unregister();
+                            addLog(`✅ Desregistrado: ${registration.scope}`);
+                        }
+                    }
+                }
+
+                // 2. Clear all caches
+                if ('caches' in window) {
+                    addLog('📍 Buscando cachés...');
+                    const cacheNames = await caches.keys();
+                    
+                    if (cacheNames.length === 0) {
+                        addLog('✅ No hay cachés almacenados');
+                    } else {
+                        addLog(`📦 Encontrados ${cacheNames.length} caché(s)`);
+                        
+                        for (let cacheName of cacheNames) {
+                            addLog(`🗑️ Eliminando caché: ${cacheName}`);
+                            await caches.delete(cacheName);
+                            addLog(`✅ Eliminado: ${cacheName}`);
+                        }
+                    }
+                }
+
+                // 3. Clear localStorage
+                addLog('🗑️ Limpiando localStorage...');
+                localStorage.clear();
+                addLog('✅ localStorage limpiado');
+
+                // 4. Clear sessionStorage
+                addLog('🗑️ Limpiando sessionStorage...');
+                sessionStorage.clear();
+                addLog('✅ sessionStorage limpiado');
+
+                // Success
+                status.className = 'status success';
+                status.innerHTML = '✅ ¡Limpieza completada! Ahora puedes usar la aplicación normalmente.';
+                addLog('');
+                addLog('🎉 ¡LIMPIEZA COMPLETADA EXITOSAMENTE!');
+                addLog('👉 Haz click en el botón de abajo para ir a la aplicación');
+
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = '❌ Error durante la limpieza: ' + error.message;
+                addLog('❌ ERROR: ' + error.message);
+            }
+        }
+
+        // Run on page load
+        clearEverything();
+    </script>
+</body>
+</html>

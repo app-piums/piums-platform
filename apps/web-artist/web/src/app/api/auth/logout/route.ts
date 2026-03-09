@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
   );
 
   // Limpiar cookies de autenticación
-  response.cookies.delete('token');
+  response.cookies.delete('auth_token');
+  response.cookies.delete('user_role');
   response.cookies.delete('refreshToken');
 
   return response;

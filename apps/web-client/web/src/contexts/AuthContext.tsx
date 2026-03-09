@@ -35,8 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      // Las cookies httpOnly se envían automáticamente
-      const response = await fetch("/api/auth/me");
+      // credentials: 'include' asegura que las cookies httpOnly se envíen
+      // incluso cuando el Service Worker intercepta la solicitud.
+      const response = await fetch("/api/auth/me", { credentials: 'include' });
       
       if (response.ok) {
         const data = await response.json();

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
-import { sdk, ArtistProfile } from '@/../../packages/sdk/src';
+import { sdk, ArtistProfile } from '@piums/sdk';
 
 export default function ArtistSettingsPage() {
   const router = useRouter();

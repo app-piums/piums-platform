@@ -5,7 +5,7 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://localhost:4001"
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get("token")?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
       return NextResponse.json({ message: "No autenticado" }, { status: 401 });
