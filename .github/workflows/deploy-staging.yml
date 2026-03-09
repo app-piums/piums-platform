@@ -201,6 +201,12 @@ jobs:
       - name: Test Booking Service
         run: curl -f https://staging.piums.com/api/bookings/health
 
+      - name: Test Web Client App
+        run: curl -f https://staging.piums.com/
+
+      - name: Test Web Artist App
+        run: curl -f https://artist-staging.piums.com/
+
   # ============================================================================
   # Rollback (on failure)
   # ============================================================================

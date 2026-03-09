@@ -37,17 +37,33 @@ jobs:
           - notifications-service
           - search-service
           - chat-service
+          - web-client
+          - web-artist
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Determine service path
+        id: path
+        run: |
+          if [[ "${{ matrix.service }}" == "web-client" ]]; then
+            echo "dir=apps/web-client/web" >> $GITHUB_OUTPUT
+            echo "lockfile=apps/web-client/web/pnpm-lock.yaml" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.service }}" == "web-artist" ]]; then
+            echo "dir=apps/web-artist/web" >> $GITHUB_OUTPUT
+            echo "lockfile=apps/web-artist/web/pnpm-lock.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "dir=services/${{ matrix.service }}" >> $GITHUB_OUTPUT
+            echo "lockfile=services/${{ matrix.service }}/pnpm-lock.yaml" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'services/${{ matrix.service }}/pnpm-lock.yaml'
+          cache-dependency-path: ${{ steps.path.outputs.lockfile }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -55,21 +71,21 @@ jobs:
           version: 8
 
       - name: Install dependencies
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ steps.path.outputs.dir }}
         run: pnpm install --frozen-lockfile
 
       - name: Run lint
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ steps.path.outputs.dir }}
         run: pnpm run lint || true
         continue-on-error: true
 
       - name: Run tests
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ steps.path.outputs.dir }}
         run: pnpm test || true
         continue-on-error: true
 
       - name: Build TypeScript
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ steps.path.outputs.dir }}
         run: pnpm run build
 
   # ============================================================================
@@ -99,10 +115,26 @@ jobs:
           - notifications-service
           - search-service
           - chat-service
+          - web-client
+          - web-artist
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Determine service path
+        id: path
+        run: |
+          if [[ "${{ matrix.service }}" == "web-client" ]]; then
+            echo "context=./apps/web-client/web" >> $GITHUB_OUTPUT
+            echo "dockerfile=./apps/web-client/web/Dockerfile" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.service }}" == "web-artist" ]]; then
+            echo "context=./apps/web-artist/web" >> $GITHUB_OUTPUT
+            echo "dockerfile=./apps/web-artist/web/Dockerfile" >> $GITHUB_OUTPUT
+          else
+            echo "context=./services/${{ matrix.service }}" >> $GITHUB_OUTPUT
+            echo "dockerfile=./services/${{ matrix.service }}/Dockerfile" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -130,8 +162,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./services/${{ matrix.service }}
-          file: ./services/${{ matrix.service }}/Dockerfile
+          context: ${{ steps.path.outputs.context }}
+          file: ${{ steps.path.outputs.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

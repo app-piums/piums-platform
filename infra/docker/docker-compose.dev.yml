@@ -257,6 +257,50 @@ services:
       - piums-network
     restart: unless-stopped
 
+  # ============================================================================
+  # Frontend Applications
+  # ============================================================================
+
+  web-client:
+    build:
+      context: ../../apps/web-client/web
+      dockerfile: Dockerfile
+    container_name: piums-web-client
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://gateway:3000/api
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_CLIENT_URL: http://localhost:3000
+      NEXT_PUBLIC_ARTIST_URL: http://localhost:3001
+      NEXT_PUBLIC_ADMIN_URL: http://localhost:3002
+    depends_on:
+      - gateway
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  web-artist:
+    build:
+      context: ../../apps/web-artist/web
+      dockerfile: Dockerfile
+    container_name: piums-web-artist
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://gateway:3000/api
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+      NEXT_PUBLIC_CLIENT_URL: http://localhost:3000
+      NEXT_PUBLIC_ARTIST_URL: http://localhost:3001
+      NEXT_PUBLIC_ADMIN_URL: http://localhost:3002
+    depends_on:
+      - gateway
+    networks:
+      - piums-network
+    restart: unless-stopped
+
 # ============================================================================
 # Networks
 # ============================================================================

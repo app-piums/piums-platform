@@ -354,6 +354,64 @@ services:
           cpus: '0.5'
           memory: 256M
 
+  # ============================================================================
+  # Frontend Applications
+  # ============================================================================
+
+  web-client:
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-web-client:${IMAGE_TAG:-latest}
+    container_name: piums-web-client-prod
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_URL}/api
+      NEXT_PUBLIC_APP_URL: ${CLIENT_APP_URL}
+      NEXT_PUBLIC_CLIENT_URL: ${CLIENT_APP_URL}
+      NEXT_PUBLIC_ARTIST_URL: ${ARTIST_APP_URL}
+      NEXT_PUBLIC_ADMIN_URL: ${ADMIN_APP_URL}
+    depends_on:
+      - gateway
+    networks:
+      - piums-network
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  web-artist:
+    image: ${DOCKER_REGISTRY:-ghcr.io/app-piums}/piums-web-artist:${IMAGE_TAG:-latest}
+    container_name: piums-web-artist-prod
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_URL}/api
+      NEXT_PUBLIC_APP_URL: ${ARTIST_APP_URL}
+      NEXT_PUBLIC_CLIENT_URL: ${CLIENT_APP_URL}
+      NEXT_PUBLIC_ARTIST_URL: ${ARTIST_APP_URL}
+      NEXT_PUBLIC_ADMIN_URL: ${ADMIN_APP_URL}
+    depends_on:
+      - gateway
+    networks:
+      - piums-network
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
 # ============================================================================
 # Networks
 # ============================================================================

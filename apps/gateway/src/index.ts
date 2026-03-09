@@ -24,8 +24,9 @@ app.use(helmet());
 
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
-  "http://localhost:3001",
-  "http://localhost:3002",
+  "http://localhost:3000", // Client app
+  "http://localhost:3001", // Artist app
+  "http://localhost:3002", // Admin app (future)
 ];
 
 app.use(

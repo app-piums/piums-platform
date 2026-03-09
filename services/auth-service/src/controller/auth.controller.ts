@@ -108,6 +108,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       },
     });
 
+    // Determinar URL de redirección basada en el rol del usuario
+    let redirectUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
+    
+    if (user.role === 'artist') {
+      redirectUrl = process.env.ARTIST_APP_URL || 'http://localhost:3001';
+    } else if (user.role === 'admin') {
+      redirectUrl = process.env.ADMIN_APP_URL || 'http://localhost:3002';
+    }
+
     // No enviar el passwordHash al cliente
     const { passwordHash: _, ...userResponse } = user;
 
@@ -115,6 +124,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       user: userResponse, 
       token,
       refreshToken,
+      redirectUrl,
       message: 'Usuario registrado. Por favor verifica tu email.' 
     });
   } catch (error: any) {
@@ -243,15 +253,26 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       },
     });
 
+    // Determinar URL de redirección basada en el rol del usuario
+    let redirectUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
+    
+    if (user.role === 'artist') {
+      redirectUrl = process.env.ARTIST_APP_URL || 'http://localhost:3001';
+    } else if (user.role === 'admin') {
+      redirectUrl = process.env.ADMIN_APP_URL || 'http://localhost:3002';
+    }
+
     res.json({ 
       token,
       refreshToken,
+      redirectUrl,
       user: {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
         emailVerified: user.emailVerified,
         status: user.status,
+        role: user.role,
       }
     });
   } catch (error: any) {
