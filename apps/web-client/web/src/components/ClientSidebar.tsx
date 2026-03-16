@@ -11,13 +11,13 @@ interface Props {
 export default function ClientSidebar({ userName }: Props) {
   const pathname = usePathname();
 
-  const nav = [
-    { href: '/dashboard',  icon: HomeIcon,    label: 'Inicio' },
-    { href: '/artists',    icon: SearchIcon,  label: 'Explorar' },
-    { href: '/bookings',   icon: CalIcon,     label: 'Mis Reservas' },
-    { href: '/bookmarks',  icon: HeartIcon,   label: 'Favoritos' },
-    { href: '/chat',       icon: ChatIcon,    label: 'Mensajes', badge: 3 },
-  ];
+    const nav = [
+      { href: '/dashboard',  icon: HomeIcon,    label: 'Inicio' },
+      { href: '/artists',    icon: SearchIcon,  label: 'Artistas' },
+      { href: '/bookings',   icon: CalIcon,     label: 'Reservas' },
+      { href: '/bookmarks',  icon: HeartIcon,   label: 'Favoritos' },
+      { href: '/chat',       icon: ChatIcon,    label: 'Mensajes', badge: 3 },
+    ];
 
   return (
     <aside className="flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 py-6 px-4 shrink-0">

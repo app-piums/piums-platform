@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,90 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// Enums
-// ============================================================================
-
-enum UserStatus {
-  ACTIVE          // Usuario activo
-  INACTIVE        // Usuario inactivo
-  SUSPENDED       // Usuario suspendido
-  BANNED          // Usuario baneado
-  PENDING_EMAIL   // Pendiente de verificar email
-}
-
-enum SessionStatus {
-  ACTIVE          // Sesión activa
-  EXPIRED         // Sesión expirada
-  REVOKED         // Sesión revocada manualmente
-}
-
-enum TokenType {
-  EMAIL_VERIFICATION    // Token para verificar email
-  PASSWORD_RESET        // Token para reset de contraseña
-  TWO_FACTOR            // Token para 2FA
-  MAGIC_LINK            // Token para login sin contraseña
-}
-
-enum TokenStatus {
-  PENDING       // Token pendiente de uso
-  USED          // Token ya usado
-  EXPIRED       // Token expirado
-  REVOKED       // Token revocado
-}
-
-// ============================================================================
-// User - Modelo principal de autenticación
-// ============================================================================
-
 model User {
-  id            String      @id @default(uuid())
-  email         String      @unique
-  emailVerified Boolean     @default(false)
-  passwordHash  String?     // Optional for OAuth users
-  
-  // Información básica (redundante con users-service para performance)
-  nombre        String
-  name          String?     // For OAuth compatibility
-  avatar        String?
-  
-  // OAuth fields
-  provider      String?     // 'local', 'google', 'facebook'
-  googleId      String?     @unique
-  facebookId    String?     @unique
-  
-  // Role field (for admin access)
-  role          String      @default("user") // 'user', 'artist', 'admin'
-  isBlocked     Boolean     @default(false)
-  isVerified    Boolean     @default(false)
-  
-  // Estado de la cuenta
-  status        UserStatus  @default(PENDING_EMAIL)
-  
-  // Seguridad
-  twoFactorEnabled    Boolean @default(false)
-  twoFactorSecret     String? // Para TOTP (Google Authenticator, etc.)
-  backupCodes         String[] // Array de códigos de respaldo
-  
-  // Tracking de seguridad
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  emailVerified       Boolean             @default(false)
+  passwordHash        String?
+  nombre              String
+  name                String?
+  avatar              String?
+  provider            String?
+  googleId            String?             @unique
+  facebookId          String?             @unique
+  role                String              @default("user")
+  isBlocked           Boolean             @default(false)
+  isVerified          Boolean             @default(false)
+  status              UserStatus          @default(PENDING_EMAIL)
+  twoFactorEnabled    Boolean             @default(false)
+  twoFactorSecret     String?
+  backupCodes         String[]
   lastLoginAt         DateTime?
   lastLoginIp         String?
-  lastPasswordChange  DateTime @default(now())
-  failedLoginAttempts Int      @default(0)
-  lockedUntil         DateTime? // Para bloqueo temporal por múltiples intentos fallidos
-  
-  // Relaciones
-  sessions              Session[]
-  refreshTokens         RefreshToken[]
-  passwordResets        PasswordReset[]
-  emailVerifications    EmailVerification[]
-  auditLogs             AuditLog[]
-  
-  // Metadata
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime? // Soft delete
-  
+  lastPasswordChange  DateTime            @default(now())
+  failedLoginAttempts Int                 @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+  auditLogs           AuditLog[]
+  emailVerifications  EmailVerification[]
+  passwordResets      PasswordReset[]
+  refreshTokens       RefreshToken[]
+  sessions            Session[]
+
   @@index([email])
   @@index([status])
   @@index([emailVerified])
@@ -103,36 +48,22 @@ model User {
   @@map("users")
 }
 
-// ============================================================================
-// Session - Gestión de sesiones activas
-// ============================================================================
-
 model Session {
   id           String        @id @default(uuid())
   userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Token de sesión (JWT ID)
-  jti          String        @unique // JWT ID para identificar el token
-  
-  // Información del dispositivo/cliente
+  jti          String        @unique
   userAgent    String?
   ipAddress    String?
-  deviceId     String?       // Identificador único del dispositivo
-  deviceName   String?       // Nombre legible del dispositivo
-  
-  // Estado
+  deviceId     String?
+  deviceName   String?
   status       SessionStatus @default(ACTIVE)
-  
-  // Tiempos
   lastActivity DateTime      @default(now())
   expiresAt    DateTime
   revokedAt    DateTime?
-  
-  // Metadata
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([jti])
   @@index([status])
@@ -140,36 +71,22 @@ model Session {
   @@map("sessions")
 }
 
-// ============================================================================
-// RefreshToken - Tokens de refresco para obtener nuevos access tokens
-// ============================================================================
-
 model RefreshToken {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Token hasheado (nunca guardar en plain text)
-  tokenHash   String   @unique
-  
-  // Información del dispositivo
-  userAgent   String?
-  ipAddress   String?
-  deviceId    String?
-  
-  // Estado
-  isRevoked   Boolean  @default(false)
-  revokedAt   DateTime?
-  used        Boolean  @default(false)
-  usedAt      DateTime?
-  
-  // Tiempos
-  expiresAt   DateTime
-  
-  // Metadata
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  userAgent String?
+  ipAddress String?
+  deviceId  String?
+  isRevoked Boolean   @default(false)
+  revokedAt DateTime?
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([tokenHash])
   @@index([expiresAt])
@@ -177,33 +94,19 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// ============================================================================
-// PasswordReset - Gestión de reset de contraseñas
-// ============================================================================
-
 model PasswordReset {
-  id          String      @id @default(uuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Token hasheado
-  tokenHash   String      @unique
-  
-  // Estado
-  status      TokenStatus @default(PENDING)
-  usedAt      DateTime?
-  
-  // Información de seguridad
-  ipAddress   String?
-  userAgent   String?
-  
-  // Tiempos
-  expiresAt   DateTime    // Típicamente 1 hora
-  
-  // Metadata
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
+  id        String      @id @default(uuid())
+  userId    String
+  tokenHash String      @unique
+  status    TokenStatus @default(PENDING)
+  usedAt    DateTime?
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([tokenHash])
   @@index([status])
@@ -211,35 +114,20 @@ model PasswordReset {
   @@map("password_resets")
 }
 
-// ============================================================================
-// EmailVerification - Verificación de emails
-// ============================================================================
-
 model EmailVerification {
-  id          String      @id @default(uuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  email       String      // Email a verificar (puede ser diferente si el usuario cambia email)
-  
-  // Token hasheado
-  tokenHash   String      @unique
-  
-  // Estado
-  status      TokenStatus @default(PENDING)
-  verifiedAt  DateTime?
-  
-  // Información
-  ipAddress   String?
-  userAgent   String?
-  
-  // Tiempos
-  expiresAt   DateTime    // Típicamente 24 horas
-  
-  // Metadata
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
+  id         String      @id @default(uuid())
+  userId     String
+  email      String
+  tokenHash  String      @unique
+  status     TokenStatus @default(PENDING)
+  verifiedAt DateTime?
+  ipAddress  String?
+  userAgent  String?
+  expiresAt  DateTime
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([email])
   @@index([tokenHash])
@@ -248,34 +136,50 @@ model EmailVerification {
   @@map("email_verifications")
 }
 
-// ============================================================================
-// AuditLog - Registro de auditoría para seguridad
-// ============================================================================
-
 model AuditLog {
-  id          String   @id @default(uuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  // Acción realizada
-  action      String   // LOGIN, LOGOUT, PASSWORD_CHANGE, EMAIL_CHANGE, 2FA_ENABLE, etc.
-  entity      String?  // Tipo de entidad afectada
-  entityId    String?  // ID de la entidad afectada
-  
-  // Información de la acción
-  details     Json?    // Detalles adicionales en JSON
-  success     Boolean  @default(true)
-  errorMessage String? // Si falló, el mensaje de error
-  
-  // Información del cliente
-  ipAddress   String?
-  userAgent   String?
-  
-  // Metadata
-  createdAt   DateTime @default(now())
-  
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  entity       String?
+  entityId     String?
+  details      Json?
+  success      Boolean  @default(true)
+  errorMessage String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_EMAIL
+}
+
+enum SessionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR
+  MAGIC_LINK
+}
+
+enum TokenStatus {
+  PENDING
+  USED
+  EXPIRED
+  REVOKED
 }

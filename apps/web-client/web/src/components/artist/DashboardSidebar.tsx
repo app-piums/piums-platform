@@ -16,7 +16,7 @@ const tabs: DashboardTab[] = [
   { id: 'bookings', label: 'Reservas', icon: '📅', href: '/artist/dashboard/bookings' },
   { id: 'calendar', label: 'Calendario', icon: '🗓️', href: '/artist/dashboard/calendar' },
   { id: 'services', label: 'Servicios', icon: '⚙️', href: '/artist/dashboard/services' },
-  { id: 'reviews', label: 'Reviews', icon: '⭐', href: '/artist/dashboard/reviews' },
+  { id: 'reviews', label: 'Reseñas', icon: '⭐', href: '/artist/dashboard/reviews' },
   { id: 'settings', label: 'Configuración', icon: '⚙️', href: '/artist/dashboard/settings' },
 ];
 
@@ -26,7 +26,7 @@ export const DashboardSidebar: React.FC = () => {
   return (
     <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-6">Dashboard de Artista</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-6">Panel de Artista</h2>
       </div>
       
       <nav className="px-3">
@@ -59,7 +59,7 @@ export const DashboardSidebar: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <span>←</span>
-          <span>Volver a Dashboard</span>
+          <span>Volver al Panel</span>
         </Link>
       </div>
     </aside>

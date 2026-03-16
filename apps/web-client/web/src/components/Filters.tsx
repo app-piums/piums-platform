@@ -60,7 +60,7 @@ export const Filters: React.FC<FiltersProps> = ({
 
             {filter.type === 'input' && (
               <Input
-                placeholder={filter.placeholder}
+                placeholder={filter.placeholder ? filter.placeholder.replace('Min', 'Mínimo').replace('Max', 'Máximo') : ''}
                 value={filter.value as string}
                 onChange={(e) => filter.onChange?.(e.target.value)}
               />

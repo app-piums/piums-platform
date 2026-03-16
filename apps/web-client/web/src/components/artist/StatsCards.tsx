@@ -31,8 +31,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, trend
       
       <h3 className="text-sm font-medium text-gray-600 mb-2">{title}</h3>
       <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
-      
-      {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-gray-500">{subtitle.replace('reviews', 'reseñas').replace('Esperando respuesta', 'Pendiente de respuesta').replace('Próximas', 'Próximas reservas')}</p>}
     </div>
   );
 };
@@ -62,37 +61,32 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         subtitle={`${pendingBookings} pendientes`}
         icon="📅"
       />
-      
       <StatCard
         title="Ingresos totales"
         value={`$${totalRevenue.toLocaleString()}`}
         subtitle="MXN"
         icon="💰"
       />
-      
       <StatCard
-        title="Rating promedio"
+        title="Calificación promedio"
         value={averageRating.toFixed(1)}
-        subtitle={`${totalReviews} reviews`}
+        subtitle={`${totalReviews} reseñas`}
         icon="⭐"
       />
-      
       <StatCard
         title="Reservas pendientes"
         value={pendingBookings}
-        subtitle="Esperando respuesta"
+        subtitle="Pendiente de respuesta"
         icon="⏳"
       />
-      
       <StatCard
         title="Reservas confirmadas"
         value={confirmedBookings}
-        subtitle="Próximas"
+        subtitle="Próximas reservas"
         icon="✅"
       />
-      
       <StatCard
-        title="Total de reviews"
+        title="Total de reseñas"
         value={totalReviews}
         subtitle={`${averageRating.toFixed(1)} / 5.0`}
         icon="💬"
