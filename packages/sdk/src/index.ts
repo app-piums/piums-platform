@@ -2,6 +2,8 @@
 export interface Artist {
   id: string;
   nombre: string;
+  slug?: string;
+  coverPhoto?: string;
   email?: string;
   categoria?: string;
   ciudad?: string;
@@ -9,6 +11,15 @@ export interface Artist {
   precioDesde?: number;
   imagenPerfil?: string;
   descripcion?: string;
+  isVerified?: boolean;
+  isPremium?: boolean;
+  avatar?: string;
+  category?: string;
+  bio?: string;
+  reviewsCount?: number;
+  bookingsCount?: number;
+  experienceYears?: number;
+  cityId?: string;
 }
 
 export interface PortfolioItem {
@@ -45,6 +56,11 @@ export interface ArtistProfile extends Artist {
   isActive?: boolean;
   isPremium?: boolean;
   createdAt?: string;
+  coverageRadius?: number;     // km incluidos sin costo de traslado
+  hourlyRateMin?: number;      // precio mínimo por hora en centavos
+  hourlyRateMax?: number;      // precio máximo por hora en centavos
+  requiresDeposit?: boolean;
+  depositPercentage?: number;
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
 }
@@ -53,11 +69,57 @@ export interface Service {
   id: string;
   artistId: string;
   name: string;
+  slug?: string;
   description: string;
+  categoryId?: string;
+  pricingType?: string;
   basePrice: number;
-  duration: number;
-  isActive: boolean;
+  currency?: string;
+  duration?: number;       // legacy
+  durationMin?: number;
+  durationMax?: number;
+  isActive?: boolean;      // legacy
+  status?: string;         // ACTIVE | INACTIVE | ARCHIVED
+  isAvailable?: boolean;
+  thumbnail?: string;
+  images?: string[];
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateServicePayload {
+  artistId: string;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: string;
+  pricingType: 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
+  basePrice: number;
+  currency?: string;
+  durationMin?: number;
+  durationMax?: number;
+}
+
+export interface UpdateServicePayload {
+  artistId: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  categoryId?: string;
+  pricingType?: 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
+  basePrice?: number;
+  currency?: string;
+  durationMin?: number;
+  durationMax?: number;
+  status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+}
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
 }
 
 export interface Review {
@@ -529,6 +591,71 @@ class PiumsSDK {
       console.error('Error fetching artist services:', error);
       return [];
     }
+  }
+
+  async getServiceCategories(): Promise<ServiceCategory[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/catalog/categories`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const result = await response.json();
+      return result.data || result.categories || result || [];
+    } catch (error) {
+      console.error('Error fetching service categories:', error);
+      return [];
+    }
+  }
+
+  async createService(payload: CreateServicePayload): Promise<Service> {
+    const response = await fetch(`${this.baseUrl}/catalog/services`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async updateService(id: string, payload: UpdateServicePayload): Promise<Service> {
+    const response = await fetch(`${this.baseUrl}/catalog/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async deleteService(id: string, artistId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/catalog/services/${id}?artistId=${encodeURIComponent(artistId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  async toggleServiceStatus(id: string, artistId: string): Promise<Service> {
+    const response = await fetch(`${this.baseUrl}/catalog/services/${id}/toggle-status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ artistId }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
   }
 
   async getArtistReviews(artistId: string, page: number = 1, limit: number = 10): Promise<{ reviews: Review[]; total: number; page: number; totalPages: number }> {

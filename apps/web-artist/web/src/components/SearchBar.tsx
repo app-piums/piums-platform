@@ -59,7 +59,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onClose, autoFocus = false
       const mockSuggestions: SearchSuggestion[] = [
         { type: 'artist' as const, id: '1', name: 'DJ Carlos', subtitle: 'Música • 4.8★' },
         { type: 'artist' as const, id: '2', name: 'Fotografía María', subtitle: 'Fotografía • 4.9★' },
-        { type: 'service' as const, id: '3', name: 'Cobertura de Boda', subtitle: 'Desde $15,000' },
+        { type: 'service' as const, id: '3', name: 'Cobertura de Boda', subtitle: 'Desde Q15,000' },
         { type: 'category' as const, id: '4', name: 'DJ y Música', subtitle: '48 artistas' },
       ].filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
       

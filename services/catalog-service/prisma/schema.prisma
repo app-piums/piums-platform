@@ -100,7 +100,7 @@ model Service {
   // Pricing
   pricingType PricingType
   basePrice   Int              // Precio base en centavos
-  currency    String           @default("MXN")
+  currency    String           @default("GTQ")
   
   // Duración (en minutos)
   durationMin Int?             // Duración mínima
@@ -187,7 +187,7 @@ model ServicePackage {
   originalPrice Int    // Suma de precios individuales
   packagePrice  Int    // Precio con descuento
   savings       Int    // Ahorro calculado
-  currency      String @default("MXN")
+  currency      String @default("GTQ")
   
   // Disponibilidad
   isActive    Boolean  @default(true)
@@ -212,7 +212,7 @@ model ServicePricing {
   service     Service      @relation(fields: [serviceId], references: [id])
   
   pricingModel     PricingModel // Modelo de cálculo
-  currency         String       @default("MXN")
+  currency         String       @default("GTQ")
   
   // Precio base (siempre requerido)
   basePriceCents   Int          // Precio base en centavos
@@ -274,7 +274,7 @@ model Country {
   phoneCode   String   // Código de teléfono (ej: "+52", "+1")
   
   // Moneda
-  currency    String   // Código de moneda (ej: "MXN", "USD")
+  currency    String   // Código de moneda (ej: "GTQ", "USD")
   currencySymbol String? // Símbolo (ej: "$", "€", "£")
   
   // Idioma

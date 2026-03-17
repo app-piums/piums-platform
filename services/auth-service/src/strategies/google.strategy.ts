@@ -50,6 +50,7 @@ export const configureGoogleStrategy = () => {
               data: {
                 email,
                 name: profile.displayName || email.split('@')[0],
+                nombre: profile.displayName || email.split('@')[0],
                 provider: 'google',
                 googleId: profile.id,
                 isVerified: true, // Email verificado por Google

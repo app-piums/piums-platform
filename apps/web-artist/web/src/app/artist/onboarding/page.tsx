@@ -59,6 +59,11 @@ export default function ArtistOnboardingPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleSkip = () => {
+    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000';
+    router.push('/artist/dashboard');
+  };
+
   const progressPercentage = (currentStep / totalSteps) * 100;
 
   const filteredDisciplines = creativeDisciplines.filter(
@@ -132,9 +137,17 @@ export default function ArtistOnboardingPage() {
             <span className="text-xl font-bold text-gray-900">PIUMS</span>
           </div>
           {currentStep < 4 && (
-            <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
-              Centro de Ayuda
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleSkip}
+                className="text-gray-400 hover:text-gray-600 text-sm font-medium transition-colors"
+              >
+                Omitir
+              </button>
+              <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                Centro de Ayuda
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -745,6 +758,12 @@ export default function ArtistOnboardingPage() {
                       </svg>
                     </>
                   )}
+                </button>
+                <button
+                  onClick={handleSkip}
+                  className="mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Omitir configuración de servicio
                 </button>
               </div>
             </div>

@@ -32,7 +32,8 @@ export class ArtistsService {
         include: {
           portfolio: true,
           certifications: true,
-          availability: true,
+          availabilityRules: true,
+          blackouts: true,
         },
       });
 
@@ -57,9 +58,10 @@ export class ArtistsService {
         certifications: {
           orderBy: { issuedAt: "desc" },
         },
-        availability: {
+        availabilityRules: {
           orderBy: { dayOfWeek: "asc" },
         },
+        blackouts: true,
       },
     });
 
@@ -79,7 +81,8 @@ export class ArtistsService {
       include: {
         portfolio: true,
         certifications: true,
-        availability: true,
+        availabilityRules: true,
+        blackouts: true,
       },
     });
 
@@ -118,7 +121,8 @@ export class ArtistsService {
         include: {
           portfolio: true,
           certifications: true,
-          availability: true,
+          availabilityRules: true,
+          blackouts: true,
         },
       });
 
@@ -352,12 +356,12 @@ export class ArtistsService {
       }
 
       // Eliminar disponibilidad anterior
-      await prisma.availability.deleteMany({
+      await prisma.artistAvailabilityRule.deleteMany({
         where: { artistId },
       });
 
       // Crear nueva disponibilidad
-      const availability = await prisma.availability.createMany({
+      const availability = await prisma.artistAvailabilityRule.createMany({
         data: availabilityData.map((item) => ({
           ...item,
           artistId,
@@ -367,7 +371,7 @@ export class ArtistsService {
       logger.info("Disponibilidad configurada", "ARTISTS_SERVICE", { artistId });
       
       // Retornar la disponibilidad creada
-      const created = await prisma.availability.findMany({
+      const created = await prisma.artistAvailabilityRule.findMany({
         where: { artistId },
         orderBy: { dayOfWeek: "asc" },
       });
@@ -383,7 +387,7 @@ export class ArtistsService {
    * Obtener disponibilidad
    */
   async getAvailability(artistId: string) {
-    const availability = await prisma.availability.findMany({
+    const availability = await prisma.artistAvailabilityRule.findMany({
       where: { artistId },
       orderBy: { dayOfWeek: "asc" },
     });

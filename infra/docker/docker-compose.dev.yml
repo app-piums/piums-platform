@@ -263,8 +263,8 @@ services:
 
   web-client:
     build:
-      context: ../../apps/web-client/web
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: apps/web-client/web/Dockerfile
     container_name: piums-web-client
     ports:
       - "3000:3000"
@@ -283,8 +283,8 @@ services:
 
   web-artist:
     build:
-      context: ../../apps/web-artist/web
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: apps/web-artist/web/Dockerfile
     container_name: piums-web-artist
     ports:
       - "3001:3001"

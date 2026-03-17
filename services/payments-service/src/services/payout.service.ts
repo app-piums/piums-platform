@@ -27,7 +27,7 @@ export class PayoutService {
     scheduledFor?: Date;
     metadata?: Record<string, any>;
   }) {
-    const currency = data.currency || process.env.DEFAULT_CURRENCY || "MXN";
+    const currency = data.currency || process.env.DEFAULT_CURRENCY || "GTQ";
 
     // Validar que el artista existe
     const artist = await artistsClient.getArtist(data.artistId);
@@ -328,7 +328,7 @@ export class PayoutService {
       // Fee de plataforma
       platformFee = Math.round((originalAmount * PLATFORM_FEE_PERCENTAGE) / 100);
       
-      // Fee de Stripe (aproximado: 2.9% + $3 MXN)
+      // Fee de Stripe (aproximado: 2.9% + Q3 GTQ)
       // Nota: Este es un ejemplo, los fees reales dependen del plan de Stripe
       stripeFee = Math.round((originalAmount * 2.9) / 100 + 300);
     }

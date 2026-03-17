@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml* ./
 COPY packages/ ./packages/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --force
 
 # ============================================================================
 # Stage 2: Builder

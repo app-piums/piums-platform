@@ -1,0 +1,16 @@
+{
+  "login": {
+    "title": "Iniciar sesión",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "loginButton": "Entrar",
+    "registerLink": "¿No tienes cuenta? Regístrate",
+    "errorEmailRequired": "El email es requerido",
+    "errorEmailInvalid": "Email inválido",
+    "errorPasswordRequired": "La contraseña es requerida",
+    "errorGeneral": "Por favor corrige los errores antes de continuar",
+    "errorLogin": "Error al iniciar sesión"
+  }
+}

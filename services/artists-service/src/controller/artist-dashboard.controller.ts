@@ -109,15 +109,16 @@ export const acceptBooking = async (
 ) => {
   try {
     const authId = req.user?.id;
-    if Llamar al booking-service para aceptar la reserva
-    const success = await bookingServiceClient.confirmBooking(bookingId, artist.id);
-
-    if (!success) {
-      throw new AppError(500, "Error al aceptar la reserva");
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
     }
-
     const artist = await artistsService.getArtistByAuthId(authId);
     const bookingId = req.params.id;
+    // TODO: Llamar al booking-service para aceptar la reserva
+    // const success = await bookingServiceClient.confirmBooking(bookingId, artist.id);
+    // if (!success) {
+    //   throw new AppError(500, "Error al aceptar la reserva");
+    // }
 
     // TODO: Llamar al booking-service para aceptar la reserva
     // Verificar que la reserva pertenezca al artista
@@ -148,7 +149,9 @@ export const declineBooking = async (
     }
 
     const artist = await artistsService.getArtistByAuthId(authId);
-    conLlamar al booking-service para rechazar la reserva
+    const bookingId = req.params.id as string;
+    const reason = req.body.reason as string | undefined;
+    // TODO: Llamar al booking-service para rechazar la reserva
     const success = await bookingServiceClient.rejectBooking(
       bookingId,
       artist.id,
@@ -175,10 +178,19 @@ export const declineBooking = async (
 /**
  * GET /api/artists/me/stats - Obtener estadísticas del artista
  */
+
 export const getMyStats = async (
   req: AuthRequest,
   res: Response,
-  next:Obtener datos de booking-service y payments-service en paralelo
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    // Obtener datos de booking-service y payments-service en paralelo
+    const artist = await artistsService.getArtistByAuthId(authId);
     const [bookingStats, paymentStats] = await Promise.all([
       bookingServiceClient.getArtistStats(artist.id),
       paymentsServiceClient.getArtistPaymentStats(artist.id),
@@ -200,9 +212,9 @@ export const getMyStats = async (
       },
       rating: {
         average: artist.rating || 0,
-        totalReviews: artist.totalReviews || 0,
+        totalReviews: artist.reviewCount || 0,
       },
-      upcomingBookings: bookingStats.upcoming,
+      upcomingBookings: bookingStats.upcoming || [],
     };
 
     logger.info("Artist stats retrieved", "ARTIST_DASHBOARD", {
@@ -210,18 +222,6 @@ export const getMyStats = async (
       totalBookings: bookingStats.total,
       totalRevenue: paymentStats.totalRevenue,
     });
-
-    res.json({ stats });
-  } catch (error) {
-    next(error);
-  }
-}
-      rating: {
-        average: 0,
-        totalReviews: 0,
-      },
-      upcomingBookings: [],
-    };
 
     res.json({ stats });
   } catch (error) {

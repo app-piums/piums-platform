@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "next-i18next";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,7 +12,7 @@ interface FieldError {
   password?: string;
 }
 
-export default function LoginPage() {
+  const { t } = useTranslation('login');
   const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -25,11 +26,11 @@ export default function LoginPage() {
   const validateField = (field: string, value: string): string => {
     switch (field) {
       case "email":
-        if (!value) return "El email es requerido";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Email inválido";
+        if (!value) return t('errorEmailRequired');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return t('errorEmailInvalid');
         return "";
       case "password":
-        if (!value) return "La contraseña es requerida";
+        if (!value) return t('errorPasswordRequired');
         return "";
       default:
         return "";
@@ -55,7 +56,7 @@ export default function LoginPage() {
     setTouched({ email: true, password: true });
 
     if (Object.values(newErrors).some((error) => error)) {
-      setGeneralError("Por favor corrige los errores antes de continuar");
+      setGeneralError(t('errorGeneral'));
       return;
     }
 
@@ -68,7 +69,7 @@ export default function LoginPage() {
         credentials: "include",
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Error al iniciar sesión");
+      if (!response.ok) throw new Error(data.message || t('errorLogin'));
       if (data.token) localStorage.setItem("token", data.token);
       if (data.user) login(data.user);
       window.location.href = "/dashboard";
@@ -98,6 +99,7 @@ export default function LoginPage() {
 
         {/* Contenido brand */}
         <div className="relative z-10 flex flex-col justify-between w-full p-12">
+          <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
           {/* Logo */}
           <div>
             <Image src="/logo-white.png" alt="PIUMS" width={110} height={36} className="h-9 w-auto" priority />

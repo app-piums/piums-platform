@@ -1,0 +1,19 @@
+{
+  "dashboard": {
+    "title": "Descubrir Talento",
+    "subtitle": "Encuentra el creativo perfecto para tu próximo proyecto",
+    "searchPlaceholder": "Buscar artistas, estudios o servicios...",
+    "calendarTitle": "Tu Agenda",
+    "calendarViewAll": "Ver agenda completa →",
+    "nearbyTitle": "Creatives Cercanos",
+    "nearbyCount": "{{count}} Creatives cerca",
+    "gallery": "Ver galería",
+    "nextSession": "PRÓXIMA SESIÓN",
+    "nextSessionDetails": "Foto con Sarah J.",
+    "nextSessionTime": "Mañana · 10:00 AM",
+    "details": "Ver detalles →",
+    "recommendedTitle": "Recomendados para Ti",
+    "recommendedViewAll": "Ver todos →",
+    "fromPrice": "desde ${{price}}/hr"
+  }
+}

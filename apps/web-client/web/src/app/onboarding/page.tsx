@@ -119,8 +119,11 @@ function StepWelcome({ onStart }: { onStart: () => void }) {
                 Comenzar
                 <ArrowRightIcon className="h-4 w-4" />
               </button>
-              <button className="text-gray-500 hover:text-gray-800 font-medium transition-colors">
-                Saber más
+              <button
+                onClick={() => { window.location.href = '/dashboard'; }}
+                className="text-gray-500 hover:text-gray-800 font-medium transition-colors"
+              >
+                Omitir
               </button>
             </div>
 
@@ -208,7 +211,7 @@ function StepInterests({
       <div className="flex items-center justify-between mb-8">
         <PiumsLogo />
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400 font-medium">Paso 2 de 3</span>
+          <span className="text-sm text-gray-400 font-medium">{'Paso 2 de 3'}</span>
           <button onClick={onBack} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors">
             <ChevronLeftIcon className="h-5 w-5" />
           </button>
@@ -220,10 +223,9 @@ function StepInterests({
         <div className="h-full bg-[#FF6A00] rounded-full" style={{ width: '66%' }} />
       </div>
 
-      <h2 className="text-3xl font-bold text-gray-900 mb-2">Cuéntanos qué te apasiona</h2>
+      <h2 className="text-3xl font-bold text-gray-900 mb-2">{'Cuéntanos qué te apasiona'}</h2>
       <p className="text-gray-400 mb-8 leading-relaxed">
-        Selecciona las áreas creativas que te interesan explorar.
-        Esto nos ayuda a personalizar tu feed.
+        {'Selecciona las áreas creativas que te interesan explorar. Esto nos ayuda a personalizar tu feed.'}
       </p>
 
       {/* Category grid */}
@@ -305,7 +307,7 @@ function StepRefine({
       <div className="flex items-center justify-between mb-8">
         <PiumsLogo />
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400 font-medium">Paso 3 de 3</span>
+          <span className="text-sm text-gray-400 font-medium">{'Paso 3 de 3'}</span>
           <button onClick={onBack} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors">
             <ChevronLeftIcon className="h-5 w-5" />
           </button>
@@ -317,9 +319,9 @@ function StepRefine({
         <div className="h-full bg-[#FF6A00] rounded-full w-full" />
       </div>
 
-      <h2 className="text-3xl font-bold text-gray-900 mb-2">Afina tus gustos.</h2>
+      <h2 className="text-3xl font-bold text-gray-900 mb-2">{'Afina tus gustos.'}</h2>
       <p className="text-gray-400 mb-8 leading-relaxed">
-        Ayúdanos a personalizar tu feed eligiendo géneros y estilos específicos que más te inspiran.
+        {'Ayúdanos a personalizar tu feed eligiendo géneros y estilos específicos que más te inspiran.'}
       </p>
 
       {/* Sections */}
@@ -367,6 +369,12 @@ function StepRefine({
         className="w-full py-3.5 rounded-full font-semibold text-sm bg-[#FF6A00] hover:bg-[#e55e00] text-white shadow-lg shadow-orange-200/50 transition-colors"
       >
         Ir a mi Dashboard →
+      </button>
+      <button
+        onClick={() => { window.location.href = '/dashboard'; }}
+        className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
+      >
+        Omitir por ahora
       </button>
       <p className="mt-3 text-xs text-center text-gray-400">
         Puedes cambiar estas preferencias en cualquier momento desde Configuración.

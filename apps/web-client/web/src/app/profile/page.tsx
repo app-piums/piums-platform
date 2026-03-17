@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/navigation';
 import { Loading } from '@/components/Loading';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +14,7 @@ import NotificationsTab from './notifications/page';
 import PaymentsTab from './payments/page';
 import DeleteAccountTab from './delete/page';
 
-export default function ProfilePage() {
+  const { t } = useTranslation('profile');
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'personal' | 'security' | 'notifications' | 'payments' | 'delete'>('personal');
@@ -29,11 +30,11 @@ export default function ProfilePage() {
   }
 
   const tabs = [
-    { id: 'personal' as const, label: 'Información Personal', icon: '👤' },
-    { id: 'security' as const, label: 'Seguridad', icon: '🔒' },
-    { id: 'notifications' as const, label: 'Notificaciones', icon: '🔔' },
-    { id: 'payments' as const, label: 'Métodos de Pago', icon: '💳' },
-    { id: 'delete' as const, label: 'Eliminar Cuenta', icon: '⚠️' },
+    { id: 'personal' as const, label: t('personalTab'), icon: '👤' },
+    { id: 'security' as const, label: t('securityTab'), icon: '🔒' },
+    { id: 'notifications' as const, label: t('notificationsTab'), icon: '🔔' },
+    { id: 'payments' as const, label: t('paymentsTab'), icon: '💳' },
+    { id: 'delete' as const, label: t('deleteTab'), icon: '⚠️' },
   ];
 
   const renderTabContent = () => {
@@ -58,7 +59,7 @@ export default function ProfilePage() {
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
 
       <div className="flex-1 overflow-y-auto p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-8">Mi Perfil</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('title')}</h1>
 
         {/* Tabs Navigation */}
         <div className="bg-white rounded-lg shadow-sm mb-6">

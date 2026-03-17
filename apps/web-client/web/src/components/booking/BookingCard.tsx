@@ -42,7 +42,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   location,
   duration,
   amount,
-  currency = 'MXN',
+  currency = 'GTQ',
   actions = [],
   className = '',
 }) => {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
 import { Loading } from '@/components/Loading';
@@ -13,6 +14,7 @@ import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ArtistsPage() {
+  const { t } = useTranslation('artists');
   const router = useRouter();
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -54,19 +56,19 @@ export default function ArtistsPage() {
 
   // Categories (hardcoded for now)
   const categories = [
-    { value: '', label: 'Todas las categorías' },
-    { value: 'musica', label: 'Música' },
-    { value: 'fotografia', label: 'Fotografía' },
-    { value: 'catering', label: 'Catering' },
-    { value: 'decoracion', label: 'Decoración' },
-    { value: 'animacion', label: 'Animación' },
+    { value: '', label: t('filterLabel') },
+    { value: 'musica', label: t('musica', 'Música') },
+    { value: 'fotografia', label: t('fotografia', 'Fotografía') },
+    { value: 'catering', label: t('catering', 'Catering') },
+    { value: 'decoracion', label: t('decoracion', 'Decoración') },
+    { value: 'animacion', label: t('animacion', 'Animación') },
   ];
 
   const cities = [
-    { value: '', label: 'Todas las ciudades' },
-    { value: '1', label: 'Ciudad de México' },
-    { value: '2', label: 'Guadalajara' },
-    { value: '3', label: 'Monterrey' },
+    { value: '', label: t('allCities', 'Todas las ciudades') },
+    { value: '1', label: t('cdmx', 'Ciudad de México') },
+    { value: '2', label: t('guadalajara', 'Guadalajara') },
+    { value: '3', label: t('monterrey', 'Monterrey') },
   ];
 
   // Update URL with current filters
@@ -123,9 +125,9 @@ export default function ArtistsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Artistas</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
               <p className="mt-2 text-gray-600">
-                Descubre profesionales talentosos para tu evento
+                {t('subtitle', 'Descubre profesionales talentosos para tu evento')}
               </p>
             </div>
             {hasActiveFilters && (
@@ -137,13 +139,13 @@ export default function ArtistsPage() {
                 <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Limpiar filtros
+                {t('clearFilters', 'Limpiar filtros')}
               </Button>
             )}
           </div>
           {!isLoading && totalArtists > 0 && (
             <p className="mt-3 text-sm text-gray-500 font-medium">
-              {totalArtists} {totalArtists === 1 ? 'artista encontrado' : 'artistas encontrados'}
+              {totalArtists} {totalArtists === 1 ? t('oneArtist', 'artista encontrado') : t('manyArtists', 'artistas encontrados')}
             </p>
           )}
         </div>
@@ -152,7 +154,7 @@ export default function ArtistsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Input
-              placeholder="Buscar por nombre..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               leftIcon={
@@ -161,21 +163,18 @@ export default function ArtistsPage() {
                 </svg>
               }
             />
-            
             <Select
               options={categories}
               value={selectedCategory}
               onChange={(e) => handleCategoryChange(e.target.value)}
             />
-            
             <Select
               options={cities}
               value={selectedCity}
               onChange={(e) => handleCityChange(e.target.value)}
             />
-            
             <Button type="submit" fullWidth>
-              Buscar
+              {t('searchButton', 'Buscar')}
             </Button>
           </form>
         </div>
@@ -185,9 +184,9 @@ export default function ArtistsPage() {
           <Loading />
         ) : isError ? (
           <div className="text-center py-12">
-            <p className="text-red-600">Error al cargar artistas</p>
+            <p className="text-red-600">{t('errorLoading', 'Error al cargar artistas')}</p>
             <Button onClick={() => window.location.reload()} className="mt-4">
-              Intentar de nuevo
+              {t('retry', 'Intentar de nuevo')}
             </Button>
           </div>
         ) : allArtists.length === 0 ? (
@@ -195,8 +194,8 @@ export default function ArtistsPage() {
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No se encontraron artistas</h3>
-            <p className="mt-1 text-gray-500">Intenta ajustar los filtros de búsqueda</p>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">{t('noResults')}</h3>
+            <p className="mt-1 text-gray-500">{t('adjustFilters', 'Intenta ajustar los filtros de búsqueda')}</p>
           </div>
         ) : (
           <>
@@ -213,7 +212,7 @@ export default function ArtistsPage() {
                 {isFetchingNextPage ? (
                   <div className="flex items-center gap-3">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-900"></div>
-                    <span className="text-gray-600">Cargando más artistas...</span>
+                    <span className="text-gray-600">{t('loadingMore', 'Cargando más artistas...')}</span>
                   </div>
                 ) : (
                   <Button
@@ -221,7 +220,7 @@ export default function ArtistsPage() {
                     variant="outline"
                     className="px-8"
                   >
-                    Cargar más
+                    {t('loadMore')}
                   </Button>
                 )}
               </div>
@@ -231,7 +230,7 @@ export default function ArtistsPage() {
             {!hasNextPage && allArtists.length > 0 && (
               <div className="text-center py-8 text-gray-500">
                 <p className="text-sm">
-                  Has visto todos los {totalArtists} artistas disponibles
+                  {t('endOfResults', `Has visto todos los ${totalArtists} artistas disponibles`, { totalArtists })}
                 </p>
               </div>
             )}

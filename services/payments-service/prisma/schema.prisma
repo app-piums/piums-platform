@@ -27,7 +27,7 @@ model Payment {
   
   // Monto
   amount               Int      // En centavos
-  currency             String   @default("MXN")
+  currency             String   @default("GTQ")
   amountReceived       Int?     // Monto realmente recibido (puede diferir por fees)
   
   // Estado
@@ -92,7 +92,7 @@ model PaymentIntent {
   
   // Monto
   amount      Int      // En centavos
-  currency    String   @default("MXN")
+  currency    String   @default("GTQ")
   
   // Estado
   status      PaymentIntentStatus @default(CREATED)
@@ -146,7 +146,7 @@ model Refund {
   
   // Monto
   amount      Int      // En centavos
-  currency    String   @default("MXN")
+  currency    String   @default("GTQ")
   
   // Estado
   status      RefundStatus @default(PENDING)
@@ -272,7 +272,7 @@ model Payout {
   
   // Monto
   amount      Int      // En centavos (lo que recibe el artista)
-  currency    String   @default("MXN")
+  currency    String   @default("GTQ")
   
   // Estado
   status      PayoutStatus @default(PENDING)

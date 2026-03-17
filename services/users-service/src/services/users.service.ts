@@ -17,9 +17,9 @@ export class UsersService {
   }) {
     try {
       // Verificar que no exista
-      const existing = await prisma.user.findUnique({
-        where: { authId: data.authId },
-      });
+        const existing = await prisma.user.findUnique({
+          where: { authId: data.authId },
+        });
 
       if (existing) {
         throw new AppError(409, "El usuario ya existe");

@@ -152,7 +152,7 @@ export class BookingService {
       const paymentIntentResponse = await paymentsClient.createPaymentIntent({
         bookingId: booking.id,
         amount: depositAmount,
-        currency: 'MXN',
+        currency: 'GTQ',
         paymentType: 'DEPOSIT',
         userId: data.clientId,
       });

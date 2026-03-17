@@ -34,14 +34,14 @@ export class PaymentsServiceClient {
         return {
           totalRevenue: 0,
           thisMonthRevenue: 0,
-          currency: "MXN",
+          currency: "GTQ",
           completedPayments: 0,
           pendingPayments: 0,
         };
       }
 
       const data = await response.json();
-      return data;
+      return data as PaymentStats;
     } catch (error: any) {
       logger.error("Error in getArtistPaymentStats", "PAYMENTS_CLIENT", {
         error: error.message,
@@ -49,7 +49,7 @@ export class PaymentsServiceClient {
       return {
         totalRevenue: 0,
         thisMonthRevenue: 0,
-        currency: "MXN",
+        currency: "GTQ",
         completedPayments: 0,
         pendingPayments: 0,
       };

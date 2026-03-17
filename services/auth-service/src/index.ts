@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
+import type { RequestHandler } from "express";
 import passport from "passport";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
@@ -29,9 +30,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { secure: process.env.NODE_ENV === 'production' }
-}));
-app.use(passport.initialize());
-app.use(passport.session());
+}) as any);
+app.use(passport.initialize() as any);
+app.use(passport.session() as any);
 app.use(apiLimiter); // Rate limiting general
 
 // Rutas

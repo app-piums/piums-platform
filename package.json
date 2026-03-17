@@ -7,5 +7,9 @@
     "dev": "pnpm -r dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint"
+  },
+  "dependencies": {
+    "@types/express": "4.17.21",
+    "@types/express-session": "1.17.5"
   }
 }

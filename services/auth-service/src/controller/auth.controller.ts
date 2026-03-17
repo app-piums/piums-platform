@@ -163,7 +163,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // Verificar contraseña
-    const isValid = await comparePassword(password, user.passwordHash);
+    const isValid = await comparePassword(password, user.passwordHash ?? "");
     
     if (!isValid) {
       // Incrementar intentos fallidos

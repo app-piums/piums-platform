@@ -17,7 +17,8 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-app.use(apiLimiter);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use(apiLimiter as any);
 
 // Rutas
 app.use("/health", healthRoutes);

@@ -1,0 +1,18 @@
+{
+  "booking": {
+    "title": "Reservar artista",
+    "selectService": "Selecciona el servicio",
+    "selectDate": "Selecciona la fecha",
+    "selectTime": "Selecciona la hora",
+    "addons": "Extras disponibles",
+    "notes": "Notas para el artista",
+    "location": "Ubicación del evento",
+    "review": "Revisar y confirmar",
+    "confirmButton": "Confirmar reserva",
+    "success": "¡Reserva realizada con éxito!",
+    "error": "Error al realizar la reserva",
+    "backButton": "Atrás",
+    "nextButton": "Siguiente",
+    "finishButton": "Finalizar"
+  }
+}

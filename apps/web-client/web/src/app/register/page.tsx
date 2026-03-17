@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "next-i18next";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { countries, type Country } from "../../lib/countries";
@@ -16,7 +17,7 @@ interface FieldError {
   terms?: string;
 }
 
-export default function RegisterPage() {
+  const { t } = useTranslation('register');
   const router = useRouter();
   const { login } = useAuth();
   const [step, setStep] = useState(1);
@@ -55,42 +56,42 @@ export default function RegisterPage() {
     switch (field) {
       case "nombre":
         if (!value || typeof value !== 'string' || !value.trim()) 
-          return "Por favor ingresa tu nombre completo";
+          return t('errorNombreRequired');
         if (value.trim().length < 2) 
-          return "Tu nombre debe tener al menos 2 caracteres";
+          return t('errorNombreShort');
         return "";
       case "email":
         if (!value || typeof value !== 'string') 
-          return "El correo electrónico es obligatorio";
+          return t('errorEmailRequired');
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) 
-          return "Por favor ingresa un correo válido";
+          return t('errorEmailInvalid');
         return "";
       case "password":
         if (!value || typeof value !== 'string') 
-          return "Por favor crea una contraseña";
-        const strength = calculatePasswordStrength(value);
+          return t('errorPasswordRequired');
+        const strength = calculatePasswordStrength(value as string);
         if (strength.score < 3) 
-          return "Tu contraseña debe ser más segura";
+          return t('errorPasswordWeak');
         return "";
       case "confirmPassword":
         if (!value || typeof value !== 'string') 
-          return "Por favor confirma tu contraseña";
+          return t('errorConfirmPasswordRequired');
         if (value !== password) 
-          return "Las contraseñas no coinciden";
+          return t('errorPasswordsMismatch');
         return "";
       case "pais":
         if (!selectedCountry) 
-          return "Selecciona tu país";
+          return t('errorCountryRequired');
         return "";
       case "telefono":
         if (!value || typeof value !== 'string') 
-          return "El teléfono es necesario";
-        if (value.length < 8) 
-          return "Ingresa un número de teléfono válido";
+          return t('errorTelefonoRequired');
+        if ((value as string).length < 8) 
+          return t('errorTelefonoInvalid');
         return "";
       case "terms":
         if (!value) 
-          return "Debes aceptar los términos y condiciones";
+          return t('errorTermsRequired');
         return "";
       default:
         return "";

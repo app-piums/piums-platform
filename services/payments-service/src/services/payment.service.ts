@@ -22,7 +22,7 @@ export class PaymentService {
     paymentMethods?: string[];
     metadata?: Record<string, any>;
   }) {
-    const currency = data.currency || process.env.DEFAULT_CURRENCY || "MXN";
+    const currency = data.currency || process.env.DEFAULT_CURRENCY || "GTQ";
 
     // Si hay bookingId, validar que exista y pertenezca al usuario
     if (data.bookingId) {

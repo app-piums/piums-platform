@@ -10,7 +10,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   try {
     // Obtener token de cookie o header
     const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');

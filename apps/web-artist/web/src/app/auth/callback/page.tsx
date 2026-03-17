@@ -51,6 +51,7 @@ export default function OAuthCallbackPage() {
             id: decoded.id,
             email: decoded.email,
             name: decoded.name || null,
+            nombre: decoded.name || decoded.nombre || decoded.email?.split('@')[0] || '',
             role: decoded.role || 'user',
           };
 

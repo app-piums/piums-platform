@@ -83,7 +83,7 @@ model ServiceIndex {
   
   // Pricing
   price         Float
-  currency      String   @default("MXN")
+  currency      String   @default("GTQ")
   pricingType   String   // HOURLY, FIXED, VARIABLE
   
   // Location

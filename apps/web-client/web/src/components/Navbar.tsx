@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -9,6 +10,7 @@ import { Button } from './ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const Navbar: React.FC = () => {
+  const { t } = useTranslation('menu');
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
@@ -43,7 +45,7 @@ export const Navbar: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                Dashboard
+                {t('dashboard')}
               </Link>
               <Link
                 href="/artists"
@@ -53,7 +55,7 @@ export const Navbar: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                Artistas
+                {t('artists')}
               </Link>
               <Link
                 href="/bookings"
@@ -63,7 +65,7 @@ export const Navbar: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                Mis Reservas
+                {t('bookings')}
               </Link>
             </div>
           </div>
@@ -94,21 +96,21 @@ export const Navbar: React.FC = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Mi Perfil
+                        {t('profile')}
                       </Link>
                       <Link
                         href="/bookings"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Mis Reservas
+                        {t('bookings')}
                       </Link>
                       <hr className="my-1" />
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                       >
-                        Cerrar Sesión
+                        {t('logout')}
                       </button>
                     </div>
                   </>
@@ -117,10 +119,10 @@ export const Navbar: React.FC = () => {
             ) : (
               <div className="flex items-center space-x-2">
                 <Link href="/login">
-                  <Button variant="ghost" size="sm">Iniciar Sesión</Button>
+                  <Button variant="ghost" size="sm">{t('login')}</Button>
                 </Link>
                 <Link href="/register">
-                  <Button variant="primary" size="sm">Registrarse</Button>
+                  <Button variant="primary" size="sm">{t('register')}</Button>
                 </Link>
               </div>
             )}

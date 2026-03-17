@@ -19,12 +19,12 @@ interface PricingBreakdownProps {
 
 export const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   items,
-  currency = 'MXN',
+  currency = 'GTQ',
   showDetails = true,
   className = '',
 }) => {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
+    return new Intl.NumberFormat('es-GT', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,

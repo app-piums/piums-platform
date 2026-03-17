@@ -1,10 +1,9 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../middleware/isAdmin';
+import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
 
 // GET /api/admin/stats - Métricas generales
-export const getStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Obtener stats de diferentes servicios
     // Nota: En producción, estos datos vendrían de los microservicios correspondientes
@@ -48,7 +47,7 @@ export const getStats = async (req: AuthRequest, res: Response, next: NextFuncti
       ]
     };
 
-    logger.info('Admin stats retrieved', 'ADMIN_CONTROLLER', { adminId: req.user?.id });
+    logger.info('Admin stats retrieved', 'ADMIN_CONTROLLER', { adminId: (req as any).user?.id });
     res.json(stats);
   } catch (error: any) {
     logger.error(`Error getting admin stats: ${error.message}`, 'ADMIN_CONTROLLER');
@@ -57,7 +56,7 @@ export const getStats = async (req: AuthRequest, res: Response, next: NextFuncti
 };
 
 // GET /api/admin/users - Lista usuarios
-export const getUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = '1', limit = '20', search = '', role = '' } = req.query;
     
@@ -91,14 +90,14 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
           isBlocked: true,
           isVerified: true,
           createdAt: true,
-          lastLogin: true
+          lastLoginAt: true
         }
       }),
       prisma.user.count({ where })
     ]);
 
     logger.info('Admin retrieved users list', 'ADMIN_CONTROLLER', { 
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       count: users.length 
     });
 
@@ -110,7 +109,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 };
 
 // PATCH /api/admin/users/:id/block - Bloquear/Desbloquear usuario
-export const toggleBlockUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const toggleBlockUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { isBlocked, reason } = req.body;
@@ -121,7 +120,7 @@ export const toggleBlockUser = async (req: AuthRequest, res: Response, next: Nex
     });
 
     logger.info(`User ${isBlocked ? 'blocked' : 'unblocked'}`, 'ADMIN_CONTROLLER', {
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       userId: id,
       reason
     });
@@ -134,7 +133,7 @@ export const toggleBlockUser = async (req: AuthRequest, res: Response, next: Nex
 };
 
 // GET /api/admin/artists - Lista artistas
-export const getArtists = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getArtists = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = '1', limit = '20', search = '', verified = '' } = req.query;
     
@@ -175,7 +174,7 @@ export const getArtists = async (req: AuthRequest, res: Response, next: NextFunc
     ]);
 
     logger.info('Admin retrieved artists list', 'ADMIN_CONTROLLER', { 
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       count: artists.length 
     });
 
@@ -187,7 +186,7 @@ export const getArtists = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 // PATCH /api/admin/artists/:id/verify - Verificar artista
-export const verifyArtist = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const verifyArtist = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { isVerified } = req.body;
@@ -198,7 +197,7 @@ export const verifyArtist = async (req: AuthRequest, res: Response, next: NextFu
     });
 
     logger.info(`Artist ${isVerified ? 'verified' : 'unverified'}`, 'ADMIN_CONTROLLER', {
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       artistId: id
     });
 
@@ -210,7 +209,7 @@ export const verifyArtist = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 // GET /api/admin/bookings - Lista todas las reservas
-export const getBookings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = '1', limit = '20', status = '' } = req.query;
     
@@ -244,7 +243,7 @@ export const getBookings = async (req: AuthRequest, res: Response, next: NextFun
     ];
 
     logger.info('Admin retrieved bookings list', 'ADMIN_CONTROLLER', { 
-      adminId: req.user?.id 
+      adminId: (req as any).user?.id 
     });
 
     res.json({ 
@@ -260,7 +259,7 @@ export const getBookings = async (req: AuthRequest, res: Response, next: NextFun
 };
 
 // GET /api/admin/reports - Reportes pendientes
-export const getReports = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getReports = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = '1', limit = '20', status = 'pending' } = req.query;
     
@@ -307,7 +306,7 @@ export const getReports = async (req: AuthRequest, res: Response, next: NextFunc
     ];
 
     logger.info('Admin retrieved reports list', 'ADMIN_CONTROLLER', { 
-      adminId: req.user?.id 
+      adminId: (req as any).user?.id 
     });
 
     res.json({ 
@@ -323,7 +322,7 @@ export const getReports = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 // PATCH /api/admin/reports/:id/resolve - Resolver reporte
-export const resolveReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const resolveReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { action, reason } = req.body; // action: 'approve', 'reject', 'delete_content'
@@ -332,7 +331,7 @@ export const resolveReport = async (req: AuthRequest, res: Response, next: NextF
     // y tomaría acciones según el tipo de reporte
     
     logger.info(`Report resolved`, 'ADMIN_CONTROLLER', {
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       reportId: id,
       action,
       reason
@@ -350,7 +349,7 @@ export const resolveReport = async (req: AuthRequest, res: Response, next: NextF
 };
 
 // GET /api/admin/users/:id - Obtener detalle de usuario
-export const getUserDetail = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getUserDetail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -365,7 +364,7 @@ export const getUserDetail = async (req: AuthRequest, res: Response, next: NextF
         isVerified: true,
         createdAt: true,
         updatedAt: true,
-        lastLogin: true,
+        lastLoginAt: true,
         provider: true
       }
     });
@@ -387,7 +386,7 @@ export const getUserDetail = async (req: AuthRequest, res: Response, next: NextF
     };
 
     logger.info('Admin retrieved user detail', 'ADMIN_CONTROLLER', { 
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       targetUserId: id
     });
 

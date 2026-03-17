@@ -64,7 +64,7 @@ model Booking {
   servicePrice   Int          // Precio del servicio en centavos
   addonsPrice    Int          @default(0) // Precio de addons en centavos
   totalPrice     Int          // Precio total en centavos
-  currency       String       @default("MXN")
+  currency       String       @default("GTQ")
   
   // Snapshot del quote completo al momento de la reserva (inmutable)
   quoteSnapshot  Json?        // Incluye: items[], breakdown, totales

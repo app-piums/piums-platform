@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'next-i18next';
 import { Button } from '@/components/ui/Button';
 
 export default function NotificationsTab() {
@@ -25,6 +26,7 @@ export default function NotificationsTab() {
       promotions: false,
     },
   });
+  const { t } = useTranslation('notifications');
 
   const handleToggle = (channel: 'email' | 'sms' | 'push', category: string) => {
     setSettings((prev) => ({
@@ -40,35 +42,35 @@ export default function NotificationsTab() {
     try {
       setLoading(true);
       
-      // TODO: Call API to update notification settings
+              alert(t('success'));
       // await sdk.updateNotificationSettings(settings);
       
       setTimeout(() => {
         setLoading(false);
-        alert('Configuración de notificaciones actualizada');
+            alert(t('error'));
       }, 1000);
     } catch (error) {
       console.error('Error updating notification settings:', error);
       setLoading(false);
       alert('Error al actualizar la configuración');
     }
-  };
-
+            label: t('categories.bookings.label'),
+            description: t('categories.bookings.description'),
   const notificationCategories = [
     {
       id: 'bookings',
-      label: 'Reservas',
-      description: 'Confirmaciones, recordatorios y actualizaciones de reservas',
+            label: t('categories.messages.label'),
+            description: t('categories.messages.description'),
     },
     {
       id: 'messages',
-      label: 'Mensajes',
-      description: 'Nuevos mensajes de artistas o clientes',
+            label: t('categories.reviews.label'),
+            description: t('categories.reviews.description'),
     },
     {
       id: 'reviews',
-      label: 'Reseñas',
-      description: 'Nuevas reseñas recibidas o respuestas a tus reseñas',
+            label: t('categories.promotions.label'),
+            description: t('categories.promotions.description'),
     },
     {
       id: 'promotions',
@@ -91,10 +93,8 @@ export default function NotificationsTab() {
         }`}
       />
     </button>
-  );
-
-  return (
-    <div>
+              <h2 className="text-2xl font-bold text-gray-900">{t('title')}</h2>
+              <p className="text-sm text-gray-600 mt-1">{t('subtitle')}</p>
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Notificaciones</h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -103,16 +103,16 @@ export default function NotificationsTab() {
       </div>
 
       {/* Notification Channels Table */}
-      <div className="overflow-x-auto">
+                      {t('type')}
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
-            <tr>
+                      {t('email')}
               <th scope="col" className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Tipo de notificación
-              </th>
+                      {t('sms')}
               <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
-              </th>
+                      {t('push')}
               <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 SMS
               </th>
@@ -162,8 +162,7 @@ export default function NotificationsTab() {
               <path
                 fillRule="evenodd"
                 d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
+                  <p className="text-sm text-blue-700">{t('info')}</p>
             </svg>
           </div>
           <div className="ml-3">
@@ -171,7 +170,7 @@ export default function NotificationsTab() {
               Las notificaciones importantes relacionadas con tu cuenta y seguridad siempre se enviarán por email.
             </p>
           </div>
-        </div>
+                {loading ? t('saving') : t('save')}
       </div>
 
       {/* Save Button */}

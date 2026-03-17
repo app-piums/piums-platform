@@ -1,0 +1,28 @@
+{
+  "register": {
+    "title": "Crear cuenta",
+    "nombreLabel": "Nombre completo",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "confirmPasswordLabel": "Confirmar contraseña",
+    "countryLabel": "País",
+    "telefonoLabel": "Teléfono",
+    "acceptTerms": "Acepto los términos y condiciones",
+    "registerButton": "Registrarse",
+    "loginLink": "¿Ya tienes cuenta? Inicia sesión",
+    "errorNombreRequired": "Por favor ingresa tu nombre completo",
+    "errorNombreShort": "Tu nombre debe tener al menos 2 caracteres",
+    "errorEmailRequired": "El correo electrónico es obligatorio",
+    "errorEmailInvalid": "Por favor ingresa un correo válido",
+    "errorPasswordRequired": "Por favor crea una contraseña",
+    "errorPasswordWeak": "Tu contraseña debe ser más segura",
+    "errorConfirmPasswordRequired": "Por favor confirma tu contraseña",
+    "errorPasswordsMismatch": "Las contraseñas no coinciden",
+    "errorCountryRequired": "Selecciona tu país",
+    "errorTelefonoRequired": "El teléfono es necesario",
+    "errorTelefonoInvalid": "Ingresa un número de teléfono válido",
+    "errorTermsRequired": "Debes aceptar los términos y condiciones",
+    "errorGeneral": "Por favor corrige los errores antes de continuar",
+    "errorRegister": "Error al crear la cuenta"
+  }
+}

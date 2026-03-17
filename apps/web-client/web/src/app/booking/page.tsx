@@ -336,7 +336,7 @@ function BookingContent() {
                                 <p className="text-2xl font-bold text-[#FF6A00]">
                                   ${service.basePrice.toLocaleString()}
                                 </p>
-                                <p className="text-sm text-gray-500 mt-1">MXN</p>
+                                <p className="text-sm text-gray-500 mt-1">GTQ</p>
                               </div>
                             </div>
                           </div>
@@ -640,7 +640,7 @@ function BookingContent() {
                       description: addon.description,
                     })),
                 ]}
-                currency="MXN"
+                currency="GTQ"
               />
 
               {/* Quick Info */}

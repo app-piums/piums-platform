@@ -1,0 +1,11 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "artists": "Artistas",
+    "bookings": "Mis Reservas",
+    "profile": "Mi Perfil",
+    "logout": "Cerrar Sesión",
+    "login": "Iniciar Sesión",
+    "register": "Registrarse"
+  }
+}

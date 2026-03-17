@@ -51,6 +51,7 @@ export const configureFacebookStrategy = () => {
               data: {
                 email,
                 name: profile.displayName || `${profile.name?.givenName} ${profile.name?.familyName}` || email.split('@')[0],
+                nombre: profile.displayName || `${profile.name?.givenName} ${profile.name?.familyName}` || email.split('@')[0],
                 provider: 'facebook',
                 facebookId: profile.id,
                 isVerified: true, // Email verificado por Facebook

@@ -187,7 +187,7 @@ export default function ArtistDashboardPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         <span className="font-semibold text-gray-900">
-                          ${stats.upcomingBookings[0].totalPrice.toLocaleString()}
+                          Q{stats.upcomingBookings[0].totalPrice.toLocaleString('es-GT')}
                         </span>
                       </div>
                     </div>
@@ -297,10 +297,10 @@ export default function ArtistDashboardPage() {
                 </defs>
                 
                 {/* Y-axis labels */}
-                <text x="10" y="20" className="text-xs fill-gray-500">$15k</text>
-                <text x="10" y="80" className="text-xs fill-gray-500">$10k</text>
-                <text x="10" y="140" className="text-xs fill-gray-500">$5k</text>
-                <text x="18" y="200" className="text-xs fill-gray-500">$0</text>
+                <text x="10" y="20" className="text-xs fill-gray-500">Q15k</text>
+                <text x="10" y="80" className="text-xs fill-gray-500">Q10k</text>
+                <text x="10" y="140" className="text-xs fill-gray-500">Q5k</text>
+                <text x="18" y="200" className="text-xs fill-gray-500">Q0</text>
                 
                 {/* Chart area */}
                 <path
@@ -379,7 +379,7 @@ export default function ArtistDashboardPage() {
                     </div>
                     
                     <div className="text-right">
-                      <p className="font-bold text-gray-900">${booking.totalPrice.toLocaleString()}</p>
+                      <p className="font-bold text-gray-900">Q{booking.totalPrice.toLocaleString('es-GT')}</p>
                       <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                         booking.status === 'CONFIRMED'
                           ? 'bg-green-100 text-green-700'

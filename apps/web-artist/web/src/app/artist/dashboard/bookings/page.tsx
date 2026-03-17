@@ -220,7 +220,7 @@ export default function ArtistBookingsPage() {
                             <div>
                               <p className="text-gray-600">Precio total:</p>
                               <p className="font-bold text-gray-900">
-                                ${booking.totalPrice.toLocaleString()} {booking.currency}
+                                Q{booking.totalPrice.toLocaleString('es-GT')}
                               </p>
                             </div>
                           </div>

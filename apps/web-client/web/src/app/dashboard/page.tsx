@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -109,6 +110,7 @@ function MiniCalendar() {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation('dashboard');
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [search, setSearch] = useState('');
@@ -129,8 +131,8 @@ export default function DashboardPage() {
         {/* Top Header */}
         <header className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Descubrir Talento</h1>
-            <p className="text-sm text-gray-400">Encuentra el creativo perfecto para tu próximo proyecto</p>
+            <h1 className="text-xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="text-sm text-gray-400">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
             {/* Search */}
@@ -143,7 +145,7 @@ export default function DashboardPage() {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar artistas, estudios o servicios..."
+                placeholder={t('searchPlaceholder')}
                 className="pl-9 pr-4 py-2 w-72 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00]"
               />
             </form>
@@ -161,9 +163,9 @@ export default function DashboardPage() {
             {/* Left: Calendar */}
             <div className="flex-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-semibold text-gray-900">Tu Agenda</h2>
+                <h2 className="font-semibold text-gray-900">{t('calendarTitle')}</h2>
                 <Link href="/bookings" className="text-sm text-[#FF6A00] font-medium hover:underline">
-                  Ver agenda completa →
+                  {t('calendarViewAll')}
                 </Link>
               </div>
               <MiniCalendar />
@@ -172,7 +174,7 @@ export default function DashboardPage() {
             {/* Right: Nearby Creatives */}
             <div className="w-72 shrink-0 space-y-4">
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <h2 className="font-semibold text-gray-900 mb-3">Creatives Cercanos</h2>
+                <h2 className="font-semibold text-gray-900 mb-3">{t('nearbyTitle')}</h2>
                 {/* Map placeholder */}
                 <div className="h-36 rounded-xl bg-gradient-to-br from-teal-100 to-blue-100 relative overflow-hidden mb-3 flex items-center justify-center">
                   <div className="absolute inset-0 opacity-20"
@@ -186,7 +188,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">12 Creatives cerca</p>
+                    <p className="text-sm font-semibold text-gray-900">{t('nearbyCount', { count: 12 })}</p>
                     <div className="flex -space-x-2 mt-1">
                       {['from-rose-400','from-violet-400','from-teal-400'].map((c,i) => (
                         <div key={i} className={`h-6 w-6 rounded-full bg-gradient-to-br ${c} to-pink-500 border-2 border-white`} />
@@ -194,16 +196,16 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <Link href="/artists" className="text-xs font-semibold text-[#FF6A00] border border-[#FF6A00]/30 rounded-lg px-3 py-1.5 hover:bg-[#FF6A00]/5 transition-colors">
-                    Ver galería
+                    {t('gallery')}
                   </Link>
                 </div>
               </div>
 
               {/* Next session */}
               <div className="bg-gray-900 rounded-2xl p-5 text-white">
-                <p className="text-xs text-gray-400 mb-1">PRÓXIMA SESIÓN</p>
-                <p className="font-semibold">Foto con Sarah J.</p>
-                <p className="text-sm text-gray-400 mt-0.5">Mañana · 10:00 AM</p>
+                <p className="text-xs text-gray-400 mb-1">{t('nextSession')}</p>
+                <p className="font-semibold">{t('nextSessionDetails')}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{t('nextSessionTime')}</p>
                 <div className="h-16 w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 mt-3 flex items-center justify-center">
                   <svg className="h-8 w-8 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -211,7 +213,7 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <Link href="/bookings" className="mt-3 block text-center text-sm font-medium text-[#FF6A00] hover:underline">
-                  Ver detalles →
+                  {t('details')}
                 </Link>
               </div>
             </div>
@@ -220,8 +222,8 @@ export default function DashboardPage() {
           {/* Recommended for You */}
           <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Recomendados para Ti</h2>
-              <Link href="/artists" className="text-sm text-[#FF6A00] font-medium hover:underline">Ver todos →</Link>
+              <h2 className="font-semibold text-gray-900">{t('recommendedTitle')}</h2>
+              <Link href="/artists" className="text-sm text-[#FF6A00] font-medium hover:underline">{t('recommendedViewAll')}</Link>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {RECOMMENDED.map(artist => (
@@ -241,7 +243,7 @@ export default function DashboardPage() {
                   <div className="p-3">
                     <p className="font-semibold text-gray-900 text-sm">{artist.name}</p>
                     <p className="text-xs text-gray-400">{artist.category}</p>
-                    <p className="text-sm font-bold text-[#FF6A00] mt-1">desde ${artist.price}/hr</p>
+                    <p className="text-sm font-bold text-[#FF6A00] mt-1">{t('fromPrice', { price: artist.price })}</p>
                   </div>
                 </Link>
               ))}

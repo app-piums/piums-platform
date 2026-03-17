@@ -5,7 +5,7 @@ import { z } from "zod";
 export const createPaymentIntentSchema = z.object({
   bookingId: z.string().uuid().optional(),
   amount: z.number().int().positive(),
-  currency: z.string().length(3).default("MXN"),
+  currency: z.string().length(3).default("GTQ"),
   description: z.string().optional(),
   paymentMethods: z.array(z.string()).default(["card"]),
   metadata: z.record(z.any()).optional(),

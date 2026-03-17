@@ -1,4 +1,5 @@
-'use client';
+"use client";
+import { io, Socket } from 'socket.io-client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,33 +15,66 @@ import { Loading } from '@/components/Loading';
 const MOCK_CONVERSATIONS: Conversation[] = [
   {
     id: 'conv-1',
+    userId: 'user-1',
+    artistId: 'artist-1',
     clientName: 'Cliente Demo',
     clientAvatar: '',
     unreadCount: 2,
     lastMessageAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
     messages: [
-      { id: 'm1', conversationId: 'conv-1', senderId: 'client-1', content: '¡Hola! Estoy interesado en tus servicios 🎤', createdAt: new Date(Date.now() - 3600000).toISOString(), read: true },
-      { id: 'm2', conversationId: 'conv-1', senderId: 'me', content: '¡Hola! ¿En qué fecha necesitas el servicio?', createdAt: new Date(Date.now() - 3500000).toISOString(), read: true },
-      { id: 'm3', conversationId: 'conv-1', senderId: 'client-1', content: 'El 15 de mayo, ¿tienes disponibilidad?', createdAt: new Date(Date.now() - 1800000).toISOString(), read: false },
-      { id: 'm4', conversationId: 'conv-1', senderId: 'me', content: '¡Sí! Estoy disponible ese día.', createdAt: new Date(Date.now() - 900000).toISOString(), read: false },
+      { id: 'm1', conversationId: 'conv-1', senderId: 'client-1', senderName: 'Cliente Demo', senderAvatar: '', content: '¡Hola! Estoy interesado en tus servicios 🎤', createdAt: new Date(Date.now() - 3600000).toISOString(), timestamp: new Date(Date.now() - 3600000).toISOString(), read: true, senderType: 'client', type: 'text' },
+      { id: 'm2', conversationId: 'conv-1', senderId: 'me', senderName: 'Artista', senderAvatar: '', content: '¡Hola! ¿En qué fecha necesitas el servicio?', createdAt: new Date(Date.now() - 3500000).toISOString(), timestamp: new Date(Date.now() - 3500000).toISOString(), read: true, senderType: 'artist', type: 'text' },
+      { id: 'm3', conversationId: 'conv-1', senderId: 'client-1', senderName: 'Cliente Demo', senderAvatar: '', content: 'El 15 de mayo, ¿tienes disponibilidad?', createdAt: new Date(Date.now() - 1800000).toISOString(), timestamp: new Date(Date.now() - 1800000).toISOString(), read: false, senderType: 'client', type: 'text' },
+      { id: 'm4', conversationId: 'conv-1', senderId: 'me', senderName: 'Artista', senderAvatar: '', content: '¡Sí! Estoy disponible ese día.', createdAt: new Date(Date.now() - 900000).toISOString(), timestamp: new Date(Date.now() - 900000).toISOString(), read: false, senderType: 'artist', type: 'text' },
     ],
   },
   {
     id: 'conv-2',
+    userId: 'user-2',
+    artistId: 'artist-2',
     clientName: 'Ana R.',
     clientAvatar: '',
     unreadCount: 0,
     lastMessageAt: new Date(Date.now() - 86400000).toISOString(),
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
     messages: [
-      { id: 'm5', conversationId: 'conv-2', senderId: 'client-2', content: '¿Puedes enviarme tu portafolio?', createdAt: new Date(Date.now() - 86400000).toISOString(), read: true },
-      { id: 'm6', conversationId: 'conv-2', senderId: 'me', content: 'Por supuesto, te lo envío por correo.', createdAt: new Date(Date.now() - 82800000).toISOString(), read: true },
+      { id: 'm5', conversationId: 'conv-2', senderId: 'client-2', senderName: 'Ana R.', senderAvatar: '', content: '¿Puedes enviarme tu portafolio?', createdAt: new Date(Date.now() - 86400000).toISOString(), timestamp: new Date(Date.now() - 86400000).toISOString(), read: true, senderType: 'client', type: 'text' },
+      { id: 'm6', conversationId: 'conv-2', senderId: 'me', senderName: 'Artista', senderAvatar: '', content: 'Por supuesto, te lo envío por correo.', createdAt: new Date(Date.now() - 82800000).toISOString(), timestamp: new Date(Date.now() - 82800000).toISOString(), read: true, senderType: 'artist', type: 'text' },
     ],
   },
 ];
 
 export default function ChatPage() {
-  const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  // WebSocket para mensajes en tiempo real
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+    // Ajusta la URL y path según tu backend
+    const socket: Socket = io('http://localhost:4004', {
+      path: '/socket.io/',
+      auth: { token: typeof window !== 'undefined' ? localStorage.getItem('token') : '' },
+      transports: ['websocket'],
+    });
+
+    socket.on('connect', () => {
+      // Opcional: console.log('Conectado a WebSocket');
+    });
+
+    socket.on('new_message', (msg: Message) => {
+      // Si el mensaje es para la conversación actual, agregarlo
+      setMessages(prev => [...prev, msg]);
+      // Opcional: actualizar conversaciones si es necesario
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, isAuthenticated]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,21 +87,76 @@ export default function ChatPage() {
   }, [authLoading, isAuthenticated, router]);
 
   useEffect(() => {
-    // Simulate loading conversations
-    const t = setTimeout(() => {
-      setConversations(MOCK_CONVERSATIONS);
-      setCurrentConversation(MOCK_CONVERSATIONS[0]);
-      setMessages(MOCK_CONVERSATIONS[0].messages ?? []);
-      setIsLoadingConversations(false);
-    }, 600);
-    return () => clearTimeout(t);
+    const fetchConversations = async () => {
+      setIsLoadingConversations(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/chat/conversations', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Error al cargar conversaciones');
+        const data = await res.json();
+        setConversations(data);
+        if (data.length > 0) {
+          setCurrentConversation(data[0]);
+          // Cargar mensajes de la primera conversación
+          const msgRes = await fetch(`/api/chat/messages/${data[0].id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          });
+          if (msgRes.ok) {
+            const msgData = await msgRes.json();
+            setMessages(msgData);
+          } else {
+            setMessages([]);
+            setError('Error al cargar mensajes de la conversación.');
+          }
+        }
+        setIsLoadingConversations(false);
+      } catch (err: any) {
+        setIsLoadingConversations(false);
+        setConversations([]);
+        setMessages([]);
+        setError(err?.message || 'Error desconocido al cargar conversaciones.');
+      }
+    };
+    fetchConversations();
   }, []);
 
   const selectConversation = (conversationId: string) => {
     const conv = conversations.find(c => c.id === conversationId) ?? null;
     setCurrentConversation(conv);
-    setMessages(conv?.messages ?? []);
-    // Mark as read
+    // Cargar mensajes reales
+    if (conv) {
+      setError(null);
+      fetch(`/api/chat/messages/${conv.id}`, {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+        .then(async res => {
+          if (!res.ok) throw new Error('Error al cargar mensajes');
+          const msgData = await res.json();
+          setMessages(msgData);
+        })
+        .catch((err) => {
+          setMessages([]);
+          setError('Error al cargar mensajes de la conversación.');
+        });
+      // Marcar mensajes como leídos
+      fetch(`/api/chat/conversations/${conv.id}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+    } else {
+      setMessages([]);
+    }
+    // Actualizar estado local
     setConversations(prev =>
       prev.map(c => c.id === conversationId ? { ...c, unreadCount: 0 } : c)
     );
@@ -76,23 +165,34 @@ export default function ChatPage() {
   const handleSendMessage = (content: string) => {
     if (!currentConversation || isSending) return;
     setIsSending(true);
-    const newMsg: Message = {
-      id: `m-${Date.now()}`,
-      conversationId: currentConversation.id,
-      senderId: 'me',
-      content,
-      createdAt: new Date().toISOString(),
-      read: false,
-    };
-    setMessages(prev => [...prev, newMsg]);
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === currentConversation.id
-          ? { ...c, lastMessageAt: newMsg.createdAt, messages: [...(c.messages ?? []), newMsg] }
-          : c
-      )
-    );
-    setIsSending(false);
+    setError(null);
+    fetch('/api/chat/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        conversationId: currentConversation.id,
+        content,
+      }),
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error('Error al enviar mensaje');
+        const msg = await res.json();
+        setMessages(prev => [...prev, msg]);
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === currentConversation.id
+              ? { ...c, lastMessageAt: msg.createdAt, messages: [...(c.messages ?? []), msg] }
+              : c
+          )
+        );
+      })
+      .catch((err) => {
+        setError('Error al enviar mensaje.');
+      })
+      .finally(() => setIsSending(false));
   };
 
   const handleTypingStart = () => setIsTyping(false);
@@ -105,21 +205,40 @@ export default function ChatPage() {
       <DashboardSidebar />
       {/* Main Chat Layout */}
       <div className="flex flex-1 overflow-hidden">
+        {error && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow">
+            {error}
+          </div>
+        )}
         {/* Conversations panel */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">Mensajes</h2>
           </div>
-          <ConversationList
-            conversations={conversations}
-            currentConversationId={currentConversation?.id}
-            onSelectConversation={selectConversation}
-            isLoading={isLoadingConversations}
-          />
+          {isLoadingConversations ? (
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-gray-400">Cargando conversaciones...</span>
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-gray-400">No tienes conversaciones aún.</span>
+            </div>
+          ) : (
+            <ConversationList
+              conversations={conversations}
+              currentConversationId={currentConversation?.id}
+              onSelectConversation={selectConversation}
+              isLoading={isLoadingConversations}
+            />
+          )}
         </div>
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {currentConversation ? (
+          {isLoadingConversations ? (
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-gray-400">Cargando mensajes...</span>
+            </div>
+          ) : currentConversation ? (
             <>
               {/* Chat Header */}
               <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 flex items-center gap-3">
@@ -134,12 +253,18 @@ export default function ChatPage() {
                 </div>
               </div>
               {/* Messages */}
-              <MessageList
-                messages={messages}
-                currentUserId={user?.id ?? 'me'}
-                isTyping={isTyping}
-                isLoading={false}
-              />
+              {messages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <span className="text-gray-400">No hay mensajes en esta conversación.</span>
+                </div>
+              ) : (
+                <MessageList
+                  messages={messages}
+                  currentUserId={user?.id ?? 'me'}
+                  isTyping={isTyping}
+                  isLoading={false}
+                />
+              )}
               {/* Input */}
               <MessageInput
                 onSendMessage={handleSendMessage}

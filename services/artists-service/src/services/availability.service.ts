@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4005';
 
 // Mapeo de número de día a enum DayOfWeek
-const DAY_MAP: Record<number, DayOfWeek> = {
+const DAY_MAP: Record<number, string> = {
   0: 'DOMINGO',
   1: 'LUNES',
   2: 'MARTES',
@@ -33,7 +33,7 @@ export const checkAvailability = async (
     const availabilityRule = await prisma.artistAvailabilityRule.findFirst({
       where: {
         artistId,
-        dayOfWeek,
+        dayOfWeek: dayOfWeek as DayOfWeek,
         isActive: true,
         startTime: { lte: startTime },
         endTime: { gte: endTime },

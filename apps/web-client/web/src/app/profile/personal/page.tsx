@@ -8,6 +8,28 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 
 export default function PersonalInfoTab() {
+      const handleAvatarDelete = async () => {
+        if (!user) return;
+        setAvatarUploading(true);
+        try {
+          const res = await fetch('/api/users/me/avatar', {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${user.token}`,
+            },
+          });
+          if (!res.ok) throw new Error('Error al eliminar avatar');
+          setAvatarPreview(undefined);
+          alert('Avatar eliminado correctamente');
+        } catch (err) {
+          alert('Error al eliminar avatar');
+        } finally {
+          setAvatarUploading(false);
+        }
+      };
+    const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarUploading, setAvatarUploading] = useState(false);
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -26,9 +48,47 @@ export default function PersonalInfoTab() {
         telefono: '',
         direccion: '',
       });
+      setAvatarPreview(user.avatar || undefined);
     }
   }, [user]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setAvatarPreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return;
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      // Endpoint backend
+      const res = await fetch('/api/users/me/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`,
+        },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Error al subir avatar');
+      const data = await res.json();
+      setAvatarPreview(data.avatar);
+      setAvatarFile(null);
+      alert('Avatar actualizado correctamente');
+    } catch (err) {
+      alert('Error al subir avatar');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -80,16 +140,31 @@ export default function PersonalInfoTab() {
         </label>
         <div className="flex items-center gap-6">
           <Avatar
-            src={undefined}
+            src={avatarPreview}
             fallback={user?.nombre?.[0].toUpperCase() || 'U'}
             size="xl"
           />
           <div className="flex-1">
             <div className="flex gap-3">
-              <Button size="sm" variant="outline">
-                Cambiar foto
-              </Button>
-              <Button size="sm" variant="ghost">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="avatar-upload-input"
+                onChange={handleAvatarChange}
+                disabled={!editing || avatarUploading}
+              />
+              <label htmlFor="avatar-upload-input">
+                <Button size="sm" variant="outline" disabled={!editing || avatarUploading}>
+                  {avatarUploading ? 'Subiendo...' : 'Cambiar foto'}
+                </Button>
+              </label>
+              {avatarFile && (
+                <Button size="sm" variant="solid" onClick={handleAvatarUpload} disabled={avatarUploading}>
+                  Guardar foto
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" disabled={!editing || avatarUploading} onClick={handleAvatarDelete}>
                 Eliminar
               </Button>
             </div>

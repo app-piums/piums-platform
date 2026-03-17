@@ -64,7 +64,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
       <StatCard
         title="Ingresos totales"
         value={`$${totalRevenue.toLocaleString()}`}
-        subtitle="MXN"
+        subtitle="GTQ"
         icon="💰"
       />
       <StatCard

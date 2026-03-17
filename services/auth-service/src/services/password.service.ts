@@ -261,7 +261,7 @@ export class PasswordService {
       }
 
       // Verificar contraseña actual
-      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash ?? "");
       if (!isValid) {
         await prisma.auditLog.create({
           data: {

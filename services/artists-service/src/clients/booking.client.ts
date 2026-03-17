@@ -80,7 +80,7 @@ export class BookingServiceClient {
       }
 
       const data = await response.json();
-      return data;
+      return data as BookingsResponse;
     } catch (error: any) {
       logger.error("Error in getArtistBookings", "BOOKING_CLIENT", {
         error: error.message,
@@ -120,7 +120,7 @@ export class BookingServiceClient {
       }
 
       const data = await response.json();
-      return data;
+      return data as BookingStatsResponse;
     } catch (error: any) {
       logger.error("Error in getArtistStats", "BOOKING_CLIENT", {
         error: error.message,
