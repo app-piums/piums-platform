@@ -2257,3 +2257,119 @@ paths:
       responses:
         '200':
           description: Mensaje marcado como leído
+
+  # Profile endpoints (users-service)
+  /api/users/me/profile:
+    get:
+      tags: [Users]
+      summary: Obtener mi perfil público
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil público del usuario autenticado
+        '404':
+          description: Perfil no creado aún
+    post:
+      tags: [Users]
+      summary: Crear perfil público
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slug:
+                  type: string
+                displayName:
+                  type: string
+                bio:
+                  type: string
+                visibility:
+                  type: string
+                  enum: [PUBLIC, HIDDEN]
+      responses:
+        '201':
+          description: Perfil creado
+    put:
+      tags: [Users]
+      summary: Actualizar perfil público
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil actualizado
+
+  /api/users/me/profile/check-slug/{slug}:
+    get:
+      tags: [Users]
+      summary: Verificar disponibilidad de slug de perfil
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9-]+$'
+      responses:
+        '200':
+          description: Disponibilidad del slug
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      slug:
+                        type: string
+
+  /api/users/me/profile/cover:
+    post:
+      tags: [Users]
+      summary: Subir foto de portada del perfil
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                cover:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Foto de portada actualizada
+    delete:
+      tags: [Users]
+      summary: Eliminar foto de portada
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Foto de portada eliminada
+
+  /api/users/me/profile/{slug}:
+    get:
+      tags: [Users]
+      summary: Obtener perfil público por slug (sin autenticación)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Perfil público del usuario
+        '404':
+          description: Perfil no encontrado

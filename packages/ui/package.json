@@ -1,0 +1,24 @@
+{
+  "name": "@piums/ui",
+  "version": "1.0.0",
+  "description": "Piums Platform shared UI component library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["piums", "ui", "components", "react"],
+  "author": "Piums Team",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.3.3"
+  }
+}
