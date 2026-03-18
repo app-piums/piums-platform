@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 
@@ -24,6 +24,7 @@ export class NotificationSettingsService {
           emailNotifications: true,
           smsNotifications: true,
           pushNotifications: true,
+          deletedAt: true,
         },
       });
 

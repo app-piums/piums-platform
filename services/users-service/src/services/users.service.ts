@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 

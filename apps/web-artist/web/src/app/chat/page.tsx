@@ -55,7 +55,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user || !isAuthenticated) return;
     // Ajusta la URL y path según tu backend
-    const socket: Socket = io('http://localhost:4004', {
+    const socket: Socket = io(process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4007', {
       path: '/socket.io/',
       auth: { token: typeof window !== 'undefined' ? localStorage.getItem('token') : '' },
       transports: ['websocket'],
@@ -65,7 +65,7 @@ export default function ChatPage() {
       // Opcional: console.log('Conectado a WebSocket');
     });
 
-    socket.on('new_message', (msg: Message) => {
+    socket.on('message:received', (msg: Message) => {
       // Si el mensaje es para la conversación actual, agregarlo
       setMessages(prev => [...prev, msg]);
       // Opcional: actualizar conversaciones si es necesario

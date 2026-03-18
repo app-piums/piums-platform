@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { io, Socket } from 'socket.io-client';
 import { Conversation, Message } from '@/types/chat';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageList } from '@/components/chat/MessageList';
@@ -10,43 +11,8 @@ import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 
-// ── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    artistName: 'Sarah J.',
-    artistAvatar: '',
-    unreadCount: 2,
-    lastMessageAt: new Date().toISOString(),
-    messages: [
-      { id: 'm1', conversationId: 'conv-1', senderId: 'artist-1', content: '¡Hola! Vi que te interesó mi trabajo de fotografía 📸', createdAt: new Date(Date.now() - 3600000).toISOString(), read: true },
-      { id: 'm2', conversationId: 'conv-1', senderId: 'me', content: 'Sí! Estoy buscando fotógrafo para una boda en mayo', createdAt: new Date(Date.now() - 3500000).toISOString(), read: true },
-      { id: 'm3', conversationId: 'conv-1', senderId: 'artist-1', content: '¡Perfecto! Tengo disponibilidad en mayo. ¿Podrías decirme la fecha exacta?', createdAt: new Date(Date.now() - 1800000).toISOString(), read: false },
-      { id: 'm4', conversationId: 'conv-1', senderId: 'artist-1', content: 'También te puedo enviar mi portafolio de bodas 💍', createdAt: new Date(Date.now() - 900000).toISOString(), read: false },
-    ],
-  },
-  {
-    id: 'conv-2',
-    artistName: 'DJ Alex',
-    artistAvatar: '',
-    unreadCount: 0,
-    lastMessageAt: new Date(Date.now() - 86400000).toISOString(),
-    messages: [
-      { id: 'm5', conversationId: 'conv-2', senderId: 'artist-2', content: 'Hola! Claro que sí, puedo tocar en tu evento corporativo', createdAt: new Date(Date.now() - 86400000).toISOString(), read: true },
-      { id: 'm6', conversationId: 'conv-2', senderId: 'me', content: 'Genial, te contacto la próxima semana para cerrar detalles', createdAt: new Date(Date.now() - 82800000).toISOString(), read: true },
-    ],
-  },
-  {
-    id: 'conv-3',
-    artistName: 'Carlos M.',
-    artistAvatar: '',
-    unreadCount: 1,
-    lastMessageAt: new Date(Date.now() - 172800000).toISOString(),
-    messages: [
-      { id: 'm7', conversationId: 'conv-3', senderId: 'artist-3', content: 'Enviado el presupuesto a tu correo 🎵', createdAt: new Date(Date.now() - 172800000).toISOString(), read: false },
-    ],
-  },
-];
+const CHAT_SOCKET_URL =
+  process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4007';
 
 export default function ChatPage() {
   const router = useRouter();
@@ -57,57 +23,174 @@ export default function ChatPage() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push('/login?redirect=/chat');
   }, [authLoading, isAuthenticated, router]);
 
+  // Connect Socket.io for real-time messages
   useEffect(() => {
-    // Simulate loading conversations
-    const t = setTimeout(() => {
-      setConversations(MOCK_CONVERSATIONS);
-      // Auto-select first
-      setCurrentConversation(MOCK_CONVERSATIONS[0]);
-      setMessages(MOCK_CONVERSATIONS[0].messages ?? []);
-      setIsLoadingConversations(false);
-    }, 600);
-    return () => clearTimeout(t);
-  }, []);
+    if (!user || !isAuthenticated) return;
 
-  const selectConversation = (conversationId: string) => {
+    // Fetch token from server to use for socket auth (httpOnly cookie)
+    fetch('/api/chat/token', { credentials: 'include' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data?.token) return;
+
+        const socket = io(CHAT_SOCKET_URL, {
+          path: '/socket.io/',
+          auth: { token: data.token },
+          transports: ['websocket'],
+        });
+
+        socket.on('connect', () => {
+          // Join current conversation if one is selected
+          if (currentConversation) {
+            socket.emit('conversation:join', { conversationId: currentConversation.id });
+          }
+        });
+
+        socket.on('message:received', (msg: Message) => {
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.find(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+          setConversations(prev =>
+            prev.map(c =>
+              c.id === msg.conversationId
+                ? { ...c, lastMessageAt: msg.createdAt, unreadCount: c.id === currentConversation?.id ? 0 : (c.unreadCount ?? 0) + 1 }
+                : c
+            )
+          );
+        });
+
+        socket.on('typing:start', ({ userId }: { userId: string }) => {
+          if (userId !== user.id) setIsTyping(true);
+        });
+
+        socket.on('typing:stop', ({ userId }: { userId: string }) => {
+          if (userId !== user.id) setIsTyping(false);
+        });
+
+        socketRef.current = socket;
+      })
+      .catch(() => {});
+
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, [user, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Join conversation room when selection changes
+  useEffect(() => {
+    if (socketRef.current?.connected && currentConversation) {
+      socketRef.current.emit('conversation:join', { conversationId: currentConversation.id });
+    }
+  }, [currentConversation?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load conversations from real API
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchConversations = async () => {
+      setIsLoadingConversations(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/chat/conversations', { credentials: 'include' });
+        if (!res.ok) throw new Error('Error al cargar conversaciones');
+        const data = await res.json();
+        const convList: Conversation[] = data.conversations ?? data ?? [];
+        setConversations(convList);
+        if (convList.length > 0) {
+          setCurrentConversation(convList[0]);
+          const msgRes = await fetch(`/api/chat/messages/${convList[0].id}`, { credentials: 'include' });
+          if (msgRes.ok) {
+            const msgData = await msgRes.json();
+            setMessages(msgData.messages ?? msgData ?? []);
+          }
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Error desconocido al cargar conversaciones.');
+        setConversations([]);
+        setMessages([]);
+      } finally {
+        setIsLoadingConversations(false);
+      }
+    };
+    fetchConversations();
+  }, [isAuthenticated]);
+
+  const selectConversation = async (conversationId: string) => {
     const conv = conversations.find(c => c.id === conversationId) ?? null;
     setCurrentConversation(conv);
-    setMessages(conv?.messages ?? []);
+    setMessages([]);
+    if (!conv) return;
+
+    setError(null);
+    try {
+      const res = await fetch(`/api/chat/messages/${conv.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Error al cargar mensajes');
+      const msgData = await res.json();
+      setMessages(msgData.messages ?? msgData ?? []);
+    } catch {
+      setError('Error al cargar mensajes de la conversación.');
+    }
+
     // Mark as read
+    fetch(`/api/chat/conversations/${conv.id}/read`, {
+      method: 'PATCH',
+      credentials: 'include',
+    }).catch(() => {});
+
     setConversations(prev =>
       prev.map(c => c.id === conversationId ? { ...c, unreadCount: 0 } : c)
     );
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (!currentConversation || isSending) return;
     setIsSending(true);
-    const newMsg: Message = {
-      id: `m-${Date.now()}`,
-      conversationId: currentConversation.id,
-      senderId: 'me',
-      content,
-      createdAt: new Date().toISOString(),
-      read: false,
-    };
-    setMessages(prev => [...prev, newMsg]);
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === currentConversation.id
-          ? { ...c, lastMessageAt: newMsg.createdAt, messages: [...(c.messages ?? []), newMsg] }
-          : c
-      )
-    );
-    setIsSending(false);
+    setError(null);
+    try {
+      const res = await fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ conversationId: currentConversation.id, content }),
+      });
+      if (!res.ok) throw new Error('Error al enviar mensaje');
+      const msg = await res.json();
+      const newMsg: Message = msg.message ?? msg;
+      setMessages(prev => [...prev, newMsg]);
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === currentConversation.id
+            ? { ...c, lastMessageAt: newMsg.createdAt }
+            : c
+        )
+      );
+    } catch {
+      setError('Error al enviar mensaje.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleTypingStart = () => setIsTyping(false);
-  const handleTypingStop = () => {};
+  const handleTypingStart = () => {
+    if (socketRef.current?.connected && currentConversation) {
+      socketRef.current.emit('typing:start', { conversationId: currentConversation.id });
+    }
+  };
+
+  const handleTypingStop = () => {
+    if (socketRef.current?.connected && currentConversation) {
+      socketRef.current.emit('typing:stop', { conversationId: currentConversation.id });
+    }
+  };
 
   if (authLoading || !isAuthenticated) return <Loading fullScreen />;
 
@@ -116,7 +199,12 @@ export default function ChatPage() {
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
 
       {/* Main Chat Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {error && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow">
+            {error}
+          </div>
+        )}
         {/* Conversations panel */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
