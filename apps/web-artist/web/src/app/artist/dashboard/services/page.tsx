@@ -201,17 +201,17 @@ export default function ArtistServicesPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Servicios</h1>
-              <p className="text-gray-600">Administra los servicios que ofreces</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Mis Servicios</h1>
+              <p className="text-gray-500 text-sm">Administra los servicios que ofreces</p>
             </div>
             <button
               onClick={openCreate}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              className="self-start sm:self-auto px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium text-sm"
             >
               + Nuevo Servicio
             </button>

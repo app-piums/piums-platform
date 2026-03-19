@@ -36,41 +36,44 @@ export default function ArtistCalendarPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Calendario</h1>
-            <p className="text-gray-600">Administra tu disponibilidad y bloquea fechas</p>
+          <div className="mb-5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Calendario</h1>
+            <p className="text-gray-500 text-sm">Administra tu disponibilidad y bloquea fechas</p>
           </div>
 
           {/* Calendar */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
             {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <button
                 onClick={handlePrevMonth}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
               >
-                ← Anterior
+                <span className="hidden sm:inline">← Anterior</span>
+                <span className="sm:hidden">←</span>
               </button>
               
-              <h2 className="text-xl font-bold text-gray-900 capitalize">{monthName}</h2>
+              <h2 className="text-base sm:text-xl font-bold text-gray-900 capitalize">{monthName}</h2>
               
               <button
                 onClick={handleNextMonth}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
               >
-                Siguiente →
+                <span className="hidden sm:inline">Siguiente →</span>
+                <span className="sm:hidden">→</span>
               </button>
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Day Headers */}
-              {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
-                <div key={day} className="text-center font-medium text-gray-600 py-2">
-                  {day}
+              {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((day, i) => (
+                <div key={i} className="text-center font-medium text-gray-500 text-xs py-2">
+                  <span className="sm:hidden">{day}</span>
+                  <span className="hidden sm:inline">{['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][i]}</span>
                 </div>
               ))}
 
@@ -99,26 +102,14 @@ export default function ArtistCalendarPage() {
 
           {/* Selected Date Actions */}
           {selectedDate && (
-            <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {selectedDate.toLocaleDateString('es-MX', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
+            <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 capitalize">
+                {selectedDate.toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </h3>
-
-              <div className="flex gap-4">
-                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                  🚫 Bloquear día
-                </button>
-                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                  ✓ Marcar disponible
-                </button>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                  ⏰ Configurar horarios
-                </button>
+              <div className="flex flex-wrap gap-2">
+                <button className="flex-1 min-w-[130px] px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">🚫 Bloquear día</button>
+                <button className="flex-1 min-w-[130px] px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">✓ Marcar disponible</button>
+                <button className="flex-1 min-w-[130px] px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">⏰ Configurar horarios</button>
               </div>
             </div>
           )}

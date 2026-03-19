@@ -200,18 +200,22 @@ export default function ChatPage() {
 
   if (authLoading || !isAuthenticated) return <Loading fullScreen />;
 
+  const showList = !currentConversation;
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <DashboardSidebar />
       {/* Main Chat Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pt-14 lg:pt-0">
         {error && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow">
+          <div className="absolute top-16 lg:top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow text-sm">
             {error}
           </div>
         )}
-        {/* Conversations panel */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        {/* Conversations panel — always shown on lg, toggle on mobile */}
+        <div className={`${
+          showList ? 'flex' : 'hidden'
+        } lg:flex w-full lg:w-80 bg-white border-r border-gray-200 flex-col`}>
           <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">Mensajes</h2>
           </div>
@@ -227,13 +231,15 @@ export default function ChatPage() {
             <ConversationList
               conversations={conversations}
               currentConversationId={currentConversation?.id}
-              onSelectConversation={selectConversation}
+              onSelectConversation={(id) => { selectConversation(id); }}
               isLoading={isLoadingConversations}
             />
           )}
         </div>
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Chat Area — always shown on lg, shown only when conversation selected on mobile */}
+        <div className={`${
+          !showList ? 'flex' : 'hidden'
+        } lg:flex flex-1 flex-col overflow-hidden`}>
           {isLoadingConversations ? (
             <div className="flex-1 flex items-center justify-center">
               <span className="text-gray-400">Cargando mensajes...</span>
@@ -241,7 +247,16 @@ export default function ChatPage() {
           ) : currentConversation ? (
             <>
               {/* Chat Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 flex items-center gap-3">
+              <div className="bg-white border-b border-gray-200 px-4 py-3 shrink-0 flex items-center gap-3">
+                {/* Back button on mobile */}
+                <button
+                  className="lg:hidden p-1.5 text-gray-500 hover:text-gray-700"
+                  onClick={() => setCurrentConversation(null)}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
                   {(currentConversation.clientName ?? 'C').charAt(0)}
                 </div>

@@ -113,7 +113,7 @@ export default function ArtistSettingsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <DashboardSidebar />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 pt-20 sm:p-8 lg:pt-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
@@ -129,25 +129,25 @@ export default function ArtistSettingsPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Configuración</h1>
-            <p className="text-gray-600">Administra tu perfil y preferencias</p>
+          <div className="mb-5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Configuración</h1>
+            <p className="text-gray-500 text-sm">Administra tu perfil y preferencias</p>
           </div>
 
-          {/* Settings Tabs */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
+          {/* Settings Tabs - scrollable on mobile */}
+          <div className="flex gap-1 mb-5 border-b border-gray-200 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-2
+                  whitespace-nowrap px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors relative flex items-center gap-1.5 shrink-0
                   ${
                     activeTab === tab.id
-                      ? 'text-purple-700 border-b-2 border-purple-700'
+                      ? 'text-orange-600 border-b-2 border-orange-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }
                 `}

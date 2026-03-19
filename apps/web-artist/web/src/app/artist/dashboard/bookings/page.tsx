@@ -103,16 +103,16 @@ export default function ArtistBookingsPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
       
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Reservas</h1>
-            <p className="text-gray-600">Gestiona las reservas recibidas</p>
+          <div className="mb-5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Reservas</h1>
+            <p className="text-gray-500 text-sm">Gestiona las reservas recibidas</p>
           </div>
 
-          {/* Status Tabs */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
+          {/* Status Tabs - scrollable on mobile */}
+          <div className="flex gap-1 mb-5 border-b border-gray-200 overflow-x-auto scrollbar-hide">
             {statusTabs.map((tab) => (
               <button
                 key={tab.value}
@@ -121,17 +121,17 @@ export default function ArtistBookingsPage() {
                   setCurrentPage(1);
                 }}
                 className={`
-                  px-4 py-3 text-sm font-medium transition-colors relative
+                  whitespace-nowrap px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors relative shrink-0
                   ${
                     activeStatus === tab.value
-                      ? 'text-purple-700 border-b-2 border-purple-700'
+                      ? 'text-orange-600 border-b-2 border-orange-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }
                 `}
               >
                 {tab.label}
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                  <span className="ml-1.5 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs">
                     {tab.badge}
                   </span>
                 )}
@@ -170,9 +170,9 @@ export default function ArtistBookingsPage() {
                   {bookings.map((booking) => (
                     <div
                       key={booking.id}
-                      className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                      className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
                             <h3 className="text-lg font-semibold text-gray-900">
@@ -193,7 +193,7 @@ export default function ArtistBookingsPage() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 text-sm">
                             <div>
                               <p className="text-gray-600">Fecha programada:</p>
                               <p className="font-medium text-gray-900">
@@ -235,7 +235,7 @@ export default function ArtistBookingsPage() {
 
                         {/* Actions */}
                         {booking.status === 'PENDING' && (
-                          <div className="flex flex-col gap-2 ml-6">
+                          <div className="flex sm:flex-col gap-2 sm:ml-4">
                             <button
                               onClick={() => handleAccept(booking.id)}
                               disabled={processingBookingId === booking.id}
