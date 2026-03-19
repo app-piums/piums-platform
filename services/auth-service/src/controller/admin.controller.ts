@@ -101,7 +101,17 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
       count: users.length 
     });
 
-    res.json({ users, total, page: parseInt(page as string), limit: take });
+    const normalized = users.map((u: any) => ({
+      id: u.id,
+      nombre: u.name ?? u.nombre ?? u.email.split('@')[0],
+      email: u.email,
+      role: u.role,
+      isBlocked: u.isBlocked ?? false,
+      createdAt: u.createdAt,
+    }));
+
+    const totalPages = Math.ceil(total / take);
+    res.json({ users: normalized, total, page: parseInt(page as string), totalPages });
   } catch (error: any) {
     logger.error(`Error getting users: ${error.message}`, 'ADMIN_CONTROLLER');
     next(error);
@@ -178,7 +188,22 @@ export const getArtists = async (req: Request, res: Response, next: NextFunction
       count: artists.length 
     });
 
-    res.json({ artists, total, page: parseInt(page as string), limit: take });
+    const normalized = artists.map((a: any) => ({
+      id: a.id,
+      userId: a.id,
+      nombre: a.name ?? a.nombre ?? a.email.split('@')[0],
+      nombreArtistico: a.name ?? a.nombre ?? a.email.split('@')[0],
+      email: a.email,
+      categoria: a.artistCategory ?? 'General',
+      isVerified: a.isVerified ?? false,
+      isActive: !a.isBlocked,
+      createdAt: a.createdAt,
+      rating: null,
+      totalBookings: 0,
+    }));
+
+    const totalPages = Math.ceil(total / take);
+    res.json({ artists: normalized, total, page: parseInt(page as string), totalPages });
   } catch (error: any) {
     logger.error(`Error getting artists: ${error.message}`, 'ADMIN_CONTROLLER');
     next(error);
@@ -246,11 +271,36 @@ export const getBookings = async (req: Request, res: Response, next: NextFunctio
       adminId: (req as any).user?.id 
     });
 
+    const STATUS_ES: Record<string, string> = {
+      pending: 'pendiente',
+      confirmed: 'confirmado',
+      completed: 'completado',
+      cancelled: 'cancelado',
+      canceled: 'cancelado',
+      disputed: 'disputa',
+    };
+
+    const normalized = bookings.map((b: any) => {
+      const rawStatus = b.status ?? b.estado ?? 'pendiente';
+      return {
+        id: b.id,
+        clienteNombre: b.userName ?? b.clienteNombre ?? '—',
+        clienteEmail: b.userEmail ?? b.clienteEmail ?? '—',
+        artistaNombre: b.artistName ?? b.artistaNombre ?? '—',
+        servicio: b.service ?? b.servicio ?? '—',
+        fecha: b.date ?? b.fecha ?? b.createdAt,
+        estado: STATUS_ES[rawStatus] ?? rawStatus,
+        monto: typeof b.amount === 'number' ? b.amount : (typeof b.monto === 'number' ? b.monto : null),
+        createdAt: b.createdAt,
+      };
+    });
+
+    const totalPages = Math.ceil(normalized.length / parseInt(limit as string));
     res.json({ 
-      bookings, 
-      total: bookings.length, 
+      bookings: normalized, 
+      total: normalized.length, 
       page: parseInt(page as string), 
-      limit: parseInt(limit as string) 
+      totalPages,
     });
   } catch (error: any) {
     logger.error(`Error getting bookings: ${error.message}`, 'ADMIN_CONTROLLER');
@@ -309,11 +359,24 @@ export const getReports = async (req: Request, res: Response, next: NextFunction
       adminId: (req as any).user?.id 
     });
 
+    const normalized = reports.map((r: any) => ({
+      id: r.id,
+      reporterNombre: r.reporterName ?? r.reporterNombre ?? '—',
+      reporterEmail: r.reporterEmail ?? '—',
+      targetType: r.targetType ?? r.type ?? 'user',
+      targetId: r.targetId,
+      motivo: r.reason ?? r.motivo ?? '—',
+      descripcion: r.description ?? r.descripcion ?? '—',
+      estado: r.status ?? r.estado ?? 'pending',
+      createdAt: r.createdAt,
+    }));
+
+    const totalPages = Math.ceil(normalized.length / parseInt(limit as string));
     res.json({ 
-      reports, 
-      total: reports.length, 
+      reports: normalized, 
+      total: normalized.length, 
       page: parseInt(page as string), 
-      limit: parseInt(limit as string) 
+      totalPages,
     });
   } catch (error: any) {
     logger.error(`Error getting reports: ${error.message}`, 'ADMIN_CONTROLLER');
