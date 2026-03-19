@@ -135,6 +135,8 @@ services:
       PORT: 4003
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_artists
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      BOOKING_SERVICE_URL: http://booking-service:4008
+      PAYMENTS_SERVICE_URL: http://payments-service:4005
     depends_on:
       postgres:
         condition: service_healthy

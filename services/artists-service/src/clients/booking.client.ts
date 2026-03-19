@@ -9,6 +9,7 @@ interface BookingFilters {
   limit?: number;
   startDate?: string;
   endDate?: string;
+  authToken?: string;
 }
 
 interface Booking {
@@ -61,13 +62,18 @@ export class BookingServiceClient {
         ...(filters.endDate && { endDate: filters.endDate }),
       });
 
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (filters.authToken) {
+        headers["Authorization"] = `Bearer ${filters.authToken}`;
+      }
+
       const response = await fetch(
         `${BOOKING_SERVICE_URL}/api/bookings?${params.toString()}`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
         }
       );
 
@@ -80,7 +86,14 @@ export class BookingServiceClient {
       }
 
       const data = await response.json();
-      return data as BookingsResponse;
+      // booking-service returns { bookings, pagination: { page, limit, total, totalPages } }
+      const pagination = data.pagination || {};
+      return {
+        bookings: data.bookings || [],
+        total: pagination.total ?? data.total ?? 0,
+        page: pagination.page ?? data.page ?? 1,
+        totalPages: pagination.totalPages ?? data.totalPages ?? 0,
+      };
     } catch (error: any) {
       logger.error("Error in getArtistBookings", "BOOKING_CLIENT", {
         error: error.message,

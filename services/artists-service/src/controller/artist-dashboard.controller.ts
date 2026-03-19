@@ -75,11 +75,13 @@ export const getMyBookings = async (
     const limit = parseInt(req.query.limit as string) || 10;
 
     // Llamar al booking-service para obtener las reservas del artista
+    const authToken = req.headers.authorization?.substring(7);
     const bookingsData = await bookingServiceClient.getArtistBookings({
       artistId: artist.id,
       status,
       page,
       limit,
+      authToken,
     });
 
     logger.info("Artist bookings retrieved", "ARTIST_DASHBOARD", {
