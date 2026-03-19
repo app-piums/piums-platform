@@ -1,5 +1,5 @@
 import { Express, Request, Response } from "express";
-import { createProxyMiddleware } from "http-proxy-middleware";
+import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 import { authMiddleware } from "../middleware/auth";
 import { healthRouter } from "./health";
 import { logger } from "../utils/logger";
@@ -42,9 +42,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.AUTH_SERVICE_URL || "http://localhost:4001",
       changeOrigin: true,
-      pathRewrite: { "^/api/auth": "/auth" },
-      // logger.debug(`Proxying to auth-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/auth" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -58,9 +57,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.USERS_SERVICE_URL || "http://localhost:4002",
       changeOrigin: true,
-      pathRewrite: { "^/api/users": "/users" },
-      // logger.debug(`Proxying to users-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/users" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -73,9 +71,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.ARTISTS_SERVICE_URL || "http://localhost:4003",
       changeOrigin: true,
-      pathRewrite: { "^/api/artists": "/artists" },
-      // logger.debug(`Proxying to artists-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/artists" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -88,9 +85,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.CATALOG_SERVICE_URL || "http://localhost:4004",
       changeOrigin: true,
-      pathRewrite: { "^/api/catalog": "/catalog" },
-      // logger.debug(`Proxying to catalog-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/catalog" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -104,9 +100,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
       changeOrigin: true,
-      pathRewrite: { "^/api/bookings": "/bookings" },
-      // logger.debug(`Proxying to booking-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/bookings" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -120,9 +115,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
       changeOrigin: true,
-      pathRewrite: { "^/api/payments": "/payments" },
-      // logger.debug(`Proxying to payments-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/payments" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -135,9 +129,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.REVIEWS_SERVICE_URL || "http://localhost:4006",
       changeOrigin: true,
-      pathRewrite: { "^/api/reviews": "/reviews" },
-      // logger.debug(`Proxying to reviews-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/reviews" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -151,9 +144,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.NOTIFICATIONS_SERVICE_URL || "http://localhost:4007",
       changeOrigin: true,
-      pathRewrite: { "^/api/notifications": "/notifications" },
-      // logger.debug(`Proxying to notifications-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/notifications" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -166,9 +158,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.SEARCH_SERVICE_URL || "http://localhost:4009",
       changeOrigin: true,
-      pathRewrite: { "^/api/search": "/search" },
-      // logger.debug(`Proxying to search-service: ${req.method} ${req.url}`, "PROXY");
-      // onError eliminado por incompatibilidad de tipo
+      pathRewrite: { "^": "/search" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 
@@ -182,7 +173,8 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.AUTH_SERVICE_URL || "http://localhost:4001",
       changeOrigin: true,
-      pathRewrite: { "^/api/admin": "/admin" },
+      pathRewrite: { "^": "/admin" },
+      on: { proxyReq: fixRequestBody },
     })
   );
 

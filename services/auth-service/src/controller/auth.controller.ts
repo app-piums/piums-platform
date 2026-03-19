@@ -61,7 +61,7 @@ async function createUserAndRespond(
 
   // Generar tokens
   const jti = crypto.randomUUID();
-  const token = tokenService.signAccessToken({ id: user.id, email: user.email, jti });
+  const token = tokenService.signAccessToken({ id: user.id, email: user.email, role: user.role, jti });
   const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
 
   await tokenService.createRefreshToken(user.id, refreshToken, req.ip, req.get('user-agent'));
@@ -218,6 +218,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const token = tokenService.signAccessToken({
       id: user.id,
       email: user.email,
+      role: user.role,
       jti,
     });
     const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
@@ -525,4 +526,14 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
   } catch (error: any) {
     next(error);
   }
+};
+
+// ========================================
+// Get current user (requires token)
+// ========================================
+
+export const getMe = (req: Request, res: Response) => {
+  // req.user is populated by isAdmin middleware
+  const user = (req as any).user;
+  res.json({ user });
 };

@@ -11,8 +11,10 @@ import {
   changePassword,
   verifyEmail,
   resendVerification,
-  logout
+  logout,
+  getMe
 } from "../controller/auth.controller";
+import { isAdmin } from "../middleware/isAdmin";
 import { 
   loginLimiter, 
   registerLimiter,
@@ -41,6 +43,9 @@ router.post("/change-password", changePassword); // Requiere autenticación
 // Email verification
 router.post("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationLimiter, resendVerification);
+
+// Get current authenticated user (admin only)
+router.get("/me", isAdmin, getMe);
 
 export default router;
 

@@ -27,6 +27,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
   "http://localhost:3000", // Client app
   "http://localhost:3001", // Artist app
   "http://localhost:3002", // Admin app (future)
+  "http://localhost:3003", // Admin panel (web-admin)
 ];
 
 app.use(

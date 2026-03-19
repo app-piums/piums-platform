@@ -54,7 +54,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
-      ALLOWED_ORIGINS: http://localhost:3001,http://localhost:3002
+      ALLOWED_ORIGINS: http://localhost:3001,http://localhost:3002,http://localhost:3003
       AUTH_SERVICE_URL: http://auth-service:4001
       USERS_SERVICE_URL: http://users-service:4002
       ARTISTS_SERVICE_URL: http://artists-service:4003
