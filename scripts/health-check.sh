@@ -63,6 +63,7 @@ wait_for "$BASE_URL:3000/api/chat/health"          "chat-service"
 if [[ "$ENV" == "development" ]]; then
   wait_for "http://localhost:3001" "web-client"
   wait_for "http://localhost:3002" "web-artist"
+  wait_for "http://localhost:3003" "web-admin"
 fi
 
 # ─────────────────────── Summary ─────────────────────────────────────────────

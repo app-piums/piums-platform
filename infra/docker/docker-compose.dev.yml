@@ -301,6 +301,23 @@ services:
       - piums-network
     restart: unless-stopped
 
+  web-admin:
+    build:
+      context: ../../
+      dockerfile: apps/web-admin/web/Dockerfile
+    container_name: piums-web-admin
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://gateway:3000/api
+      NEXT_PUBLIC_APP_URL: http://localhost:3003
+    depends_on:
+      - gateway
+    networks:
+      - piums-network
+    restart: unless-stopped
+
 # ============================================================================
 # Networks
 # ============================================================================
