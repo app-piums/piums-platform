@@ -173,6 +173,20 @@ export const setupRoutes = (app: Express) => {
   );
 
   // ============================================================================
+  // Admin Service (PROTEGIDO — proxied to auth-service /admin/*)
+  // ============================================================================
+
+  app.use(
+    "/api/admin",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.AUTH_SERVICE_URL || "http://localhost:4001",
+      changeOrigin: true,
+      pathRewrite: { "^/api/admin": "/admin" },
+    })
+  );
+
+  // ============================================================================
   // 404 Handler
   // ============================================================================
   
@@ -191,6 +205,7 @@ export const setupRoutes = (app: Express) => {
         reviews: "/api/reviews/*",
         notifications: "/api/notifications/*",
         search: "/api/search/*",
+        admin: "/api/admin/*",
       },
     });
   });
