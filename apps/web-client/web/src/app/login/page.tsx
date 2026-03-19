@@ -12,6 +12,7 @@ interface FieldError {
   password?: string;
 }
 
+export default function LoginPage() {
   const { t } = useTranslation('login');
   const router = useRouter();
   const { login } = useAuth();
