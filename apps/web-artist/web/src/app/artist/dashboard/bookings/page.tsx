@@ -17,10 +17,18 @@ export default function ArtistBookingsPage() {
   const [activeStatus, setActiveStatus] = useState<BookingStatus>('PENDING');
   const [error, setError] = useState<string | null>(null);
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number | null>>({
+    PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null,
+  });
 
   useEffect(() => {
     loadBookings();
   }, [activeStatus, currentPage]);
+
+  useEffect(() => {
+    loadStatusCounts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadBookings = async () => {
     try {
@@ -52,16 +60,26 @@ export default function ArtistBookingsPage() {
     }
   };
 
+  const loadStatusCounts = async () => {
+    const statuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
+    const results = await Promise.allSettled(
+      statuses.map((s) => sdk.getArtistBookings({ status: s as any, page: 1, limit: 1 }))
+    );
+    const counts: Record<string, number | null> = {};
+    results.forEach((r, i) => {
+      counts[statuses[i]] = r.status === 'fulfilled' ? r.value.total : 0;
+    });
+    setStatusCounts(counts);
+  };
+
   const handleAccept = async (bookingId: string) => {
     if (!confirm('¿Confirmar aceptar esta reserva?')) return;
 
     try {
       setProcessingBookingId(bookingId);
       await sdk.acceptBooking(bookingId);
-      
-      // Recargar las reservas
       await loadBookings();
-      
+      void loadStatusCounts();
       alert('Reserva aceptada exitosamente');
     } catch (err: any) {
       console.error('Error accepting booking:', err);
@@ -78,10 +96,8 @@ export default function ArtistBookingsPage() {
     try {
       setProcessingBookingId(bookingId);
       await sdk.declineBooking(bookingId, reason);
-      
-      // Recargar las reservas
       await loadBookings();
-      
+      void loadStatusCounts();
       alert('Reserva rechazada');
     } catch (err: any) {
       console.error('Error declining booking:', err);
@@ -112,12 +128,22 @@ export default function ArtistBookingsPage() {
     CANCELLED: 'border-l-gray-400',
   };
 
-  const statusTabs: { label: string; value: BookingStatus; badge?: number }[] = [
-    { label: 'Pendientes', value: 'PENDING', badge: activeStatus === 'PENDING' ? total : undefined },
-    { label: 'Confirmadas', value: 'CONFIRMED' },
-    { label: 'Completadas', value: 'COMPLETED' },
-    { label: 'Canceladas', value: 'CANCELLED' },
-    { label: 'Todas', value: 'ALL' },
+  const allCount: number | null = Object.values(statusCounts).every(v => v !== null)
+    ? Object.values(statusCounts).reduce((s, v) => s + (v ?? 0), 0) as number
+    : null;
+
+  const CHIP_CONFIG: Array<{
+    value: BookingStatus;
+    label: string;
+    inactiveCls: string;
+    activeCls: string;
+    ringCls: string;
+  }> = [
+    { value: 'PENDING',   label: 'Pendientes', inactiveCls: 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100',     activeCls: 'bg-amber-500 text-white',    ringCls: 'ring-amber-400'  },
+    { value: 'CONFIRMED', label: 'Confirmadas', inactiveCls: 'border border-green-300 text-green-700 bg-green-50 hover:bg-green-100',     activeCls: 'bg-green-600 text-white',    ringCls: 'ring-green-400'  },
+    { value: 'COMPLETED', label: 'Completadas', inactiveCls: 'border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100',        activeCls: 'bg-blue-600 text-white',     ringCls: 'ring-blue-400'   },
+    { value: 'CANCELLED', label: 'Canceladas',  inactiveCls: 'border border-gray-300 text-gray-600 bg-gray-50 hover:bg-gray-100',        activeCls: 'bg-gray-500 text-white',     ringCls: 'ring-gray-400'   },
+    { value: 'ALL',       label: 'Todas',       inactiveCls: 'border border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100', activeCls: 'bg-orange-500 text-white',   ringCls: 'ring-orange-400' },
   ];
 
   return (
@@ -132,32 +158,30 @@ export default function ArtistBookingsPage() {
             <p className="text-gray-500 text-sm">Gestiona las reservas recibidas</p>
           </div>
 
-          {/* Status Tabs - scrollable on mobile */}
-          <div className="flex gap-1 mb-5 border-b border-gray-200 overflow-x-auto scrollbar-hide w-full">
-            {statusTabs.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => {
-                  setActiveStatus(tab.value);
-                  setCurrentPage(1);
-                }}
-                className={`
-                  whitespace-nowrap px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors relative shrink-0
-                  ${
-                    activeStatus === tab.value
-                      ? 'text-orange-600 border-b-2 border-orange-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }
-                `}
-              >
-                {tab.label}
-                {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="ml-1.5 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs">
-                    {tab.badge}
+          {/* Filter chips with live counts */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            {CHIP_CONFIG.map(({ value, label, inactiveCls, activeCls, ringCls }) => {
+              const count = value === 'ALL' ? allCount : (statusCounts[value] ?? null);
+              const isActive = activeStatus === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => { setActiveStatus(value); setCurrentPage(1); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150 active:scale-95 ${
+                    isActive ? `${activeCls} ring-2 ring-offset-1 ${ringCls}` : inactiveCls
+                  }`}
+                >
+                  {label}
+                  <span className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold rounded-full ${
+                    isActive ? 'bg-black/10' : 'bg-white/80 shadow-sm'
+                  }`}>
+                    {count === null
+                      ? <span className="inline-block w-4 h-2 rounded animate-pulse bg-current opacity-40" />
+                      : count}
                   </span>
-                )}
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {/* Loading State */}
