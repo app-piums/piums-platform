@@ -1,0 +1,94 @@
+name: 🐛 Reporte de Bug
+description: Reportar un problema o comportamiento inesperado
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un bug. Por favor completa la información con el mayor detalle posible.
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: Servicio / Componente afectado
+      options:
+        - gateway
+        - auth-service
+        - users-service
+        - artists-service
+        - catalog-service
+        - payments-service
+        - reviews-service
+        - notifications-service
+        - booking-service
+        - search-service
+        - chat-service
+        - web-client
+        - web-artist
+        - packages/ui
+        - packages/sdk
+        - infra/k8s
+        - infra/terraform
+        - No sé
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidad
+      options:
+        - 🔴 Crítico (el sistema no funciona / pérdida de datos)
+        - 🟠 Alto (funcionalidad principal rota)
+        - 🟡 Medio (funcionalidad parcial afectada)
+        - 🟢 Bajo (cosmético / edge case)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción del problema
+      placeholder: Describe qué está fallando y cuál es el comportamiento esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Ir a '...'
+        2. Hacer click en '...'
+        3. Ver error '...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Logs
+      description: Adjunta capturas de pantalla o logs relevantes
+
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      placeholder: "local | staging | production"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión / Branch
+      placeholder: "main | develop | feature/xxx | commit hash"

@@ -1,0 +1,27 @@
+# Copy this file to terraform.tfvars and fill in your values
+# NEVER commit terraform.tfvars to version control
+
+aws_region  = "us-east-1"
+environment = "production"
+
+# VPC
+vpc_cidr = "10.0.0.0/16"
+
+# EKS
+eks_cluster_name       = "piums-cluster"
+eks_node_instance_type = "t3.medium"
+eks_node_desired_size  = 3
+eks_node_min_size      = 2
+eks_node_max_size      = 10
+
+# RDS
+db_name           = "piums_prod"
+db_username       = "piums"
+db_password       = "CHANGE_ME_STRONG_PASSWORD"
+rds_instance_class = "db.t3.medium"
+
+# ElastiCache
+redis_node_type = "cache.t3.micro"
+
+# S3
+s3_bucket_prefix = "piums"

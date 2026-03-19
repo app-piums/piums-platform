@@ -1,0 +1,542 @@
+# ============================================================================
+# All Service Deployments — Piums Platform
+# ============================================================================
+
+# ─────────────────────── API Gateway ────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: piums
+  labels:
+    app: gateway
+    tier: edge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: ghcr.io/app-piums/piums-platform/gateway:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Auth Service ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: piums
+  labels:
+    app: auth-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: ghcr.io/app-piums/piums-platform/auth-service:latest
+          ports:
+            - containerPort: 4001
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Users Service ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: piums
+  labels:
+    app: users-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+        - name: users-service
+          image: ghcr.io/app-piums/piums-platform/users-service:latest
+          ports:
+            - containerPort: 4002
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4002
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Artists Service ────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artists-service
+  namespace: piums
+  labels:
+    app: artists-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: artists-service
+  template:
+    metadata:
+      labels:
+        app: artists-service
+    spec:
+      containers:
+        - name: artists-service
+          image: ghcr.io/app-piums/piums-platform/artists-service:latest
+          ports:
+            - containerPort: 4003
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4003
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Catalog Service ────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+  namespace: piums
+  labels:
+    app: catalog-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-service
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+    spec:
+      containers:
+        - name: catalog-service
+          image: ghcr.io/app-piums/piums-platform/catalog-service:latest
+          ports:
+            - containerPort: 4004
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4004
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Payments Service ───────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-service
+  namespace: piums
+  labels:
+    app: payments-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payments-service
+  template:
+    metadata:
+      labels:
+        app: payments-service
+    spec:
+      containers:
+        - name: payments-service
+          image: ghcr.io/app-piums/piums-platform/payments-service:latest
+          ports:
+            - containerPort: 4005
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4005
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4005
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Reviews Service ────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reviews-service
+  namespace: piums
+  labels:
+    app: reviews-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reviews-service
+  template:
+    metadata:
+      labels:
+        app: reviews-service
+    spec:
+      containers:
+        - name: reviews-service
+          image: ghcr.io/app-piums/piums-platform/reviews-service:latest
+          ports:
+            - containerPort: 4006
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4006
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4006
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Notifications Service ──────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-service
+  namespace: piums
+  labels:
+    app: notifications-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifications-service
+  template:
+    metadata:
+      labels:
+        app: notifications-service
+    spec:
+      containers:
+        - name: notifications-service
+          image: ghcr.io/app-piums/piums-platform/notifications-service:latest
+          ports:
+            - containerPort: 4007
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4007
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4007
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Booking Service ────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: piums
+  labels:
+    app: booking-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: booking-service
+  template:
+    metadata:
+      labels:
+        app: booking-service
+    spec:
+      containers:
+        - name: booking-service
+          image: ghcr.io/app-piums/piums-platform/booking-service:latest
+          ports:
+            - containerPort: 4008
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4008
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4008
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Search Service ─────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-service
+  namespace: piums
+  labels:
+    app: search-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: search-service
+  template:
+    metadata:
+      labels:
+        app: search-service
+    spec:
+      containers:
+        - name: search-service
+          image: ghcr.io/app-piums/piums-platform/search-service:latest
+          ports:
+            - containerPort: 4009
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4009
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4009
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# ─────────────────────── Chat Service ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: piums
+  labels:
+    app: chat-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      containers:
+        - name: chat-service
+          image: ghcr.io/app-piums/piums-platform/chat-service:latest
+          ports:
+            - containerPort: 4010
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4010
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4010
+            initialDelaySeconds: 5
+            periodSeconds: 10

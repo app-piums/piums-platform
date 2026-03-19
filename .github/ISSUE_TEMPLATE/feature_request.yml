@@ -1,0 +1,76 @@
+name: ✨ Feature Request
+description: Proponer una nueva funcionalidad o mejora
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer una nueva funcionalidad. Una buena descripción ayuda a priorizar y diseñar mejor la solución.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área de la plataforma
+      options:
+        - Clientes (web-client)
+        - Artistas (web-artist)
+        - API / Backend (servicios)
+        - Infraestructura / DevOps
+        - Packages compartidos
+        - Documentación
+        - Otro
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad estimada
+      options:
+        - 🔴 Alta (bloquea MVP)
+        - 🟡 Media (mejora importante)
+        - 🟢 Baja (nice to have)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema que resuelve
+      description: ¿Qué necesidad o problema motiva este feature? Usa el formato "Como [usuario], quiero [acción] para [beneficio]"
+      placeholder: "Como cliente, quiero poder guardar artistas favoritos para encontrarlos más rápido después."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      description: Describe cómo imaginas la solución
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Consideraste otras formas de resolver esto?
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      placeholder: |
+        - [ ] El usuario puede marcar un artista como favorito desde su perfil
+        - [ ] Los favoritos se muestran en /bookmarks
+        - [ ] Funciona en mobile y desktop
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional / Mockups
+      description: Adjunta wireframes, diseños o referencias si los tienes

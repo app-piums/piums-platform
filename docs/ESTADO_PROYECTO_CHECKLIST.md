@@ -309,51 +309,41 @@
 
 ## 🟢 DESEABLE (Post-MVP)
 
-### ⚠️ 13. `infra/k8s/` - ESTRUCTURA CREADA, SIN CONTENIDO
-**Estado**: ⚠️ **DESEABLE**  
-**Ubicación**: `/infra/k8s/`  
-**Estructura actual**:
-- `/base/` (vacío)
-- `/overlays/production/` (vacío)
-- `/overlays/staging/` (vacío)
+### ✅ 13. `infra/k8s/` - KUSTOMIZE COMPLETO ✨
+**Estado**: ✅ **COMPLETO**  
+**Nota**: Estructura Kustomize completa para staging y producción.
 
-**Faltante**:
-- Deployments para cada servicio
-- Services (ClusterIP, LoadBalancer)
-- ConfigMaps
-- Secrets
-- Ingress rules
-- HPA (Horizontal Pod Autoscaler)
-- PersistentVolumeClaims
-- Kustomization files
+#### base/
+- ✅ `namespace.yaml` — namespace `piums`
+- ✅ `configmap.yaml` — URLs de servicios, puertos, timezone
+- ✅ `secrets.yaml` — template de secretos (DB, JWT, Stripe, Cloudinary, SendGrid)
+- ✅ `deployments.yaml` — 11 Deployments (gateway + 10 microservicios)
+- ✅ `services.yaml` — gateway LoadBalancer + 10 ClusterIP + redis
+- ✅ `ingress.yaml` — Nginx Ingress para api.piums.app con TLS
+- ✅ `hpa.yaml` — HPA para gateway, auth, artists, search, chat, booking
+- ✅ `kustomization.yaml`
 
-**Impacto**: No se puede desplegar en Kubernetes.
+#### overlays/staging/
+- ✅ `kustomization.yaml` — replicas=1, imágenes tag `:staging`
 
-**Acción requerida**: Configurar Kubernetes completo (post-MVP).
+#### overlays/production/
+- ✅ `kustomization.yaml` — replicas=3 para servicios críticos, imágenes tag `:latest`
 
 ---
 
-### ❌ 14. `infra/terraform/` - DIRECTORIO VACÍO
-**Estado**: ❌ **DESEABLE**  
-**Ubicación**: `/infra/terraform/`  
-**Problema**: El directorio existe pero está **completamente vacío**
+### ✅ 14. `infra/terraform/` - AWS IaC COMPLETO ✨
+**Estado**: ✅ **COMPLETO**  
+**Nota**: Terraform modular para AWS (EKS + RDS + ElastiCache + S3).
 
-**Faltante**:
-- Infrastructure as Code (IaC)
-- Cloud provider setup (AWS/GCP/Azure)
-- VPC configuration
-- Database instances (RDS)
-- Redis/ElastiCache
-- Load balancers
-- DNS configuration
-- SSL certificates
-- S3 buckets (media storage)
-- IAM roles y policies
-- Monitoring (CloudWatch/Stackdriver)
-
-**Impacto**: Infraestructura debe configurarse manualmente.
-
-**Acción requerida**: Crear IaC completo (post-MVP).
+- ✅ `main.tf` — provider + S3 backend + llamadas a módulos
+- ✅ `variables.tf` — todas las variables (región, env, EKS, RDS, Redis, S3)
+- ✅ `outputs.tf` — endpoints EKS, RDS, Redis, buckets S3
+- ✅ `terraform.tfvars.example` — valores de ejemplo
+- ✅ `modules/vpc/` — VPC, subnets públicas/privadas, NAT gateways, route tables
+- ✅ `modules/eks/` — EKS cluster, IAM roles, node group con autoscaling
+- ✅ `modules/rds/` — PostgreSQL 16, encrypted, backup 7 días, deletion protection en prod
+- ✅ `modules/elasticache/` — Redis con Multi-AZ en producción, TLS
+- ✅ `modules/s3/` — buckets media + backups, encrypted, lifecycle policies
 
 ---
 
@@ -374,66 +364,42 @@
 
 ---
 
-### ❌ 16. `docs/guides/` - NO EXISTE
-**Estado**: ❌ **DESEABLE**  
-**Ubicación**: `/docs/guides/`  
-**Problema**: El directorio **no existe**
+### ✅ 16. `docs/guides/` - COMPLETO ✨
+**Estado**: ✅ **COMPLETO**  
+**Nota**: 4 guías creadas.
 
-**Faltante**:
-- Development setup guide
-- Contribution guidelines
-- Code style guide
-- Testing guide
-- Deployment guide
-- Troubleshooting guide
-- API usage guide
-- Security best practices
-
-**Impacto**: Onboarding lento para nuevos desarrolladores.
-
-**Acción requerida**: Crear guías de desarrollo (post-MVP).
+- ✅ `getting-started.md` — pre-requisitos, clonar, Docker vs local, estructura monorepo, credenciales de dev
+- ✅ `contributing.md` — Git Flow, Conventional Commits, PR checklist, estándares TS/Node/Next
+- ✅ `deployment.md` — staging auto / prod manual, Terraform, rollback, secretos en GitHub Actions
+- ✅ `troubleshooting.md` — problemas comunes de dev local, staging/prod, logs, health checks
 
 ---
 
-### ❌ 17. `.github/ISSUE_TEMPLATE/` - NO EXISTE
-**Estado**: ❌ **DESEABLE**  
-**Ubicación**: `/.github/ISSUE_TEMPLATE/`  
-**Problema**: El directorio `.github` **no existe**
+### ✅ 17. `.github/ISSUE_TEMPLATE/` - COMPLETO ✨
+**Estado**: ✅ **COMPLETO**  
+**Nota**: Templates YAML para GitHub Issues + PR template.
 
-**Faltante**:
-- Bug report template
-- Feature request template
-- Documentation request template
-- Question template
-- Pull request template
-
-**Impacto**: Issues mal estructurados, difícil de priorizar.
-
-**Acción requerida**: Crear issue templates (post-MVP).
+- ✅ `bug_report.yml` — dropdown servicio afectado, severidad, pasos, ambiente
+- ✅ `feature_request.yml` — área, prioridad, criterios de aceptación, mockups
+- ✅ `config.yml` — blank_issues_enabled: false, links a docs y discussions
+- ✅ `.github/PULL_REQUEST_TEMPLATE.md` — checklist completo (build, lint, test, API, DB, seguridad)
 
 ---
 
-### ⚠️ 18. `scripts/` - PARCIALMENTE COMPLETO
-**Estado**: ⚠️ **PARCIAL**  
-**Ubicación**: `/scripts/`  
-**Estado por archivo**:
-- ✅ `dev.sh` (352 líneas) - ver Item 4
-- ✅ `seed.sh` (264 líneas) - crea admin + cliente + 5 artistas de prueba
-- ❌ `lint.sh` (vacío)
+### ✅ 18. `scripts/` - COMPLETO ✨
+**Estado**: ✅ **COMPLETO**  
+**Nota**: Todos los scripts de automatización implementados.
 
-**Faltante**:
-- ❌ `build.sh` (compilar todos los servicios)
-- ❌ `test.sh` (ejecutar todos los tests)
-- ❌ `deploy.sh` (desplegar a staging/prod)
-- ❌ `migrate.sh` (ejecutar migraciones)
-- ❌ `backup.sh` (backup de bases de datos)
-- ❌ `restore.sh` (restaurar backup)
-- ❌ `clean.sh` (limpiar node_modules, build, logs)
-- ❌ `health-check.sh` (verificar estado de servicios)
-
-**Impacto**: Tareas manuales repetitivas.
-
-**Acción requerida**: Implementar scripts de automatización.
+- ✅ `dev.sh` (352 líneas) — levantar, detener, logs, reiniciar, setup, clean
+- ✅ `seed.sh` (264 líneas) — admin + cliente + 5 artistas de prueba
+- ✅ `lint.sh` — ESLint + TypeScript type-check para packages + servicios + frontend
+- ✅ `build.sh` — compilar packages compartidos + todos los servicios (con `--service` flag)
+- ✅ `test.sh` — ejecutar tests con `--coverage` / `--watch` / `--service` flags
+- ✅ `migrate.sh` — Prisma migrations para dev/staging/prod con confirmación en prod
+- ✅ `backup.sh` — pg_dump comprimido + upload S3 opcional + retención de 5 últimos
+- ✅ `restore.sh` — restaurar desde `.sql.gz` con confirmación obligatoria
+- ✅ `clean.sh` — limpiar dist/, node_modules, Docker volumes (.next, logs)
+- ✅ `health-check.sh` — curl a todos los endpoints `/health` con reporte de estado
 
 ---
 
@@ -445,15 +411,15 @@
 |-----------|-------|-------------|------------|-------------------|
 | 🔴 Crítico | 4 | **4 (100%)** ✅ | 0 (0%) | 0 (0%) |
 | 🟡 Importante | 8 | **8 (100%)** ✅ | 0 (0%) | 0 (0%) |
-| 🟢 Deseable | 6 | 3 (50%) | 1 (16.7%) | 2 (33.3%) |
-| **TOTAL** | **18** | **15 (83.3%)** | **1 (5.6%)** | **2 (11.1%)** |
+| 🟢 Deseable | 6 | **6 (100%)** ✅ | 0 (0%) | 0 (0%) |
+| **TOTAL** | **18** | **18 (100%)** 🎉 | **0 (0%)** | **0 (0%)** |
 
 ### Estado General
 
 ```
-✅ COMPLETO:           15/18 (83.3%) ⬆️ Mejora significativa
-⚠️ PARCIAL:            1/18 (5.6%)
-❌ VACÍO/FALTANTE:     2/18 (11.1%)
+✅ COMPLETO:           18/18 (100%) 🎉 PROYECTO COMPLETO
+⚠️ PARCIAL:            0/18 (0%)
+❌ VACÍO/FALTANTE:     0/18 (0%)
 ```
 
 ### 🎯 **Críticos: 4/4 Completos ✅**
@@ -533,12 +499,29 @@ Todos los elementos críticos están completamente implementados:
 
 ---
 
-### Fase 3: Scripts y documentación (Siguiente)
+### ~~Fase 3: Scripts y documentación (Siguiente)~~ ✅ COMPLETADA
 **Objetivo**: Completar scripts y guías
 
-9. **Pendiente**: Completar scripts
-   - lint.sh (parcial — está creado pero vacío)
-   - test.sh, build.sh, migrate.sh
+✅ `scripts/lint.sh` — ESLint + type-check todos los packages y servicios
+✅ `scripts/build.sh` — compila packages + servicios con flags --service/--parallel
+✅ `scripts/test.sh` — ejecuta tests con --coverage/--watch flags
+✅ `scripts/migrate.sh` — migraciones Prisma dev/staging/prod con confirmación
+✅ `scripts/backup.sh` — pg_dump + gzip + S3 upload + retención 5 últimos
+✅ `scripts/restore.sh` — restore desde .sql.gz con confirmación obligatoria
+✅ `scripts/clean.sh` — limpia dist/, node_modules, volumes Docker, .next
+✅ `scripts/health-check.sh` — curl a todos los /health endpoints
+
+### ~~Fase 4: Infraestructura (Post-MVP)~~ ✅ COMPLETADA
+
+✅ `infra/k8s/base/` — 7 manifiestos Kustomize (namespace, configmap, secrets, deployments, services, ingress, hpa)
+✅ `infra/k8s/overlays/staging/` — replicas=1, imágenes tag :staging
+✅ `infra/k8s/overlays/production/` — replicas=3 servicios críticos
+✅ `infra/terraform/` — VPC + EKS + RDS + ElastiCache + S3 (5 módulos)
+✅ `docs/guides/` — getting-started, contributing, deployment, troubleshooting
+✅ `.github/ISSUE_TEMPLATE/` — bug_report.yml, feature_request.yml, config.yml
+✅ `.github/PULL_REQUEST_TEMPLATE.md`
+
+**Resultado**: 🎉 **18/18 items completados (100%)** — Proyecto completamente configurado.
 
 11. **Day 4-5**: Testing
     - Unit tests críticos

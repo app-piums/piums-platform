@@ -1,0 +1,114 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: piums
+
+bases:
+  - ../../base
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: gateway
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: gateway
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: auth-service
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: auth-service
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: users-service
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: users-service
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: artists-service
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: artists-service
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: booking-service
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: booking-service
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: search-service
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: search-service
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: chat-service
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: chat-service
+
+configMapGenerator:
+  - name: piums-config
+    behavior: merge
+    literals:
+      - NODE_ENV=staging
+
+images:
+  - name: ghcr.io/app-piums/piums-platform/gateway
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/auth-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/users-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/artists-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/catalog-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/payments-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/reviews-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/notifications-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/booking-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/search-service
+    newTag: staging
+  - name: ghcr.io/app-piums/piums-platform/chat-service
+    newTag: staging
