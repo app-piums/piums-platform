@@ -4,6 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
+interface AdminSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 const NAV = [
   {
     href: "/dashboard",
@@ -52,21 +57,34 @@ const NAV = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAdminAuth();
 
-  return (
-    <aside className="flex h-screen w-64 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+  const sidebarContent = (
+    <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       {/* Logo */}
-      <div className="flex items-center gap-3 border-b border-zinc-200 px-6 py-5 dark:border-zinc-800">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FF6A00]">
-          <span className="text-sm font-bold text-white">P</span>
+      <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5 dark:border-zinc-800">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FF6A00]">
+            <span className="text-sm font-bold text-white">P</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Piums Admin</p>
+            <p className="text-xs text-zinc-400">Panel de control</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Piums Admin</p>
-          <p className="text-xs text-zinc-400">Panel de control</p>
-        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 lg:hidden"
+            aria-label="Cerrar menú"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -77,6 +95,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 active
                   ? "bg-[#FF6A00]/10 text-[#FF6A00]"
@@ -116,5 +135,37 @@ export function AdminSidebar() {
         </button>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible on lg+ */}
+      <div className="hidden h-screen w-64 flex-shrink-0 lg:flex">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile drawer */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
+          isOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
+            isOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={onClose}
+        />
+        {/* Drawer panel */}
+        <div
+          className={`absolute left-0 top-0 h-full shadow-xl transition-transform duration-300 ${
+            isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {sidebarContent}
+        </div>
+      </div>
+    </>
   );
 }

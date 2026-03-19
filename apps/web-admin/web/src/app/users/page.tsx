@@ -67,7 +67,7 @@ function UsersContent() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Usuarios</h1>
         <p className="mt-1 text-sm text-zinc-500">
@@ -105,8 +105,52 @@ function UsersContent() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      {/* Mobile cards */}
+      <div className="sm:hidden">
+        {isLoading ? (
+          <div className="flex h-48 items-center justify-center">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#FF6A00] border-t-transparent" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {data?.users.map((u) => (
+              <div key={u.id} className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{u.nombre}</p>
+                    <p className="truncate text-xs text-zinc-400">{u.email}</p>
+                  </div>
+                  <RoleBadge role={u.role} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge blocked={u.isBlocked} />
+                    <span className="text-xs text-zinc-400">{new Date(u.createdAt).toLocaleDateString("es-MX")}</span>
+                  </div>
+                  {u.role !== "admin" && (
+                    <button
+                      onClick={() => setConfirmBlock(u)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                        u.isBlocked
+                          ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-400"
+                          : "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
+                      }`}
+                    >
+                      {u.isBlocked ? "Desbloquear" : "Bloquear"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {data?.users.length === 0 && (
+              <p className="py-12 text-center text-sm text-zinc-400">No se encontraron usuarios</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-xl border border-zinc-200 bg-white sm:block dark:border-zinc-800 dark:bg-zinc-900">
         {isLoading ? (
           <div className="flex h-48 items-center justify-center">
             <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#FF6A00] border-t-transparent" />
