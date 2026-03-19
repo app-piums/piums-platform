@@ -89,8 +89,16 @@ export default function LoginPage() {
         login(data.user);
       }
 
-      // Redirigir al dashboard usando Next.js router (SPA navigation)
-      router.push("/artist/dashboard");
+      // Redirigir según rol
+      const role = data.user?.role;
+      if (role === 'cliente') {
+        const clientUrl = process.env.NEXT_PUBLIC_CLIENT_APP_URL || 'http://localhost:3002';
+        window.location.href = `${clientUrl}/dashboard`;
+      } else {
+        // artista, admin o desconocido → dashboard artista
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        router.push(redirect || '/artist/dashboard');
+      }
       
     } catch (err: any) {
       setGeneralError(err.message);

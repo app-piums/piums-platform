@@ -72,7 +72,17 @@ interface FieldError {
       if (!response.ok) throw new Error(data.message || t('errorLogin'));
       if (data.token) localStorage.setItem("token", data.token);
       if (data.user) login(data.user);
-      window.location.href = "/dashboard";
+
+      // Redirigir según rol
+      const role = data.user?.role;
+      if (role === 'artista') {
+        const artistUrl = process.env.NEXT_PUBLIC_ARTIST_URL || 'http://localhost:3001';
+        window.location.href = `${artistUrl}/artist/dashboard`;
+      } else {
+        // cliente o desconocido → dashboard cliente
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        window.location.href = redirect || '/dashboard';
+      }
     } catch (err: any) {
       setGeneralError(err.message);
     } finally {
