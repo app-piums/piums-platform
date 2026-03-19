@@ -50,7 +50,7 @@ export default function ArtistDashboardPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <DashboardSidebar />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 pt-20 sm:p-8 lg:pt-8">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
@@ -66,7 +66,7 @@ export default function ArtistDashboardPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <DashboardSidebar />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 pt-20 sm:p-8 lg:pt-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <h2 className="text-xl font-bold text-red-800 mb-2">Error</h2>
             <p className="text-red-600 mb-4">{error}</p>
@@ -92,12 +92,13 @@ export default function ArtistDashboardPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
       
-      <main className="flex-1 p-8">
+      {/* pt-16 on mobile to clear the fixed top bar, no extra padding on lg */}
+      <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">Resumen del Dashboard</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Resumen del Dashboard</h1>
               <div className="flex items-center gap-2 text-gray-500">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -106,22 +107,22 @@ export default function ArtistDashboardPage() {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex items-center gap-2">
+              <div className="relative hidden sm:block">
                 <input
                   type="text"
                   placeholder="Buscar..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                 />
-                <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all text-sm font-medium">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="font-medium">Crear oferta</span>
+                <span>Crear oferta</span>
               </button>
             </div>
           </div>

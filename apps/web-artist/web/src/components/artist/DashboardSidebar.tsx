@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
@@ -65,45 +65,49 @@ const financeLinks = [
 export const DashboardSidebar: React.FC = () => {
   const pathname = usePathname();
   const { t } = useTranslation('menu');
+  const [isOpen, setIsOpen] = useState(false);
 
-  return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+  const NavContent = () => (
+    <>
       {/* Logo */}
-      <div className="p-6 border-b border-gray-100">
-        <Link href="/artist/dashboard" className="flex items-center gap-2">
+      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <Link href="/artist/dashboard" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
           <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xl">P</span>
           </div>
           <span className="text-xl font-bold text-gray-900">PIUMS</span>
         </Link>
+        {/* Close button — mobile only */}
+        <button
+          className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+          onClick={() => setIsOpen(false)}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      
+
       {/* Main Menu */}
-      <div className="flex-1 px-4 py-6">
+      <div className="flex-1 px-4 py-6 overflow-y-auto">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
           {t('main')}
         </p>
         <nav className="space-y-1">
           {tabs.map((tab) => {
             const isActive = pathname === tab.href;
-            
             return (
               <Link
                 key={tab.id}
                 href={tab.href}
+                onClick={() => setIsOpen(false)}
                 className={`
                   flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                  ${
-                    isActive
-                      ? 'bg-orange-50 text-orange-600'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }
+                  ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
                 `}
               >
                 <div className="flex items-center gap-3">
-                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>
-                    {tab.icon}
-                  </div>
+                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{tab.icon}</div>
                   <span>{tab.label}</span>
                 </div>
                 {tab.badge && (
@@ -124,23 +128,17 @@ export const DashboardSidebar: React.FC = () => {
           <nav className="space-y-1">
             {financeLinks.map((link) => {
               const isActive = pathname === link.href;
-              
               return (
                 <Link
                   key={link.id}
                   href={link.href}
+                  onClick={() => setIsOpen(false)}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                    ${
-                      isActive
-                        ? 'bg-orange-50 text-orange-600'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }
+                    ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
                   `}
                 >
-                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>
-                    {link.icon}
-                  </div>
+                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{link.icon}</div>
                   <span>{link.label}</span>
                 </Link>
               );
@@ -167,6 +165,7 @@ export const DashboardSidebar: React.FC = () => {
                 <Link
                   key={link.id}
                   href={link.href}
+                  onClick={() => setIsOpen(false)}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                     ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
@@ -179,7 +178,6 @@ export const DashboardSidebar: React.FC = () => {
             })}
           </nav>
         </div>
-
       </div>
 
       {/* User Profile */}
@@ -197,6 +195,49 @@ export const DashboardSidebar: React.FC = () => {
           </svg>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Desktop sidebar ── */}
+      <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 min-h-screen flex-col">
+        <NavContent />
+      </aside>
+
+      {/* ── Mobile: top bar with hamburger ── */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+        <Link href="/artist/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">P</span>
+          </div>
+          <span className="text-lg font-bold text-gray-900">PIUMS</span>
+        </Link>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+          aria-label="Abrir menú"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* ── Mobile drawer ── */}
+      {isOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Drawer panel */}
+          <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
+            <NavContent />
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

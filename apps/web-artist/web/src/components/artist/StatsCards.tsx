@@ -15,7 +15,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, iconBgColor, trend }) => {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition-all duration-200">
+    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition-all duration-200">
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 rounded-xl ${iconBgColor} flex items-center justify-center`}>
           {icon}
@@ -36,8 +36,8 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, iconBgColor, tr
         )}
       </div>
       
-      <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{title}</h3>
+      <p className="text-xl sm:text-3xl font-bold text-gray-900">{value}</p>
     </div>
   );
 };
@@ -70,7 +70,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   const pendingPayouts = Math.round(totalRevenue * 0.15);
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
       <StatCard
         title="Ingresos Totales"
         value={`Q${totalRevenue.toLocaleString('es-GT')}`}

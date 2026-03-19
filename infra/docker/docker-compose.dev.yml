@@ -134,6 +134,7 @@ services:
       NODE_ENV: development
       PORT: 4003
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_artists
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
     depends_on:
       postgres:
         condition: service_healthy
@@ -170,6 +171,7 @@ services:
       NODE_ENV: development
       PORT: 4005
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_payments
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_changeme}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_changeme}
     depends_on:
@@ -190,6 +192,7 @@ services:
       NODE_ENV: development
       PORT: 4006
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_reviews
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
     depends_on:
       postgres:
         condition: service_healthy
@@ -208,6 +211,7 @@ services:
       NODE_ENV: development
       PORT: 4007
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_notifications
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -229,6 +233,7 @@ services:
       NODE_ENV: development
       PORT: 4008
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_bookings
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
     depends_on:
       postgres:
         condition: service_healthy
