@@ -532,8 +532,12 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 // Get current user (requires token)
 // ========================================
 
-export const getMe = (req: Request, res: Response) => {
+export const getMe = async (req: Request, res: Response) => {
   // req.user is populated by isAdmin middleware
-  const user = (req as any).user;
+  const { id } = (req as any).user;
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, nombre: true, role: true },
+  });
   res.json({ user });
 };
