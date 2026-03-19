@@ -36,7 +36,7 @@ function EstadoBadge({ estado }: { estado: string }) {
 
 function MontoCell({ monto }: { monto: number | null | undefined }) {
   if (monto == null) return <span className="text-zinc-400">—</span>;
-  return <>${monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</>;
+  return <span>Q{monto.toLocaleString("es-GT", { minimumFractionDigits: 2 })}</span>;
 }
 
 function BookingsContent() {
