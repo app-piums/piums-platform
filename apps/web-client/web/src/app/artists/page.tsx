@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
 import { Loading } from '@/components/Loading';
@@ -25,7 +25,7 @@ const CITIES = [
   { value: '3', label: 'Monterrey' },
 ];
 
-export default function ArtistsPage() {
+function ArtistsPageContent() {
   const router = useRouter();
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -220,6 +220,20 @@ export default function ArtistsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ArtistsPage() {
+  return (
+    <Suspense
+      fallback={(
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <Loading />
+        </div>
+      )}
+    >
+      <ArtistsPageContent />
+    </Suspense>
   );
 }
 

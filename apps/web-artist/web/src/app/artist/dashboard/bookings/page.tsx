@@ -1,11 +1,24 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, Booking } from '@piums/sdk';
+import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 
 type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'ALL';
+
+type ArtistBookingsFilters = {
+  status?: BookingStatus;
+  page?: number;
+  limit?: number;
+};
+
+type ArtistBookingsResponse = {
+  bookings: Booking[];
+  total: number;
+  totalPages: number;
+};
 
 export default function ArtistBookingsPage() {
   const router = useRouter();
@@ -21,21 +34,12 @@ export default function ArtistBookingsPage() {
     PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null,
   });
 
-  useEffect(() => {
-    loadBookings();
-  }, [activeStatus, currentPage]);
-
-  useEffect(() => {
-    loadStatusCounts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const filters: any = {
+      const filters: ArtistBookingsFilters = {
         page: currentPage,
         limit: 10,
       };
@@ -44,33 +48,45 @@ export default function ArtistBookingsPage() {
         filters.status = activeStatus;
       }
 
-      const result = await sdk.getArtistBookings(filters);
+      const result = (await sdk.getArtistBookings(filters)) as ArtistBookingsResponse;
       setBookings(result.bookings);
       setTotal(result.total);
       setTotalPages(result.totalPages);
-    } catch (err: any) {
-      console.error('Error loading bookings:', err);
-      setError(err.message || 'Error al cargar las reservas');
-      
-      if (err.message?.includes('No autenticado') || err.message?.includes('401')) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error loading bookings:', message);
+      setError(message || 'Error al cargar las reservas');
+
+      if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/bookings');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeStatus, currentPage, router]);
 
-  const loadStatusCounts = async () => {
+  const loadStatusCounts = useCallback(async () => {
     const statuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
     const results = await Promise.allSettled(
-      statuses.map((s) => sdk.getArtistBookings({ status: s as any, page: 1, limit: 1 }))
+      statuses.map(async (status) => {
+        const response = (await sdk.getArtistBookings({ status, page: 1, limit: 1 })) as ArtistBookingsResponse;
+        return response.total;
+      })
     );
     const counts: Record<string, number | null> = {};
-    results.forEach((r, i) => {
-      counts[statuses[i]] = r.status === 'fulfilled' ? r.value.total : 0;
+    results.forEach((result, index) => {
+      counts[statuses[index]] = result.status === 'fulfilled' ? result.value : 0;
     });
     setStatusCounts(counts);
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadBookings();
+  }, [loadBookings]);
+
+  useEffect(() => {
+    void loadStatusCounts();
+  }, [loadStatusCounts]);
 
   const handleAccept = async (bookingId: string) => {
     if (!confirm('¿Confirmar aceptar esta reserva?')) return;
@@ -81,9 +97,9 @@ export default function ArtistBookingsPage() {
       await loadBookings();
       void loadStatusCounts();
       alert('Reserva aceptada exitosamente');
-    } catch (err: any) {
-      console.error('Error accepting booking:', err);
-      alert(err.message || 'Error al aceptar la reserva');
+    } catch (err: unknown) {
+      console.error('Error accepting booking:', getErrorMessage(err));
+      alert(getErrorMessage(err) || 'Error al aceptar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -99,9 +115,9 @@ export default function ArtistBookingsPage() {
       await loadBookings();
       void loadStatusCounts();
       alert('Reserva rechazada');
-    } catch (err: any) {
-      console.error('Error declining booking:', err);
-      alert(err.message || 'Error al rechazar la reserva');
+    } catch (err: unknown) {
+      console.error('Error declining booking:', getErrorMessage(err));
+      alert(getErrorMessage(err) || 'Error al rechazar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -128,8 +144,14 @@ export default function ArtistBookingsPage() {
     CANCELLED: 'border-l-gray-400',
   };
 
-  const allCount: number | null = Object.values(statusCounts).every(v => v !== null)
-    ? Object.values(statusCounts).reduce((s, v) => s + (v ?? 0), 0) as number
+  const statusCountValues = Object.values(statusCounts);
+
+  const hasAllStatusCounts = statusCountValues.every(
+    (value): value is number => typeof value === 'number'
+  );
+
+  const allCount: number | null = hasAllStatusCounts
+    ? statusCountValues.reduce((sum, value) => sum + value, 0)
     : null;
 
   const CHIP_CONFIG: Array<{

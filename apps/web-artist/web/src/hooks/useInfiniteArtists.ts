@@ -16,6 +16,14 @@ interface ArtistsPageResponse {
   hasNextPage: boolean;
 }
 
+interface ArtistQueryParams {
+  page: number;
+  limit: number;
+  category?: string;
+  cityId?: string;
+  q?: string;
+}
+
 const ITEMS_PER_PAGE = 12;
 
 // Mock data generator for development
@@ -27,10 +35,10 @@ const generateMockArtists = (page: number, filters: ArtistsFilters): ArtistsPage
   const mockArtists: Artist[] = Array.from({ length: ITEMS_PER_PAGE }, (_, i) => ({
     id: `artist-${(page - 1) * ITEMS_PER_PAGE + i + 1}`,
     userId: `user-${i + 1}`,
-    nombre: `Artista ${(page - 1) * ITEMS_PER_PAGE + i + 1}`,
+    nombre: filters.q ? `${filters.q} ${(page - 1) * ITEMS_PER_PAGE + i + 1}` : `Artista ${(page - 1) * ITEMS_PER_PAGE + i + 1}`,
     slug: `artista-${(page - 1) * ITEMS_PER_PAGE + i + 1}`,
     bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.',
-    category: categories[Math.floor(Math.random() * categories.length)],
+    category: filters.category || categories[Math.floor(Math.random() * categories.length)],
     rating: 4 + Math.random(),
     reviewsCount: Math.floor(Math.random() * 50) + 5,
     bookingsCount: Math.floor(Math.random() * 100) + 10,
@@ -39,7 +47,7 @@ const generateMockArtists = (page: number, filters: ArtistsFilters): ArtistsPage
     isActive: true,
     isPremium: Math.random() > 0.7,
     createdAt: new Date().toISOString(),
-    cityId: cities[Math.floor(Math.random() * cities.length)],
+    cityId: filters.cityId || cities[Math.floor(Math.random() * cities.length)],
   }));
 
   const totalPages = Math.ceil(mockTotal / ITEMS_PER_PAGE);
@@ -58,7 +66,7 @@ const fetchArtistsPage = async (
   filters: ArtistsFilters
 ): Promise<ArtistsPageResponse> => {
   try {
-    const params: any = {
+    const params: ArtistQueryParams = {
       page,
       limit: ITEMS_PER_PAGE,
     };

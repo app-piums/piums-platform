@@ -33,6 +33,9 @@ export default function OAuthCallbackPage() {
 
         // Save token to localStorage
         localStorage.setItem('token', token);
+        if (provider) {
+          sessionStorage.setItem('auth_provider', provider);
+        }
 
         // Decode JWT to get user info (basic decode without verification - verification happens on backend)
         try {

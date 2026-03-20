@@ -322,7 +322,7 @@ function BookingContent() {
                                     <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    {Math.floor(service.duration / 60)} horas
+                                    {service.duration ? `${Math.floor(service.duration / 60)} horas` : 'Duración variable'}
                                   </div>
                                 </div>
                               </div>
@@ -536,7 +536,7 @@ function BookingContent() {
                           <div className="flex justify-between">
                             <dt className="text-sm text-gray-600">Duración:</dt>
                             <dd className="text-sm font-medium text-gray-900">
-                              {Math.floor(selectedService.duration / 60)} horas
+                              {selectedService.duration ? `${Math.floor(selectedService.duration / 60)} horas` : 'Duración variable'}
                             </dd>
                           </div>
                           <div className="flex justify-between">

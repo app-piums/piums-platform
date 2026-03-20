@@ -1,25 +1,29 @@
 // Service Worker Registration
 // This script registers the service worker for PWA functionality
 
+const ENABLE_PWA = false;
+
 export function registerServiceWorker() {
   if (typeof window === 'undefined') {
     return;
   }
 
-  // Desregistrar service workers antiguos para evitar conflictos de puerto
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => {
-        console.log('[PWA] Unregistering old service worker:', registration.scope);
-        registration.unregister();
+  const unregisterLegacyServiceWorkers = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          console.log('[PWA] Unregistering old service worker:', registration.scope);
+          registration.unregister();
+        });
       });
-    });
+    }
+  };
+
+  if (!ENABLE_PWA) {
+    unregisterLegacyServiceWorkers();
+    return;
   }
 
-  // Service worker deshabilitado temporalmente para evitar conflictos de caché
-  return;
-
-  /* Descomentar para habilitar PWA
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
@@ -37,7 +41,7 @@ export function registerServiceWorker() {
         // Handle updates
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
-          
+
           if (!newWorker) {
             return;
           }
@@ -55,7 +59,6 @@ export function registerServiceWorker() {
           console.log('[PWA] New Service Worker activated, reloading...');
           window.location.reload();
         });
-
       } catch (error) {
         console.error('[PWA] Service Worker registration failed:', error);
       }
@@ -63,7 +66,6 @@ export function registerServiceWorker() {
   } else {
     console.log('[PWA] Service Workers not supported in this browser');
   }
-  */
 }
 
 function showUpdateNotification(worker: ServiceWorker) {

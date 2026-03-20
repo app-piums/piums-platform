@@ -68,12 +68,14 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             )}
             
             <p className="text-xs text-gray-500 mt-1">
-              {new Date(conversation.lastMessageAt).toLocaleDateString('es-MX', {
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {conversation.lastMessageAt
+                ? new Date(conversation.lastMessageAt).toLocaleDateString('es-MX', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'Sin actividad reciente'}
             </p>
           </button>
         );

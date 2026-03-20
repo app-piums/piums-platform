@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { sdk } from '@piums/sdk';
 import type { CalendarData } from '@piums/sdk';
 import { Loading } from './Loading';
@@ -19,11 +19,7 @@ export function DatePicker({ artistId, selectedDate, onDateSelect, minDate, maxD
   const [loading, setLoading] = useState(false);
 
   // Cargar datos del calendario cuando cambia el mes
-  useEffect(() => {
-    loadCalendarData();
-  }, [currentMonth, artistId]);
-
-  const loadCalendarData = async () => {
+  const loadCalendarData = useCallback(async () => {
     try {
       setLoading(true);
       const year = currentMonth.getFullYear();
@@ -36,7 +32,11 @@ export function DatePicker({ artistId, selectedDate, onDateSelect, minDate, maxD
     } finally {
       setLoading(false);
     }
-  };
+  }, [artistId, currentMonth]);
+
+  useEffect(() => {
+    void loadCalendarData();
+  }, [loadCalendarData]);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();

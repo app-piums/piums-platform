@@ -62,147 +62,154 @@ const financeLinks = [
   }
 ];
 
-export const DashboardSidebar: React.FC = () => {
-  const pathname = usePathname();
-  const { t } = useTranslation('menu');
-  const [isOpen, setIsOpen] = useState(false);
+interface NavContentProps {
+  pathname: string | null;
+  t: (key: string) => string;
+  onNavigate: () => void;
+}
 
-  const NavContent = () => (
-    <>
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-        <Link href="/artist/dashboard" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">P</span>
-          </div>
-          <span className="text-xl font-bold text-gray-900">PIUMS</span>
-        </Link>
-        {/* Close button — mobile only */}
-        <button
-          className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-          onClick={() => setIsOpen(false)}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate }) => (
+  <>
+    {/* Logo */}
+    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+      <Link href="/artist/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
+        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-xl">P</span>
+        </div>
+        <span className="text-xl font-bold text-gray-900">PIUMS</span>
+      </Link>
+      {/* Close button — mobile only */}
+      <button
+        className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+        onClick={onNavigate}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
-      {/* Main Menu */}
-      <div className="flex-1 px-4 py-6 overflow-y-auto">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-          {t('main')}
-        </p>
-        <nav className="space-y-1">
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href;
-            return (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                onClick={() => setIsOpen(false)}
-                className={`
+    {/* Main Menu */}
+    <div className="flex-1 px-4 py-6 overflow-y-auto">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+        {t('main')}
+      </p>
+      <nav className="space-y-1">
+        {tabs.map((tab) => {
+          const isActive = pathname === tab.href;
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              onClick={onNavigate}
+              className={`
                   flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                   ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
                 `}
+            >
+              <div className="flex items-center gap-3">
+                <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{tab.icon}</div>
+                <span>{tab.label}</span>
+              </div>
+              {tab.badge && (
+                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {tab.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Finance Section */}
+      <div className="mt-8">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+          {t('finance')}
+        </p>
+        <nav className="space-y-1">
+          {financeLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.id}
+                href={link.href}
+                onClick={onNavigate}
+                className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+                    ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
+                  `}
               >
-                <div className="flex items-center gap-3">
-                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{tab.icon}</div>
-                  <span>{tab.label}</span>
-                </div>
-                {tab.badge && (
-                  <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {tab.badge}
-                  </span>
-                )}
+                <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{link.icon}</div>
+                <span>{link.label}</span>
               </Link>
             );
           })}
         </nav>
+      </div>
 
-        {/* Finance Section */}
-        <div className="mt-8">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-            {t('finance')}
-          </p>
-          <nav className="space-y-1">
-            {financeLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.id}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`
+      {/* Settings Section */}
+      <div className="mt-8">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+          Cuenta
+        </p>
+        <nav className="space-y-1">
+          {[
+            {
+              id: 'settings',
+              label: 'Configuración',
+              href: '/artist/dashboard/settings',
+              icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+            },
+          ].map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.id}
+                href={link.href}
+                onClick={onNavigate}
+                className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                     ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
                   `}
-                >
-                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{link.icon}</div>
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Settings Section */}
-        <div className="mt-8">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-            Cuenta
-          </p>
-          <nav className="space-y-1">
-            {[
-              {
-                id: 'settings',
-                label: 'Configuración',
-                href: '/artist/dashboard/settings',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
-              },
-            ].map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.id}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
-                    ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
-                  `}
-                >
-                  <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{link.icon}</div>
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+              >
+                <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{link.icon}</div>
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
+    </div>
 
-      {/* User Profile */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-            AM
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-900">Alex Morgan</p>
-            <p className="text-xs text-gray-500">Pro Creative</p>
-          </div>
-          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+    {/* User Profile */}
+    <div className="p-4 border-t border-gray-200">
+      <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+          AM
         </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-gray-900">Alex Morgan</p>
+          <p className="text-xs text-gray-500">Pro Creative</p>
+        </div>
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
+
+export const DashboardSidebar: React.FC = () => {
+  const pathname = usePathname();
+  const { t } = useTranslation('menu');
+  const [isOpen, setIsOpen] = useState(false);
+  const handleClose = () => setIsOpen(false);
 
   return (
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 min-h-screen flex-col">
-        <NavContent />
+        <SidebarNavContent pathname={pathname} t={t} onNavigate={() => {}} />
       </aside>
 
       {/* ── Mobile: top bar with hamburger ── */}
@@ -230,11 +237,11 @@ export const DashboardSidebar: React.FC = () => {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
           />
           {/* Drawer panel */}
           <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
-            <NavContent />
+            <SidebarNavContent pathname={pathname} t={t} onNavigate={handleClose} />
           </aside>
         </div>
       )}

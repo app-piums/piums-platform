@@ -10,7 +10,7 @@ interface Props {
   onNavigateAttempt?: (href: string) => boolean;
 }
 
-type IconComponent = ({ className }: { className?: string }) => JSX.Element;
+type IconComponent = ({ className }: { className?: string }) => React.ReactElement;
 
 type NavItem = {
   href: string;

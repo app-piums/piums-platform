@@ -87,6 +87,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
   return (
     <div
+      data-booking-id={id}
       className={`
         bg-white
         border-2 ${config.borderColor}

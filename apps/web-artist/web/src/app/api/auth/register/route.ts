@@ -1,189 +1,174 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://localhost:4001";
-const FETCH_TIMEOUT = 10000; // 10 segundos
+const FETCH_TIMEOUT = 10000;
+
+type RegisterBody = {
+  nombre: string;
+  email: string;
+  password: string;
+  role?: string;
+};
+
+type RegisterResponse = {
+  user?: {
+    id?: string;
+    nombre?: string;
+    email?: string;
+    [key: string]: unknown;
+  };
+  token?: string;
+  refreshToken?: string;
+  message?: string;
+  errors?: unknown;
+};
+
+type ServiceRole = "artist" | "client";
+
+const isRegisterBody = (value: unknown): value is RegisterBody => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.nombre === "string" &&
+    typeof candidate.email === "string" &&
+    typeof candidate.password === "string"
+  );
+};
+
+const resolveRole = (value: unknown): ServiceRole => {
+  if (typeof value !== "string") {
+    return "artist";
+  }
+
+  const normalized = value.toLowerCase();
+  if (normalized === "client" || normalized === "cliente") {
+    return "client";
+  }
+  return "artist";
+};
+
+const isAbortError = (error: unknown): boolean =>
+  error instanceof Error && error.name === "AbortError";
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : "Error desconocido";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  path: "/",
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { nombre, email, password } = body;
+    const rawBody = await request.json();
 
-    // Validación básica
-    if (!nombre || !email || !password) {
+    if (!isRegisterBody(rawBody)) {
       return NextResponse.json(
         { message: "Nombre, email y contraseña son requeridos" },
         { status: 400 }
       );
     }
 
-    // 🔒 Configurar timeout para el fetch
+    const role = resolveRole(rawBody.role);
+    const cookieRole = role === "client" ? "cliente" : "artista";
+    const successMessage =
+      role === "client"
+        ? "Cuenta creada exitosamente"
+        : "Cuenta de artista creada exitosamente";
+
+    const payload = {
+      nombre: rawBody.nombre,
+      email: rawBody.email,
+      password: rawBody.password,
+    } satisfies RegisterBody;
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
+    let response: Response | null = null;
+    let data: RegisterResponse | null = null;
+
     try {
-      // Llamar al endpoint específico de artistas (rol fijo server-side)
-      const response = await fetch(`${AUTH_SERVICE_URL}/auth/register/artist`, {
+      response = await fetch(`${AUTH_SERVICE_URL}/auth/register/${role}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ nombre, email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
 
+      data = (await response.json()) as RegisterResponse;
+    } catch (fetchError: unknown) {
       clearTimeout(timeoutId);
-      const data = await response.json();
 
-      if (!response.ok) {
-        // 🔒 Manejar error 409 (email duplicado) específicamente
-        if (response.status === 409) {
-          return NextResponse.json(
-            { message: "Este correo electrónico ya está registrado" },
-            { status: 409 }
-          );
-        }
-  let responseWithCookies;
-  try {
-    const body = await request.json();
-    const { nombre, email, password } = body;
-
-    // Validación básica
-    if (!nombre || !email || !password) {
-      return NextResponse.json(
-        { message: "Nombre, email y contraseña son requeridos" },
-        { status: 400 }
-      );
-    }
-
-    // 🔒 Configurar timeout para el fetch
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-    let fetchError;
-    let response;
-    let data;
-    try {
-      response = await fetch(`${AUTH_SERVICE_URL}/auth/register/artist`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ nombre, email, password }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      data = await response.json();
-    } catch (err) {
-      fetchError = err;
-      clearTimeout(timeoutId);
-    }
-
-    if (fetchError) {
-      // Manejar timeout específicamente
-      const errorName = typeof fetchError === 'object' && fetchError && 'name' in fetchError ? (fetchError as any).name : '';
-      if (errorName === 'AbortError') {
+      if (isAbortError(fetchError)) {
         return NextResponse.json(
           { message: "La solicitud tardó demasiado. Por favor intenta nuevamente." },
           { status: 504 }
         );
       }
-      // Error genérico
+
+      console.error("Error registrando usuario:", getErrorMessage(fetchError));
       return NextResponse.json(
         { message: "Error interno del servidor" },
         { status: 500 }
       );
     }
 
-    if (!response || !response.ok) {
-      // 🔒 Manejar error 409 (email duplicado) específicamente
-      if (response && response.status === 409) {
+    clearTimeout(timeoutId);
+
+    if (!response || !data) {
+      return NextResponse.json(
+        { message: "No se pudo procesar la respuesta del servicio de autenticación" },
+        { status: 502 }
+      );
+    }
+
+    if (!response.ok) {
+      if (response.status === 409) {
         return NextResponse.json(
           { message: "Este correo electrónico ya está registrado" },
           { status: 409 }
         );
       }
+
       return NextResponse.json(
-        { 
-          message: data?.message || "Error al registrar usuario",
-          errors: data?.errors || []
+        {
+          message: data.message || "Error al registrar usuario",
+          errors: data.errors || [],
         },
-        { status: response ? response.status : 500 }
+        { status: response.status }
       );
     }
 
-    // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
-    responseWithCookies = NextResponse.json(
-      { 
+    const result = NextResponse.json(
+      {
         success: true,
         user: data.user,
-        message: "Cuenta creada exitosamente"
+        message: successMessage,
       },
       { status: 201 }
     );
 
-    // Token de acceso (1 hora)
-    responseWithCookies.cookies.set('auth_token', data.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 3600, // 1 hora
-      path: '/',
-    });
-    return responseWithCookies;
-  } catch (error: any) {
-    // 🔒 No loguear password - solo el mensaje de error
-    console.error("Error en registro:", error.message || "Error desconocido");
-    return NextResponse.json(
-      { message: "Error interno del servidor" },
-      { status: 500 }
-    );
-  }
-        return NextResponse.json(
-          { 
-            message: data.message || "Error al registrar usuario",
-            errors: data.errors || []
-          },
-          { status: response.status }
-        );
-      }
-
-      // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
-      const responseWithCookies = NextResponse.json(
-        { 
-          success: true,
-          user: data.user,
-          message: "Cuenta creada exitosamente"
-        },
-        { status: 201 }
-      );
-
-      // Token de acceso (1 hora)
-      responseWithCookies.cookies.set('auth_token', data.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 3600, // 1 hora
-        path: '/',
-      });
-
-      return responseWithCookies;
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      
-      // Manejar timeout específicamente
-      if (fetchError.name === 'AbortError') {
-        return NextResponse.json(
-          { message: "La solicitud tardó demasiado. Por favor intenta nuevamente." },
-          { status: 504 }
-        );
-      }
-      
-      throw fetchError;
+    if (data.token) {
+      result.cookies.set("auth_token", data.token, { ...COOKIE_OPTIONS, maxAge: 3600 });
+      result.cookies.set("user_role", cookieRole, { ...COOKIE_OPTIONS, maxAge: 3600 });
     }
-  } catch (error: any) {
-    // 🔒 No loguear password - solo el mensaje de error
-    console.error("Error en registro:", error.message || "Error desconocido");
-    
+
+    if (data.refreshToken) {
+      result.cookies.set("refreshToken", data.refreshToken, {
+        ...COOKIE_OPTIONS,
+        maxAge: 604800,
+      });
+    }
+
+    return result;
+  } catch (error: unknown) {
+    console.error("Error en registro:", getErrorMessage(error));
     return NextResponse.json(
       { message: "Error interno del servidor" },
       { status: 500 }

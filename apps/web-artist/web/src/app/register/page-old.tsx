@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { countries } from "../../lib/countries";
+import { getErrorMessage } from "@/lib/errors";
 
 interface FieldError {
   nombre?: string;
@@ -131,8 +132,8 @@ export default function RegisterPage() {
       
       // Redirigir al home
       router.push("/");
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err: unknown) {
+      setGeneralError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

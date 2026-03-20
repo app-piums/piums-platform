@@ -25,7 +25,14 @@ export const BookingTimeline: React.FC<BookingTimelineProps> = ({
   className = '',
   maxItems = 5,
 }) => {
-  const statusConfig = {
+  const statusConfig: Record<
+    BookingEvent['status'],
+    {
+      badge: React.ComponentProps<typeof Badge>['variant'];
+      label: string;
+      color: string;
+    }
+  > = {
     pending: {
       badge: 'warning',
       label: 'Pendiente',
@@ -94,7 +101,7 @@ export const BookingTimeline: React.FC<BookingTimelineProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <h4 className="font-medium text-gray-900 truncate">{event.title}</h4>
-                  <Badge variant={config.badge as any} size="sm">
+                  <Badge variant={config.badge} size="sm">
                     {config.label}
                   </Badge>
                 </div>

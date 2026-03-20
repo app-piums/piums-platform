@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
+import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 
 export default function ArtistSettingsPage() {
   const router = useRouter();
@@ -32,11 +34,7 @@ export default function ArtistSettingsPage() {
   });
   const [isSavingCoverage, setIsSavingCoverage] = useState(false);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -58,17 +56,22 @@ export default function ArtistSettingsPage() {
         requiresDeposit: artistProfile.requiresDeposit ?? false,
         depositPercentage: artistProfile.depositPercentage ?? 30,
       });
-    } catch (err: any) {
-      console.error('Error loading profile:', err);
-      setError(err.message || 'Error al cargar el perfil');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error loading profile:', message);
+      setError(message || 'Error al cargar el perfil');
       
-      if (err.message?.includes('No autenticado') || err.message?.includes('401')) {
+      if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/settings');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   const handleSave = async () => {
     try {
@@ -79,9 +82,10 @@ export default function ArtistSettingsPage() {
       
       // Recargar el perfil
       await loadProfile();
-    } catch (err: any) {
-      console.error('Error updating profile:', err);
-      alert(err.message || 'Error al actualizar el perfil');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error updating profile:', message);
+      alert(message || 'Error al actualizar el perfil');
     } finally {
       setIsSaving(false);
     }
@@ -92,8 +96,8 @@ export default function ArtistSettingsPage() {
       setIsSavingCoverage(true);
       await sdk.updateArtistProfile(coverageData);
       alert('Configuración de cobertura actualizada');
-    } catch (err: any) {
-      alert(err.message || 'Error al guardar');
+    } catch (err: unknown) {
+      alert(getErrorMessage(err) || 'Error al guardar');
     } finally {
       setIsSavingCoverage(false);
     }
@@ -136,6 +140,12 @@ export default function ArtistSettingsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Configuración</h1>
             <p className="text-gray-500 text-sm">Administra tu perfil y preferencias</p>
           </div>
+
+          {error && (
+            <div className="mb-5 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           {/* Settings Tabs - scrollable on mobile */}
           <div className="flex gap-1 mb-5 border-b border-gray-200 overflow-x-auto scrollbar-hide">
@@ -502,12 +512,21 @@ export default function ArtistSettingsPage() {
                 {/* Cover photo */}
                 <div className="border border-gray-200 rounded-xl p-6 space-y-4">
                   <h3 className="font-semibold text-gray-900">Foto de portada</h3>
-                  <div className="w-full h-32 bg-gradient-to-r from-orange-200 to-purple-200 rounded-lg flex items-center justify-center text-gray-500 text-sm border-2 border-dashed border-gray-300 cursor-pointer hover:border-purple-400 transition-colors">
-                    {artist?.coverPhoto
-                      ? <img src={artist.coverPhoto} alt="portada" className="w-full h-full object-cover rounded-lg" />
-                      : <span>Haz clic para subir foto de portada (1200×400px recomendado)</span>
-                    }
-                  </div>
+                  {artist?.coverPhoto ? (
+                    <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
+                      <Image
+                        src={artist.coverPhoto}
+                        alt="Foto de portada"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 600px"
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-32 bg-gradient-to-r from-orange-200 to-purple-200 rounded-lg flex items-center justify-center text-gray-500 text-sm border-2 border-dashed border-gray-300 cursor-pointer hover:border-purple-400 transition-colors">
+                      <span>Haz clic para subir foto de portada (1200×400px recomendado)</span>
+                    </div>
+                  )}
                   <button className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium">
                     📁 Cambiar portada
                   </button>

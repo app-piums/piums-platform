@@ -9,6 +9,13 @@ interface RefreshTokenPayload {
   jti: string;
 }
 
+interface AccessTokenPayload {
+  id: string;
+  email: string;
+  jti: string;
+  role?: string;
+}
+
 export class TokenService {
   private readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
   private readonly JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
@@ -44,7 +51,7 @@ export class TokenService {
   /**
    * Genera un access token JWT
    */
-  signAccessToken(payload: { id: string; email: string; jti: string }): string {
+  signAccessToken(payload: AccessTokenPayload): string {
     return jwt.sign(payload, this.JWT_SECRET, {
       expiresIn: this.JWT_EXPIRY,
     } as jwt.SignOptions);

@@ -7,6 +7,7 @@ import { countries, type Country } from "../../../lib/countries";
 import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../../components/PasswordStrengthIndicator";
 import { useAuth } from "../../../contexts/AuthContext";
 import { Footer } from "@/components/Footer";
+import { getErrorMessage } from "@/lib/errors";
 
 interface FieldError {
   nombre?: string;
@@ -33,7 +34,6 @@ export default function RegisterArtistPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
 
   const [errors, setErrors] = useState<FieldError>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -123,7 +123,10 @@ export default function RegisterArtistPage() {
   const handleAcceptLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          sessionStorage.setItem('piums_artist_location', JSON.stringify(coords));
+        },
         () => {}
       );
     }
@@ -167,8 +170,8 @@ export default function RegisterArtistPage() {
       if (data.user) login(data.user);
       setShowSuccess(true);
       setTimeout(() => setShowLocationModal(true), 1000);
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err: unknown) {
+      setGeneralError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

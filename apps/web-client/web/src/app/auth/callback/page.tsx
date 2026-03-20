@@ -47,10 +47,11 @@ export default function OAuthCallbackPage() {
 
           // Update auth context with user info
           const user = {
-            id: decoded.id,
-            email: decoded.email,
-            name: decoded.name || null,
-            role: decoded.role || 'user',
+            id: decoded.id ?? decoded.sub ?? crypto.randomUUID(),
+            nombre: decoded.nombre || decoded.name || decoded.email || 'Usuario',
+            email: decoded.email ?? '',
+            role: decoded.role || 'cliente',
+            token,
           };
 
           login(user);

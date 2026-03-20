@@ -10,42 +10,7 @@ import { MessageInput } from '@/components/chat/MessageInput';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
-
-// ── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    userId: 'user-1',
-    artistId: 'artist-1',
-    clientName: 'Cliente Demo',
-    clientAvatar: '',
-    unreadCount: 2,
-    lastMessageAt: new Date().toISOString(),
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    messages: [
-      { id: 'm1', conversationId: 'conv-1', senderId: 'client-1', senderName: 'Cliente Demo', senderAvatar: '', content: '¡Hola! Estoy interesado en tus servicios 🎤', createdAt: new Date(Date.now() - 3600000).toISOString(), timestamp: new Date(Date.now() - 3600000).toISOString(), read: true, senderType: 'client', type: 'text' },
-      { id: 'm2', conversationId: 'conv-1', senderId: 'me', senderName: 'Artista', senderAvatar: '', content: '¡Hola! ¿En qué fecha necesitas el servicio?', createdAt: new Date(Date.now() - 3500000).toISOString(), timestamp: new Date(Date.now() - 3500000).toISOString(), read: true, senderType: 'artist', type: 'text' },
-      { id: 'm3', conversationId: 'conv-1', senderId: 'client-1', senderName: 'Cliente Demo', senderAvatar: '', content: 'El 15 de mayo, ¿tienes disponibilidad?', createdAt: new Date(Date.now() - 1800000).toISOString(), timestamp: new Date(Date.now() - 1800000).toISOString(), read: false, senderType: 'client', type: 'text' },
-      { id: 'm4', conversationId: 'conv-1', senderId: 'me', senderName: 'Artista', senderAvatar: '', content: '¡Sí! Estoy disponible ese día.', createdAt: new Date(Date.now() - 900000).toISOString(), timestamp: new Date(Date.now() - 900000).toISOString(), read: false, senderType: 'artist', type: 'text' },
-    ],
-  },
-  {
-    id: 'conv-2',
-    userId: 'user-2',
-    artistId: 'artist-2',
-    clientName: 'Ana R.',
-    clientAvatar: '',
-    unreadCount: 0,
-    lastMessageAt: new Date(Date.now() - 86400000).toISOString(),
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    messages: [
-      { id: 'm5', conversationId: 'conv-2', senderId: 'client-2', senderName: 'Ana R.', senderAvatar: '', content: '¿Puedes enviarme tu portafolio?', createdAt: new Date(Date.now() - 86400000).toISOString(), timestamp: new Date(Date.now() - 86400000).toISOString(), read: true, senderType: 'client', type: 'text' },
-      { id: 'm6', conversationId: 'conv-2', senderId: 'me', senderName: 'Artista', senderAvatar: '', content: 'Por supuesto, te lo envío por correo.', createdAt: new Date(Date.now() - 82800000).toISOString(), timestamp: new Date(Date.now() - 82800000).toISOString(), read: true, senderType: 'artist', type: 'text' },
-    ],
-  },
-];
+import { getErrorMessage } from '@/lib/errors';
 
 export default function ChatPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -118,11 +83,12 @@ export default function ChatPage() {
           }
         }
         setIsLoadingConversations(false);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = getErrorMessage(err);
         setIsLoadingConversations(false);
         setConversations([]);
         setMessages([]);
-        setError(err?.message || 'Error desconocido al cargar conversaciones.');
+        setError(message || 'Error desconocido al cargar conversaciones.');
       }
     };
     fetchConversations();
@@ -143,9 +109,9 @@ export default function ChatPage() {
           const msgData = await res.json();
           setMessages(msgData);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           setMessages([]);
-          setError('Error al cargar mensajes de la conversación.');
+          setError(getErrorMessage(err) || 'Error al cargar mensajes de la conversación.');
         });
       // Marcar mensajes como leídos
       fetch(`/api/chat/conversations/${conv.id}/read`, {
@@ -189,8 +155,8 @@ export default function ChatPage() {
           )
         );
       })
-      .catch((err) => {
-        setError('Error al enviar mensaje.');
+      .catch((err: unknown) => {
+        setError(getErrorMessage(err) || 'Error al enviar mensaje.');
       })
       .finally(() => setIsSending(false));
   };

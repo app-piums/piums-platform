@@ -1,22 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { StatsCards } from '@/components/artist/StatsCards';
 import { sdk, Booking } from '@piums/sdk';
+import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+
+type ArtistStats = Awaited<ReturnType<typeof sdk.getArtistStats>>;
+type AugmentedArtistStats = ArtistStats & {
+  profileViews?: number;
+  earningsGrowth?: number;
+  profileViewsGrowth?: number;
+};
 
 export default function ArtistDashboardPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<AugmentedArtistStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -25,26 +29,30 @@ export default function ArtistDashboardPage() {
       try {
         const statsData = await sdk.getArtistStats();
         setStats(statsData);
-      } catch (backendError: any) {
-        console.log('Backend no disponible, usando datos mock:', backendError.message);
+      } catch (backendError: unknown) {
+        console.log('Backend no disponible, usando datos mock:', getErrorMessage(backendError));
         
         // Si falla el backend, usar datos mock
         const { getMockArtistStats } = await import('@/lib/mockData');
         const mockData = await getMockArtistStats();
-        setStats(mockData.stats);
+        setStats(mockData.stats as AugmentedArtistStats);
       }
-    } catch (err: any) {
-      console.error('Error loading dashboard:', err);
-      setError(err.message || 'Error al cargar el dashboard');
-      
-      // Si no está autenticado, redirigir al login
-      if (err.message?.includes('No autenticado') || err.message?.includes('401')) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error loading dashboard:', message);
+      setError(message || 'Error al cargar el dashboard');
+
+      if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    void loadDashboardData();
+  }, [loadDashboardData]);
 
   if (isLoading) {
     return (
@@ -137,9 +145,9 @@ export default function ArtistDashboardPage() {
                 totalReviews={stats.rating.totalReviews}
                 pendingBookings={stats.bookings.pending}
                 confirmedBookings={stats.bookings.confirmed}
-                profileViews={(stats as any).profileViews}
-                earningsGrowth={(stats as any).earningsGrowth}
-                profileViewsGrowth={(stats as any).profileViewsGrowth}
+                profileViews={stats.profileViews}
+                earningsGrowth={stats.earningsGrowth}
+                profileViewsGrowth={stats.profileViewsGrowth}
               />
             </div>
           )}

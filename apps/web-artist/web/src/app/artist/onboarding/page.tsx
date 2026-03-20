@@ -42,7 +42,6 @@ export default function ArtistOnboardingPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Step 3: Portfolio & Profile
-  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [shortBio, setShortBio] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -75,7 +74,6 @@ export default function ArtistOnboardingPage() {
   const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setProfilePhoto(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfilePhotoPreview(reader.result as string);
@@ -355,9 +353,16 @@ export default function ArtistOnboardingPage() {
                 <label className="block text-sm font-semibold text-gray-900 mb-4">Foto de Perfil</label>
                 <div className="flex items-center gap-6">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden relative">
                       {profilePhotoPreview ? (
-                        <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" />
+                        <Image
+                          src={profilePhotoPreview}
+                          alt="Profile"
+                          fill
+                          className="object-cover"
+                          sizes="96px"
+                          unoptimized
+                        />
                       ) : (
                         <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                           <path

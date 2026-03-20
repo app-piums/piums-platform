@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -19,10 +20,13 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
         {/* Cover Photo */}
         <div className="relative h-48 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400">
           {artist.coverPhoto && (
-            <img
+            <Image
               src={artist.coverPhoto}
               alt={artist.nombre}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              unoptimized
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             />
           )}
           

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CancelBookingModalProps {
   isOpen: boolean;
@@ -29,8 +30,8 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
       await onConfirm(reason);
       setReason('');
       onClose();
-    } catch (err) {
-      setError('Error al cancelar la reserva. Por favor, inténtalo de nuevo.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Error al cancelar la reserva. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,8 @@
 import { appWithTranslation } from 'next-i18next';
-import type { ReactNode } from 'react';
+import type { AppProps } from 'next/app';
 
-const RootLayout = ({ children }: { children: ReactNode }) => {
-  return children;
+const AppWrapper = ({ Component, pageProps }: AppProps) => {
+  return <Component {...pageProps} />;
 };
 
-export default appWithTranslation(RootLayout);
+export default appWithTranslation(AppWrapper);

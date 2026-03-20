@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, Service, ServiceCategory } from '@piums/sdk';
+import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 
 type PricingType = 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
 
@@ -68,11 +69,7 @@ export default function ArtistServicesPage() {
   };
   const [form, setForm] = useState<ServiceForm>(emptyForm);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -86,16 +83,21 @@ export default function ArtistServicesPage() {
 
       const artistServices = await sdk.getArtistServices(artistProfile.id);
       setServices(artistServices);
-    } catch (err: any) {
-      console.error('Error loading services:', err);
-      setError(err.message || 'Error al cargar los servicios');
-      if (err.message?.includes('No autenticado') || err.message?.includes('401')) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error loading services:', message);
+      setError(message || 'Error al cargar los servicios');
+      if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/services');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const openCreate = () => {
     setEditingService(null);
@@ -163,8 +165,8 @@ export default function ArtistServicesPage() {
         setServices((prev) => [created, ...prev]);
       }
       closeModal();
-    } catch (err: any) {
-      setFormError(err.message || 'Error al guardar el servicio');
+    } catch (err: unknown) {
+      setFormError(getErrorMessage(err) || 'Error al guardar el servicio');
     } finally {
       setIsSubmitting(false);
     }
@@ -176,8 +178,8 @@ export default function ArtistServicesPage() {
     try {
       const updated = await sdk.toggleServiceStatus(service.id, artistId);
       setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    } catch (err: any) {
-      setError(err.message || 'Error al cambiar el estado');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Error al cambiar el estado');
     } finally {
       setTogglingId(null);
     }
@@ -190,8 +192,8 @@ export default function ArtistServicesPage() {
       await sdk.deleteService(deletingId, artistId);
       setServices((prev) => prev.filter((s) => s.id !== deletingId));
       setDeletingId(null);
-    } catch (err: any) {
-      setError(err.message || 'Error al eliminar el servicio');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Error al eliminar el servicio');
     } finally {
       setIsDeleting(false);
     }

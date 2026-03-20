@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { getErrorMessage } from '@/lib/errors';
 
 interface ModifyDateModalProps {
   isOpen: boolean;
@@ -46,8 +47,8 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
       await onConfirm(newDate);
       setNewDate('');
       onClose();
-    } catch (err) {
-      setError('Error al modificar la fecha. Por favor, inténtalo de nuevo.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Error al modificar la fecha. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }

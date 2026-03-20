@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
+import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 
 export default function ArtistReviewsPage() {
   const router = useRouter();
@@ -13,22 +15,16 @@ export default function ArtistReviewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [artistId, setArtistId] = useState<string | null>(null);
   const [respondingToReviewId, setRespondingToReviewId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
 
-  useEffect(() => {
-    loadReviews();
-  }, [currentPage]);
-
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
       // Obtener perfil del artista
       const artistProfile = await sdk.getArtistProfile();
-      setArtistId(artistProfile.id);
 
       // Cargar reviews del artista
       const result = await sdk.listReviews({
@@ -41,17 +37,22 @@ export default function ArtistReviewsPage() {
       setReviews(result.reviews);
       setTotal(result.total);
       setTotalPages(result.totalPages);
-    } catch (err: any) {
-      console.error('Error loading reviews:', err);
-      setError(err.message || 'Error al cargar las reviews');
-      
-      if (err.message?.includes('No autenticado') || err.message?.includes('401')) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error loading reviews:', message);
+      setError(message || 'Error al cargar las reviews');
+
+      if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/reviews');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, router]);
+
+  useEffect(() => {
+    void loadReviews();
+  }, [loadReviews]);
 
   const handleRespond = async (reviewId: string) => {
     if (!responseText.trim()) {
@@ -68,9 +69,10 @@ export default function ArtistReviewsPage() {
       
       setRespondingToReviewId(null);
       setResponseText('');
-    } catch (err: any) {
-      console.error('Error responding to review:', err);
-      alert(err.message || 'Error al responder la review');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error responding to review:', message);
+      alert(message || 'Error al responder la review');
     }
   };
 
@@ -161,11 +163,14 @@ export default function ArtistReviewsPage() {
                       {review.photos && review.photos.length > 0 && (
                         <div className="flex gap-2 mb-4">
                           {review.photos.map((photo) => (
-                            <img
+                            <Image
                               key={photo.id}
                               src={photo.url}
-                              alt={photo.caption || 'Review photo'}
+                              alt={photo.caption || 'Foto de la reseña'}
+                              width={80}
+                              height={80}
                               className="w-20 h-20 object-cover rounded"
+                              sizes="80px"
                             />
                           ))}
                         </div>

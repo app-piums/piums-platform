@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { Footer } from "@/components/Footer";
+import { getErrorMessage } from "@/lib/errors";
 
 interface FieldError {
   email?: string;
@@ -100,8 +101,8 @@ export default function LoginPage() {
         router.push(redirect || '/artist/dashboard');
       }
       
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err: unknown) {
+      setGeneralError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

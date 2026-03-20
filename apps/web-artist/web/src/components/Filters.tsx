@@ -12,7 +12,7 @@ export interface FilterConfig {
   placeholder?: string;
   options?: Array<{ value: string; label: string }>;
   value?: string | string[] | number[];
-  onChange?: (value: any) => void;
+  onChange?: (value: string | string[] | number[] | undefined) => void;
 }
 
 interface FiltersProps {

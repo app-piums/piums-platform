@@ -36,8 +36,9 @@ export async function GET(request: NextRequest) {
         telefono: data.telefono,
       },
     });
-  } catch (error: any) {
-    console.error("Error verificando usuario:", error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    console.error("Error verificando usuario:", message);
     return NextResponse.json(
       { message: "Error al verificar autenticación" },
       { status: 500 }

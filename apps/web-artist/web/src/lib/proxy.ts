@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getErrorMessage } from './errors';
 
 const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:3000/api';
 
@@ -44,7 +45,7 @@ export function createProxyHandler(basePath: string) {
           if (body) {
             fetchOptions.body = body;
           }
-        } catch (e) {
+        } catch {
           // No hay body
         }
       }
@@ -70,10 +71,11 @@ export function createProxyHandler(basePath: string) {
           'Content-Type': contentTypeHeader || 'text/plain',
         },
       });
-    } catch (error: any) {
-      console.error(`Error proxying ${basePath}:`, error);
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      console.error(`Error proxying ${basePath}:`, message);
       return NextResponse.json(
-        { message: 'Error al procesar la solicitud', error: error.message },
+        { message: 'Error al procesar la solicitud', error: message },
         { status: 500 }
       );
     }

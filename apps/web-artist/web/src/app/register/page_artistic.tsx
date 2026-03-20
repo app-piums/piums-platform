@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import Link from "next/link";
+import { getErrorMessage } from "@/lib/errors";
 
 interface FieldError {
   nombre?: string;
@@ -131,8 +132,8 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/artist/dashboard");
       }, 1500);
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err: unknown) {
+      setGeneralError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -270,7 +271,7 @@ export default function RegisterPage() {
                       name="role"
                       value="artista"
                       checked={role === 'artista'}
-                      onChange={(e) => {
+                      onChange={() => {
                         setRole('artista');
                         handleBlur('role', 'artista');
                       }}
@@ -318,7 +319,7 @@ export default function RegisterPage() {
                       name="role"
                       value="cliente"
                       checked={role === 'cliente'}
-                      onChange={(e) => {
+                      onChange={() => {
                         setRole('cliente');
                         handleBlur('role', 'cliente');
                       }}
@@ -551,8 +552,8 @@ export default function RegisterPage() {
               {/* "Let's Go!" rotated badge */}
               <div className="relative mt-8 flex justify-end">
                 <div className="relative -rotate-12">
-                  <div className="bg-[#00AEEF] text-white px-6 py-3 font-marker text-xl border-4 border-[#1a1614] shadow-lg">
-                    Let's Go! ✨
+                    <div className="bg-[#00AEEF] text-white px-6 py-3 font-marker text-xl border-4 border-[#1a1614] shadow-lg">
+                    Let&rsquo;s Go! ✨
                   </div>
                 </div>
               </div>

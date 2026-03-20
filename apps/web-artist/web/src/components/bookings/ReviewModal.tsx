@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { getErrorMessage } from '@/lib/errors';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -50,8 +51,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       setRating(0);
       setComment('');
       onClose();
-    } catch (err) {
-      setError('Error al enviar la reseña. Por favor, inténtalo de nuevo.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Error al enviar la reseña. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
