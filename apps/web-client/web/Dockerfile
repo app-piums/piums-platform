@@ -9,10 +9,13 @@ RUN npm install -g pnpm@8
 WORKDIR /app
 
 # Copy dependency files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 COPY packages/ ./packages/
+# Copy app package.json so pnpm installs its specific deps
+RUN mkdir -p apps/web-client/web
+COPY apps/web-client/web/package.json ./apps/web-client/web/
 
-# Install dependencies
+# Install all workspace dependencies
 RUN pnpm install --force
 
 # ============================================================================

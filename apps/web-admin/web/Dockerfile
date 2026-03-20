@@ -7,8 +7,11 @@ RUN npm install -g pnpm@8
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 COPY packages/ ./packages/
+# Copy app package.json so pnpm installs its specific deps
+RUN mkdir -p apps/web-admin/web
+COPY apps/web-admin/web/package.json ./apps/web-admin/web/
 
 RUN pnpm install --force
 
