@@ -26,13 +26,13 @@ export function renderTemplate(template: string, variables: TemplateVariables): 
   let rendered = template;
   
   // Reemplazar condicionales {{#if variable}}...{{/if}}
-  rendered = rendered.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, varName, content) => {
+  rendered = rendered.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (_match, varName, content) => {
     const value = variables[varName];
     return value ? content : '';
   });
   
   // Reemplazar variables simples {{variable}}
-  rendered = rendered.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+  rendered = rendered.replace(/\{\{(\w+)\}\}/g, (_match, varName) => {
     const value = variables[varName];
     if (value === undefined || value === null) {
       return '';

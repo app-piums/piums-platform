@@ -12,7 +12,7 @@ export class PaymentController {
 
   async createPaymentIntent(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const validated = createPaymentIntentSchema.parse(req.body);
 
       const paymentIntent = await paymentService.createPaymentIntent({
@@ -28,8 +28,8 @@ export class PaymentController {
 
   async getPaymentIntent(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
-      const { id } = req.params;
+      const userId = req.user!.id;
+      const id = req.params['id'] as string;
 
       const paymentIntent = await paymentService.getPaymentIntent(id, userId);
 
@@ -41,7 +41,7 @@ export class PaymentController {
 
   async confirmPaymentIntent(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const validated = confirmPaymentSchema.parse(req.body);
 
       const paymentIntent = await paymentService.confirmPaymentIntent(
@@ -57,8 +57,8 @@ export class PaymentController {
 
   async cancelPaymentIntent(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
-      const { paymentIntentId } = req.params;
+      const userId = req.user!.id;
+      const paymentIntentId = req.params['paymentIntentId'] as string;
 
       const paymentIntent = await paymentService.cancelPaymentIntent(
         paymentIntentId,
@@ -75,7 +75,7 @@ export class PaymentController {
 
   async searchPayments(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const validated = searchPaymentsSchema.parse(req.query);
 
       const result = await paymentService.searchPayments({
@@ -93,8 +93,8 @@ export class PaymentController {
 
   async getPaymentById(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
-      const { id } = req.params;
+      const userId = req.user!.id;
+      const id = req.params['id'] as string;
 
       const payment = await paymentService.getPaymentById(id, userId);
 
@@ -108,7 +108,7 @@ export class PaymentController {
 
   async createRefund(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const validated = createRefundSchema.parse(req.body);
 
       const refund = await paymentService.createRefund({
@@ -124,7 +124,7 @@ export class PaymentController {
 
   async getRefundById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params['id'] as string;
 
       const refund = await paymentService.getRefundById(id);
 
@@ -138,7 +138,7 @@ export class PaymentController {
 
   async getPaymentStats(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const { startDate, endDate } = req.query;
 
       const stats = await paymentService.getPaymentStats({

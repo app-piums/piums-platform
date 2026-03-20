@@ -7,7 +7,7 @@ import {
   preferencesRateLimiter,
 } from '../middleware/rateLimiter';
 
-const router = Router();
+const router: Router = Router();
 
 // ============================================================================
 // Send Notifications

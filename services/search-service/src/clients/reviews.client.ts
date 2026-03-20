@@ -27,7 +27,7 @@ export const reviewsClient = {
         throw new Error(`Reviews service error: ${response.statusText}`);
       }
 
-      return await response.json();
+      return (await response.json()) as ArtistRating;
     } catch (error: any) {
       // If reviews service is down or artist has no reviews, return null
       return null;

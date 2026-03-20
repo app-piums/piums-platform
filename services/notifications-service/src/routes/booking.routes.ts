@@ -6,7 +6,7 @@ import {
   sendBookingReminder2h,
 } from '../controller/booking.controller';
 
-const router = Router();
+const router: Router = Router();
 
 // Enviar notificaciones cuando se crea una reserva
 router.post('/created', sendBookingCreatedNotification);

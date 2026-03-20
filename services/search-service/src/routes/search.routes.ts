@@ -3,7 +3,7 @@ import { searchController } from '../controller/search.controller';
 import { searchLimiter, autocompleteLimiter, indexLimiter } from '../middleware/rateLimiter';
 import { optionalAuth, requireAuth } from '../middleware/auth.middleware';
 
-const router = Router();
+const router: Router = Router();
 
 // Public search endpoints
 router.get('/artists', optionalAuth, searchLimiter, searchController.searchArtists);

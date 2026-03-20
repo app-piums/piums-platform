@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { mediaService } from "../services/media.service";
 import { MediaType, MediaEntityType } from "@prisma/client";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 export class MediaController {
   // ==================== CREATE MEDIA ====================
 
-  async createMedia(req: Request, res: Response, next: NextFunction) {
+  async createMedia(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const {
         mediaType,
         entityType,
@@ -78,7 +79,7 @@ export class MediaController {
 
   async getMediaById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const media = await mediaService.getMediaById(id);
 
@@ -92,7 +93,8 @@ export class MediaController {
 
   async listMediaByEntity(req: Request, res: Response, next: NextFunction) {
     try {
-      const { entityType, entityId } = req.params;
+      const entityType = req.params.entityType as string;
+      const entityId = req.params.entityId as string;
       const { mediaType, isPublic, isFeatured } = req.query;
 
       const media = await mediaService.listMediaByEntity(
@@ -115,7 +117,7 @@ export class MediaController {
 
   async updateMedia(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { title, description, altText, order, isFeatured, isPublic, tags } = req.body;
 
       const media = await mediaService.updateMedia(id, {
@@ -136,10 +138,10 @@ export class MediaController {
 
   // ==================== DELETE MEDIA ====================
 
-  async deleteMedia(req: Request, res: Response, next: NextFunction) {
+  async deleteMedia(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const userId = req.user!.userId;
+      const id = req.params.id as string;
+      const userId = req.user!.id;
 
       await mediaService.deleteMedia(id, userId);
 
@@ -153,7 +155,8 @@ export class MediaController {
 
   async reorderMedia(req: Request, res: Response, next: NextFunction) {
     try {
-      const { entityType, entityId } = req.params;
+      const entityType = req.params.entityType as string;
+      const entityId = req.params.entityId as string;
       const { items } = req.body;
 
       if (!items || !Array.isArray(items)) {
@@ -176,7 +179,7 @@ export class MediaController {
 
   async setFeatured(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { isFeatured } = req.body;
 
       if (isFeatured === undefined) {
@@ -195,7 +198,8 @@ export class MediaController {
 
   async getMediaStats(req: Request, res: Response, next: NextFunction) {
     try {
-      const { entityType, entityId } = req.params;
+      const entityType = req.params.entityType as string;
+      const entityId = req.params.entityId as string;
 
       const stats = await mediaService.getMediaStats(
         entityType as MediaEntityType,
@@ -210,9 +214,9 @@ export class MediaController {
 
   // ==================== BULK DELETE ====================
 
-  async bulkDeleteMedia(req: Request, res: Response, next: NextFunction) {
+  async bulkDeleteMedia(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const { mediaIds } = req.body;
 
       if (!mediaIds || !Array.isArray(mediaIds)) {

@@ -85,7 +85,7 @@ export const deletePaymentMethod = async (
       throw new AppError(401, "No autenticado");
     }
 
-    const { id } = req.params;
+    const id = req.params['id'] as string;
 
     await paymentMethodService.deletePaymentMethod(userId, id);
 
@@ -114,7 +114,7 @@ export const setDefaultPaymentMethod = async (
       throw new AppError(401, "No autenticado");
     }
 
-    const { id } = req.params;
+    const id = req.params['id'] as string;
 
     const method = await paymentMethodService.setDefaultPaymentMethod(
       userId,

@@ -45,8 +45,7 @@ interface BookingEmailData {
 export async function sendBookingCreatedClientEmail(data: BookingEmailData) {
   try {
     const startDate = new Date(data.scheduledDate);
-    const endDate = new Date(startDate.getTime() + data.durationMinutes * 60000);
-    
+    // endDate calculado pero no usado en este template
     const variables = {
       bookingCode: data.bookingCode,
       clientName: data.clientName,
@@ -94,8 +93,7 @@ export async function sendBookingCreatedClientEmail(data: BookingEmailData) {
 export async function sendBookingCreatedArtistEmail(data: BookingEmailData) {
   try {
     const startDate = new Date(data.scheduledDate);
-    const endDate = new Date(startDate.getTime() + data.durationMinutes * 60000);
-    
+    // endDate calculado pero no usado en este template
     const variables = {
       bookingCode: data.bookingCode,
       artistName: data.artistName,

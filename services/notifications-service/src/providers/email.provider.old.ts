@@ -22,12 +22,12 @@ class EmailProvider {
   private transporter: Transporter | null = null;
   private enabled: boolean;
   private providerType: EmailProviderType;
-  private fromEmail: string;
+  private readonly _fromEmail: string;
 
   constructor() {
     this.enabled = process.env.ENABLE_EMAIL === 'true';
     this.providerType = this.enabled ? (process.env.EMAIL_PROVIDER as EmailProviderType || 'nodemailer') : 'disabled';
-    this.fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@piums.com';
+    this._fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@piums.com';
     
     if (this.enabled) {
       this.initialize();

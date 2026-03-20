@@ -36,7 +36,7 @@ export const artistsClient = {
         throw new Error(`Artists service error: ${response.statusText}`);
       }
 
-      return await response.json();
+      return (await response.json()) as ArtistData;
     } catch (error: any) {
       throw new AppError(`Error fetching artist: ${error.message}`, 500);
     }
@@ -50,7 +50,7 @@ export const artistsClient = {
         throw new Error(`Artists service error: ${response.statusText}`);
       }
 
-      return await response.json();
+      return (await response.json()) as { artists: ArtistData[], pagination: any };
     } catch (error: any) {
       throw new AppError(`Error fetching artists: ${error.message}`, 500);
     }

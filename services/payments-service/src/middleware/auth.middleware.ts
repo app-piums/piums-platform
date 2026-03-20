@@ -5,8 +5,9 @@ import { AppError } from "./errorHandler";
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 interface JwtPayload {
-  userId: string;
+  id: string;
   email: string;
+  role?: string;
 }
 
 declare global {
@@ -17,9 +18,13 @@ declare global {
   }
 }
 
+export interface AuthRequest extends Request {
+  user: JwtPayload;
+}
+
 export const authenticateToken = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -47,7 +52,7 @@ export const authenticateToken = (
 // Middleware opcional de autenticación
 export const optionalAuth = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {

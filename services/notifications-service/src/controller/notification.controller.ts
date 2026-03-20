@@ -67,7 +67,7 @@ export class NotificationController {
 
       return res.status(200).json(result);
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -77,7 +77,7 @@ export class NotificationController {
 
   async getNotificationById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const notification = await notificationService.getNotificationById(id);
 
       res.status(200).json(notification);
@@ -111,7 +111,7 @@ export class NotificationController {
 
   async deleteNotification(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user!.id;
       const result = await notificationService.deleteNotification(id, userId);
 
@@ -138,7 +138,7 @@ export class NotificationController {
 
   async getTemplateByKey(req: Request, res: Response, next: NextFunction) {
     try {
-      const { key } = req.params;
+      const key = req.params.key as string;
       const template = await notificationService.getTemplateByKey(key);
 
       res.status(200).json(template);
@@ -163,7 +163,7 @@ export class NotificationController {
 
   async updateTemplate(req: Request, res: Response, next: NextFunction) {
     try {
-      const { key } = req.params;
+      const key = req.params.key as string;
       const data = updateTemplateSchema.parse(req.body);
       const template = await notificationService.updateTemplate(key, data);
 
@@ -175,7 +175,7 @@ export class NotificationController {
 
   async deleteTemplate(req: Request, res: Response, next: NextFunction) {
     try {
-      const { key } = req.params;
+      const key = req.params.key as string;
       const result = await notificationService.deleteTemplate(key);
 
       res.status(200).json(result);

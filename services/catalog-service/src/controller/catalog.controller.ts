@@ -26,7 +26,7 @@ export class CatalogController {
 
   async getCategoryById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const category = await catalogService.getCategoryById(id);
       res.json(category);
     } catch (error) {
@@ -46,7 +46,7 @@ export class CatalogController {
 
   async updateCategory(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const validatedData = updateCategorySchema.parse(req.body);
       const category = await catalogService.updateCategory(id, validatedData);
       res.json(category);
@@ -57,7 +57,7 @@ export class CatalogController {
 
   async deleteCategory(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       await catalogService.deleteCategory(id);
       res.status(204).send();
     } catch (error) {
@@ -91,7 +91,7 @@ export class CatalogController {
 
   async getServiceById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const incrementView = req.query.view === "true";
       const service = await catalogService.getServiceById(id, incrementView);
       res.json(service);
@@ -112,7 +112,7 @@ export class CatalogController {
 
   async updateService(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { artistId } = req.body;
       
       if (!artistId) {
@@ -129,7 +129,7 @@ export class CatalogController {
 
   async deleteService(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const artistId = req.query.artistId as string;
 
       if (!artistId) {
@@ -145,7 +145,7 @@ export class CatalogController {
 
   async toggleServiceStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { artistId } = req.body;
 
       if (!artistId) {
@@ -163,7 +163,7 @@ export class CatalogController {
 
   async createAddon(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { serviceId } = req.params;
+      const serviceId = req.params.serviceId as string;
       const { artistId } = req.body;
 
       if (!artistId) {
@@ -180,7 +180,7 @@ export class CatalogController {
 
   async updateAddon(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { addonId } = req.params;
+      const addonId = req.params.addonId as string;
       const { artistId, ...data } = req.body;
 
       if (!artistId) {
@@ -196,7 +196,7 @@ export class CatalogController {
 
   async deleteAddon(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { addonId } = req.params;
+      const addonId = req.params.addonId as string;
       const artistId = req.query.artistId as string;
 
       if (!artistId) {
@@ -230,7 +230,7 @@ export class CatalogController {
 
   async getPackagesByArtist(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params.artistId as string;
       const packages = await catalogService.getPackagesByArtist(artistId);
       res.json(packages);
     } catch (error) {
@@ -240,7 +240,7 @@ export class CatalogController {
 
   async updatePackage(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { artistId, ...data } = req.body;
 
       if (!artistId) {
@@ -256,7 +256,7 @@ export class CatalogController {
 
   async deletePackage(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const artistId = req.query.artistId as string;
 
       if (!artistId) {

@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
@@ -43,7 +43,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 };
 
 // Optional authentication (doesn't fail if no token)
-export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     

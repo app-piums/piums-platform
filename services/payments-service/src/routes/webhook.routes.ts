@@ -1,11 +1,11 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response } from "express";
 import { stripeProvider } from "../providers/stripe.provider";
 import { paymentService } from "../services/payment.service";
 import { logger } from "../utils/logger";
 import { webhookLimiter } from "../middleware/rateLimiter";
 import { PrismaClient, PaymentType } from "@prisma/client";
 
-const router = Router();
+const router: Router = Router();
 const prisma = new PrismaClient();
 
 /**
@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 router.post(
   "/stripe",
   webhookLimiter,
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     try {
       const signature = req.headers["stripe-signature"] as string;
 
@@ -75,6 +75,7 @@ router.post(
       });
 
       res.json({ received: true });
+      return;
     } catch (error: any) {
       logger.error("Error procesando webhook", "WEBHOOK_HANDLER", {
         error: error.message,
@@ -93,7 +94,7 @@ router.post(
           .catch(() => {});
       }
 
-      res.status(400).send(`Webhook Error: ${error.message}`);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
     }
   }
 );

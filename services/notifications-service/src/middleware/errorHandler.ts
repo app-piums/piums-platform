@@ -18,7 +18,7 @@ export const errorHandler = (
   err: Error | AppError | ZodError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   logger.error('Error occurred', 'ERROR_HANDLER', {
     message: err.message,

@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
 
-const router = Router();
+const router: Router = Router();
 
-router.get("/", (req: Request, res: Response) => {
+router.get("/", (_req: Request, res: Response) => {
   res.json({
     status: "healthy",
     service: "payments-service",

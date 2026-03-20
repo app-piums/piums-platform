@@ -2,7 +2,7 @@ import { Router } from "express";
 import { payoutController } from "../controller/payout.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== PAYOUTS ====================
 

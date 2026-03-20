@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { locationService } from "../services/location.service";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== COUNTRIES ====================
 

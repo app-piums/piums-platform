@@ -17,7 +17,7 @@ export const errorHandler = (
   err: Error | AppError | ZodError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   // Log del error
   logger.error("Error capturado", "ERROR_HANDLER", {
@@ -48,7 +48,7 @@ export const errorHandler = (
   }
 
   // Errores no manejados
-  res.status(500).json({
+  return res.status(500).json({
     status: "error",
     message: "Error interno del servidor",
   });

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { mediaController } from "../controller/media.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== MEDIA ASSETS ====================
 

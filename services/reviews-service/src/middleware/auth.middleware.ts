@@ -23,7 +23,7 @@ export interface AuthRequest extends Request {
 
 export const authenticateToken = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -51,7 +51,7 @@ export const authenticateToken = (
 // Middleware opcional de autenticación
 export const optionalAuth = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {

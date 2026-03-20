@@ -38,7 +38,7 @@ export const catalogClient = {
         throw new Error(`Catalog service error: ${response.statusText}`);
       }
 
-      return await response.json();
+      return (await response.json()) as ServiceData;
     } catch (error: any) {
       throw new AppError(`Error fetching service: ${error.message}`, 500);
     }
@@ -52,7 +52,7 @@ export const catalogClient = {
         throw new Error(`Catalog service error: ${response.statusText}`);
       }
 
-      return await response.json();
+      return (await response.json()) as { services: ServiceData[], pagination: any };
     } catch (error: any) {
       throw new AppError(`Error fetching services: ${error.message}`, 500);
     }
@@ -66,7 +66,7 @@ export const catalogClient = {
         throw new Error(`Catalog service error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as { services: ServiceData[] };
       return data.services || [];
     } catch (error: any) {
       throw new AppError(`Error fetching artist services: ${error.message}`, 500);

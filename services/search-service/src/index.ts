@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Express } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { logger } from './utils/logger';
@@ -10,7 +10,7 @@ import searchRoutes from './routes/search.routes';
 // Load environment variables
 dotenv.config();
 
-const app = express();
+const app: Express = express();
 const PORT = process.env.PORT || 4009;
 
 // Middleware
@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(apiLimiter);
 
 // Request logging
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.debug('REQUEST', {
     method: req.method,
     path: req.path,

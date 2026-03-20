@@ -31,7 +31,7 @@ export class ReviewController {
 
   async getReviewById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const review = await reviewService.getReviewById(id);
       res.json(review);
@@ -53,7 +53,7 @@ export class ReviewController {
 
   async updateReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user.userId;
       const data = updateReviewSchema.parse(req.body);
 
@@ -66,7 +66,7 @@ export class ReviewController {
 
   async deleteReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user.userId;
 
       const review = await reviewService.deleteReview(id, userId);
@@ -80,7 +80,7 @@ export class ReviewController {
 
   async respondToReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id: reviewId } = req.params;
+      const reviewId = req.params.id as string;
       const artistId = req.user.userId;
       const { message } = respondReviewSchema.parse(req.body);
 
@@ -93,7 +93,7 @@ export class ReviewController {
 
   async updateResponse(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id: responseId } = req.params;
+      const responseId = req.params.id as string;
       const artistId = req.user.userId;
       const { message } = respondReviewSchema.parse(req.body);
 
@@ -106,7 +106,7 @@ export class ReviewController {
 
   async deleteResponse(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id: responseId } = req.params;
+      const responseId = req.params.id as string;
       const artistId = req.user.userId;
 
       const response = await reviewService.deleteResponse(responseId, artistId);
@@ -120,7 +120,7 @@ export class ReviewController {
 
   async markHelpful(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id: reviewId } = req.params;
+      const reviewId = req.params.id as string;
       const userId = req.user.userId;
       const { isHelpful } = markHelpfulSchema.parse(req.body);
 
@@ -135,7 +135,7 @@ export class ReviewController {
 
   async reportReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id: reviewId } = req.params;
+      const reviewId = req.params.id as string;
       const userId = req.user.userId;
       const { reason, description } = reportReviewSchema.parse(req.body);
 
@@ -163,7 +163,7 @@ export class ReviewController {
 
   async getArtistRating(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params.artistId as string;
 
       const rating = await reviewService.getArtistRating(artistId);
       res.json(rating);
@@ -174,7 +174,7 @@ export class ReviewController {
 
   async updateArtistRating(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params.artistId as string;
 
       await reviewService.updateArtistRating(artistId);
       const rating = await reviewService.getArtistRating(artistId);

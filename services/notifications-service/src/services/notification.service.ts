@@ -1,4 +1,4 @@
-import { PrismaClient, NotificationChannel, NotificationStatus, NotificationType } from '@prisma/client';
+import { PrismaClient, NotificationChannel, NotificationStatus } from '@prisma/client';
 import { emailProvider } from '../providers/email.provider';
 import { smsProvider } from '../providers/sms.provider';
 import { pushProvider } from '../providers/push.provider';
@@ -159,7 +159,7 @@ export class NotificationService {
       // Send notification
       return await this.sendNotification({
         userId: data.userId,
-        type: template.type as NotificationType,
+        type: template.type as any,
         channel: data.channel,
         title,
         message,

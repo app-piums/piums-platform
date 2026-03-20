@@ -240,8 +240,8 @@ export class MediaService {
     const where = {
       entityType,
       entityId,
-      deletedAt: null,
-      status: "READY",
+      deletedAt: null as null,
+      status: "READY" as const,
     };
 
     const [total, byType, totalSize] = await Promise.all([
@@ -263,8 +263,8 @@ export class MediaService {
         type: t.mediaType,
         count: t._count,
       })),
-      totalSizeBytes: totalSize._sum.fileSize || 0,
-      totalSizeMB: ((totalSize._sum.fileSize || 0) / 1024 / 1024).toFixed(2),
+      totalSizeBytes: totalSize._sum?.fileSize || 0,
+      totalSizeMB: ((totalSize._sum?.fileSize || 0) / 1024 / 1024).toFixed(2),
     };
   }
 

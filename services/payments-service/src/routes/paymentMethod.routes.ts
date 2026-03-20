@@ -1,9 +1,11 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { paymentMethodController } from "../controller/paymentMethod.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { createPaymentLimiter } from "../middleware/rateLimiter";
 
-const router = Router();
+const router: Router = Router();
+const auth = authenticateToken as RequestHandler;
+const asHandler = (fn: Function): RequestHandler => fn as unknown as RequestHandler;
 
 // ==================== PAYMENT METHODS ====================
 
@@ -13,8 +15,8 @@ const router = Router();
  */
 router.get(
   "/methods",
-  authenticateToken,
-  paymentMethodController.getPaymentMethods
+  auth,
+  asHandler(paymentMethodController.getPaymentMethods)
 );
 
 /**
@@ -23,9 +25,9 @@ router.get(
  */
 router.post(
   "/methods",
-  authenticateToken,
+  auth,
   createPaymentLimiter,
-  paymentMethodController.addPaymentMethod
+  asHandler(paymentMethodController.addPaymentMethod)
 );
 
 /**
@@ -34,8 +36,8 @@ router.post(
  */
 router.delete(
   "/methods/:id",
-  authenticateToken,
-  paymentMethodController.deletePaymentMethod
+  auth,
+  asHandler(paymentMethodController.deletePaymentMethod)
 );
 
 /**
@@ -44,8 +46,8 @@ router.delete(
  */
 router.patch(
   "/methods/:id/default",
-  authenticateToken,
-  paymentMethodController.setDefaultPaymentMethod
+  auth,
+  asHandler(paymentMethodController.setDefaultPaymentMethod)
 );
 
 export default router;

@@ -1,4 +1,4 @@
-import { PrismaClient, ReviewStatus, ReportReason, ReportStatus } from "@prisma/client";
+import { PrismaClient, ReviewStatus, ReportReason } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { bookingClient } from "../clients/booking.client";
@@ -298,7 +298,7 @@ export class ReviewService {
     }
 
     // Verificar que no exista ya una respuesta
-    if (review.response) {
+    if ((review as any).response) {
       throw new AppError(409, "Ya has respondido a esta reseña");
     }
 
@@ -402,7 +402,7 @@ export class ReviewService {
    * Marcar reseña como útil o no útil
    */
   async markHelpful(reviewId: string, userId: string, isHelpful: boolean) {
-    const review = await this.getReviewById(reviewId, false);
+    await this.getReviewById(reviewId, false);
 
     // TODO: Implementar sistema para evitar votos duplicados (requiere tabla adicional)
     // Por ahora, incrementamos directamente
@@ -436,7 +436,7 @@ export class ReviewService {
     reason: ReportReason,
     description?: string
   ) {
-    const review = await this.getReviewById(reviewId, false);
+    await this.getReviewById(reviewId, false);
 
     const report = await prisma.reviewReport.create({
       data: {

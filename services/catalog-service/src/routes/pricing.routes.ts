@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { calculatePrice, getPricingSummary, validatePricing } from '../controller/pricing.controller';
 
-const router = Router();
+const router: Router = Router();
 
 // Calcular precio completo de un servicio
 router.post('/calculate', calculatePrice);

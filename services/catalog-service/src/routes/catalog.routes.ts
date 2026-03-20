@@ -7,7 +7,7 @@ import {
   searchLimiter,
 } from "../middleware/rateLimiter";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== CATEGORÍAS ====================
 

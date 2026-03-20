@@ -1,6 +1,6 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { reviewController } from "../controller/review.controller";
-import { authenticateToken, optionalAuth } from "../middleware/auth.middleware";
+import { authenticateToken } from "../middleware/auth.middleware";
 import {
   createReviewLimiter,
   responseReviewLimiter,
@@ -8,42 +8,44 @@ import {
   markHelpfulLimiter,
 } from "../middleware/rateLimiter";
 
-const router = Router();
+const router: Router = Router();
+const asHandler = (fn: Function): RequestHandler => fn as unknown as RequestHandler;
+const auth = authenticateToken as RequestHandler;
 
 // ==================== REVIEWS ====================
 
 // Crear reseña (requiere autenticación)
 router.post(
   "/reviews",
-  authenticateToken,
+  auth,
   createReviewLimiter,
-  reviewController.createReview.bind(reviewController)
+  asHandler(reviewController.createReview.bind(reviewController))
 );
 
 // Obtener reseña por ID (público)
 router.get(
   "/reviews/:id",
-  reviewController.getReviewById.bind(reviewController)
+  asHandler(reviewController.getReviewById.bind(reviewController))
 );
 
 // Listar reseñas con filtros (público)
 router.get(
   "/reviews",
-  reviewController.getReviews.bind(reviewController)
+  asHandler(reviewController.getReviews.bind(reviewController))
 );
 
 // Actualizar reseña (requiere autenticación)
 router.patch(
   "/reviews/:id",
-  authenticateToken,
-  reviewController.updateReview.bind(reviewController)
+  auth,
+  asHandler(reviewController.updateReview.bind(reviewController))
 );
 
 // Eliminar reseña (requiere autenticación)
 router.delete(
   "/reviews/:id",
-  authenticateToken,
-  reviewController.deleteReview.bind(reviewController)
+  auth,
+  asHandler(reviewController.deleteReview.bind(reviewController))
 );
 
 // ==================== RESPONSES ====================
@@ -51,23 +53,23 @@ router.delete(
 // Responder a reseña (artistas)
 router.post(
   "/reviews/:id/respond",
-  authenticateToken,
+  auth,
   responseReviewLimiter,
-  reviewController.respondToReview.bind(reviewController)
+  asHandler(reviewController.respondToReview.bind(reviewController))
 );
 
 // Actualizar respuesta
 router.patch(
   "/responses/:id",
-  authenticateToken,
-  reviewController.updateResponse.bind(reviewController)
+  auth,
+  asHandler(reviewController.updateResponse.bind(reviewController))
 );
 
 // Eliminar respuesta
 router.delete(
   "/responses/:id",
-  authenticateToken,
-  reviewController.deleteResponse.bind(reviewController)
+  auth,
+  asHandler(reviewController.deleteResponse.bind(reviewController))
 );
 
 // ==================== HELPFUL VOTES ====================
@@ -75,9 +77,9 @@ router.delete(
 // Marcar reseña como útil/no útil
 router.post(
   "/reviews/:id/helpful",
-  authenticateToken,
+  auth,
   markHelpfulLimiter,
-  reviewController.markHelpful.bind(reviewController)
+  asHandler(reviewController.markHelpful.bind(reviewController))
 );
 
 // ==================== REPORTS ====================
@@ -85,16 +87,16 @@ router.post(
 // Reportar reseña
 router.post(
   "/reviews/:id/report",
-  authenticateToken,
+  auth,
   reportReviewLimiter,
-  reviewController.reportReview.bind(reviewController)
+  asHandler(reviewController.reportReview.bind(reviewController))
 );
 
 // Obtener reportes pendientes (admin)
 router.get(
   "/reports/pending",
-  authenticateToken,
-  reviewController.getPendingReports.bind(reviewController)
+  auth,
+  asHandler(reviewController.getPendingReports.bind(reviewController))
 );
 
 // ==================== ARTIST RATINGS ====================
@@ -102,14 +104,14 @@ router.get(
 // Obtener estadísticas de artista (público)
 router.get(
   "/artists/:artistId/rating",
-  reviewController.getArtistRating.bind(reviewController)
+  asHandler(reviewController.getArtistRating.bind(reviewController))
 );
 
 // Recalcular estadísticas de artista (admin/internal)
 router.post(
   "/artists/:artistId/rating/update",
-  authenticateToken,
-  reviewController.updateArtistRating.bind(reviewController)
+  auth,
+  asHandler(reviewController.updateArtistRating.bind(reviewController))
 );
 
 export default router;

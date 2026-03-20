@@ -37,7 +37,7 @@ export const calculatePrice = async (req: Request, res: Response) => {
  */
 export const getPricingSummary = async (req: Request, res: Response) => {
   try {
-    const { serviceId } = req.params;
+    const serviceId = req.params.serviceId as string;
 
     const summary = await getServicePricingSummary(serviceId);
 
@@ -56,7 +56,7 @@ export const getPricingSummary = async (req: Request, res: Response) => {
  */
 export const validatePricing = async (req: Request, res: Response) => {
   try {
-    const { serviceId } = req.params;
+    const serviceId = req.params.serviceId as string;
 
     const validation = await validateServicePricing(serviceId);
 

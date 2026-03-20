@@ -3,7 +3,7 @@ import { paymentController } from "../controller/payment.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { createPaymentLimiter, refundLimiter } from "../middleware/rateLimiter";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== PAYMENT INTENTS ====================
 

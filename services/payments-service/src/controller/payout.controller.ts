@@ -40,8 +40,9 @@ export class PayoutController {
       });
 
       res.status(201).json(payout);
+      return;
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -49,7 +50,7 @@ export class PayoutController {
 
   async processPayout(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params['id'] as string;
 
       const payout = await payoutService.processPayout(id);
 
@@ -66,7 +67,7 @@ export class PayoutController {
 
   async getPayoutById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params['id'] as string;
 
       const payout = await payoutService.getPayoutById(id);
 
@@ -112,7 +113,7 @@ export class PayoutController {
 
   async getArtistPayouts(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params['artistId'] as string;
       const { status, fromDate, toDate } = req.query;
 
       const result = await payoutService.getArtistPayouts(artistId, {
@@ -131,7 +132,7 @@ export class PayoutController {
 
   async cancelPayout(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params['id'] as string;
       const { reason } = req.body;
 
       const payout = await payoutService.cancelPayout(id, reason);
@@ -163,8 +164,9 @@ export class PayoutController {
       );
 
       res.json(calculation);
+      return;
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -172,7 +174,7 @@ export class PayoutController {
 
   async getArtistPayoutStats(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params['artistId'] as string;
 
       const stats = await payoutService.getArtistPayoutStats(artistId);
 
@@ -186,7 +188,7 @@ export class PayoutController {
 
   async syncPayoutStatus(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params['id'] as string;
 
       const payout = await payoutService.syncPayoutStatus(id);
 

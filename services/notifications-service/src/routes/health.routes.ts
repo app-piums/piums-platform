@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 
-const router = Router();
+const router: Router = Router();
 
-router.get('/health', (req: Request, res: Response) => {
+router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
     service: 'notifications-service',

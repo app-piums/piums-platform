@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { categoryService } from "../services/category.service";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== CATEGORIES ====================
 

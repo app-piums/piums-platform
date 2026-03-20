@@ -403,7 +403,7 @@ export class PaymentService {
         requestedBy: data.requestedBy,
         amount: refundAmount,
         currency: payment.currency,
-        status: this.mapStripeRefundStatus(stripeRefund.status),
+        status: this.mapStripeRefundStatus(stripeRefund.status ?? 'pending'),
         reason: data.reason,
         metadata: data.metadata,
         processedAt: stripeRefund.status === "succeeded" ? new Date() : undefined,

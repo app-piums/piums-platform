@@ -72,7 +72,11 @@ export class ArtistsClient {
         return null;
       }
 
-      return await response.json();
+      return (await response.json()) as {
+        stripeAccountId: string | null;
+        isConnected: boolean;
+        canReceivePayouts: boolean;
+      };
     } catch (error) {
       console.error(
         "[ArtistsClient] Error de conexión con artists-service:",

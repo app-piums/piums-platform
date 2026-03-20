@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(apiRateLimiter);
 
 // Request logging
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`, 'HTTP_REQUEST', {
     ip: req.ip,
     userAgent: req.get('user-agent'),
