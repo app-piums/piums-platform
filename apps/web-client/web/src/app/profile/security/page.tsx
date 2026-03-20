@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { sdk } from '@piums/sdk';
 
 export default function SecurityTab() {
   const [loading, setLoading] = useState(false);
@@ -14,10 +11,7 @@ export default function SecurityTab() {
   });
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswordData({
-      ...passwordData,
-      [e.target.name]: e.target.value,
-    });
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
   };
 
   const validatePassword = () => {
@@ -38,25 +32,13 @@ export default function SecurityTab() {
 
   const handleSubmitPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validatePassword()) return;
-
     try {
       setLoading(true);
-      
-      // TODO: Call SDK to change password
-      // await sdk.changePassword({ 
-      //   currentPassword: passwordData.currentPassword,
-      //   newPassword: passwordData.newPassword 
-      // });
-      
+      // TODO: await sdk.changePassword({ currentPassword, newPassword })
       setTimeout(() => {
         setLoading(false);
-        setPasswordData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         alert('Contraseña actualizada correctamente');
       }, 1000);
     } catch (error) {
@@ -70,15 +52,13 @@ export default function SecurityTab() {
     if (password.length === 0) return '';
     if (password.length < 6) return 'Muy débil';
     if (password.length < 8) return 'Débil';
-    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-      return 'Regular';
-    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) return 'Regular';
     if (!/[!@#$%^&*]/.test(password)) return 'Buena';
     return 'Excelente';
   };
 
   const passwordStrength = getPasswordStrength(passwordData.newPassword);
-  const strengthColors = {
+  const strengthColors: Record<string, string> = {
     'Muy débil': 'text-red-600',
     'Débil': 'text-orange-600',
     'Regular': 'text-yellow-600',
@@ -86,121 +66,119 @@ export default function SecurityTab() {
     'Excelente': 'text-green-700',
   };
 
+  const inputClass = "w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#FF6A00] focus:outline-none focus:ring-1 focus:ring-[#FF6A00]";
+
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Seguridad</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Administra tu contraseña y configuraciones de seguridad
-        </p>
+        <p className="text-sm text-gray-600 mt-1">Administra tu contraseña y configuraciones de seguridad</p>
       </div>
 
-      {/* Change Password Section */}
+      {/* Change Password */}
       <div className="mb-8 pb-8 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar contraseña</h3>
-        
-        <form onSubmit={handleSubmitPasswordChange} className="max-w-xl">
-          <div className="space-y-5">
-            <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña actual <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="currentPassword"
-                name="currentPassword"
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmitPasswordChange} className="max-w-xl space-y-5">
+          <div>
+            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Contraseña actual <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="currentPassword"
+              name="currentPassword"
+              type="password"
+              value={passwordData.currentPassword}
+              onChange={handlePasswordChange}
+              required
+              className={inputClass}
+            />
+          </div>
 
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Nueva contraseña <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                value={passwordData.newPassword}
-                onChange={handlePasswordChange}
-                required
-                minLength={8}
-              />
-              {passwordData.newPassword && (
-                <p className={`text-sm mt-1 ${strengthColors[passwordStrength as keyof typeof strengthColors]}`}>
-                  Fortaleza: {passwordStrength}
-                </p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Mínimo 8 caracteres. Se recomienda incluir mayúsculas, minúsculas, números y símbolos.
+          <div>
+            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Nueva contraseña <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="newPassword"
+              name="newPassword"
+              type="password"
+              value={passwordData.newPassword}
+              onChange={handlePasswordChange}
+              required
+              minLength={8}
+              className={inputClass}
+            />
+            {passwordData.newPassword && (
+              <p className={`text-sm mt-1 ${strengthColors[passwordStrength] ?? ''}`}>
+                Fortaleza: {passwordStrength}
               </p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirmar nueva contraseña <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-              {passwordData.confirmPassword && (
-                <p className={`text-sm mt-1 ${
-                  passwordData.newPassword === passwordData.confirmPassword 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-                }`}>
-                  {passwordData.newPassword === passwordData.confirmPassword 
-                    ? '✓ Las contraseñas coinciden' 
-                    : '✗ Las contraseñas no coinciden'}
-                </p>
-              )}
-            </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Mínimo 8 caracteres. Incluye mayúsculas, minúsculas, números y símbolos.
+            </p>
           </div>
 
-          <div className="mt-6">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
-            </Button>
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Confirmar nueva contraseña <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={handlePasswordChange}
+              required
+              className={inputClass}
+            />
+            {passwordData.confirmPassword && (
+              <p className={`text-sm mt-1 ${passwordData.newPassword === passwordData.confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
+                {passwordData.newPassword === passwordData.confirmPassword ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
+              </p>
+            )}
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-lg hover:bg-[#e55f00] transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
+          </button>
         </form>
       </div>
 
-      {/* Two-Factor Authentication (Future Feature) */}
+      {/* Two-Factor Auth */}
       <div className="mb-8 pb-8 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Autenticación de dos factores</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Añade una capa extra de seguridad a tu cuenta
-        </p>
-        <Button variant="outline" disabled>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Autenticación de dos factores</h3>
+        <p className="text-sm text-gray-600 mb-4">Añade una capa extra de seguridad a tu cuenta</p>
+        <button
+          disabled
+          className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed"
+        >
           Próximamente
-        </Button>
+        </button>
       </div>
 
-      {/* Sessions */}
+      {/* Active Sessions */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Sesiones activas</h3>
-        <p className="text-sm text-gray-600 mb-4">
- Administra tus sesiones en distintos dispositivos
-        </p>
-        <div className="bg-gray-50 rounded-lg p-4 mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Sesiones activas</h3>
+        <p className="text-sm text-gray-600 mb-4">Administra tus sesiones en distintos dispositivos</p>
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-gray-900">Dispositivo actual</p>
-              <p className="text-sm text-gray-600">Tu sesión actual</p>
+              <p className="font-medium text-gray-900 text-sm">Dispositivo actual</p>
+              <p className="text-xs text-gray-500 mt-0.5">Tu sesión actual</p>
             </div>
-            <span className="text-sm text-green-600 font-medium">Activa</span>
+            <span className="text-xs font-semibold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Activa</span>
           </div>
         </div>
-        <Button variant="outline" disabled>
+        <button
+          disabled
+          className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed"
+        >
           Ver todas las sesiones
-        </Button>
+        </button>
       </div>
     </div>
   );

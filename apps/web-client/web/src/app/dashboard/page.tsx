@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -110,7 +109,6 @@ function MiniCalendar() {
 }
 
 export default function DashboardPage() {
-  const { t } = useTranslation('dashboard');
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [search, setSearch] = useState('');
@@ -121,18 +119,20 @@ export default function DashboardPage() {
 
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
 
+  const displayName = user?.nombre ?? 'Usuario';
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Sidebar */}
-      <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+      <ClientSidebar userName={displayName} />
 
       {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top Header — desktop only (mobile has ClientSidebar header) */}
+        <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{t('title')}</h1>
-            <p className="text-sm text-gray-400">{t('subtitle')}</p>
+            <h1 className="text-xl font-bold text-gray-900">¡Hola, {displayName}! 👋</h1>
+            <p className="text-sm text-gray-400">Descubre el mejor talento creativo cerca de ti</p>
           </div>
           <div className="flex items-center gap-4">
             {/* Search */}
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder={t('searchPlaceholder')}
+                placeholder="Buscar artistas, estilos..."
                 className="pl-9 pr-4 py-2 w-72 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00]"
               />
             </form>
@@ -158,23 +158,44 @@ export default function DashboardPage() {
         </header>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="flex gap-8">
+        <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8 pb-20 lg:pb-8">
+          {/* Mobile greeting */}
+          <div className="lg:hidden mb-5">
+            <h1 className="text-xl font-bold text-gray-900">¡Hola, {displayName}! 👋</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Descubre el mejor talento creativo cerca de ti</p>
+          </div>
+          {/* Mobile search */}
+          <form
+            onSubmit={(e) => { e.preventDefault(); router.push(`/artists?q=${search}`); }}
+            className="relative lg:hidden mb-5"
+          >
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar artistas, estilos..."
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00]"
+            />
+          </form>
+
+          <div className="flex flex-col lg:flex-row gap-6">
             {/* Left: Calendar */}
-            <div className="flex-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-semibold text-gray-900">{t('calendarTitle')}</h2>
+            <div className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-semibold text-gray-900">Reservas del Mes</h2>
                 <Link href="/bookings" className="text-sm text-[#FF6A00] font-medium hover:underline">
-                  {t('calendarViewAll')}
+                  Ver todas →
                 </Link>
               </div>
               <MiniCalendar />
             </div>
 
-            {/* Right: Nearby Creatives */}
-            <div className="w-72 shrink-0 space-y-4">
+            {/* Right column */}
+            <div className="lg:w-72 shrink-0 space-y-4">
+              {/* Nearby Creatives */}
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <h2 className="font-semibold text-gray-900 mb-3">{t('nearbyTitle')}</h2>
+                <h2 className="font-semibold text-gray-900 mb-3">Creativos Cerca de Ti</h2>
                 {/* Map placeholder */}
                 <div className="h-36 rounded-xl bg-gradient-to-br from-teal-100 to-blue-100 relative overflow-hidden mb-3 flex items-center justify-center">
                   <div className="absolute inset-0 opacity-20"
@@ -188,7 +209,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{t('nearbyCount', { count: 12 })}</p>
+                    <p className="text-sm font-semibold text-gray-900">12 creativos cercanos</p>
                     <div className="flex -space-x-2 mt-1">
                       {['from-rose-400','from-violet-400','from-teal-400'].map((c,i) => (
                         <div key={i} className={`h-6 w-6 rounded-full bg-gradient-to-br ${c} to-pink-500 border-2 border-white`} />
@@ -196,16 +217,16 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <Link href="/artists" className="text-xs font-semibold text-[#FF6A00] border border-[#FF6A00]/30 rounded-lg px-3 py-1.5 hover:bg-[#FF6A00]/5 transition-colors">
-                    {t('gallery')}
+                    Ver galería
                   </Link>
                 </div>
               </div>
 
               {/* Next session */}
               <div className="bg-gray-900 rounded-2xl p-5 text-white">
-                <p className="text-xs text-gray-400 mb-1">{t('nextSession')}</p>
-                <p className="font-semibold">{t('nextSessionDetails')}</p>
-                <p className="text-sm text-gray-400 mt-0.5">{t('nextSessionTime')}</p>
+                <p className="text-xs text-gray-400 mb-1">Próxima Sesión</p>
+                <p className="font-semibold">Sesión de Fotografía</p>
+                <p className="text-sm text-gray-400 mt-0.5">Hoy, 3:00 PM</p>
                 <div className="h-16 w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 mt-3 flex items-center justify-center">
                   <svg className="h-8 w-8 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -213,26 +234,26 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <Link href="/bookings" className="mt-3 block text-center text-sm font-medium text-[#FF6A00] hover:underline">
-                  {t('details')}
+                  Ver detalles →
                 </Link>
               </div>
             </div>
           </div>
 
           {/* Recommended for You */}
-          <div className="mt-8">
+          <div className="mt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">{t('recommendedTitle')}</h2>
-              <Link href="/artists" className="text-sm text-[#FF6A00] font-medium hover:underline">{t('recommendedViewAll')}</Link>
+              <h2 className="font-semibold text-gray-900">Recomendados para Ti</h2>
+              <Link href="/artists" className="text-sm text-[#FF6A00] font-medium hover:underline">Ver todos →</Link>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
               {RECOMMENDED.map(artist => (
                 <Link
                   key={artist.id}
                   href={`/artists/${artist.id}`}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all"
                 >
-                  <div className={`h-32 bg-gradient-to-br ${artist.color} relative`}>
+                  <div className={`h-24 sm:h-32 bg-gradient-to-br ${artist.color} relative`}>
                     <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
                       <svg className="h-3 w-3 text-amber-400 fill-amber-400" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -243,7 +264,7 @@ export default function DashboardPage() {
                   <div className="p-3">
                     <p className="font-semibold text-gray-900 text-sm">{artist.name}</p>
                     <p className="text-xs text-gray-400">{artist.category}</p>
-                    <p className="text-sm font-bold text-[#FF6A00] mt-1">{t('fromPrice', { price: artist.price })}</p>
+                    <p className="text-sm font-bold text-[#FF6A00] mt-1">desde ${artist.price}</p>
                   </div>
                 </Link>
               ))}

@@ -11,39 +11,96 @@ interface Props {
 export default function ClientSidebar({ userName }: Props) {
   const pathname = usePathname();
 
-    const nav = [
-      { href: '/dashboard',  icon: HomeIcon,    label: 'Inicio' },
-      { href: '/artists',    icon: SearchIcon,  label: 'Artistas' },
-      { href: '/bookings',   icon: CalIcon,     label: 'Reservas' },
-      { href: '/bookmarks',  icon: HeartIcon,   label: 'Favoritos' },
-      { href: '/chat',       icon: ChatIcon,    label: 'Mensajes', badge: 3 },
-    ];
+  const nav = [
+    { href: '/dashboard',  icon: HomeIcon,    label: 'Inicio' },
+    { href: '/artists',    icon: SearchIcon,  label: 'Artistas' },
+    { href: '/bookings',   icon: CalIcon,     label: 'Reservas' },
+    { href: '/bookmarks',  icon: HeartIcon,   label: 'Favoritos' },
+    { href: '/chat',       icon: ChatIcon,    label: 'Mensajes', badge: 3 },
+  ];
 
   return (
-    <aside className="flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 py-6 px-4 shrink-0">
-      {/* Logo */}
-      <Link href="/dashboard" className="mb-8 px-2 block">
-        <Image src="/logo.jpg" alt="PIUMS" width={90} height={32} className="h-8 w-auto" priority />
-      </Link>
+    <>
+      {/* ─── Desktop sidebar ──────────────────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 py-6 px-4 shrink-0">
+        {/* Logo */}
+        <Link href="/dashboard" className="mb-8 px-2 block">
+          <Image src="/logo.jpg" alt="PIUMS" width={90} height={32} className="h-8 w-auto" priority />
+        </Link>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-1">
+        {/* Nav */}
+        <nav className="flex-1 space-y-1">
+          {nav.map(({ href, icon: Icon, label, badge }) => {
+            const active = pathname === href || pathname.startsWith(href + '/');
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-[#FF6A00]/10 text-[#FF6A00]'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
+                {label}
+                {badge && (
+                  <span className="ml-auto bg-[#FF6A00] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom: settings */}
+        <div className="space-y-1 pb-4 border-b border-gray-100">
+          <Link href="/profile/personal" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+            <SettingsIcon className="h-5 w-5 text-gray-400 shrink-0" />Configuración
+          </Link>
+        </div>
+
+        {/* User profile */}
+        <Link href="/profile" className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors mt-2">
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            {userName.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+            <p className="text-xs text-gray-400">Cliente</p>
+          </div>
+        </Link>
+      </aside>
+
+      {/* ─── Mobile top bar ───────────────────────────────────────────── */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
+        <Link href="/dashboard">
+          <Image src="/logo.jpg" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
+        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/profile" className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+            {userName.charAt(0).toUpperCase()}
+          </Link>
+        </div>
+      </header>
+
+      {/* ─── Mobile bottom nav ────────────────────────────────────────── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-center">
         {nav.map(({ href, icon: Icon, label, badge }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-[#FF6A00]/10 text-[#FF6A00]'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+              className={`relative flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors ${
+                active ? 'text-[#FF6A00]' : 'text-gray-400'
               }`}
             >
-              <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
+              <Icon className="h-5 w-5" />
               {label}
               {badge && (
-                <span className="ml-auto bg-[#FF6A00] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute top-1.5 left-1/2 translate-x-1 bg-[#FF6A00] text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                   {badge}
                 </span>
               )}
@@ -51,25 +108,7 @@ export default function ClientSidebar({ userName }: Props) {
           );
         })}
       </nav>
-
-      {/* Bottom: settings + logout */}
-      <div className="space-y-1 pb-4 border-b border-gray-100">
-        <Link href="/profile/personal" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-          <SettingsIcon className="h-5 w-5 text-gray-400 shrink-0" />Configuración
-        </Link>
-      </div>
-
-      {/* User profile */}
-      <Link href="/profile" className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors mt-2">
-        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
-          {userName.charAt(0).toUpperCase()}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-          <p className="text-xs text-gray-400">Cliente</p>
-        </div>
-      </Link>
-    </aside>
+    </>
   );
 }
 

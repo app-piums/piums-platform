@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -128,6 +129,7 @@ export default function ChatPage() {
     const conv = conversations.find(c => c.id === conversationId) ?? null;
     setCurrentConversation(conv);
     setMessages([]);
+    setMobileView('chat');
     if (!conv) return;
 
     setError(null);
@@ -195,18 +197,18 @@ export default function ChatPage() {
   if (authLoading || !isAuthenticated) return <Loading fullScreen />;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex bg-gray-50 overflow-hidden" style={{ height: '100dvh' }}>
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
 
       {/* Main Chat Layout */}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative pt-14 lg:pt-0 pb-16 lg:pb-0">
         {error && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow text-sm">
             {error}
           </div>
         )}
         {/* Conversations panel */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className={`${mobileView === 'list' ? 'flex' : 'hidden'} md:flex w-full md:w-80 bg-white border-r border-gray-200 flex-col shrink-0`}>
           <div className="p-4 border-b border-gray-200 flex items-center justify-between shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">Mensajes</h2>
           </div>
@@ -220,11 +222,19 @@ export default function ChatPage() {
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 flex-col overflow-hidden`}>
           {currentConversation ? (
             <>
               {/* Chat Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 flex items-center gap-3">
+              <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 shrink-0 flex items-center gap-3">
+                <button
+                  onClick={() => setMobileView('list')}
+                  className="md:hidden p-1.5 -ml-1 text-gray-500 hover:text-gray-900"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
                   {(currentConversation.artistName ?? 'A').charAt(0)}
                 </div>

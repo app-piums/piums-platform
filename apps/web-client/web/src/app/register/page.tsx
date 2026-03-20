@@ -15,8 +15,11 @@ interface FieldError {
   password?: string;
   confirmPassword?: string;
   terms?: string;
+  pais?: string;
+  telefono?: string;
 }
 
+export default function RegisterPage() {
   const { t } = useTranslation('register');
   const router = useRouter();
   const { login } = useAuth();

@@ -229,11 +229,11 @@ export default function BookingsPage() {
   });
 
   return (
-    <div className="flex min-h-screen bg-[#FAFAFA]">
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
       <ClientSidebar userName={userName} />
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30">
+        <header className="bg-white border-b border-gray-100 px-4 lg:px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 mt-14 lg:mt-0">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Mis Reservas</h1>
             <p className="text-sm text-gray-400 mt-0.5">Gestiona tus encuentros con el talento creativo.</p>
@@ -253,7 +253,7 @@ export default function BookingsPage() {
             </div>
           </div>
         </header>
-        <div className="flex-1 px-6 py-6 space-y-6">
+        <div className="flex-1 px-4 lg:px-6 py-6 space-y-6 pb-20 lg:pb-6">
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {STATS.map(({ label, value, icon: Icon, color }) => (

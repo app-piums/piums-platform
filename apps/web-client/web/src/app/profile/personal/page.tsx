@@ -160,7 +160,7 @@ export default function PersonalInfoTab() {
                 </Button>
               </label>
               {avatarFile && (
-                <Button size="sm" variant="solid" onClick={handleAvatarUpload} disabled={avatarUploading}>
+                <Button size="sm" variant="primary" onClick={handleAvatarUpload} disabled={avatarUploading}>
                   Guardar foto
                 </Button>
               )}

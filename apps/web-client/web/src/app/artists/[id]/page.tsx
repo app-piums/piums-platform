@@ -8,12 +8,15 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
+import ClientSidebar from '@/components/ClientSidebar';
+import { useAuth } from '@/contexts/AuthContext';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
 import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
 
 export default function ArtistProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const artistId = params.id as string;
   
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
@@ -150,8 +153,10 @@ export default function ArtistProfilePage() {
   })) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Lightbox */}}
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+      <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+
+      {/* Lightbox */}
       {lightboxOpen && portfolioImages.length > 0 && (
         <Lightbox
           images={portfolioImages}
@@ -161,22 +166,34 @@ export default function ArtistProfilePage() {
           onPrev={prevImage}
         />
       )}
-      
-      <div className="max-w-5xl mx-auto px-6 py-8">
+
+      <div className="flex-1 min-w-0 overflow-y-auto p-4 pt-20 lg:p-0 lg:pt-0 pb-20 lg:pb-0">
+      <div className="max-w-5xl mx-auto px-0 lg:px-6 py-0 lg:py-8">
         {/* go back */}
-        <button onClick={() => router.push('/artists')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6">
+        <button
+          onClick={() => router.push('/artists')}
+          className="hidden lg:flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6"
+        >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
           Volver a Artistas
         </button>
+        {/* Mobile back */}
+        <button
+          onClick={() => router.push('/artists')}
+          className="lg:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-4"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+          Artistas
+        </button>
         {/* Cover Photo */}
-        <div className="relative h-64 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg overflow-hidden mb-8">
+        <div className="relative h-48 lg:h-64 bg-gradient-to-br from-violet-400 via-purple-500 to-pink-500 rounded-none lg:rounded-2xl overflow-hidden mb-8">
           {artist.coverPhoto && (
             <img src={artist.coverPhoto} alt={artist.nombre} className="w-full h-full object-cover" />
           )}
         </div>
 
         {/* Profile Header */}
-        <div className="flex flex-col md:flex-row md:items-start md:space-x-6 mb-8">
+        <div className="flex flex-col md:flex-row md:items-start md:space-x-6 mb-8 px-4 lg:px-0">
           <div className="flex-shrink-0 -mt-16 mb-4 md:mb-0">
             <Avatar
               src={artist.avatar}
@@ -244,7 +261,7 @@ export default function ArtistProfilePage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-6">
+        <div className="border-b border-gray-200 mb-6 px-4 lg:px-0">
           <nav className="flex space-x-8">
             {['about', 'services', 'portfolio', 'reviews'].map((tab) => (
               <button
@@ -266,7 +283,7 @@ export default function ArtistProfilePage() {
         </div>
 
         {/* Tab Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-4 lg:px-0 pb-8">
           <div className="lg:col-span-2">
             {activeTab === 'about' && (
               <Card>
@@ -317,7 +334,7 @@ export default function ArtistProfilePage() {
                           </div>
                           <div className="text-right">
                             <p className="text-2xl font-bold text-[#FF6A00]">${service.basePrice.toLocaleString()}</p>
-                            <p className="text-sm text-gray-500">{Math.floor(service.duration / 60)} horas</p>
+                            <p className="text-sm text-gray-500">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                         </div>
                         <Button onClick={() => router.push(`/booking?artistId=${artist.id}&serviceId=${service.id}`)} fullWidth>
@@ -462,6 +479,7 @@ export default function ArtistProfilePage() {
             </Card>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

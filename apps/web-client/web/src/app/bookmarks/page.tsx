@@ -18,19 +18,19 @@ export default function BookmarksPage() {
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-w-0 overflow-y-auto">
         {/* Header */}
-        <header className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <header className="bg-white border-b border-gray-100 px-4 lg:px-8 py-4 flex items-center justify-between mt-14 lg:mt-0">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Favoritos</h1>
             <p className="text-sm text-gray-400">Artistas que has guardado</p>
           </div>
         </header>
 
-        <div className="max-w-5xl mx-auto px-6 py-12">
+        <div className="max-w-5xl mx-auto px-4 lg:px-6 py-8 pb-24 lg:pb-8">
           {/* Empty state */}
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="h-20 w-20 rounded-full bg-[#FF6A00]/10 flex items-center justify-center mb-6">

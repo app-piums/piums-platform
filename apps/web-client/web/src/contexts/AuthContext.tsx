@@ -10,6 +10,8 @@ interface User {
   role?: 'cliente' | 'artista';
   pais?: string;
   telefono?: string;
+  token?: string;
+  avatar?: string;
 }
 
 interface AuthState {
