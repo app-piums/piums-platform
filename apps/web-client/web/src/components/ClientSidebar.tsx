@@ -73,7 +73,7 @@ export default function ClientSidebar({ userName }: Props) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Cuenta</p>
           <nav className="space-y-0.5">
             <Link
-              href="/profile/personal"
+              href="/profile"
               onClick={() => setIsOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 pathname.startsWith('/profile') ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
