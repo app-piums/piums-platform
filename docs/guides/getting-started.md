@@ -243,9 +243,9 @@ Disponibles tras ejecutar `./scripts/seed.sh`:
 
 | Rol | Email | Contraseña |
 |-----|-------|------------|
-| Admin | admin@piums.app | Admin123! |
-| Cliente | cliente@test.com | Test123! |
-| Artista | artista1@test.com | Test123! |
+| Admin | admin@piums.com | Admin1234! |
+| Cliente | cliente@piums.com | Test1234! |
+| Artista | artista@piums.com | Test1234! |
 
 ---
 
