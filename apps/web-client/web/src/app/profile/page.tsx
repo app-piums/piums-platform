@@ -51,7 +51,7 @@ export default function ProfilePage() {
           </div>
         </header>
 
-        <div className="flex-1 p-4 pt-20 lg:p-8 lg:pt-8 pb-20 lg:pb-8">
+        <div className="flex-1 p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile avatar */}
           <div className="lg:hidden flex items-center gap-3 mb-5">
             <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">

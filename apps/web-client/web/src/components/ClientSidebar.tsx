@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -10,6 +11,7 @@ interface Props {
 
 export default function ClientSidebar({ userName }: Props) {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
   const nav = [
     { href: '/dashboard',  icon: HomeIcon,    label: 'Inicio' },
@@ -19,33 +21,45 @@ export default function ClientSidebar({ userName }: Props) {
     { href: '/chat',       icon: ChatIcon,    label: 'Mensajes', badge: 3 },
   ];
 
-  return (
+  const NavContent = () => (
     <>
-      {/* ─── Desktop sidebar ──────────────────────────────────────────── */}
-      <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 py-6 px-4 shrink-0">
-        {/* Logo */}
-        <Link href="/dashboard" className="mb-8 px-2 block">
-          <Image src="/logo.jpg" alt="PIUMS" width={90} height={32} className="h-8 w-auto" priority />
+      {/* Logo + cerrar */}
+      <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+          <Image src="/logo.jpg" alt="PIUMS" width={80} height={28} className="h-7 w-auto" priority />
         </Link>
+        <button
+          className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          onClick={() => setIsOpen(false)}
+          aria-label="Cerrar menú"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1">
+      {/* Nav principal */}
+      <div className="flex-1 px-4 py-5 overflow-y-auto">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Menú</p>
+        <nav className="space-y-0.5">
           {nav.map(({ href, icon: Icon, label, badge }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-[#FF6A00]/10 text-[#FF6A00]'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  active ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
-                {label}
+                <div className="flex items-center gap-3">
+                  <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
+                  {label}
+                </div>
                 {badge && (
-                  <span className="ml-auto bg-[#FF6A00] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="bg-[#FF6A00] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {badge}
                   </span>
                 )}
@@ -54,60 +68,77 @@ export default function ClientSidebar({ userName }: Props) {
           })}
         </nav>
 
-        {/* Bottom: settings */}
-        <div className="space-y-1 pb-4 border-b border-gray-100">
-          <Link href="/profile/personal" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-            <SettingsIcon className="h-5 w-5 text-gray-400 shrink-0" />Configuración
-          </Link>
+        {/* Sección Cuenta */}
+        <div className="mt-6">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Cuenta</p>
+          <nav className="space-y-0.5">
+            <Link
+              href="/profile/personal"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                pathname.startsWith('/profile') ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <SettingsIcon className={`h-5 w-5 shrink-0 ${pathname.startsWith('/profile') ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
+              Configuración
+            </Link>
+          </nav>
         </div>
+      </div>
 
-        {/* User profile */}
-        <Link href="/profile" className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors mt-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+      {/* Usuario */}
+      <div className="p-4 border-t border-gray-100">
+        <Link
+          href="/profile"
+          onClick={() => setIsOpen(false)}
+          className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
             {userName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
             <p className="text-xs text-gray-400">Cliente</p>
           </div>
         </Link>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* ─── Desktop sidebar ──────────────────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 shrink-0">
+        <NavContent />
       </aside>
 
-      {/* ─── Mobile top bar ───────────────────────────────────────────── */}
+      {/* ─── Mobile: top bar con hamburguesa ──────────────────────────── */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
         <Link href="/dashboard">
           <Image src="/logo.jpg" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
         </Link>
-        <div className="flex items-center gap-2">
-          <Link href="/profile" className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold">
-            {userName.charAt(0).toUpperCase()}
-          </Link>
-        </div>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </header>
 
-      {/* ─── Mobile bottom nav ────────────────────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-center">
-        {nav.map(({ href, icon: Icon, label, badge }) => {
-          const active = pathname === href || pathname.startsWith(href + '/');
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`relative flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors ${
-                active ? 'text-[#FF6A00]' : 'text-gray-400'
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              {label}
-              {badge && (
-                <span className="absolute top-1.5 left-1/2 translate-x-1 bg-[#FF6A00] text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                  {badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* ─── Mobile drawer ────────────────────────────────────────────── */}
+      {isOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/50" onClick={() => setIsOpen(false)} />
+          {/* Panel */}
+          <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
+            <NavContent />
+          </aside>
+        </div>
+      )}
     </>
   );
 }

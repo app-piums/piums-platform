@@ -253,7 +253,7 @@ export default function BookingsPage() {
             </div>
           </div>
         </header>
-        <div className="flex-1 px-4 lg:px-6 py-6 space-y-6 pb-20 lg:pb-6">
+        <div className="flex-1 px-4 lg:px-6 py-6 space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {STATS.map(({ label, value, icon: Icon, color }) => (

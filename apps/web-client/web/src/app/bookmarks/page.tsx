@@ -30,7 +30,7 @@ export default function BookmarksPage() {
           </div>
         </header>
 
-        <div className="max-w-5xl mx-auto px-4 lg:px-6 py-8 pb-24 lg:pb-8">
+        <div className="max-w-5xl mx-auto px-4 lg:px-6 py-8">
           {/* Empty state */}
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="h-20 w-20 rounded-full bg-[#FF6A00]/10 flex items-center justify-center mb-6">

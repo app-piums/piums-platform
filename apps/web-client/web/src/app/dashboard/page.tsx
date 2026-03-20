@@ -158,7 +158,7 @@ export default function DashboardPage() {
         </header>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8 pb-20 lg:pb-8">
+        <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile greeting */}
           <div className="lg:hidden mb-5">
             <h1 className="text-xl font-bold text-gray-900">¡Hola, {displayName}! 👋</h1>

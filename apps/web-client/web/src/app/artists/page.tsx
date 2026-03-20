@@ -102,7 +102,7 @@ export default function ArtistsPage() {
           )}
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8 pb-20 lg:pb-8">
+        <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile title */}
           <div className="lg:hidden mb-4">
             <h1 className="text-xl font-bold text-gray-900">Explorar Artistas</h1>

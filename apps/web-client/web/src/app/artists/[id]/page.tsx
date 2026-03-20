@@ -167,7 +167,7 @@ export default function ArtistProfilePage() {
         />
       )}
 
-      <div className="flex-1 min-w-0 overflow-y-auto p-4 pt-20 lg:p-0 lg:pt-0 pb-20 lg:pb-0">
+      <div className="flex-1 min-w-0 overflow-y-auto p-4 pt-20 lg:p-0 lg:pt-0">
       <div className="max-w-5xl mx-auto px-0 lg:px-6 py-0 lg:py-8">
         {/* go back */}
         <button
