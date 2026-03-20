@@ -25,7 +25,7 @@ const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: bo
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabId>('personal');
+  const [activeTab, setActiveTab] = useState<TabId | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push('/login');
@@ -64,11 +64,11 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Sidebar nav */}
-            <nav className="lg:w-56 shrink-0">
+            {/* Sidebar nav — visible on desktop always; on mobile only when no tab selected */}
+            <nav className={`lg:w-56 shrink-0 ${activeTab ? 'hidden lg:block' : 'block'}`}>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {TABS.map(tab => {
-                  const active = activeTab === tab.id;
+                  const active = (activeTab ?? 'personal') === tab.id;
                   return (
                     <button
                       key={tab.id}
@@ -84,8 +84,11 @@ export default function ProfilePage() {
                         {tab.icon}
                       </span>
                       {tab.label}
+                      <svg className="ml-auto h-4 w-4 text-gray-300 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                       {active && (
-                        <span className={`ml-auto h-1.5 w-1.5 rounded-full ${tab.danger ? 'bg-red-500' : 'bg-[#FF6A00]'}`} />
+                        <span className={`hidden lg:inline ml-auto h-1.5 w-1.5 rounded-full ${tab.danger ? 'bg-red-500' : 'bg-[#FF6A00]'}`} />
                       )}
                     </button>
                   );
@@ -93,13 +96,23 @@ export default function ProfilePage() {
               </div>
             </nav>
 
-            {/* Tab content */}
-            <div className="flex-1 min-w-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              {activeTab === 'personal'      && <PersonalInfoTab />}
-              {activeTab === 'security'      && <SecurityTab />}
-              {activeTab === 'notifications' && <NotificationsTab />}
-              {activeTab === 'payments'      && <PaymentsTab />}
-              {activeTab === 'delete'        && <DeleteAccountTab />}
+            {/* Tab content — visible on desktop always; on mobile only when tab selected */}
+            <div className={`flex-1 min-w-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 ${activeTab ? 'block' : 'hidden lg:block'}`}>
+              {/* Mobile back button */}
+              <button
+                onClick={() => setActiveTab(null)}
+                className="lg:hidden flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-800 mb-5 -mt-1 transition-colors"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver a configuración
+              </button>
+              {(activeTab ?? 'personal') === 'personal'      && <PersonalInfoTab />}
+              {(activeTab ?? 'personal') === 'security'      && <SecurityTab />}
+              {(activeTab ?? 'personal') === 'notifications' && <NotificationsTab />}
+              {(activeTab ?? 'personal') === 'payments'      && <PaymentsTab />}
+              {(activeTab ?? 'personal') === 'delete'        && <DeleteAccountTab />}
             </div>
           </div>
         </div>
