@@ -85,7 +85,7 @@ export class BookingServiceClient {
         return { bookings: [], total: 0, page: 1, totalPages: 0 };
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       // booking-service returns { bookings, pagination: { page, limit, total, totalPages } }
       const pagination = data.pagination || {};
       return {
@@ -132,7 +132,7 @@ export class BookingServiceClient {
         };
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return data as BookingStatsResponse;
     } catch (error: any) {
       logger.error("Error in getArtistStats", "BOOKING_CLIENT", {

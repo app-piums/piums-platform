@@ -35,8 +35,10 @@ COPY . .
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DOCKER_BUILD=1
 
-# Build the application
+# Build only the web-artist app (not the full monorepo)
+WORKDIR /app/apps/web-artist/web
 RUN pnpm build
 
 # ============================================================================
@@ -55,9 +57,9 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/apps/web-artist/web/public ./public
+COPY --from=builder /app/apps/web-artist/web/.next/standalone ./
+COPY --from=builder /app/apps/web-artist/web/.next/static ./.next/static
 
 # Set ownership
 RUN chown -R nextjs:nodejs /app
