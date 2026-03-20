@@ -521,7 +521,16 @@ class PiumsSDK {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      if (data.pagination) {
+        return {
+          artists: data.artists ?? [],
+          total: data.pagination.total ?? 0,
+          page: data.pagination.page ?? 1,
+          totalPages: data.pagination.totalPages ?? 1,
+        };
+      }
+      return data;
     } catch (error) {
       console.error('Error searching artists:', error);
       return {
@@ -541,13 +550,24 @@ class PiumsSDK {
       if (params?.categoria) queryParams.append('categoria', params.categoria);
       if (params?.ciudad) queryParams.append('ciudad', params.ciudad);
 
-      const response = await fetch(`${this.baseUrl}/artists?${queryParams.toString()}`);
+      const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      // Normalise: API returns { artists, pagination: { total, page, totalPages } }
+      // but SearchResults expects flat { artists, total, page, totalPages }
+      if (data.pagination) {
+        return {
+          artists: data.artists ?? [],
+          total: data.pagination.total ?? 0,
+          page: data.pagination.page ?? 1,
+          totalPages: data.pagination.totalPages ?? 1,
+        };
+      }
+      return data;
     } catch (error) {
       console.error('Error fetching artists:', error);
       return {
