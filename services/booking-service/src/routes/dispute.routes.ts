@@ -2,7 +2,7 @@ import { Router } from "express";
 import { disputeController } from "../controller/dispute.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== DISPUTES ====================
 

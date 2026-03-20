@@ -7,7 +7,7 @@ export class DisputeController {
 
   async createDispute(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const {
         bookingId,
         reportedAgainst,
@@ -47,7 +47,7 @@ export class DisputeController {
   async getDisputeById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
 
       const dispute = await disputeService.getDisputeById(id as string);
 
@@ -74,7 +74,7 @@ export class DisputeController {
 
   async listDisputes(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const role = req.user!.role;
       const {
         bookingId,
@@ -124,7 +124,7 @@ export class DisputeController {
     try {
       const { id } = req.params;
       const { status, notes } = req.body;
-      const staffId = req.user!.userId;
+      const staffId = req.user!.id;
       const role = req.user!.role;
 
       // Solo staff/admin pueden actualizar estados
@@ -160,7 +160,7 @@ export class DisputeController {
     try {
       const { id } = req.params;
       const { resolution, resolutionNotes, refundAmount } = req.body;
-      const staffId = req.user!.userId;
+      const staffId = req.user!.id;
       const role = req.user!.role;
 
       // Solo staff/admin pueden resolver
@@ -199,7 +199,7 @@ export class DisputeController {
     try {
       const { id } = req.params;
       const { message, attachments } = req.body;
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
       const role = req.user!.role;
 
       if (!message) {
@@ -248,7 +248,7 @@ export class DisputeController {
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      const staffId = req.user!.userId;
+      const staffId = req.user!.id;
       const role = req.user!.role;
 
       if (role !== "admin" && role !== "staff") {
@@ -278,7 +278,7 @@ export class DisputeController {
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      const staffId = req.user!.userId;
+      const staffId = req.user!.id;
       const role = req.user!.role;
 
       if (role !== "admin" && role !== "staff") {
@@ -333,7 +333,7 @@ export class DisputeController {
 
   async getUserDisputes(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
 
       const disputes = await disputeService.getUserDisputes(userId);
 

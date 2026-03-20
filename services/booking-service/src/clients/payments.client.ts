@@ -71,7 +71,7 @@ export class PaymentsClient {
         return null;
       }
 
-      return await response.json();
+      return await response.json() as PaymentIntentResponse;
     } catch (error) {
       console.error('[PaymentsClient] Error de conexión con payments-service:', error);
       return null;

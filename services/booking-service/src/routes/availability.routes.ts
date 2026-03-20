@@ -6,7 +6,7 @@ import {
   getTimeSlots,
 } from '../controller/availability.controller';
 
-const router = Router();
+const router: Router = Router();
 
 // Verificar si hay conflicto de reserva
 router.get('/check-reservation', checkReservation);

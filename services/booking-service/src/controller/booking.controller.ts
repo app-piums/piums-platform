@@ -25,7 +25,7 @@ export class BookingController {
     try {
       const validatedData = createBookingSchema.parse(req.body);
       
-      const booking = await bookingService.createBooking({
+      const { booking } = await bookingService.createBooking({
         ...validatedData,
         scheduledDate: new Date(validatedData.scheduledDate),
       });
@@ -52,8 +52,8 @@ export class BookingController {
         totalPrice: booking.totalPrice,
         currency: booking.currency,
         depositRequired: booking.depositRequired,
-        depositAmount: booking.depositAmount,
-        clientNotes: booking.clientNotes,
+        depositAmount: booking.depositAmount ?? undefined,
+        clientNotes: booking.clientNotes ?? undefined,
       }).catch(err => {
         console.error('Error sending booking notifications:', err);
         // No lanzar el error para no bloquear la respuesta
@@ -67,7 +67,7 @@ export class BookingController {
 
   async getBookingById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const booking = await bookingService.getBookingById(id);
 
       // Verificar permisos: solo cliente, artista o admin pueden ver
@@ -88,7 +88,7 @@ export class BookingController {
 
   async getBookingByCode(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { code } = req.params;
+      const code = req.params.code as string;
       const booking = await bookingService.getBookingByCode(code);
 
       // Verificar permisos
@@ -130,7 +130,7 @@ export class BookingController {
 
   async updateBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user!.id;
       
       const validatedData = updateBookingSchema.parse(req.body);
@@ -149,7 +149,7 @@ export class BookingController {
 
   async confirmBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const artistId = req.user!.id;
       
       const { artistNotes } = confirmBookingSchema.parse(req.body);
@@ -163,7 +163,7 @@ export class BookingController {
 
   async rejectBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const artistId = req.user!.id;
       
       const { reason } = rejectBookingSchema.parse(req.body);
@@ -177,7 +177,7 @@ export class BookingController {
 
   async cancelBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user!.id;
       
       const { reason } = cancelBookingSchema.parse(req.body);
@@ -191,7 +191,7 @@ export class BookingController {
 
   async changeStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user!.id;
       
       const { status, reason } = changeStatusSchema.parse(req.body);
@@ -205,7 +205,7 @@ export class BookingController {
 
   async markPayment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       
       const { amount, paymentMethod, paymentIntentId, paymentType } = markPaymentSchema.parse(req.body);
 
@@ -293,7 +293,7 @@ export class BookingController {
 
   async getBlockedSlots(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params.artistId as string;
       const { startDate, endDate } = req.query;
 
       const slots = await bookingService.getBlockedSlots(
@@ -310,7 +310,7 @@ export class BookingController {
 
   async unblockSlot(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const artistId = req.user!.id;
 
       await bookingService.unblockSlot(id, artistId);
@@ -324,7 +324,7 @@ export class BookingController {
 
   async getArtistConfig(req: Request, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params.artistId as string;
       const config = await bookingService.getArtistConfig(artistId);
       res.json(config);
     } catch (error) {
@@ -334,7 +334,7 @@ export class BookingController {
 
   async updateArtistConfig(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { artistId } = req.params;
+      const artistId = req.params.artistId as string;
       const userId = req.user!.id;
 
       // Verificar que el usuario sea el artista
@@ -384,7 +384,7 @@ export class BookingController {
    */
   async downloadBookingPDF(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const booking = await bookingService.getBookingById(id);
 
       // Verificar permisos: solo cliente, artista o admin pueden descargar
@@ -426,7 +426,7 @@ export class BookingController {
 
   async rescheduleBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = req.user?.id;
 
       if (!userId) {

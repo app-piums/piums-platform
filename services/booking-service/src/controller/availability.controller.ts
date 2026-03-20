@@ -68,7 +68,7 @@ export const getArtistAvailability = async (req: Request, res: Response) => {
       });
     }
 
-    const reservations = await getArtistReservations(artistId, start, end);
+    const reservations = await getArtistReservations(artistId as string, start, end);
 
     return res.json({
       artistId,

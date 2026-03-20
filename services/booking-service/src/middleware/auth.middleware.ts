@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { AppError } from "./errorHandler";
 import { logger } from "../utils/logger";
@@ -9,18 +9,20 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
+    role?: string;
   };
 }
 
 /**
  * Middleware para verificar JWT
  */
-export const authenticateToken = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
+export const authenticateToken: RequestHandler = (
+  req,
+  res,
+  next
 ) => {
   try {
+    const authReq = req as AuthRequest;
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -34,7 +36,7 @@ export const authenticateToken = (
       email: string;
     };
 
-    req.user = decoded;
+    authReq.user = decoded;
     next();
   } catch (error: any) {
     if (error.name === "JsonWebTokenError") {

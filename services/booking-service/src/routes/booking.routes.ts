@@ -7,7 +7,7 @@ import {
   availabilityLimiter,
 } from "../middleware/rateLimiter";
 
-const router = Router();
+const router: Router = Router();
 
 // ==================== RESERVAS ====================
 
