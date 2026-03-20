@@ -28,7 +28,10 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DOCKER_BUILD=1
 
+# Build only the web-admin app (not the full monorepo)
+WORKDIR /app/apps/web-admin/web
 RUN pnpm build
 
 # ============================================================================
@@ -44,9 +47,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/apps/web-admin/web/public ./public
+COPY --from=builder /app/apps/web-admin/web/.next/standalone ./
+COPY --from=builder /app/apps/web-admin/web/.next/static ./.next/static
 
 RUN chown -R nextjs:nodejs /app
 

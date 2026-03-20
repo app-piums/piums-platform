@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  output: process.env.DOCKER_BUILD === '1' ? 'standalone' : undefined,
   async rewrites() {
     return [
       {
