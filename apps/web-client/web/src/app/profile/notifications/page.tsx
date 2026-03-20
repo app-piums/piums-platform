@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 
 type Channel = 'email' | 'sms' | 'push';
 type CategoryId = 'bookings' | 'messages' | 'reviews' | 'promotions';
@@ -26,6 +27,17 @@ const DEFAULT_SETTINGS: Settings = {
   push: { bookings: true, messages: true, reviews: true, promotions: false },
 };
 
+const cloneSettings = (source: Settings): Settings => ({
+  email: { ...source.email },
+  sms: { ...source.sms },
+  push: { ...source.push },
+});
+
+const areSettingsEqual = (a: Settings, b: Settings) =>
+  CHANNELS.every((channel) =>
+    CATEGORIES.every((category) => a[channel.id][category.id] === b[channel.id][category.id])
+  );
+
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
@@ -44,9 +56,15 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
   );
 }
 
-export default function NotificationsTab() {
+type NotificationsTabProps = {
+  onDirtyChange?: (isDirty: boolean) => void;
+};
+
+export default function NotificationsTab(props: NotificationsTabProps = {}) {
+  const { onDirtyChange } = props;
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [initialSettings, setInitialSettings] = useState<Settings>(() => cloneSettings(DEFAULT_SETTINGS));
+  const [settings, setSettings] = useState<Settings>(() => cloneSettings(DEFAULT_SETTINGS));
 
   const handleToggle = (channel: Channel, category: CategoryId) => {
     setSettings((prev) => ({
@@ -58,20 +76,29 @@ export default function NotificationsTab() {
     }));
   };
 
+  const hasUnsavedChanges = !areSettingsEqual(settings, initialSettings);
+
   const handleSave = async () => {
+    if (!hasUnsavedChanges) return;
+    setLoading(true);
     try {
-      setLoading(true);
       // TODO: await sdk.updateNotificationSettings(settings)
-      setTimeout(() => {
-        setLoading(false);
-        alert('Preferencias guardadas correctamente');
-      }, 1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setInitialSettings(cloneSettings(settings));
+      alert('Preferencias guardadas correctamente');
     } catch (error) {
       console.error('Error updating notification settings:', error);
-      setLoading(false);
       alert('Error al actualizar la configuración');
+    } finally {
+      setLoading(false);
     }
   };
+
+  useUnsavedChangesPrompt(hasUnsavedChanges);
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
 
   return (
     <div>
@@ -134,7 +161,7 @@ export default function NotificationsTab() {
       <div className="mt-8 flex justify-end">
         <button
           onClick={handleSave}
-          disabled={loading}
+          disabled={loading || !hasUnsavedChanges}
           className="px-6 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-lg hover:bg-[#e55f00] transition-colors disabled:opacity-50"
         >
           {loading ? 'Guardando...' : 'Guardar Preferencias'}

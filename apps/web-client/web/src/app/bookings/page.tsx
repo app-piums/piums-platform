@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
@@ -109,8 +110,13 @@ function BookingCard({ b }: { b: MockBooking }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="flex flex-col sm:flex-row">
         <div className="relative sm:w-40 h-36 sm:h-auto shrink-0 bg-gray-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover" />
+          <Image
+            src={b.imageUrl}
+            alt={b.title}
+            width={320}
+            height={192}
+            className="w-full h-full object-cover"
+          />
           <span className={`absolute top-2 left-2 text-[11px] font-bold px-2.5 py-1 rounded-full ${cfg.className}`}>
             • {cfg.label}
           </span>
@@ -217,7 +223,7 @@ function Btn({ children, variant = 'ghost', icon, href, className = '' }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
   const { user } = useAuth();
-  const userName = (user as any)?.name ?? (user as any)?.email ?? 'Usuario';
+  const userName = user?.nombre ?? user?.email ?? 'Usuario';
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [search, setSearch] = useState('');
 

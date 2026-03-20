@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -31,13 +31,7 @@ export default function BookingConfirmationPage() {
     }
   }, [authLoading, isAuthenticated, router, bookingId]);
 
-  useEffect(() => {
-    if (isAuthenticated && bookingId) {
-      loadBookingData();
-    }
-  }, [isAuthenticated, bookingId]);
-
-  const loadBookingData = async () => {
+  const loadBookingData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -64,13 +58,20 @@ export default function BookingConfirmationPage() {
       const serviceData = servicesData.find(s => s.id === bookingData.serviceId);
       setService(serviceData || null);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading booking:', err);
-      setError(err.message || 'Error al cargar la reserva');
+      const message = err instanceof Error ? err.message : 'Error al cargar la reserva';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookingId]);
+
+  useEffect(() => {
+    if (isAuthenticated && bookingId) {
+      loadBookingData();
+    }
+  }, [isAuthenticated, bookingId, loadBookingData]);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);

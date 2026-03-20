@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Lightbox } from '@/components/Lightbox';
 import { Loading } from '@/components/Loading';
@@ -30,18 +31,14 @@ export default function ArtistProfilePage() {
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const tabItems: Array<{ key: typeof activeTab; label: string }> = [
+    { key: 'about', label: 'Acerca de' },
+    { key: 'services', label: 'Servicios' },
+    { key: 'portfolio', label: 'Portafolio' },
+    { key: 'reviews', label: 'Reseñas' },
+  ];
 
-  useEffect(() => {
-    loadArtistData();
-  }, [artistId]);
-
-  useEffect(() => {
-    if (activeTab === 'reviews' && reviews.length === 0) {
-      loadReviews(1);
-    }
-  }, [activeTab]);
-
-  const loadArtistData = async () => {
+  const loadArtistData = useCallback(async () => {
     try {
       setLoading(true);
       // Try API first, fall back to mock
@@ -64,9 +61,13 @@ export default function ArtistProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [artistId]);
 
-  const loadReviews = async (page: number) => {
+  useEffect(() => {
+    loadArtistData();
+  }, [loadArtistData]);
+
+  const loadReviews = useCallback(async (page: number) => {
     try {
       setLoadingReviews(true);
       let reviewsData: Review[] = [];
@@ -96,7 +97,13 @@ export default function ArtistProfilePage() {
     } finally {
       setLoadingReviews(false);
     }
-  };
+  }, [artistId]);
+
+  useEffect(() => {
+    if (activeTab === 'reviews' && reviews.length === 0) {
+      loadReviews(1);
+    }
+  }, [activeTab, loadReviews, reviews.length]);
 
   const handleLoadMoreReviews = () => {
     if (reviewsPage < reviewsTotalPages) {
@@ -188,7 +195,13 @@ export default function ArtistProfilePage() {
         {/* Cover Photo */}
         <div className="relative h-48 lg:h-64 bg-gradient-to-br from-violet-400 via-purple-500 to-pink-500 rounded-none lg:rounded-2xl overflow-hidden mb-8">
           {artist.coverPhoto && (
-            <img src={artist.coverPhoto} alt={artist.nombre} className="w-full h-full object-cover" />
+            <Image
+              src={artist.coverPhoto}
+              alt={artist.nombre}
+              width={1200}
+              height={512}
+              className="w-full h-full object-cover"
+            />
           )}
         </div>
 
@@ -263,20 +276,17 @@ export default function ArtistProfilePage() {
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-6 px-4 lg:px-0">
           <nav className="flex space-x-8">
-            {['about', 'services', 'portfolio', 'reviews'].map((tab) => (
+            {tabItems.map(({ key, label }) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                key={key}
+                onClick={() => setActiveTab(key)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab
+                  activeTab === key
                     ? 'border-[#FF6A00] text-[#FF6A00]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {tab === 'about' && 'Acerca de'}
-                {tab === 'services' && 'Servicios'}
-                {tab === 'portfolio' && 'Portafolio'}
-                {tab === 'reviews' && 'Reseñas'}
+                {label}
               </button>
             ))}
           </nav>
@@ -359,7 +369,13 @@ export default function ArtistProfilePage() {
                     >
                       <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.title}
+                            width={600}
+                            height={384}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { countries } from "../../lib/countries";
 
@@ -131,8 +132,9 @@ export default function RegisterPage() {
       
       // Redirigir al home
       router.push("/");
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      setGeneralError(message);
     } finally {
       setLoading(false);
     }
@@ -368,12 +370,12 @@ export default function RegisterPage() {
             <span className="text-zinc-600 dark:text-zinc-400">
               ¿Ya tienes cuenta?{" "}
             </span>
-            <a
+            <Link
               href="/login"
               className="font-medium text-zinc-900 hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300"
             >
               Inicia sesión aquí
-            </a>
+            </Link>
           </div>
         </form>
       </div>

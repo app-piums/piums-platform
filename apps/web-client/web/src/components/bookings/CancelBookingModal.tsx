@@ -30,6 +30,7 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
       setReason('');
       onClose();
     } catch (err) {
+      console.error('Error al cancelar reserva:', err);
       setError('Error al cancelar la reserva. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);

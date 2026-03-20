@@ -51,6 +51,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       setComment('');
       onClose();
     } catch (err) {
+      console.error('Error al enviar reseña:', err);
       setError('Error al enviar la reseña. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);

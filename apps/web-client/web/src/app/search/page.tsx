@@ -191,7 +191,7 @@ function SearchContent() {
               <div className="h-14 w-14 rounded-2xl bg-gray-50 flex items-center justify-center">
                 <SearchIcon className="h-7 w-7 text-gray-400" />
               </div>
-              <p className="font-medium text-gray-900">No se encontraron resultados para "{query}"</p>
+              <p className="font-medium text-gray-900">No se encontraron resultados para &quot;{query}&quot;</p>
               <p className="text-sm text-gray-400">Intenta con otros términos o ajusta los filtros</p>
             </div>
           )}

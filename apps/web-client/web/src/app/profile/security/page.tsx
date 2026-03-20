@@ -1,8 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 
-export default function SecurityTab() {
+type SecurityTabProps = {
+  onDirtyChange?: (isDirty: boolean) => void;
+};
+
+export default function SecurityTab(props: SecurityTabProps = {}) {
+  const { onDirtyChange } = props;
   const [loading, setLoading] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -33,20 +39,31 @@ export default function SecurityTab() {
   const handleSubmitPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword()) return;
+    setLoading(true);
     try {
-      setLoading(true);
       // TODO: await sdk.changePassword({ currentPassword, newPassword })
-      setTimeout(() => {
-        setLoading(false);
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        alert('Contraseña actualizada correctamente');
-      }, 1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      alert('Contraseña actualizada correctamente');
     } catch (error) {
       console.error('Error changing password:', error);
-      setLoading(false);
       alert('Error al cambiar la contraseña');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const hasUnsavedChanges = Boolean(
+    passwordData.currentPassword ||
+    passwordData.newPassword ||
+    passwordData.confirmPassword
+  );
+
+  useUnsavedChangesPrompt(hasUnsavedChanges);
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
 
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return '';

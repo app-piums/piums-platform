@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslation } from "next-i18next";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +13,6 @@ interface FieldError {
 
 export default function LoginPage() {
   const { t } = useTranslation('login');
-  const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -84,8 +82,9 @@ export default function LoginPage() {
         const redirect = new URLSearchParams(window.location.search).get('redirect');
         window.location.href = redirect || '/dashboard';
       }
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('errorGeneral');
+      setGeneralError(message);
     } finally {
       setLoading(false);
     }

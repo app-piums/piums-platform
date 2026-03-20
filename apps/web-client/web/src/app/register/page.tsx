@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "next-i18next";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { countries, type Country } from "../../lib/countries";
 import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../components/PasswordStrengthIndicator";
 import { useAuth } from "../../contexts/AuthContext";
@@ -21,7 +21,6 @@ interface FieldError {
 
 export default function RegisterPage() {
   const { t } = useTranslation('register');
-  const router = useRouter();
   const { login } = useAuth();
   const [step, setStep] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
@@ -36,8 +35,6 @@ export default function RegisterPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt' | null>(null);
-  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
   
   // UI state
   const [errors, setErrors] = useState<FieldError>({});
@@ -164,8 +161,6 @@ export default function RegisterPage() {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          setUserLocation(location);
-          setLocationPermission('granted');
           console.log('📍 Ubicación obtenida:', location);
           
           // TODO: Enviar la ubicación al backend
@@ -177,7 +172,6 @@ export default function RegisterPage() {
         },
         (error) => {
           console.log('ℹ️ Usuario no permitió ubicación:', error.message);
-          setLocationPermission('denied');
         },
         {
           enableHighAccuracy: false,
@@ -263,8 +257,9 @@ export default function RegisterPage() {
       setTimeout(() => {
         setShowLocationModal(true);
       }, 1000);
-    } catch (err: any) {
-      setGeneralError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      setGeneralError(message);
     } finally {
       setLoading(false);
     }
@@ -559,13 +554,13 @@ export default function RegisterPage() {
                     />
                     <span className="text-sm text-zinc-700 dark:text-zinc-300">
                       Acepto los{" "}
-                      <a href="/terms" className="font-medium underline hover:text-zinc-900 dark:hover:text-zinc-50">
+                      <Link href="/terms" className="font-medium underline hover:text-zinc-900 dark:hover:text-zinc-50">
                         Términos y Condiciones
-                      </a>{" "}
+                      </Link>{" "}
                       y la{" "}
-                      <a href="/privacy" className="font-medium underline hover:text-zinc-900 dark:hover:text-zinc-50">
+                      <Link href="/privacy" className="font-medium underline hover:text-zinc-900 dark:hover:text-zinc-50">
                         Política de Privacidad
-                      </a>
+                      </Link>
                     </span>
                   </label>
                   {touched.terms && errors.terms && (
@@ -606,9 +601,9 @@ export default function RegisterPage() {
             <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
               <div className="text-center text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">¿Ya tienes cuenta? </span>
-                <a href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
+                <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
                   Inicia sesión aquí
-                </a>
+                </Link>
               </div>
               <div className="text-center">
                 <a

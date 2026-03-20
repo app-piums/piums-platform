@@ -1,36 +1,108 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 interface Props {
   userName: string;
+  onNavigateAttempt?: (href: string) => boolean;
 }
 
-export default function ClientSidebar({ userName }: Props) {
+type IconComponent = ({ className }: { className?: string }) => JSX.Element;
+
+type NavItem = {
+  href: string;
+  icon: IconComponent;
+  label: string;
+  badge?: number;
+};
+
+type SidebarContentProps = {
+  userName: string;
+  pathname: string;
+  navItems: NavItem[];
+  onLinkClick: (event: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onClose: () => void;
+};
+
+export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
-  const nav = [
-    { href: '/dashboard',  icon: HomeIcon,    label: 'Inicio' },
-    { href: '/artists',    icon: SearchIcon,  label: 'Artistas' },
-    { href: '/bookings',   icon: CalIcon,     label: 'Reservas' },
-    { href: '/bookmarks',  icon: HeartIcon,   label: 'Favoritos' },
-    { href: '/chat',       icon: ChatIcon,    label: 'Mensajes', badge: 3 },
+  const navItems: NavItem[] = [
+    { href: '/dashboard',  icon: HomeIcon,   label: 'Inicio' },
+    { href: '/artists',    icon: SearchIcon, label: 'Artistas' },
+    { href: '/bookings',   icon: CalIcon,    label: 'Reservas' },
+    { href: '/bookmarks',  icon: HeartIcon,  label: 'Favoritos' },
+    { href: '/chat',       icon: ChatIcon,   label: 'Mensajes', badge: 3 },
   ];
 
-  const NavContent = () => (
+  const handleLinkClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (onNavigateAttempt && onNavigateAttempt(href) === false) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    setIsOpen(false);
+  }, [onNavigateAttempt]);
+
+  return (
     <>
-      {/* Logo + cerrar */}
+      <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 shrink-0">
+        <SidebarContent
+          userName={userName}
+          pathname={pathname}
+          navItems={navItems}
+          onLinkClick={handleLinkClick}
+          onClose={() => setIsOpen(false)}
+        />
+      </aside>
+
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
+        <Link href="/dashboard" onClick={(event) => handleLinkClick(event, '/dashboard')}>
+          <Image src="/logo.jpg" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
+        </Link>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </header>
+
+      {isOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setIsOpen(false)} />
+          <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
+            <SidebarContent
+              userName={userName}
+              pathname={pathname}
+              navItems={navItems}
+              onLinkClick={handleLinkClick}
+              onClose={() => setIsOpen(false)}
+            />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: SidebarContentProps) {
+  return (
+    <>
       <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+        <Link href="/dashboard" className="flex items-center gap-2" onClick={(event) => onLinkClick(event, '/dashboard')}>
           <Image src="/logo.jpg" alt="PIUMS" width={80} height={28} className="h-7 w-auto" priority />
         </Link>
         <button
           className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
           aria-label="Cerrar menú"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,17 +111,16 @@ export default function ClientSidebar({ userName }: Props) {
         </button>
       </div>
 
-      {/* Nav principal */}
       <div className="flex-1 px-4 py-5 overflow-y-auto">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Menú</p>
         <nav className="space-y-0.5">
-          {nav.map(({ href, icon: Icon, label, badge }) => {
+          {navItems.map(({ href, icon: Icon, label, badge }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
             return (
               <Link
                 key={href}
                 href={href}
-                onClick={() => setIsOpen(false)}
+                onClick={(event) => onLinkClick(event, href)}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   active ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
                 }`}
@@ -68,13 +139,12 @@ export default function ClientSidebar({ userName }: Props) {
           })}
         </nav>
 
-        {/* Sección Cuenta */}
         <div className="mt-6">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Cuenta</p>
           <nav className="space-y-0.5">
             <Link
               href="/profile"
-              onClick={() => setIsOpen(false)}
+              onClick={(event) => onLinkClick(event, '/profile')}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 pathname.startsWith('/profile') ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
               }`}
@@ -86,11 +156,10 @@ export default function ClientSidebar({ userName }: Props) {
         </div>
       </div>
 
-      {/* Usuario */}
       <div className="p-4 border-t border-gray-100">
         <Link
           href="/profile"
-          onClick={() => setIsOpen(false)}
+          onClick={(event) => onLinkClick(event, '/profile')}
           className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
         >
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
@@ -102,43 +171,6 @@ export default function ClientSidebar({ userName }: Props) {
           </div>
         </Link>
       </div>
-    </>
-  );
-
-  return (
-    <>
-      {/* ─── Desktop sidebar ──────────────────────────────────────────── */}
-      <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 shrink-0">
-        <NavContent />
-      </aside>
-
-      {/* ─── Mobile: top bar con hamburguesa ──────────────────────────── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
-        <Link href="/dashboard">
-          <Image src="/logo.jpg" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
-        </Link>
-        <button
-          onClick={() => setIsOpen(true)}
-          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-          aria-label="Abrir menú"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </header>
-
-      {/* ─── Mobile drawer ────────────────────────────────────────────── */}
-      {isOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsOpen(false)} />
-          {/* Panel */}
-          <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
-            <NavContent />
-          </aside>
-        </div>
-      )}
     </>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
@@ -42,7 +43,7 @@ export default function BookmarksPage() {
             <p className="text-gray-500 mb-8 max-w-sm">
               Explora artistas y guarda los que más te gusten para encontrarlos fácilmente.
             </p>
-            <a
+            <Link
               href="/artists"
               className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl hover:bg-[#e55d00] transition-colors"
             >
@@ -50,7 +51,7 @@ export default function BookmarksPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               Explorar artistas
-            </a>
+            </Link>
           </div>
         </div>
       </div>

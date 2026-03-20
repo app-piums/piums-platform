@@ -5,14 +5,16 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
+type FilterValue = string | string[] | number[];
+
 export interface FilterConfig {
   type: 'select' | 'input' | 'range' | 'multiselect';
   name: string;
   label: string;
   placeholder?: string;
   options?: Array<{ value: string; label: string }>;
-  value?: string | string[] | number[];
-  onChange?: (value: any) => void;
+  value?: FilterValue;
+  onChange?: (value: FilterValue) => void;
 }
 
 interface FiltersProps {

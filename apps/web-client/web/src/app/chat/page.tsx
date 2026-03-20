@@ -114,8 +114,9 @@ export default function ChatPage() {
             setMessages(msgData.messages ?? msgData ?? []);
           }
         }
-      } catch (err: any) {
-        setError(err?.message || 'Error desconocido al cargar conversaciones.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido al cargar conversaciones.';
+        setError(message);
         setConversations([]);
         setMessages([]);
       } finally {

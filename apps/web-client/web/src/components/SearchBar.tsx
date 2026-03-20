@@ -230,7 +230,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onClose, autoFocus = false
                 onClick={() => handleSearch(query)}
                 className="mt-2 text-sm text-blue-600 hover:text-blue-700"
               >
-                Buscar "{query}"
+                Buscar &quot;{query}&quot;
               </button>
             </div>
           )}

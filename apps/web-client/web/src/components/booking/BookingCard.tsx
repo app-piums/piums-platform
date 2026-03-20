@@ -33,7 +33,7 @@ export interface BookingCardProps {
 }
 
 export const BookingCard: React.FC<BookingCardProps> = ({
-  id,
+  id: _bookingId,
   code,
   status,
   artist,
@@ -87,6 +87,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
   return (
     <div
+      data-booking-id={_bookingId}
       className={`
         bg-white
         border-2 ${config.borderColor}

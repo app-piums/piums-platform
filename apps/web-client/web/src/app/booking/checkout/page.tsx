@@ -96,8 +96,13 @@ function BookingSummary() {
         {/* Service row */}
         <div className="flex items-start gap-3">
           <div className="h-14 w-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={b.imageUrl} alt={b.serviceTitle} className="w-full h-full object-cover" />
+            <Image
+              src={b.imageUrl}
+              alt={b.serviceTitle}
+              width={56}
+              height={56}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900 text-sm leading-snug">{b.serviceTitle}</p>

@@ -33,7 +33,11 @@ export default function ClientOnboardingPage() {
   const toggleCategory = (id: string) => {
     setSelectedCategories(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -41,7 +45,11 @@ export default function ClientOnboardingPage() {
   const toggleTag = (catId: string, tag: string) => {
     setSelectedTags(prev => {
       const catSet = new Set(prev[catId] ?? []);
-      catSet.has(tag) ? catSet.delete(tag) : catSet.add(tag);
+      if (catSet.has(tag)) {
+        catSet.delete(tag);
+      } else {
+        catSet.add(tag);
+      }
       return { ...prev, [catId]: catSet };
     });
   };

@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { Artist } from '@piums/sdk';
+import type { Artist, GetArtistsParams } from '@piums/sdk';
 import { MOCK_ARTISTS } from '@/lib/mockData';
 
 export interface ArtistsFilters {
@@ -38,13 +38,15 @@ const getMockPage = (page: number, filters: ArtistsFilters): ArtistsPageResponse
   };
 };
 
+type ArtistsQueryParams = GetArtistsParams & { q?: string };
+
 const fetchArtistsPage = async (
   page: number,
   filters: ArtistsFilters
 ): Promise<ArtistsPageResponse> => {
   try {
     const { sdk } = await import('@piums/sdk');
-    const params: any = { page, limit: ITEMS_PER_PAGE };
+    const params: ArtistsQueryParams = { page, limit: ITEMS_PER_PAGE };
     if (filters.category) params.categoria = filters.category;
     if (filters.cityId) params.ciudad = filters.cityId;
     if (filters.q) params.q = filters.q;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Calendar } from '../ui/Calendar';
 
 interface TimeSlot {
@@ -35,10 +35,6 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
 }) => {
   // Get available dates
   const availableDates = availability.map(a => new Date(a.date));
-  
-  // Get disabled dates (dates before today)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   
   // Get time slots for selected date
   const getTimeSlots = (): TimeSlot[] => {

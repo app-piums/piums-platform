@@ -1,18 +1,9 @@
-import type { Artist, ArtistProfile, Service, Review, PortfolioItem } from '@piums/sdk';
+import type { ArtistProfile, Service, Review, PortfolioItem } from '@piums/sdk';
 
-// ─── Gradients used as cover/avatar colors ───────────────────────────────────
-const GRADIENTS = [
-  'from-rose-400 to-pink-600',
-  'from-violet-400 to-purple-600',
-  'from-amber-400 to-orange-500',
-  'from-teal-400 to-cyan-600',
-  'from-blue-400 to-indigo-600',
-  'from-green-400 to-emerald-600',
-  'from-red-400 to-rose-600',
-  'from-sky-400 to-blue-600',
-  'from-fuchsia-400 to-purple-600',
-  'from-lime-400 to-green-600',
-];
+type ArtistWithRelations = ArtistProfile & {
+  services?: Service[];
+  reviews?: Review[];
+};
 
 const CATEGORIES = ['Fotografía', 'Música', 'DJ', 'Video', 'Catering', 'Decoración', 'Animación', 'Maquillaje', 'Flores', 'Iluminación'];
 
@@ -32,7 +23,7 @@ const BIOS: Record<string, string> = {
 };
 
 // ─── 20 Mock Artists ─────────────────────────────────────────────────────────
-export const MOCK_ARTISTS: ArtistProfile[] = Array.from({ length: 20 }, (_, i) => {
+export const MOCK_ARTISTS: ArtistWithRelations[] = Array.from({ length: 20 }, (_, i) => {
   const cat = CATEGORIES[i % CATEGORIES.length];
   const names = [
     'Sarah Jiménez', 'Carlos Mendoza', 'DJ Alex Reyes', 'Ana Rodríguez',
@@ -135,22 +126,24 @@ export function getMockArtist(idOrSlug: string): ArtistProfile | null {
 
 export function getMockServices(artistId: string): Service[] {
   const artist = MOCK_ARTISTS.find(a => a.id === artistId || a.slug === artistId);
-  return (artist as any)?.services ?? [];
+  return artist?.services ?? [];
 }
 
 export function getMockReviews(artistId: string): Review[] {
   const artist = MOCK_ARTISTS.find(a => a.id === artistId || a.slug === artistId);
-  return (artist as any)?.reviews ?? [];
+  return artist?.reviews ?? [];
 }
 
 // ─── Availability mock ─────────────────────────────────────────────────────────
 export function getMockAvailability(artistId: string) {
   const today = new Date();
+  const offset = artistId.length % 7;
   return Array.from({ length: 30 }, (_, i) => {
     const date = new Date(today);
     date.setDate(today.getDate() + i + 1);
     const dateStr = date.toISOString().split('T')[0];
-    const isAvailable = i % 7 !== 0 && i % 7 !== 6; // no weekends
+    const dayIndex = (i + offset) % 7;
+    const isAvailable = dayIndex !== 0 && dayIndex !== 6; // evita fines de semana considerando offset
     return {
       date: dateStr,
       slots: isAvailable ? [

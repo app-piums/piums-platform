@@ -1,17 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useRouter } from 'next/navigation';
+import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 
-export default function DeleteAccountTab() {
+type DeleteAccountTabProps = {
+  onDirtyChange?: (isDirty: boolean) => void;
+};
+
+export default function DeleteAccountTab(props: DeleteAccountTabProps = {}) {
+  const { onDirtyChange } = props;
   const router = useRouter();
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [understood, setUnderstood] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+
+  const hasUnsavedChanges = showConfirmation && (!!password || !!confirmText || understood);
+
+  useUnsavedChangesPrompt(hasUnsavedChanges);
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
 
   const handleDeleteAccount = async () => {
     if (!password) {
@@ -173,7 +187,7 @@ export default function DeleteAccountTab() {
             {/* Confirmation Text */}
             <div>
               <label htmlFor="confirmText" className="block text-sm font-medium text-gray-700 mb-2">
-                Escribe "ELIMINAR" para confirmar <span className="text-red-500">*</span>
+                Escribe &quot;ELIMINAR&quot; para confirmar <span className="text-red-500">*</span>
               </label>
               <Input
                 id="confirmText"

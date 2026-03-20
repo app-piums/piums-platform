@@ -47,6 +47,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
       setNewDate('');
       onClose();
     } catch (err) {
+      console.error('Error al modificar fecha de reserva:', err);
       setError('Error al modificar la fecha. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);

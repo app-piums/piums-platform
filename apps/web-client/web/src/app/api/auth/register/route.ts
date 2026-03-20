@@ -92,23 +92,28 @@ export async function POST(request: NextRequest) {
       }
 
       return responseWithCookies;
-    } catch (fetchError: any) {
+    } catch (fetchError) {
       clearTimeout(timeoutId);
-      
-      // Manejar timeout específicamente
-      if (fetchError.name === 'AbortError') {
+
+      const isAbortError =
+        typeof fetchError === 'object' &&
+        fetchError !== null &&
+        'name' in fetchError &&
+        (fetchError as { name?: unknown }).name === 'AbortError';
+
+      if (isAbortError) {
         return NextResponse.json(
           { message: "La solicitud tardó demasiado. Por favor intenta nuevamente." },
           { status: 504 }
         );
       }
-      
+
       throw fetchError;
     }
-  } catch (error: any) {
-    // 🔒 No loguear password - solo el mensaje de error
-    console.error("Error en registro:", error.message || "Error desconocido");
-    
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    console.error("Error en registro:", message);
+
     return NextResponse.json(
       { message: "Error interno del servidor" },
       { status: 500 }

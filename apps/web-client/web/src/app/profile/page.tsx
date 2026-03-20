@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loading } from '@/components/Loading';
 import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
+import { UNSAVED_CHANGES_MESSAGE } from '@/hooks/useUnsavedChangesPrompt';
 
 import PersonalInfoTab from './personal/page';
 import SecurityTab from './security/page';
@@ -22,14 +23,53 @@ const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: bo
   { id: 'delete',        label: 'Eliminar cuenta',      icon: <TrashIcon className="h-4 w-4" />, danger: true },
 ];
 
+const DEFAULT_DIRTY_STATE: Record<TabId, boolean> = {
+  personal: false,
+  security: false,
+  notifications: false,
+  payments: false,
+  delete: false,
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId | null>(null);
+  const [dirtyTabs, setDirtyTabs] = useState<Record<TabId, boolean>>(DEFAULT_DIRTY_STATE);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push('/login');
   }, [isLoading, isAuthenticated, router]);
+
+  const currentTab = activeTab ?? 'personal';
+
+  const confirmLeaveCurrentTab = useCallback(() => {
+    if (!dirtyTabs[currentTab]) return true;
+    return window.confirm(UNSAVED_CHANGES_MESSAGE);
+  }, [currentTab, dirtyTabs]);
+
+  const handleDirtyChange = useCallback((tabId: TabId, isDirty: boolean) => {
+    setDirtyTabs((prev) => (prev[tabId] === isDirty ? prev : { ...prev, [tabId]: isDirty }));
+  }, []);
+
+  const handleGlobalNavigationAttempt = useCallback(() => {
+    return confirmLeaveCurrentTab();
+  }, [confirmLeaveCurrentTab]);
+
+  const handleBackNavigation = () => {
+    if (!confirmLeaveCurrentTab()) return;
+    router.back();
+  };
+
+  const handleTabSelection = (tabId: TabId) => {
+    if (currentTab !== tabId && !confirmLeaveCurrentTab()) return;
+    setActiveTab(tabId);
+  };
+
+  const handleCloseContent = () => {
+    if (!confirmLeaveCurrentTab()) return;
+    setActiveTab(null);
+  };
 
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
 
@@ -37,13 +77,13 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
-      <ClientSidebar userName={userName} />
+      <ClientSidebar userName={userName} onNavigateAttempt={handleGlobalNavigationAttempt} />
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Desktop header */}
         <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center gap-4">
           <button
-            onClick={() => router.back()}
+            onClick={handleBackNavigation}
             className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             aria-label="Volver"
           >
@@ -64,7 +104,7 @@ export default function ProfilePage() {
           {/* Mobile: back button + avatar */}
           <div className="lg:hidden flex items-center gap-3 mb-5">
             <button
-              onClick={() => router.back()}
+              onClick={handleBackNavigation}
               className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               aria-label="Volver"
             >
@@ -86,11 +126,11 @@ export default function ProfilePage() {
             <nav className={`lg:w-56 shrink-0 ${activeTab ? 'hidden lg:block' : 'block'}`}>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {TABS.map(tab => {
-                  const active = (activeTab ?? 'personal') === tab.id;
+                  const active = currentTab === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => handleTabSelection(tab.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left transition-colors border-b border-gray-50 last:border-b-0
                         ${
                           active
@@ -118,7 +158,7 @@ export default function ProfilePage() {
             <div className={`flex-1 min-w-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 ${activeTab ? 'block' : 'hidden lg:block'}`}>
               {/* Mobile back button */}
               <button
-                onClick={() => setActiveTab(null)}
+                onClick={handleCloseContent}
                 className="lg:hidden flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-800 mb-5 -mt-1 transition-colors"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,11 +166,17 @@ export default function ProfilePage() {
                 </svg>
                 Volver a configuración
               </button>
-              {(activeTab ?? 'personal') === 'personal'      && <PersonalInfoTab />}
-              {(activeTab ?? 'personal') === 'security'      && <SecurityTab />}
-              {(activeTab ?? 'personal') === 'notifications' && <NotificationsTab />}
-              {(activeTab ?? 'personal') === 'payments'      && <PaymentsTab />}
-              {(activeTab ?? 'personal') === 'delete'        && <DeleteAccountTab />}
+              {currentTab === 'personal'      && (
+                <PersonalInfoTab onDirtyChange={(dirty) => handleDirtyChange('personal', dirty)} />
+              )}
+              {currentTab === 'security'      && (
+                <SecurityTab onDirtyChange={(dirty) => handleDirtyChange('security', dirty)} />
+              )}
+              {currentTab === 'notifications' && (
+                <NotificationsTab onDirtyChange={(dirty) => handleDirtyChange('notifications', dirty)} />
+              )}
+              {currentTab === 'payments'      && <PaymentsTab />}
+              {currentTab === 'delete'        && <DeleteAccountTab />}
             </div>
           </div>
         </div>

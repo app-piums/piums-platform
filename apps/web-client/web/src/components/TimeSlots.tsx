@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { sdk } from '@piums/sdk';
 import type { TimeSlotsData, TimeSlot } from '@piums/sdk';
 import { Loading } from './Loading';
@@ -16,13 +16,7 @@ export function TimeSlots({ artistId, selectedDate, selectedTime, onTimeSelect }
   const [timeSlotsData, setTimeSlotsData] = useState<TimeSlotsData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (selectedDate) {
-      loadTimeSlots();
-    }
-  }, [selectedDate, artistId]);
-
-  const loadTimeSlots = async () => {
+  const loadTimeSlots = useCallback(async () => {
     try {
       setLoading(true);
       const dateStr = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -33,7 +27,13 @@ export function TimeSlots({ artistId, selectedDate, selectedTime, onTimeSelect }
     } finally {
       setLoading(false);
     }
-  };
+  }, [artistId, selectedDate]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      loadTimeSlots();
+    }
+  }, [loadTimeSlots, selectedDate]);
 
   const formatDate = (date: Date): string => {
     const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];

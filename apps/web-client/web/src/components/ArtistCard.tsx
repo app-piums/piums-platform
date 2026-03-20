@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -19,9 +20,11 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
         {/* Cover Photo */}
         <div className="relative h-48 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400">
           {artist.coverPhoto && (
-            <img
+            <Image
               src={artist.coverPhoto}
               alt={artist.nombre}
+              width={768}
+              height={384}
               className="w-full h-full object-cover"
             />
           )}

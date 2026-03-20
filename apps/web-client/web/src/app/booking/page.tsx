@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -59,13 +59,7 @@ function BookingContent() {
     }
   }, [authLoading, isAuthenticated, router, artistId]);
 
-  useEffect(() => {
-    if (isAuthenticated && artistId) {
-      loadBookingData();
-    }
-  }, [isAuthenticated, artistId]);
-
-  const loadBookingData = async () => {
+  const loadBookingData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -108,7 +102,13 @@ function BookingContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [artistId, serviceId]);
+
+  useEffect(() => {
+    if (isAuthenticated && artistId) {
+      loadBookingData();
+    }
+  }, [isAuthenticated, artistId, loadBookingData]);
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
@@ -125,13 +125,18 @@ function BookingContent() {
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
     if (selectedDate) {
-      const dateStr = selectedDate.toISOString().split('T')[0];
       // Build a synthetic TimeSlot from the selected time
       const [h, m] = time.split(':').map(Number);
       const start = new Date(selectedDate);
       start.setHours(h, m, 0, 0);
       const end = new Date(start.getTime() + (selectedService?.duration ?? 120) * 60000);
-      setSelectedTimeSlot({ time, available: true, startTime: start.toISOString(), endTime: end.toISOString() } as any);
+      const timeSlot: TimeSlot = {
+        time,
+        available: true,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      };
+      setSelectedTimeSlot(timeSlot);
     }
   };
 
@@ -155,18 +160,6 @@ function BookingContent() {
     );
   };
 
-  const calculateTotal = () => {
-    if (!selectedService) return 0;
-    
-    const servicePrice = selectedService.basePrice;
-    const addonsPrice = selectedAddons.reduce((total, addonId) => {
-      const addon = addons.find(a => a.id === addonId);
-      return total + (addon?.price || 0);
-    }, 0);
-    
-    return servicePrice + addonsPrice;
-  };
-
   const handleConfirmBooking = async () => {
     if (!selectedService || !artist || !user || !selectedTimeSlot) return;
 
@@ -176,10 +169,11 @@ function BookingContent() {
       const mockBookingId = `booking-${Date.now()}`;
       setShowConfirmModal(false);
       router.push(`/booking/confirmation/${mockBookingId}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating booking:', error);
       setShowConfirmModal(false);
-      alert(error.message || 'Error al crear la reserva. Por favor intenta de nuevo.');
+      const message = error instanceof Error ? error.message : 'Error al crear la reserva. Por favor intenta de nuevo.';
+      alert(message);
     } finally {
       setSubmitting(false);
     }

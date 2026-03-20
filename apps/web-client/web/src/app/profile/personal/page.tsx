@@ -6,50 +6,72 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { sdk } from '@piums/sdk';
+import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 
-export default function PersonalInfoTab() {
-      const handleAvatarDelete = async () => {
-        if (!user) return;
-        setAvatarUploading(true);
-        try {
-          const res = await fetch('/api/users/me/avatar', {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${user.token}`,
-            },
-          });
-          if (!res.ok) throw new Error('Error al eliminar avatar');
-          setAvatarPreview(undefined);
-          alert('Avatar eliminado correctamente');
-        } catch (err) {
-          alert('Error al eliminar avatar');
-        } finally {
-          setAvatarUploading(false);
-        }
-      };
-    const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined);
-    const [avatarFile, setAvatarFile] = useState<File | null>(null);
-    const [avatarUploading, setAvatarUploading] = useState(false);
+type PersonalInfoTabProps = {
+  onDirtyChange?: (isDirty: boolean) => void;
+};
+
+type ProfileFormData = {
+  nombre: string;
+  email: string;
+  telefono: string;
+  direccion: string;
+};
+
+export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
+  const { onDirtyChange } = props;
   const { user } = useAuth();
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProfileFormData>({
     nombre: '',
     email: '',
     telefono: '',
     direccion: '',
   });
+  const [initialData, setInitialData] = useState<ProfileFormData | null>(null);
+  const [initialAvatar, setInitialAvatar] = useState<string | undefined>(undefined);
+
+  const handleAvatarDelete = async () => {
+    if (!user) return;
+    setAvatarUploading(true);
+    try {
+      const res = await fetch('/api/users/me/avatar', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      });
+      if (!res.ok) throw new Error('Error al eliminar avatar');
+      setAvatarPreview(undefined);
+      setInitialAvatar(undefined);
+      setAvatarFile(null);
+      alert('Avatar eliminado correctamente');
+    } catch (err) {
+      console.error('Error al eliminar avatar:', err);
+      alert('Error al eliminar avatar');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      const baseData = {
         nombre: user.nombre || '',
         email: user.email || '',
         telefono: '',
         direccion: '',
-      });
-      setAvatarPreview(user.avatar || undefined);
+      };
+      setFormData(baseData);
+      setInitialData(baseData);
+      const avatar = user.avatar || undefined;
+      setAvatarPreview(avatar);
+      setInitialAvatar(avatar);
     }
   }, [user]);
 
@@ -82,9 +104,11 @@ export default function PersonalInfoTab() {
       if (!res.ok) throw new Error('Error al subir avatar');
       const data = await res.json();
       setAvatarPreview(data.avatar);
+      setInitialAvatar(data.avatar);
       setAvatarFile(null);
       alert('Avatar actualizado correctamente');
     } catch (err) {
+      console.error('Error al subir avatar:', err);
       alert('Error al subir avatar');
     } finally {
       setAvatarUploading(false);
@@ -99,22 +123,42 @@ export default function PersonalInfoTab() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      setLoading(true);
-      
       // TODO: Call API to update profile
       // const userId = user?.id;
       // await sdk.updateProfile(userId, formData);
-      
-      setTimeout(() => {
-        setLoading(false);
-        setEditing(false);
-        alert('Perfil actualizado correctamente');
-      }, 1000);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setInitialData({ ...formData });
+      setEditing(false);
+      alert('Perfil actualizado correctamente');
     } catch (error) {
       console.error('Error updating profile:', error);
-      setLoading(false);
       alert('Error al actualizar el perfil');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hasFormChanges = initialData
+    ? initialData.nombre !== formData.nombre ||
+      initialData.email !== formData.email ||
+      initialData.telefono !== formData.telefono ||
+      initialData.direccion !== formData.direccion
+    : false;
+
+  const hasUnsavedChanges = editing && (hasFormChanges || Boolean(avatarFile));
+
+  const { confirmNavigation } = useUnsavedChangesPrompt(hasUnsavedChanges);
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
+
+  const handleExitClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!confirmNavigation()) {
+      event.preventDefault();
     }
   };
 
@@ -170,6 +214,7 @@ export default function PersonalInfoTab() {
               </Button>
               <Link
                 href="/dashboard"
+                onClick={handleExitClick}
                 className="ml-auto flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-gray-700 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,7 +310,9 @@ export default function PersonalInfoTab() {
               variant="outline"
               onClick={() => {
                 setEditing(false);
-                if (user) {
+                if (initialData) {
+                  setFormData({ ...initialData });
+                } else if (user) {
                   setFormData({
                     nombre: user.nombre || '',
                     email: user.email || '',
@@ -273,6 +320,8 @@ export default function PersonalInfoTab() {
                     direccion: '',
                   });
                 }
+                setAvatarFile(null);
+                setAvatarPreview(initialAvatar ?? user?.avatar ?? undefined);
               }}
             >
               Cancelar

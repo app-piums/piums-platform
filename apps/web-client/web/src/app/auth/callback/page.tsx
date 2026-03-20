@@ -14,7 +14,6 @@ export default function OAuthCallbackPage() {
       try {
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
-        const provider = params.get('provider');
         const errorParam = params.get('error');
 
         // Handle errors from OAuth provider

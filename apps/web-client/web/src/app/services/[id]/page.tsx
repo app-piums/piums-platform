@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 // ─── Mock data ───────────────────────────────────────────────────────────────
@@ -325,7 +325,6 @@ function PricingCard({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ServiceDetailPage() {
-  const params = useParams();
   const [showBooking, setShowBooking] = useState(false);
   const service = MOCK_SERVICE; // TODO: fetch by params.id
 
@@ -391,10 +390,11 @@ export default function ServiceDetailPage() {
 
             {/* Hero image */}
             <div className="relative w-full aspect-[16/9] lg:aspect-[2/1] rounded-2xl overflow-hidden bg-gray-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={service.images[0]}
                 alt={service.title}
+                width={1200}
+                height={675}
                 className="w-full h-full object-cover"
               />
               {/* Overlay tags */}
