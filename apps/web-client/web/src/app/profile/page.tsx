@@ -42,6 +42,15 @@ export default function ProfilePage() {
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Desktop header */}
         <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            aria-label="Volver"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
             {userName.charAt(0).toUpperCase()}
           </div>
@@ -52,9 +61,18 @@ export default function ProfilePage() {
         </header>
 
         <div className="flex-1 p-4 pt-20 lg:p-8 lg:pt-8">
-          {/* Mobile avatar */}
+          {/* Mobile: back button + avatar */}
           <div className="lg:hidden flex items-center gap-3 mb-5">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
+            <button
+              onClick={() => router.back()}
+              className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Volver"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div>
