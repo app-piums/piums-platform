@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 
 export default function PersonalInfoTab() {
-  const router = useRouter();
       const handleAvatarDelete = async () => {
         if (!user) return;
         setAvatarUploading(true);
@@ -169,15 +168,15 @@ export default function PersonalInfoTab() {
               <Button size="sm" variant="ghost" disabled={!editing || avatarUploading} onClick={handleAvatarDelete}>
                 Eliminar
               </Button>
-              <button
-                onClick={() => router.push('/dashboard')}
+              <Link
+                href="/dashboard"
                 className="ml-auto flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-gray-700 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
                 Salir
-              </button>
+              </Link>
             </div>
             <p className="text-xs text-gray-500 mt-2">
               JPG, PNG o GIF. Máximo 2MB.
