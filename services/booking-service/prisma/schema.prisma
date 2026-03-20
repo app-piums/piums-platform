@@ -1,0 +1,351 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  PENDING           // Esperando confirmación del artista
+  CONFIRMED         // Confirmada por el artista
+  PAYMENT_PENDING   // Esperando pago del depósito
+  PAYMENT_COMPLETED // Pago completado
+  IN_PROGRESS       // En progreso (día de la cita)
+  COMPLETED         // Completada exitosamente
+  RESCHEDULED       // Reprogramada
+  CANCELLED_CLIENT  // Cancelada por el cliente
+  CANCELLED_ARTIST  // Cancelada por el artista
+  REJECTED          // Rechazada por el artista
+  NO_SHOW           // Cliente no se presentó
+}
+
+enum PaymentStatus {
+  PENDING
+  DEPOSIT_PAID      // Depósito pagado
+  FULLY_PAID        // Totalmente pagado
+  REFUNDED          // Reembolsado
+  PARTIALLY_REFUNDED
+}
+
+enum BookingItemType {
+  BASE      // Precio base del servicio
+  ADDON     // Extra/addon contratado
+  TRAVEL    // Cargo por desplazamiento
+  DISCOUNT  // Descuento aplicado
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  code        String?  @unique // Código legible único (ej: PIU-2026-000123)
+  
+  // Relaciones con otros servicios
+  clientId    String   // ID del usuario (users-service)
+  artistId    String   // ID del artista (artists-service)
+  serviceId   String   // ID del servicio contratado (catalog-service)
+  
+  // Información de la cita
+  scheduledDate  DateTime  // Fecha y hora de la cita
+  durationMinutes Int      // Duración en minutos
+  location        String?  // Dirección de la cita
+  locationLat     Float?
+  locationLng     Float?
+  cityId          String?  // Referencia a City (catalog-service)
+  
+  // Estado
+  status         BookingStatus @default(PENDING)
+  statusHistory  BookingStatusChange[]
+  
+  // Pricing
+  servicePrice   Int          // Precio del servicio en centavos
+  addonsPrice    Int          @default(0) // Precio de addons en centavos
+  totalPrice     Int          // Precio total en centavos
+  currency       String       @default("GTQ")
+  
+  // Snapshot del quote completo al momento de la reserva (inmutable)
+  quoteSnapshot  Json?        // Incluye: items[], breakdown, totales
+  
+  depositRequired Boolean     @default(false)
+  depositAmount   Int?        // Monto del depósito en centavos
+  depositPaidAt   DateTime?
+  
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentIntentId String?     // ID del Payment Intent de Stripe (payments-service)
+  paymentId       String?     // Referencia al Payment completado (payments-service)
+  paidAmount      Int          @default(0)
+  paidAt          DateTime?
+  paymentMethod   String?
+  
+  // Add-ons contratados (array de IDs)
+  selectedAddons  String[]
+  
+  // Notas
+  clientNotes     String?      @db.Text
+  artistNotes     String?      @db.Text
+  internalNotes   String?      @db.Text // Notas para admin/staff
+  
+  // Cancelación
+  cancelledAt     DateTime?
+  cancelledBy     String?      // userId que canceló
+  cancellationReason String?   @db.Text
+  refundAmount    Int?         // Monto reembolsado en centavos
+  
+  // Reprogramación
+  rescheduledAt   DateTime?
+  rescheduledBy   String?      // userId que reprogramó
+  rescheduleReason String?     @db.Text
+  rescheduleCount Int          @default(0) // Contador de reprogramaciones
+  
+  // Confirmación
+  confirmedAt     DateTime?
+  confirmedBy     String?      // artistId
+  
+  // Recordatorios enviados
+  reminderSent24h Boolean      @default(false)
+  reminderSent2h  Boolean      @default(false)
+  
+  // Review (después de completar)
+  reviewId        String?      @unique
+  
+  // Soft delete para auditorías
+  deletedAt       DateTime?
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([clientId])
+  @@index([artistId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([paymentStatus])
+  @@index([paymentId])
+  @@index([cityId])
+  @@index([code]) // Búsqueda rápida por código
+  @@map("bookings")
+}
+
+model BookingStatusChange {
+  id          String   @id @default(uuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  fromStatus  BookingStatus?
+  toStatus    BookingStatus
+  changedBy   String   // userId o artistId que hizo el cambio
+  reason      String?  @db.Text
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([bookingId])
+  @@index([createdAt])
+  @@map("booking_status_changes")
+}
+
+// Desglose detallado del precio de un booking
+model BookingItem {
+  id          String           @id @default(uuid())
+  bookingId   String
+  
+  type        BookingItemType  // Tipo de concepto (BASE, ADDON, TRAVEL, DISCOUNT)
+  name        String           // Nombre descriptivo del item
+  
+  qty         Int              @default(1) // Cantidad
+  unitPriceCents Int           // Precio unitario en centavos
+  totalPriceCents Int          // Precio total (qty × unitPriceCents)
+  
+  // Metadata adicional (ej: distancia para TRAVEL)
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([bookingId])
+  @@index([type])
+  @@map("booking_items")
+}
+
+// Disponibilidad bloqueada (para que artistas bloqueen días/horas específicas)
+model BlockedSlot {
+  id          String   @id @default(uuid())
+  artistId    String
+  
+  startTime   DateTime
+  endTime     DateTime
+  
+  reason      String?  @db.Text
+  isRecurring Boolean  @default(false)
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([artistId])
+  @@index([startTime, endTime])
+  @@map("blocked_slots")
+}
+
+// Configuración de disponibilidad del artista
+model AvailabilityConfig {
+  id                String   @id @default(uuid())
+  artistId          String   @unique
+  
+  // Configuración de reserva
+  minAdvanceHours   Int      @default(24)    // Mínimo de horas de anticipación
+  maxAdvanceDays    Int      @default(90)    // Máximo de días de anticipación
+  
+  bufferMinutes     Int      @default(30)    // Tiempo de buffer entre citas
+  
+  autoConfirm       Boolean  @default(false) // Auto-confirmar reservas sin revisión
+  requiresDeposit   Boolean  @default(true)
+  
+  // Política de cancelación
+  cancellationHours Int      @default(48)    // Horas mínimas para cancelar sin penalización
+  cancellationFee   Int      @default(0)     // Fee de cancelación en porcentaje (0-100)
+  
+  // Soft delete para auditorías
+  deletedAt         DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("availability_configs")
+}
+
+// Reservas de disponibilidad - bloqueo efectivo de agenda por booking confirmado
+model AvailabilityReservation {
+  id        String   @id @default(uuid())
+  artistId  String   // Artista cuya agenda se bloquea
+  bookingId String   @unique // Booking que genera el bloqueo (1:1)
+  
+  startAt   DateTime // Fecha y hora de inicio del bloqueo
+  endAt     DateTime // Fecha y hora de fin del bloqueo
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([startAt, endAt])
+  @@index([artistId, startAt, endAt]) // Para búsquedas de disponibilidad
+  @@map("availability_reservations")
+}
+
+// ============================================================================
+// Disputes - Sistema de disputas y resolución de conflictos
+// ============================================================================
+
+enum DisputeType {
+  CANCELLATION      // Disputa por cancelación
+  QUALITY           // Disputa por calidad del servicio
+  REFUND            // Solicitud de reembolso
+  NO_SHOW           // Cliente no se presentó (artista reporta)
+  ARTIST_NO_SHOW    // Artista no se presentó (cliente reporta)
+  PRICING           // Disputa sobre precio/cargos
+  BEHAVIOR          // Comportamiento inapropiado
+  OTHER             // Otro tipo de disputa
+}
+
+enum DisputeStatus {
+  OPEN              // Recién abierta
+  IN_REVIEW         // Bajo revisión por staff
+  AWAITING_INFO     // Esperando información adicional
+  RESOLVED          // Resuelta
+  CLOSED            // Cerrada sin resolución
+  ESCALATED         // Escalada a nivel superior
+}
+
+enum DisputeResolution {
+  FULL_REFUND       // Reembolso completo
+  PARTIAL_REFUND    // Reembolso parcial
+  NO_REFUND         // Sin reembolso
+  CREDIT            // Crédito para futura reserva
+  WARNING           // Advertencia al usuario/artista
+  SUSPENSION        // Suspensión temporal
+  BAN               // Expulsión permanente
+  NO_ACTION         // Sin acción necesaria
+}
+
+model Dispute {
+  id            String   @id @default(uuid())
+  
+  // Relaciones
+  bookingId     String
+  reportedBy    String           // userId del que reporta (cliente o artista)
+  reportedAgainst String?        // userId del reportado (opcional)
+  
+  // Tipo y estado
+  disputeType   DisputeType
+  status        DisputeStatus    @default(OPEN)
+  
+  // Detalles
+  subject       String           // Título corto
+  description   String           @db.Text
+  
+  // Resolución
+  resolution    DisputeResolution?
+  resolutionNotes String?        @db.Text
+  resolvedBy    String?          // staffId que resolvió
+  resolvedAt    DateTime?
+  
+  // Evidencia
+  evidence      Json?            // URLs de fotos, documentos, etc.
+  
+  // Prioridad
+  priority      Int              @default(0) // 0=normal, 1=alta, 2=urgente
+  
+  // Mensajes/comunicación
+  messages      DisputeMessage[]
+  
+  // Reembolso (si aplica)
+  refundAmount  Int?             // Monto reembolsado en centavos
+  refundIssued  Boolean          @default(false)
+  refundIssuedAt DateTime?
+  
+  // Soft delete para auditorías
+  deletedAt     DateTime?
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  @@index([bookingId])
+  @@index([reportedBy])
+  @@index([status])
+  @@index([disputeType])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("disputes")
+}
+
+// Mensajes dentro de una disputa (comunicación entre partes y staff)
+model DisputeMessage {
+  id          String   @id @default(uuid())
+  disputeId   String
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  
+  senderId    String   // userId o staffId
+  senderType  String   // "client", "artist", "staff"
+  
+  message     String   @db.Text
+  attachments Json?    // URLs de archivos adjuntos
+  
+  // Si es una actualización de estado
+  isStatusUpdate Boolean @default(false)
+  oldStatus   DisputeStatus?
+  newStatus   DisputeStatus?
+  
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([disputeId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("dispute_messages")
+}

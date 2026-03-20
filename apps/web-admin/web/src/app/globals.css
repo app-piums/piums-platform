@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Piúms Brand Colors */
+  --color-primary: #FF6A00;
+  --color-primary-dark: #E65F00;
+  --color-primary-light: #FF8533;
+  --color-accent: #00AEEF;
+  --color-accent-dark: #009DD6;
+  --color-accent-light: #33BDFF;
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: var(--color-accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}

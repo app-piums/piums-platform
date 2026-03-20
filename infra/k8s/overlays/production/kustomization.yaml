@@ -1,0 +1,108 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: piums
+
+bases:
+  - ../../base
+
+commonLabels:
+  environment: production
+
+patches:
+  # Gateway: more replicas + higher resources
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: gateway
+      spec:
+        replicas: 3
+        template:
+          spec:
+            containers:
+              - name: gateway
+                resources:
+                  requests:
+                    cpu: 200m
+                    memory: 256Mi
+                  limits:
+                    cpu: 1000m
+                    memory: 1Gi
+    target:
+      kind: Deployment
+      name: gateway
+  # Auth: 3 replicas for HA
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: auth-service
+      spec:
+        replicas: 3
+    target:
+      kind: Deployment
+      name: auth-service
+  # Artists: 3 replicas (high traffic)
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: artists-service
+      spec:
+        replicas: 3
+    target:
+      kind: Deployment
+      name: artists-service
+  # Search: 3 replicas (high traffic)
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: search-service
+      spec:
+        replicas: 3
+    target:
+      kind: Deployment
+      name: search-service
+  # Chat: 3 replicas for WebSocket load
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: chat-service
+      spec:
+        replicas: 3
+    target:
+      kind: Deployment
+      name: chat-service
+
+configMapGenerator:
+  - name: piums-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+
+images:
+  - name: ghcr.io/app-piums/piums-platform/gateway
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/auth-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/users-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/artists-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/catalog-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/payments-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/reviews-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/notifications-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/booking-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/search-service
+    newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/chat-service
+    newTag: latest

@@ -1,0 +1,202 @@
+# ============================================================================
+# Kubernetes Services — Piums Platform
+# All internal services use ClusterIP; gateway exposed via LoadBalancer
+# ============================================================================
+
+# ─────────────────────── API Gateway (LoadBalancer) ─────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: piums
+  labels:
+    app: gateway
+spec:
+  type: LoadBalancer
+  selector:
+    app: gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 3000
+      protocol: TCP
+---
+# ─────────────────────── Auth Service ───────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: piums
+  labels:
+    app: auth-service
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - port: 4001
+      targetPort: 4001
+---
+# ─────────────────────── Users Service ──────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: piums
+  labels:
+    app: users-service
+spec:
+  type: ClusterIP
+  selector:
+    app: users-service
+  ports:
+    - port: 4002
+      targetPort: 4002
+---
+# ─────────────────────── Artists Service ────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: artists-service
+  namespace: piums
+  labels:
+    app: artists-service
+spec:
+  type: ClusterIP
+  selector:
+    app: artists-service
+  ports:
+    - port: 4003
+      targetPort: 4003
+---
+# ─────────────────────── Catalog Service ────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+  namespace: piums
+  labels:
+    app: catalog-service
+spec:
+  type: ClusterIP
+  selector:
+    app: catalog-service
+  ports:
+    - port: 4004
+      targetPort: 4004
+---
+# ─────────────────────── Payments Service ───────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments-service
+  namespace: piums
+  labels:
+    app: payments-service
+spec:
+  type: ClusterIP
+  selector:
+    app: payments-service
+  ports:
+    - port: 4005
+      targetPort: 4005
+---
+# ─────────────────────── Reviews Service ────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: reviews-service
+  namespace: piums
+  labels:
+    app: reviews-service
+spec:
+  type: ClusterIP
+  selector:
+    app: reviews-service
+  ports:
+    - port: 4006
+      targetPort: 4006
+---
+# ─────────────────────── Notifications Service ──────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications-service
+  namespace: piums
+  labels:
+    app: notifications-service
+spec:
+  type: ClusterIP
+  selector:
+    app: notifications-service
+  ports:
+    - port: 4007
+      targetPort: 4007
+---
+# ─────────────────────── Booking Service ────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: booking-service
+  namespace: piums
+  labels:
+    app: booking-service
+spec:
+  type: ClusterIP
+  selector:
+    app: booking-service
+  ports:
+    - port: 4008
+      targetPort: 4008
+---
+# ─────────────────────── Search Service ─────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-service
+  namespace: piums
+  labels:
+    app: search-service
+spec:
+  type: ClusterIP
+  selector:
+    app: search-service
+  ports:
+    - port: 4009
+      targetPort: 4009
+---
+# ─────────────────────── Chat Service ───────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: piums
+  labels:
+    app: chat-service
+spec:
+  type: ClusterIP
+  selector:
+    app: chat-service
+  ports:
+    - port: 4010
+      targetPort: 4010
+---
+# ─────────────────────── Redis ──────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: piums
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379

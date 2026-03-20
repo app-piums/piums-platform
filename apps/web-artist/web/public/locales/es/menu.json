@@ -1,0 +1,17 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "artists": "Artistas",
+    "bookings": "Mis Reservas",
+    "messages": "Mensajes",
+    "schedule": "Agenda",
+    "wallet": "Billetera",
+    "invoices": "Facturas",
+    "profile": "Mi Perfil",
+    "logout": "Cerrar Sesión",
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "finance": "Finanzas",
+    "main": "Menú Principal"
+  }
+}

@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  emailVerified       Boolean             @default(false)
+  passwordHash        String?
+  nombre              String
+  name                String?
+  avatar              String?
+  provider            String?
+  googleId            String?             @unique
+  facebookId          String?             @unique
+  role                String              @default("user")
+  isBlocked           Boolean             @default(false)
+  isVerified          Boolean             @default(false)
+  status              UserStatus          @default(PENDING_EMAIL)
+  twoFactorEnabled    Boolean             @default(false)
+  twoFactorSecret     String?
+  backupCodes         String[]
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  lastPasswordChange  DateTime            @default(now())
+  failedLoginAttempts Int                 @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+  auditLogs           AuditLog[]
+  emailVerifications  EmailVerification[]
+  passwordResets      PasswordReset[]
+  refreshTokens       RefreshToken[]
+  sessions            Session[]
+
+  @@index([email])
+  @@index([status])
+  @@index([emailVerified])
+  @@index([googleId])
+  @@index([facebookId])
+  @@index([role])
+  @@map("users")
+}
+
+model Session {
+  id           String        @id @default(uuid())
+  userId       String
+  jti          String        @unique
+  userAgent    String?
+  ipAddress    String?
+  deviceId     String?
+  deviceName   String?
+  status       SessionStatus @default(ACTIVE)
+  lastActivity DateTime      @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jti])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  userAgent String?
+  ipAddress String?
+  deviceId  String?
+  isRevoked Boolean   @default(false)
+  revokedAt DateTime?
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@index([isRevoked])
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id        String      @id @default(uuid())
+  userId    String
+  tokenHash String      @unique
+  status    TokenStatus @default(PENDING)
+  usedAt    DateTime?
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("password_resets")
+}
+
+model EmailVerification {
+  id         String      @id @default(uuid())
+  userId     String
+  email      String
+  tokenHash  String      @unique
+  status     TokenStatus @default(PENDING)
+  verifiedAt DateTime?
+  ipAddress  String?
+  userAgent  String?
+  expiresAt  DateTime
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@index([tokenHash])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("email_verifications")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  entity       String?
+  entityId     String?
+  details      Json?
+  success      Boolean  @default(true)
+  errorMessage String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_EMAIL
+}
+
+enum SessionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR
+  MAGIC_LINK
+}
+
+enum TokenStatus {
+  PENDING
+  USED
+  EXPIRED
+  REVOKED
+}

@@ -1,0 +1,13 @@
+{
+  "onboarding": {
+    "welcomeTitle": "¡Bienvenido a PIUMS!",
+    "welcomeSubtitle": "Descubre artistas y servicios para tu evento.",
+    "startButton": "Comenzar",
+    "interestsTitle": "¿Qué te interesa?",
+    "interestsSubtitle": "Selecciona las categorías que más te gustan.",
+    "refineTitle": "Refina tus preferencias",
+    "refineSubtitle": "Elige estilos, géneros y servicios específicos.",
+    "finishButton": "Finalizar",
+    "backButton": "Atrás"
+  }
+}

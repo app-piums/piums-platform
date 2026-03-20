@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Déjanos tu Opinión - Piums</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .content h2 {
+      font-size: 22px;
+      color: #2d3748;
+      margin-bottom: 20px;
+    }
+    .content p {
+      font-size: 15px;
+      color: #4a5568;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+    .artist-card {
+      display: flex;
+      align-items: center;
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 25px 0;
+    }
+    .artist-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    .artist-info h3 {
+      font-size: 18px;
+      color: #2d3748;
+      margin-bottom: 5px;
+    }
+    .artist-info p {
+      font-size: 14px;
+      color: #718096;
+      margin: 3px 0;
+    }
+    .rating-section {
+      background: #fffaf0;
+      border-left: 4px solid #f6ad55;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .rating-section h3 {
+      font-size: 18px;
+      color: #744210;
+      margin-bottom: 15px;
+    }
+    .stars {
+      font-size: 40px;
+      letter-spacing: 8px;
+      margin: 15px 0;
+      cursor: pointer;
+    }
+    .star {
+      color: #e2e8f0;
+      transition: color 0.2s;
+    }
+    .star:hover,
+    .star.active {
+      color: #f6ad55;
+    }
+    .button {
+      display: inline-block;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+      color: white !important;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 20px 0;
+      box-shadow: 0 4px 12px rgba(246, 173, 85, 0.4);
+      transition: transform 0.2s;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(246, 173, 85, 0.5);
+    }
+    .why-review {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 25px;
+    }
+    .why-review h3 {
+      font-size: 16px;
+      color: #2d3748;
+      margin-bottom: 15px;
+    }
+    .why-item {
+      display: flex;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    .why-icon {
+      font-size: 20px;
+      margin-right: 12px;
+      min-width: 28px;
+    }
+    .why-text {
+      font-size: 14px;
+      color: #4a5568;
+    }
+    .incentive-box {
+      background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 25px 0;
+      text-align: center;
+    }
+    .incentive-box h3 {
+      font-size: 18px;
+      color: #2d3748;
+      margin-bottom: 10px;
+    }
+    .incentive-box p {
+      font-size: 14px;
+      color: #4a5568;
+      margin-bottom: 0;
+    }
+    .incentive-badge {
+      display: inline-block;
+      background: #f6ad55;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .footer {
+      background: #f7fafc;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+    }
+    .footer p {
+      font-size: 13px;
+      color: #718096;
+      margin-bottom: 12px;
+    }
+    .footer a {
+      color: #f6ad55;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    .footer .social {
+      margin-top: 20px;
+    }
+    .footer .social a {
+      display: inline-block;
+      margin: 0 8px;
+      color: #a0aec0;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>⭐ ¿Cómo fue tu experiencia?</h1>
+      <p>Tu opinión nos ayuda a mejorar</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h2>Hola {{clientName}},</h2>
+      
+      <p>
+        Esperamos que hayas tenido una gran experiencia con <strong>{{artistName}}</strong>.
+        Nos encantaría conocer tu opinión para ayudar a otros usuarios a tomar mejores decisiones
+        y permitir que los artistas mejoren continuamente su servicio.
+      </p>
+
+      <div class="artist-card">
+        <div class="artist-avatar">
+          {{#if artistAvatar}}
+            <img src="{{artistAvatar}}" alt="{{artistName}}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+          {{else}}
+            👤
+          {{/if}}
+        </div>
+        <div class="artist-info">
+          <h3>{{artistName}}</h3>
+          <p><strong>Servicio:</strong> {{serviceName}}</p>
+          <p><strong>Fecha:</strong> {{serviceDate}}</p>
+          <p><strong>Código:</strong> {{bookingCode}}</p>
+        </div>
+      </div>
+
+      <div class="rating-section">
+        <h3>Califica tu experiencia</h3>
+        <p style="font-size: 14px; color: #744210; margin-bottom: 10px;">
+          Haz clic en las estrellas para evaluar el servicio
+        </p>
+        <div class="stars">
+          ⭐⭐⭐⭐⭐
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="{{reviewLink}}" class="button">Dejar mi Reseña</a>
+      </div>
+
+      <div class="why-review">
+        <h3>¿Por qué son importantes las reseñas?</h3>
+        <div class="why-item">
+          <div class="why-icon">🤝</div>
+          <div class="why-text">
+            <strong>Ayudas a la comunidad:</strong> Otros usuarios confían en tus opiniones para elegir el mejor servicio
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">📈</div>
+          <div class="why-text">
+            <strong>Mejora el servicio:</strong> Los artistas usan tu feedback para mejorar continuamente
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">🎁</div>
+          <div class="why-text">
+            <strong>Gana recompensas:</strong> Tu participación puede hacerte elegible para beneficios exclusivos
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">⚡</div>
+          <div class="why-text">
+            <strong>Solo toma 2 minutos:</strong> Es rápido, fácil y muy valioso
+          </div>
+        </div>
+      </div>
+
+      {{#if hasIncentive}}
+      <div class="incentive-box">
+        <h3>🎁 Recompensa Especial</h3>
+        <p>
+          Deja una reseña detallada y obtén
+        </p>
+        <div class="incentive-badge">{{incentiveText}}</div>
+      </div>
+      {{/if}}
+
+      <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #718096;">
+        <strong>Tu opinión es confidencial</strong><br>
+        Las reseñas son verificadas y moderadas para mantener la calidad de nuestra plataforma.
+        Puedes editar tu reseña dentro de las primeras 24 horas si lo deseas.
+      </p>
+
+      <p style="font-size: 14px; color: #718096;">
+        Si tienes algún problema que reportar, por favor <a href="{{supportLink}}" style="color: #f6ad55; text-decoration: none;">contáctanos directamente</a>.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><strong>Piums</strong> - Conectando talento con clientes</p>
+      <p>
+        <a href="https://piums.com/reviews-policy">Política de Reseñas</a> •
+        <a href="https://piums.com/guidelines">Guías de la Comunidad</a> •
+        <a href="https://piums.com/support">Soporte</a>
+      </p>
+      <p style="font-size: 12px; color: #a0aec0;">
+        © {{currentYear}} Piums. Todos los derechos reservados.
+      </p>
+      <div class="social">
+        <a href="https://facebook.com/piums">📘</a>
+        <a href="https://twitter.com/piums">🐦</a>
+        <a href="https://instagram.com/piums">📷</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

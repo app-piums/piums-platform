@@ -1,0 +1,376 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Payment Model
+// ============================================================================
+
+model Payment {
+  id          String   @id @default(uuid())
+  
+  // Relaciones con otros servicios
+  userId      String   // ID del usuario que realiza el pago
+  bookingId   String?  // ID de la reserva (si aplica)
+  
+  // Stripe
+  stripePaymentIntentId String?  @unique
+  stripeChargeId        String?
+  
+  // Monto
+  amount               Int      // En centavos
+  currency             String   @default("GTQ")
+  amountReceived       Int?     // Monto realmente recibido (puede diferir por fees)
+  
+  // Estado
+  status               PaymentStatus @default(PENDING)
+  
+  // Tipo de pago
+  paymentType          PaymentType   // DEPOSIT, FULL_PAYMENT, REFUND
+  
+  // Método de pago
+  paymentMethod        String?   // card, oxxo, spei, etc.
+  paymentMethodDetails Json?     // Detalles del método (últimos 4 dígitos, etc.)
+  
+  // Descripción
+  description          String?
+  
+  // Metadata adicional
+  metadata             Json?
+  
+  // Fees
+  platformFee          Int?      // Fee de la plataforma en centavos
+  stripeFee            Int?      // Fee de Stripe en centavos
+  
+  // Timestamps
+  paidAt               DateTime?
+  failedAt             DateTime?
+  
+  // Error info
+  failureCode          String?
+  failureMessage       String?
+  
+  // Refunds
+  refunds              Refund[]
+  refundedAmount       Int       @default(0)
+  
+  // Soft delete para auditorías
+  deletedAt            DateTime?
+  
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// ============================================================================
+// Payment Intent Model
+// ============================================================================
+
+model PaymentIntent {
+  id          String   @id @default(uuid())
+  
+  // Stripe Payment Intent ID
+  stripePaymentIntentId String  @unique
+  
+  // Usuario
+  userId      String
+  bookingId   String?
+  
+  // Monto
+  amount      Int      // En centavos
+  currency    String   @default("GTQ")
+  
+  // Estado
+  status      PaymentIntentStatus @default(CREATED)
+  
+  // Client Secret (para frontend)
+  clientSecret String?
+  
+  // Método permitido
+  paymentMethods String[]  // ["card", "oxxo", "spei"]
+  
+  // Descripción
+  description String?
+  
+  // Metadata
+  metadata    Json?
+  
+  // Timestamps
+  confirmedAt DateTime?
+  cancelledAt DateTime?
+  expiresAt   DateTime?
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([bookingId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@map("payment_intents")
+}
+
+// ============================================================================
+// Refund Model
+// ============================================================================
+
+model Refund {
+  id          String   @id @default(uuid())
+  
+  // Pago original
+  paymentId   String
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  
+  // Stripe
+  stripeRefundId String? @unique
+  
+  // Usuario que solicita el reembolso
+  requestedBy String
+  
+  // Monto
+  amount      Int      // En centavos
+  currency    String   @default("GTQ")
+  
+  // Estado
+  status      RefundStatus @default(PENDING)
+  
+  // Razón
+  reason      String?  @db.Text
+  
+  // Metadata
+  metadata    Json?
+  
+  // Timestamps
+  processedAt DateTime?
+  failedAt    DateTime?
+  
+  // Error info
+  failureReason String?
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([paymentId])
+  @@index([stripeRefundId])
+  @@index([status])
+  @@map("refunds")
+}
+
+// ============================================================================
+// Payment Method Model (tarjetas guardadas)
+// ============================================================================
+
+model PaymentMethod {
+  id          String   @id @default(uuid())
+  
+  // Usuario
+  userId      String
+  
+  // Stripe
+  stripePaymentMethodId String @unique
+  
+  // Tipo
+  type        String   // card, oxxo_debit, spei, etc.
+  
+  // Detalles de tarjeta
+  cardBrand   String?  // visa, mastercard, amex
+  cardLast4   String?
+  cardExpMonth Int?
+  cardExpYear Int?
+  
+  // Default
+  isDefault   Boolean  @default(false)
+  
+  // Metadata
+  metadata    Json?
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([stripePaymentMethodId])
+  @@map("payment_methods")
+}
+
+// ============================================================================
+// Webhook Event Model
+// ============================================================================
+
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  
+  // Stripe
+  stripeEventId String  @unique
+  
+  // Tipo de evento
+  eventType   String   // payment_intent.succeeded, charge.refunded, etc.
+  
+  // Payload completo
+  payload     Json
+  
+  // Estado de procesamiento
+  processed   Boolean  @default(false)
+  processedAt DateTime?
+  
+  // Error
+  error       String?  @db.Text
+  retries     Int      @default(0)
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([stripeEventId])
+  @@index([eventType])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("webhook_events")
+}
+
+// ============================================================================
+// Payout Model (pagos a artistas)
+// ============================================================================
+
+model Payout {
+  id          String   @id @default(uuid())
+  
+  // Artist (relación con artists-service)
+  artistId    String
+  
+  // Relaciones con pagos/reservas
+  bookingId   String?  // Si es específico de una reserva
+  paymentId   String?  // Pago original del cliente (referencia a Payment.id)
+  
+  // Stripe Connect
+  stripeTransferId String? @unique  // Transfer a Stripe Connect account
+  stripePayoutId   String? @unique  // Payout final a cuenta bancaria del artista
+  stripeAccountId  String?          // Stripe Connect Account ID del artista
+  
+  // Monto
+  amount      Int      // En centavos (lo que recibe el artista)
+  currency    String   @default("GTQ")
+  
+  // Estado
+  status      PayoutStatus @default(PENDING)
+  
+  // Tipo de payout
+  payoutType  PayoutType   @default(BOOKING_PAYMENT)
+  
+  // Fees y cálculos
+  originalAmount    Int?     // Monto original antes de fees
+  platformFee       Int?     // Fee de la plataforma
+  stripeFee         Int?     // Fee de Stripe
+  
+  // Programación
+  scheduledFor      DateTime? // Fecha programada para el pago
+  processedAt       DateTime? // Cuándo se procesó realmente
+  
+  // Failure info
+  failedAt          DateTime?
+  failureCode       String?
+  failureMessage    String?   @db.Text
+  
+  // Descripción
+  description       String?   @db.Text
+  
+  // Metadata adicional
+  metadata          Json?
+  
+  // Notas internas
+  internalNotes     String?   @db.Text
+  
+  // Soft delete para auditorías
+  deletedAt         DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([artistId])
+  @@index([bookingId])
+  @@index([paymentId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdAt])
+  @@map("payouts")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum PaymentStatus {
+  PENDING           // Pendiente de pago
+  PROCESSING        // Procesando
+  SUCCEEDED         // Exitoso
+  FAILED            // Fallido
+  CANCELLED         // Cancelado
+  PARTIALLY_REFUNDED // Parcialmente reembolsado
+  FULLY_REFUNDED    // Totalmente reembolsado
+}
+
+enum PaymentType {
+  DEPOSIT       // Depósito inicial
+  FULL_PAYMENT  // Pago completo
+  REMAINING     // Pago restante
+  REFUND        // Reembolso
+}
+
+enum PaymentIntentStatus {
+  CREATED       // Creado
+  REQUIRES_ACTION // Requiere acción del usuario (3D Secure)
+  PROCESSING    // Procesando
+  SUCCEEDED     // Exitoso
+  CANCELLED     // Cancelado
+  FAILED        // Fallido
+}
+
+enum RefundStatus {
+  PENDING       // Pendiente
+  PROCESSING    // Procesando
+  SUCCEEDED     // Exitoso
+  FAILED        // Fallido
+  CANCELLED     // Cancelado
+}
+
+enum PayoutStatus {
+  PENDING       // Pendiente de procesar
+  SCHEDULED     // Programado para fecha futura
+  PROCESSING    // En proceso de transferencia
+  IN_TRANSIT    // En tránsito (Stripe lo está procesando)
+  COMPLETED     // Completado exitosamente
+  FAILED        // Falló el pago
+  CANCELLED     // Cancelado manualmente
+  REVERSED      // Revertido (chargeback o disputa)
+}
+
+enum PayoutType {
+  BOOKING_PAYMENT   // Pago por reserva completada
+  MANUAL            // Pago manual/ajuste
+  ADJUSTMENT        // Ajuste de saldo
+  BONUS             // Bono o incentivo
+  REFUND_REVERSAL   // Reversión de reembolso
+}

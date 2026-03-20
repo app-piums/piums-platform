@@ -1,0 +1,270 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: false
+        default: 'develop'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/piums
+  DEPLOY_ENV: staging
+
+jobs:
+  # ============================================================================
+  # Pre-Deploy Checks
+  # ============================================================================
+  
+  pre-deploy:
+    name: Pre-Deploy Checks
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ "${{ github.event.inputs.image_tag }}" != "" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=develop" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify images exist
+        run: |
+          echo "Verifying images for tag: ${{ steps.set-tag.outputs.tag }}"
+          # TODO: Add actual verification logic
+          docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-auth-service:${{ steps.set-tag.outputs.tag }} || true
+
+  # ============================================================================
+  # Database Migrations
+  # ============================================================================
+  
+  migrate-databases:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    
+    strategy:
+      matrix:
+        service:
+          - auth-service
+          - users-service
+          - artists-service
+          - catalog-service
+          - booking-service
+          - payments-service
+          - reviews-service
+          - notifications-service
+          - search-service
+          - chat-service
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Prisma migrations
+        working-directory: services/${{ matrix.service }}
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL_PREFIX }}_${{ matrix.service }}
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            npx prisma migrate deploy
+          else
+            echo "No Prisma schema found, skipping migrations"
+          fi
+
+  # ============================================================================
+  # Deploy to Staging Server
+  # ============================================================================
+  
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, migrate-databases]
+    
+    environment:
+      name: staging
+      url: https://staging.piums.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -H ${{ secrets.STAGING_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy docker-compose to server
+        run: |
+          scp -i ~/.ssh/staging_key \
+            infra/docker/docker-compose.staging.yml \
+            ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:/opt/piums/docker-compose.yml
+
+      - name: Copy environment file
+        run: |
+          echo "${{ secrets.STAGING_ENV_FILE }}" > .env.staging
+          scp -i ~/.ssh/staging_key \
+            .env.staging \
+            ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:/opt/piums/.env
+
+      - name: Deploy services
+        run: |
+          ssh -i ~/.ssh/staging_key \
+            ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
+            cd /opt/piums
+            
+            # Pull latest images
+            docker-compose pull
+            
+            # Stop old containers
+            docker-compose down
+            
+            # Start new containers
+            docker-compose up -d
+            
+            # Wait for services to be healthy
+            sleep 30
+            
+            # Check health
+            docker-compose ps
+            
+            # Clean up old images
+            docker image prune -f
+          EOF
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -f https://staging.piums.com/health || exit 1
+
+      - name: Cleanup SSH keys
+        if: always()
+        run: rm -f ~/.ssh/staging_key
+
+  # ============================================================================
+  # Smoke Tests
+  # ============================================================================
+  
+  smoke-tests:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test Gateway
+        run: curl -f https://staging.piums.com/health
+
+      - name: Test Auth Service
+        run: curl -f https://staging.piums.com/api/auth/health
+
+      - name: Test Users Service
+        run: curl -f https://staging.piums.com/api/users/health
+
+      - name: Test Artists Service
+        run: curl -f https://staging.piums.com/api/artists/health
+
+      - name: Test Catalog Service
+        run: curl -f https://staging.piums.com/api/catalog/health
+
+      - name: Test Booking Service
+        run: curl -f https://staging.piums.com/api/bookings/health
+
+      - name: Test Web Client App
+        run: curl -f https://staging.piums.com/
+
+      - name: Test Web Artist App
+        run: curl -f https://artist-staging.piums.com/
+
+  # ============================================================================
+  # Rollback (on failure)
+  # ============================================================================
+  
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy, smoke-tests]
+    if: failure()
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+
+      - name: Rollback to previous version
+        run: |
+          ssh -i ~/.ssh/staging_key \
+            ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
+            cd /opt/piums
+            
+            # Rollback using previous docker-compose state
+            docker-compose down
+            docker-compose up -d --scale gateway=0
+            docker-compose up -d
+          EOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/staging_key
+
+  # ============================================================================
+  # Notification
+  # ============================================================================
+  
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [deploy, smoke-tests]
+    if: always()
+    
+    steps:
+      - name: Send Slack notification
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          COLOR="good"
+          if [ "$STATUS" != "success" ]; then
+            COLOR="danger"
+          fi
+          
+          echo "Deployment to Staging: $STATUS"
+          echo "Image Tag: ${{ needs.pre-deploy.outputs.image_tag }}"
+          echo "Commit: ${{ github.sha }}"
+          
+          # TODO: Add actual Slack webhook integration
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data "{\"text\":\"Staging Deployment: $STATUS\"}" \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}

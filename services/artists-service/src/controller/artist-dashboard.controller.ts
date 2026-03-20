@@ -1,0 +1,232 @@
+import { Response, NextFunction } from "express";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { ArtistsService } from "../services/artists.service";
+import { AppError } from "../middleware/errorHandler";
+import { logger } from "../utils/logger";
+import { bookingServiceClient } from "../clients/booking.client";
+import { paymentsServiceClient } from "../clients/payments.client";
+
+const artistsService = new ArtistsService();
+
+/**
+ * GET /api/artists/me - Obtener mi perfil de artista (simplificado para dashboard)
+ */
+export const getMyProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+    res.json({ artist });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/artists/me - Actualizar mi perfil
+ */
+export const updateMyProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const updatedArtist = await artistsService.updateArtist(artist.id, req.body);
+
+    logger.info("Perfil actualizado desde dashboard", "ARTIST_DASHBOARD", { artistId: artist.id });
+    res.json({ artist: updatedArtist, message: "Perfil actualizado exitosamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/artists/me/bookings - Obtener reservas recibidas
+ */
+export const getMyBookings = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+    
+    // Query params para filtros
+    const status = req.query.status as string | undefined;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    // Llamar al booking-service para obtener las reservas del artista
+    const authToken = req.headers.authorization?.substring(7);
+    const bookingsData = await bookingServiceClient.getArtistBookings({
+      artistId: artist.id,
+      status,
+      page,
+      limit,
+      authToken,
+    });
+
+    logger.info("Artist bookings retrieved", "ARTIST_DASHBOARD", {
+      artistId: artist.id,
+      count: bookingsData.total,
+    });
+
+    res.json({
+      bookings: bookingsData.bookings,
+      total: bookingsData.total,
+      page: bookingsData.page,
+      totalPages: bookingsData.totalPages,
+      artistId: artist.id,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PATCH /api/artists/me/bookings/:id/accept - Aceptar reserva
+ */
+export const acceptBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const bookingId = req.params.id;
+    // TODO: Llamar al booking-service para aceptar la reserva
+    // const success = await bookingServiceClient.confirmBooking(bookingId, artist.id);
+    // if (!success) {
+    //   throw new AppError(500, "Error al aceptar la reserva");
+    // }
+
+    // TODO: Llamar al booking-service para aceptar la reserva
+    // Verificar que la reserva pertenezca al artista
+    // Cambiar status a CONFIRMED
+
+    logger.info("Reserva aceptada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
+    res.json({ 
+      message: "Reserva aceptada exitosamente",
+      bookingId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PATCH /api/artists/me/bookings/:id/decline - Rechazar reserva
+ */
+export const declineBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const bookingId = req.params.id as string;
+    const reason = req.body.reason as string | undefined;
+    // TODO: Llamar al booking-service para rechazar la reserva
+    const success = await bookingServiceClient.rejectBooking(
+      bookingId,
+      artist.id,
+      reason || "Sin razón especificada"
+    );
+
+    if (!success) {
+      throw new AppError(500, "Error al rechazar la reserva");
+    }
+    // TODO: Llamar al booking-service para rechazar la reserva
+    // Verificar que la reserva pertenezca al artista
+    // Cambiar status a CANCELLED con reason
+
+    logger.info("Reserva rechazada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId, reason });
+    res.json({ 
+      message: "Reserva rechazada",
+      bookingId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/artists/me/stats - Obtener estadísticas del artista
+ */
+
+export const getMyStats = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    // Obtener datos de booking-service y payments-service en paralelo
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const [bookingStats, paymentStats] = await Promise.all([
+      bookingServiceClient.getArtistStats(artist.id),
+      paymentsServiceClient.getArtistPaymentStats(artist.id),
+    ]);
+
+    const stats = {
+      artistId: artist.id,
+      bookings: {
+        total: bookingStats.total,
+        thisMonth: bookingStats.thisMonth,
+        pending: bookingStats.pending,
+        confirmed: bookingStats.confirmed,
+        completed: bookingStats.completed,
+      },
+      revenue: {
+        total: paymentStats.totalRevenue,
+        thisMonth: paymentStats.thisMonthRevenue,
+        currency: paymentStats.currency,
+      },
+      rating: {
+        average: artist.rating || 0,
+        totalReviews: artist.reviewCount || 0,
+      },
+      upcomingBookings: bookingStats.upcoming || [],
+    };
+
+    logger.info("Artist stats retrieved", "ARTIST_DASHBOARD", {
+      artistId: artist.id,
+      totalBookings: bookingStats.total,
+      totalRevenue: paymentStats.totalRevenue,
+    });
+
+    res.json({ stats });
+  } catch (error) {
+    next(error);
+  }
+};

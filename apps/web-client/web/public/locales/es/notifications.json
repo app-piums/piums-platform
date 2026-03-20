@@ -1,0 +1,33 @@
+{
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Administra cómo y cuándo quieres recibir notificaciones",
+    "type": "Tipo de notificación",
+    "email": "Email",
+    "sms": "SMS",
+    "push": "Push",
+    "categories": {
+      "bookings": {
+        "label": "Reservas",
+        "description": "Confirmaciones, recordatorios y actualizaciones de reservas"
+      },
+      "messages": {
+        "label": "Mensajes",
+        "description": "Nuevos mensajes de artistas o clientes"
+      },
+      "reviews": {
+        "label": "Reseñas",
+        "description": "Nuevas reseñas recibidas o respuestas a tus reseñas"
+      },
+      "promotions": {
+        "label": "Promociones",
+        "description": "Ofertas especiales y novedades de la plataforma"
+      }
+    },
+    "info": "Las notificaciones importantes relacionadas con tu cuenta y seguridad siempre se enviarán por email.",
+    "save": "Guardar Preferencias",
+    "saving": "Guardando...",
+    "success": "Configuración de notificaciones actualizada",
+    "error": "Error al actualizar la configuración"
+  }
+}

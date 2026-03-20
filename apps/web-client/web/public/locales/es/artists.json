@@ -1,0 +1,16 @@
+{
+  "artists": {
+    "title": "Explorar artistas",
+    "searchPlaceholder": "Buscar artistas, servicios o géneros",
+    "filterLabel": "Filtrar por categoría",
+    "sortLabel": "Ordenar por",
+    "sortPopularity": "Popularidad",
+    "sortRating": "Mejor valorados",
+    "sortNewest": "Más recientes",
+    "results": "Resultados",
+    "noResults": "No se encontraron artistas",
+    "viewProfile": "Ver perfil",
+    "bookButton": "Reservar",
+    "loadMore": "Cargar más"
+  }
+}

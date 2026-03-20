@@ -1,0 +1,22 @@
+{
+  "profile": {
+    "title": "Mi Perfil",
+    "personalTab": "Información Personal",
+    "securityTab": "Seguridad",
+    "notificationsTab": "Notificaciones",
+    "paymentsTab": "Métodos de Pago",
+    "deleteTab": "Eliminar Cuenta",
+    "editButton": "Editar Perfil",
+    "saveButton": "Guardar Cambios",
+    "cancelButton": "Cancelar",
+    "avatarLabel": "Foto de perfil",
+    "avatarChange": "Cambiar foto",
+    "avatarDelete": "Eliminar",
+    "nameLabel": "Nombre completo",
+    "emailLabel": "Correo electrónico",
+    "phoneLabel": "Teléfono",
+    "addressLabel": "Dirección",
+    "updateSuccess": "Perfil actualizado correctamente",
+    "updateError": "Error al actualizar el perfil"
+  }
+}

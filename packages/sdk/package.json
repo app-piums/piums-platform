@@ -1,0 +1,25 @@
+{
+  "name": "@piums/sdk",
+  "version": "1.1.0",
+  "description": "Piums Platform SDK - TypeScript client for API Gateway",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": ["piums", "sdk", "api-client"],
+  "author": "Piums Team",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0"
+  }
+}

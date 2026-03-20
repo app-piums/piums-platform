@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentación
+    url: https://github.com/app-piums/piums-platform/tree/main/docs
+    about: Consulta la documentación del proyecto antes de abrir un issue
+  - name: 💬 Discusiones
+    url: https://github.com/app-piums/piums-platform/discussions
+    about: Para preguntas generales usa Discussions

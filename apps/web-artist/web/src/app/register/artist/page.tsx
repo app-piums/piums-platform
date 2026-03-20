@@ -1,0 +1,410 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { countries, type Country } from "../../../lib/countries";
+import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../../components/PasswordStrengthIndicator";
+import { useAuth } from "../../../contexts/AuthContext";
+import { Footer } from "@/components/Footer";
+import { getErrorMessage } from "@/lib/errors";
+
+interface FieldError {
+  nombre?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  pais?: string;
+  telefono?: string;
+  terms?: string;
+}
+
+export default function RegisterArtistPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [step, setStep] = useState(1);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [telefono, setTelefono] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
+  const [errors, setErrors] = useState<FieldError>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [generalError, setGeneralError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const firstErrorField = Object.keys(errors).find(key => errors[key as keyof FieldError]);
+    if (firstErrorField) {
+      document.getElementById(firstErrorField)?.focus();
+    }
+  }, [errors]);
+
+  const validateField = (field: string, value: string | boolean): string => {
+    switch (field) {
+      case "nombre":
+        if (!value || typeof value !== 'string' || !value.trim()) return "Por favor ingresa tu nombre completo";
+        if (value.trim().length < 2) return "Tu nombre debe tener al menos 2 caracteres";
+        return "";
+      case "email":
+        if (!value || typeof value !== 'string') return "El correo electrónico es obligatorio";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Por favor ingresa un correo válido";
+        return "";
+      case "password":
+        if (!value || typeof value !== 'string') return "Por favor crea una contraseña";
+        if (calculatePasswordStrength(value).score < 3) return "Tu contraseña debe ser más segura";
+        return "";
+      case "confirmPassword":
+        if (!value || typeof value !== 'string') return "Por favor confirma tu contraseña";
+        if (value !== password) return "Las contraseñas no coinciden";
+        return "";
+      case "pais":
+        if (!selectedCountry) return "Selecciona tu país";
+        return "";
+      case "telefono":
+        if (!value || typeof value !== 'string') return "El teléfono es necesario";
+        if (value.length < 8) return "Ingresa un número de teléfono válido";
+        return "";
+      case "terms":
+        if (!value) return "Debes aceptar los términos y condiciones";
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (field: string, value: string | boolean) => {
+    setTouched({ ...touched, [field]: true });
+    setErrors({ ...errors, [field]: validateField(field, value) });
+  };
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const country = countries.find((c) => c.code === e.target.value);
+    setSelectedCountry(country || null);
+    handleBlur("pais", !!country);
+  };
+
+  const canProceedToStep2 = () => {
+    return !["nombre", "email", "password", "confirmPassword"].some(
+      f => validateField(f, f === "nombre" ? nombre : f === "email" ? email : f === "password" ? password : confirmPassword)
+    );
+  };
+
+  const handleNextStep = () => {
+    const step1Errors: FieldError = {
+      nombre: validateField("nombre", nombre),
+      email: validateField("email", email),
+      password: validateField("password", password),
+      confirmPassword: validateField("confirmPassword", confirmPassword),
+    };
+    setErrors(step1Errors);
+    setTouched({ nombre: true, email: true, password: true, confirmPassword: true });
+    if (Object.values(step1Errors).some(e => e)) {
+      setGeneralError("Por favor completa todos los campos correctamente");
+      return;
+    }
+    setGeneralError("");
+    setStep(2);
+  };
+
+  const handleSkipLocation = () => {
+    setShowLocationModal(false);
+    router.push("/artist/onboarding");
+  };
+
+  const handleAcceptLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          sessionStorage.setItem('piums_artist_location', JSON.stringify(coords));
+        },
+        () => {}
+      );
+    }
+    setShowLocationModal(false);
+    router.push("/artist/onboarding");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGeneralError("");
+
+    const newErrors: FieldError = {
+      nombre: validateField("nombre", nombre),
+      email: validateField("email", email),
+      password: validateField("password", password),
+      confirmPassword: validateField("confirmPassword", confirmPassword),
+      pais: validateField("pais", ""),
+      telefono: validateField("telefono", telefono),
+      terms: validateField("terms", acceptTerms),
+    };
+    setErrors(newErrors);
+    setTouched({ nombre: true, email: true, password: true, confirmPassword: true, pais: true, telefono: true, terms: true });
+
+    if (Object.values(newErrors).some(e => e)) {
+      setGeneralError("Por favor revisa la información ingresada");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/auth/register/artist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, email, password }),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Ocurrió un error al crear tu cuenta.");
+
+      if (data.user) login(data.user);
+      setShowSuccess(true);
+      setTimeout(() => setShowLocationModal(true), 1000);
+    } catch (err: unknown) {
+      setGeneralError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 py-12 px-4 dark:from-zinc-950 dark:to-zinc-900">
+        <div className="w-full max-w-md">
+          {/* Progress */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Paso {step} de 2</span>
+              <span className="text-xs text-zinc-500">{step === 1 ? "Información básica" : "Datos de contacto"}</span>
+            </div>
+            <div className="h-2 bg-zinc-200 rounded-full overflow-hidden dark:bg-zinc-700">
+              <div className="h-full bg-[#FF6A00] transition-all duration-300" style={{ width: `${(step / 2) * 100}%` }} />
+            </div>
+          </div>
+
+          <div className="space-y-6 rounded-xl bg-white p-8 shadow-xl dark:bg-zinc-900">
+            <div className="text-center">
+              <div className="flex justify-center mb-6">
+                <Image src="/logo.jpg" alt="Piums" width={150} height={50} priority className="h-12 w-auto" />
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Crea tu perfil de artista</h2>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Únete a PIUMS y monetiza tu talento creativo</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6" ref={formRef}>
+              {generalError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-4 dark:bg-red-900/20 dark:border-red-800">
+                  <p className="text-sm text-red-800 dark:text-red-200">{generalError}</p>
+                </div>
+              )}
+              {showSuccess && (
+                <div className="rounded-lg bg-green-50 border border-green-200 p-4 dark:bg-green-900/20 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-sm text-green-800 dark:text-green-200">¡Cuenta creada exitosamente! Redirigiendo...</p>
+                  </div>
+                </div>
+              )}
+
+              {step === 1 && (
+                <div className="space-y-4">
+                  {/* Nombre */}
+                  <div>
+                    <label htmlFor="nombre" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Nombre completo <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="nombre" name="nombre" type="text" autoComplete="name" required
+                      value={nombre} onChange={e => setNombre(e.target.value)} onBlur={e => handleBlur("nombre", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.nombre && errors.nombre ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      placeholder="Juan Pérez"
+                    />
+                    {touched.nombre && errors.nombre && <p className="mt-1.5 text-sm text-red-600">{errors.nombre}</p>}
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Correo electrónico <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="email" name="email" type="email" autoComplete="email" required
+                      value={email} onChange={e => setEmail(e.target.value)} onBlur={e => handleBlur("email", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.email && errors.email ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      placeholder="tu@email.com"
+                    />
+                    {touched.email && errors.email && <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>}
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Contraseña <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="password" name="password" type="password" autoComplete="new-password" required
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      onFocus={() => setShowPasswordRequirements(true)}
+                      onBlur={e => { handleBlur("password", e.target.value); setShowPasswordRequirements(false); }}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.password && errors.password ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      placeholder="••••••••"
+                    />
+                    {touched.password && errors.password && <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>}
+                    <PasswordStrengthIndicator password={password} show={showPasswordRequirements || password.length > 0} />
+                  </div>
+
+                  {/* Confirmar Password */}
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Confirmar contraseña <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required
+                      value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onBlur={e => handleBlur("confirmPassword", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.confirmPassword && errors.confirmPassword ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      placeholder="••••••••"
+                    />
+                    {touched.confirmPassword && errors.confirmPassword && <p className="mt-1.5 text-sm text-red-600">{errors.confirmPassword}</p>}
+                  </div>
+
+                  <button
+                    type="button" onClick={handleNextStep} disabled={!canProceedToStep2()}
+                    className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-50 dark:text-zinc-900"
+                  >
+                    Continuar →
+                  </button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-4">
+                  {/* País */}
+                  <div>
+                    <label htmlFor="pais" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      País <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="pais" name="pais" required value={selectedCountry?.code || ""} onChange={handleCountryChange}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 ${touched.pais && errors.pais ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                    >
+                      <option value="">Selecciona tu país</option>
+                      {countries.map(c => <option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+                    </select>
+                    {touched.pais && errors.pais && <p className="mt-1.5 text-sm text-red-600">{errors.pais}</p>}
+                  </div>
+
+                  {/* Teléfono */}
+                  <div>
+                    <label htmlFor="telefono" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Número de teléfono <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800">
+                        <span className="text-xl">{selectedCountry?.flag || "🌍"}</span>
+                        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{selectedCountry?.dialCode || "+___"}</span>
+                      </div>
+                      <input
+                        id="telefono" name="telefono" type="tel" autoComplete="tel" required
+                        value={telefono} onChange={e => setTelefono(e.target.value.replace(/\D/g, ""))} onBlur={e => handleBlur("telefono", e.target.value)}
+                        className={`flex-1 rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.telefono && errors.telefono ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                        placeholder="12345678" maxLength={15}
+                      />
+                    </div>
+                    {touched.telefono && errors.telefono && <p className="mt-1.5 text-sm text-red-600">{errors.telefono}</p>}
+                  </div>
+
+                  {/* Términos */}
+                  <div>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox" checked={acceptTerms}
+                        onChange={e => { setAcceptTerms(e.target.checked); handleBlur("terms", e.target.checked); }}
+                        className="mt-1 h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800"
+                      />
+                      <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                        Acepto los <a href="/terms" className="font-medium underline">Términos y Condiciones</a> y la{" "}
+                        <a href="/privacy" className="font-medium underline">Política de Privacidad</a>
+                      </span>
+                    </label>
+                    {touched.terms && errors.terms && <p className="mt-1.5 text-sm text-red-600">{errors.terms}</p>}
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      type="submit" disabled={loading}
+                      className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-50 dark:text-zinc-900"
+                    >
+                      {loading ? "Creando tu cuenta..." : "Crear mi cuenta de artista"}
+                    </button>
+                    <button
+                      type="button" onClick={() => setStep(1)}
+                      className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    >
+                      ← Volver
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <div className="text-center text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">¿Ya tienes cuenta? </span>
+                  <a href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">Inicia sesión aquí</a>
+                </div>
+                <div className="text-center">
+                  <a href="/register/client" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    ¿Eres cliente? Regístrate aquí
+                  </a>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 dark:bg-zinc-900">
+            <div className="text-center mb-6">
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 dark:bg-blue-900">
+                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 mb-2 dark:text-zinc-50">Permiso de Ubicación</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Necesitamos tu ubicación para mostrarte oportunidades cerca de ti y gestionar tus servicios localmente.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button onClick={handleAcceptLocation} className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900">
+                Permitir Ubicación
+              </button>
+              <button onClick={handleSkipLocation} className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                Ahora No
+              </button>
+            </div>
+            <p className="mt-4 text-xs text-center text-zinc-500">Puedes cambiar esto más tarde en la configuración</p>
+          </div>
+        </div>
+      )}
+      <Footer />
+    </>
+  );
+}

@@ -1,0 +1,1903 @@
+// Types
+export interface Artist {
+  id: string;
+  nombre: string;
+  slug?: string;
+  coverPhoto?: string;
+  email?: string;
+  categoria?: string;
+  ciudad?: string;
+  rating?: number;
+  precioDesde?: number;
+  imagenPerfil?: string;
+  descripcion?: string;
+  isVerified?: boolean;
+  isPremium?: boolean;
+  avatar?: string;
+  category?: string;
+  bio?: string;
+  reviewsCount?: number;
+  bookingsCount?: number;
+  experienceYears?: number;
+  cityId?: string;
+}
+
+export interface PortfolioItem {
+  id: string;
+  artistId: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  order: number;
+  createdAt: string;
+}
+
+export interface Certification {
+  id: string;
+  artistId: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+}
+
+export interface ArtistProfile extends Artist {
+  userId?: string;
+  slug?: string;
+  bio?: string;
+  avatar?: string;
+  coverPhoto?: string;
+  category?: string;
+  cityId?: string;
+  experienceYears?: number;
+  reviewsCount?: number;
+  bookingsCount?: number;
+  isVerified?: boolean;
+  isActive?: boolean;
+  isPremium?: boolean;
+  createdAt?: string;
+  coverageRadius?: number;     // km incluidos sin costo de traslado
+  hourlyRateMin?: number;      // precio mínimo por hora en centavos
+  hourlyRateMax?: number;      // precio máximo por hora en centavos
+  requiresDeposit?: boolean;
+  depositPercentage?: number;
+  portfolio?: PortfolioItem[];
+  certifications?: Certification[];
+}
+
+export interface Service {
+  id: string;
+  artistId: string;
+  name: string;
+  slug?: string;
+  description: string;
+  categoryId?: string;
+  pricingType?: string;
+  basePrice: number;
+  currency?: string;
+  duration?: number;       // legacy
+  durationMin?: number;
+  durationMax?: number;
+  isActive?: boolean;      // legacy
+  status?: string;         // ACTIVE | INACTIVE | ARCHIVED
+  isAvailable?: boolean;
+  thumbnail?: string;
+  images?: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateServicePayload {
+  artistId: string;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: string;
+  pricingType: 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
+  basePrice: number;
+  currency?: string;
+  durationMin?: number;
+  durationMax?: number;
+}
+
+export interface UpdateServicePayload {
+  artistId: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  categoryId?: string;
+  pricingType?: 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
+  basePrice?: number;
+  currency?: string;
+  durationMin?: number;
+  durationMax?: number;
+  status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+}
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface Review {
+  id: string;
+  userId: string;
+  artistId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
+export interface Booking {
+  id: string;
+  code?: string;
+  clientId: string;
+  artistId: string;
+  serviceId: string;
+  scheduledDate: string; // ISO string
+  durationMinutes: number;
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
+  status: string;
+  servicePrice: number;
+  addonsPrice: number;
+  totalPrice: number;
+  currency: string;
+  depositRequired: boolean;
+  depositAmount?: number;
+  depositPaidAt?: string;
+  paymentStatus: string;
+  selectedAddons?: string[];
+  clientNotes?: string;
+  artistNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBookingPayload {
+  clientId: string;
+  artistId: string;
+  serviceId: string;
+  scheduledDate: string; // ISO string
+  durationMinutes: number;
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
+  selectedAddons?: string[];
+  clientNotes?: string;
+}
+
+export interface SearchResults {
+  artists: Artist[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface SearchParams {
+  query?: string;
+  categoria?: string;
+  ciudad?: string;
+  precioMin?: number;
+  precioMax?: number;
+  rating?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface GetArtistsParams {
+  page?: number;
+  limit?: number;
+  categoria?: string;
+  ciudad?: string;
+}
+
+export interface CalendarData {
+  artistId: string;
+  year: number;
+  month: number;
+  occupiedDates: string[]; // Array de fechas YYYY-MM-DD
+  blockedDates: string[];  // Array de fechas YYYY-MM-DD
+}
+
+export interface TimeSlot {
+  time: string;       // HH:mm format (24h)
+  available: boolean;
+  startTime: string;  // ISO string
+  endTime: string;    // ISO string
+}
+
+export interface TimeSlotsData {
+  artistId: string;
+  date: string;       // YYYY-MM-DD
+  slots: TimeSlot[];
+}
+
+export interface AvailabilityCheckResult {
+  hasReservation: boolean;
+  bookingId?: string;
+}
+
+// ==================== PAYMENT TYPES ====================
+
+export interface PaymentIntent {
+  id: string;
+  stripePaymentIntentId: string;
+  userId: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  clientSecret?: string;
+  paymentMethods: string[];
+  description?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Payment {
+  id: string;
+  paymentIntentId: string;
+  stripePaymentId: string;
+  userId: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentMethod: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface Refund {
+  id: string;
+  paymentId: string;
+  stripeRefundId: string;
+  amount: number;
+  currency: string;
+  reason?: string;
+  status: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface CreatePaymentIntentPayload {
+  bookingId?: string;
+  amount: number;
+  currency?: string;
+  description?: string;
+  paymentMethods?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ConfirmPaymentPayload {
+  paymentIntentId: string;
+}
+
+export interface CreateRefundPayload {
+  paymentId: string;
+  amount?: number;
+  reason?: string;
+  metadata?: Record<string, any>;
+}
+
+// ==================== REVIEW TYPES ====================
+
+export interface ReviewPhoto {
+  id: string;
+  reviewId: string;
+  url: string;
+  caption?: string;
+  order: number;
+}
+
+export interface ReviewResponse {
+  id: string;
+  reviewId: string;
+  artistId: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewDetailed {
+  id: string;
+  bookingId: string;
+  clientId: string;
+  artistId: string;
+  serviceId: string;
+  rating: number;
+  comment?: string;
+  status: string;
+  isVerified: boolean;
+  helpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+  photos?: ReviewPhoto[];
+  response?: ReviewResponse;
+}
+
+export interface CreateReviewPayload {
+  bookingId: string;
+  rating: number;
+  comment?: string;
+  photos?: Array<{ url: string; caption?: string }>;
+}
+
+export interface UpdateReviewPayload {
+  rating?: number;
+  comment?: string;
+}
+
+export interface MarkHelpfulPayload {
+  isHelpful: boolean;
+}
+
+export interface ReportReviewPayload {
+  reason: string;
+  description?: string;
+}
+
+export interface RespondReviewPayload {
+  message: string;
+}
+
+export interface FilterReviewsParams {
+  artistId?: string;
+  clientId?: string;
+  serviceId?: string;
+  rating?: number;
+  status?: string;
+  hasComment?: boolean;
+  hasPhotos?: boolean;
+  sortBy?: 'recent' | 'rating_high' | 'rating_low' | 'helpful';
+  page?: number;
+  limit?: number;
+}
+
+export interface ArtistRating {
+  artistId: string;
+  totalReviews: number;
+  averageRating: number;
+  rating1: number;
+  rating2: number;
+  rating3: number;
+  rating4: number;
+  rating5: number;
+  lastUpdated: string;
+}
+
+// ==================== CHAT TYPES ====================
+
+export interface Conversation {
+  id: string;
+  userId: string;
+  artistId: string;
+  bookingId?: string;
+  lastMessageAt: string;
+  messages?: Message[];
+  unreadCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderType: string; // user, artist
+  content: string;
+  type: string; // text, image, file
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface CreateConversationPayload {
+  artistId: string;
+  bookingId?: string;
+}
+
+export interface SendMessagePayload {
+  conversationId: string;
+  content: string;
+  type?: string;
+}
+
+// ==================== ADMIN TYPES ====================
+
+export interface AdminStats {
+  totalUsers: number;
+  totalArtists: number;
+  totalBookings: number;
+  totalRevenue: number;
+  recentUsers: number;
+  bookingsThisMonth: number;
+  revenueThisMonth: number;
+  pendingReports: number;
+  bookingsByMonth: Array<{ month: string; count: number }>;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+  isBlocked: boolean;
+  isVerified: boolean;
+  createdAt: string;
+  lastLogin?: string;
+  bookingsCount?: number;
+  reviewsCount?: number;
+  reportsCount?: number;
+}
+
+export interface AdminArtist extends AdminUser {
+  category?: string;
+  rating?: number;
+  reviewsCount?: number;
+  bookingsCount?: number;
+}
+
+export interface AdminBooking {
+  id: string;
+  userId: string;
+  artistId: string;
+  userName: string;
+  artistName: string;
+  service: string;
+  date: string;
+  status: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface AdminReport {
+  id: string;
+  type: string;
+  reporterId: string;
+  reporterName: string;
+  targetId: string;
+  targetType: string;
+  reason: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  content?: string;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminArtistsResponse {
+  artists: AdminArtist[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminBookingsResponse {
+  bookings: AdminBooking[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminReportsResponse {
+  reports: AdminReport[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+class PiumsSDK {
+  private baseUrl: string;
+
+  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || '/api') {
+    this.baseUrl = baseUrl;
+  }
+
+  async searchArtists(params?: SearchParams): Promise<SearchResults> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.query) queryParams.append('q', params.query);
+      if (params?.categoria) queryParams.append('categoria', params.categoria);
+      if (params?.ciudad) queryParams.append('ciudad', params.ciudad);
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.pagination) {
+        return {
+          artists: data.artists ?? [],
+          total: data.pagination.total ?? 0,
+          page: data.pagination.page ?? 1,
+          totalPages: data.pagination.totalPages ?? 1,
+        };
+      }
+      return data;
+    } catch (error) {
+      console.error('Error searching artists:', error);
+      return {
+        artists: [],
+        total: 0,
+        page: 1,
+        totalPages: 0
+      };
+    }
+  }
+  
+  async getArtists(params?: GetArtistsParams): Promise<SearchResults> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.categoria) queryParams.append('categoria', params.categoria);
+      if (params?.ciudad) queryParams.append('ciudad', params.ciudad);
+
+      const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      // Normalise: API returns { artists, pagination: { total, page, totalPages } }
+      // but SearchResults expects flat { artists, total, page, totalPages }
+      if (data.pagination) {
+        return {
+          artists: data.artists ?? [],
+          total: data.pagination.total ?? 0,
+          page: data.pagination.page ?? 1,
+          totalPages: data.pagination.totalPages ?? 1,
+        };
+      }
+      return data;
+    } catch (error) {
+      console.error('Error fetching artists:', error);
+      return {
+        artists: [],
+        total: 0,
+        page: 1,
+        totalPages: 0
+      };
+    }
+  }
+  
+  async getArtist(id: string): Promise<ArtistProfile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/${id}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist:', error);
+      return null;
+    }
+  }
+
+  async getArtistServices(artistId: string): Promise<Service[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/catalog/services?artistId=${artistId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.data || result.services || [];
+    } catch (error) {
+      console.error('Error fetching artist services:', error);
+      return [];
+    }
+  }
+
+  async getServiceCategories(): Promise<ServiceCategory[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/catalog/categories`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const result = await response.json();
+      return result.data || result.categories || result || [];
+    } catch (error) {
+      console.error('Error fetching service categories:', error);
+      return [];
+    }
+  }
+
+  async createService(payload: CreateServicePayload): Promise<Service> {
+    const response = await fetch(`${this.baseUrl}/catalog/services`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async updateService(id: string, payload: UpdateServicePayload): Promise<Service> {
+    const response = await fetch(`${this.baseUrl}/catalog/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async deleteService(id: string, artistId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/catalog/services/${id}?artistId=${encodeURIComponent(artistId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  async toggleServiceStatus(id: string, artistId: string): Promise<Service> {
+    const response = await fetch(`${this.baseUrl}/catalog/services/${id}/toggle-status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ artistId }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getArtistReviews(artistId: string, page: number = 1, limit: number = 10): Promise<{ reviews: Review[]; total: number; page: number; totalPages: number }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews?artistId=${artistId}&page=${page}&limit=${limit}&sortBy=createdAt&sortOrder=desc`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return {
+        reviews: result.data || result.reviews || [],
+        total: result.total || 0,
+        page: result.page || page,
+        totalPages: result.totalPages || 1
+      };
+    } catch (error) {
+      console.error('Error fetching artist reviews:', error);
+      return { reviews: [], total: 0, page: 1, totalPages: 0 };
+    }
+  }
+
+  /**
+   * Obtiene el calendario de disponibilidad de un artista para un mes específico
+   * @param artistId ID del artista
+   * @param year Año (ej: 2026)
+   * @param month Mes (1-12)
+   */
+  async getCalendar(artistId: string, year: number, month: number): Promise<CalendarData> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/availability/calendar?artistId=${artistId}&year=${year}&month=${month}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching calendar:', error);
+      return {
+        artistId,
+        year,
+        month,
+        occupiedDates: [],
+        blockedDates: [],
+      };
+    }
+  }
+
+  /**
+   * Obtiene los slots de tiempo disponibles para una fecha específica
+   * @param artistId ID del artista
+   * @param date Fecha en formato YYYY-MM-DD
+   */
+  async getTimeSlots(artistId: string, date: string): Promise<TimeSlotsData> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/availability/time-slots?artistId=${artistId}&date=${date}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      return {
+        artistId,
+        date,
+        slots: [],
+      };
+    }
+  }
+
+  /**
+   * Verifica si hay un conflicto de reserva en el rango de tiempo solicitado
+   * @param artistId ID del artista
+   * @param startAt Fecha/hora de inicio (ISO string)
+   * @param endAt Fecha/hora de fin (ISO string)
+   */
+  async checkAvailability(artistId: string, startAt: string, endAt: string): Promise<AvailabilityCheckResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/availability/check-reservation?artistId=${artistId}&startAt=${startAt}&endAt=${endAt}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      return {
+        hasReservation: false,
+      };
+    }
+  }
+
+  /**
+   * Crea una nueva reserva
+   * @param payload Datos de la reserva
+   */
+  async createBooking(payload: CreateBookingPayload): Promise<Booking> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Incluir cookies de autenticación
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene una reserva por ID
+   * @param bookingId ID de la reserva
+   */
+  async getBooking(bookingId: string): Promise<Booking | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}`, {
+        credentials: 'include', // Incluir cookies de autenticación
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching booking:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Lista todas las reservas del usuario autenticado
+   * @param filters Filtros opcionales
+   */
+  async listBookings(filters?: {
+    status?: string;
+    artistId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ bookings: Booking[]; total: number; page: number; totalPages: number }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.artistId) params.append('artistId', filters.artistId);
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const url = `${this.baseUrl}/booking/my-bookings${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing bookings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancela una reserva
+   * @param bookingId ID de la reserva
+   * @param reason Razón de cancelación (opcional)
+   */
+  async cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza la fecha de una reserva
+   * @param bookingId ID de la reserva
+   * @param scheduledDate Nueva fecha
+   */
+  async updateBookingDate(
+    bookingId: string,
+    scheduledDate: string
+  ): Promise<Booking> {
+    try {
+      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ scheduledDate }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating booking date:', error);
+      throw error;
+    }
+  }
+
+  // ==================== PAYMENT METHODS ====================
+
+  /**
+   * Crea un Payment Intent para procesar un pago
+   * @param payload Datos del pago
+   */
+  async createPaymentIntent(payload: CreatePaymentIntentPayload): Promise<PaymentIntent> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/payment-intents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirma un Payment Intent
+   * @param paymentIntentId ID del payment intent
+   */
+  async confirmPayment(paymentIntentId: string): Promise<PaymentIntent> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/payment-intents/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ paymentIntentId }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene un pago por ID
+   * @param paymentId ID del pago
+   */
+  async getPaymentById(paymentId: string): Promise<Payment | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/payments/${paymentId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching payment:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Crea un reembolso para un pago
+   * @param payload Datos del reembolso
+   */
+  async refundPayment(payload: CreateRefundPayload): Promise<Refund> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/refunds`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating refund:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene un reembolso por ID
+   * @param refundId ID del reembolso
+   */
+  async getRefundById(refundId: string): Promise<Refund | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/refunds/${refundId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching refund:', error);
+      return null;
+    }
+  }
+
+  // ==================== REVIEW METHODS ====================
+
+  /**
+   * Crea una nueva reseña para un booking completado
+   * @param payload Datos de la reseña
+   */
+  async createReview(payload: CreateReviewPayload): Promise<ReviewDetailed> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lista reseñas con filtros
+   * @param filters Filtros para la búsqueda
+   */
+  async listReviews(filters?: FilterReviewsParams): Promise<{ reviews: ReviewDetailed[]; total: number; page: number; totalPages: number }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters?.artistId) queryParams.append('artistId', filters.artistId);
+      if (filters?.clientId) queryParams.append('clientId', filters.clientId);
+      if (filters?.serviceId) queryParams.append('serviceId', filters.serviceId);
+      if (filters?.rating) queryParams.append('rating', filters.rating.toString());
+      if (filters?.status) queryParams.append('status', filters.status);
+      if (filters?.hasComment !== undefined) queryParams.append('hasComment', filters.hasComment.toString());
+      if (filters?.hasPhotos !== undefined) queryParams.append('hasPhotos', filters.hasPhotos.toString());
+      if (filters?.sortBy) queryParams.append('sortBy', filters.sortBy);
+      if (filters?.page) queryParams.append('page', filters.page.toString());
+      if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/reviews/reviews?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error listing reviews:', error);
+      return { reviews: [], total: 0, page: 1, totalPages: 0 };
+    }
+  }
+
+  /**
+   * Obtiene una reseña por ID
+   * @param reviewId ID de la reseña
+   */
+  async getReviewById(reviewId: string): Promise<ReviewDetailed | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching review:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Actualiza una reseña existente (solo autor, 24hrs después de creado)
+   * @param reviewId ID de la reseña
+   * @param payload Nuevos datos
+   */
+  async updateReview(reviewId: string, payload: UpdateReviewPayload): Promise<ReviewDetailed> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina una reseña (soft delete)
+   * @param reviewId ID de la reseña
+   */
+  async deleteReview(reviewId: string): Promise<{ message: string; review: ReviewDetailed }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una reseña como útil o no útil
+   * @param reviewId ID de la reseña
+   * @param isHelpful Si es útil o no
+   */
+  async markHelpful(reviewId: string, isHelpful: boolean): Promise<{ success: boolean; helpfulCount: number }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}/helpful`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ isHelpful }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking review as helpful:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reporta una reseña como inapropiada
+   * @param reviewId ID de la reseña
+   * @param payload Datos del reporte
+   */
+  async reportReview(reviewId: string, payload: ReportReviewPayload): Promise<{ message: string; reportId: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error reporting review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Responde a una reseña (solo artistas)
+   * @param reviewId ID de la reseña
+   * @param message Mensaje de respuesta
+   */
+  async respondToReview(reviewId: string, message: string): Promise<ReviewResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews/${reviewId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error responding to review:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las estadísticas de rating de un artista
+   * @param artistId ID del artista
+   */
+  async getArtistRating(artistId: string): Promise<ArtistRating | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reviews/artists/${artistId}/rating`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist rating:', error);
+      return null;
+    }
+  }
+
+  // ==================== ARTIST DASHBOARD METHODS ====================
+
+  /**
+   * Obtiene el perfil del artista autenticado (para dashboard)
+   */
+  async getArtistProfile(): Promise<ArtistProfile> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.artist;
+    } catch (error) {
+      console.error('Error fetching artist profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza el perfil del artista autenticado
+   * @param data Datos a actualizar
+   */
+  async updateArtistProfile(data: Partial<ArtistProfile>): Promise<ArtistProfile> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.artist;
+    } catch (error) {
+      console.error('Error updating artist profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las estadísticas del dashboard del artista
+   */
+  async getArtistStats(): Promise<{
+    artistId: string;
+    bookings: { total: number; thisMonth: number; pending: number; confirmed: number; completed: number };
+    revenue: { total: number; thisMonth: number; currency: string };
+    rating: { average: number; totalReviews: number };
+    upcomingBookings: Booking[];
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/stats`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.stats;
+    } catch (error) {
+      console.error('Error fetching artist stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las reservas recibidas por el artista
+   * @param filters Filtros de búsqueda
+   */
+  async getArtistBookings(filters?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ bookings: Booking[]; total: number; page: number; totalPages: number; artistId: string }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const url = `${this.baseUrl}/artists/dashboard/me/bookings${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist bookings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Acepta una reserva (solo artistas)
+   * @param bookingId ID de la reserva
+   */
+  async acceptBooking(bookingId: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/accept`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error accepting booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rechaza una reserva (solo artistas)
+   * @param bookingId ID de la reserva
+   * @param reason Razón del rechazo (opcional)
+   */
+  async declineBooking(bookingId: string, reason?: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/decline`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error declining booking:', error);
+      throw error;
+    }
+  }
+
+  // ==================== CHAT METHODS ====================
+
+  /**
+   * Lista las conversaciones del usuario
+   * @param page Página actual
+   * @param limit Cantidad por página
+   */
+  async getConversations(page: number = 1, limit: number = 20): Promise<{
+    conversations: Conversation[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/chat/conversations?${params.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene una conversación específica con sus mensajes
+   * @param conversationId ID de la conversación
+   */
+  async getConversation(conversationId: string): Promise<{ conversation: Conversation }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/conversations/${conversationId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crea una nueva conversación
+   * @param payload Datos de la conversación
+   */
+  async createConversation(payload: CreateConversationPayload): Promise<{ conversation: Conversation }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene los mensajes de una conversación
+   * @param conversationId ID de la conversación
+   * @param page Página actual
+   * @param limit Cantidad por página
+   */
+  async getMessages(conversationId: string, page: number = 1, limit: number = 50): Promise<{
+    messages: Message[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+
+      const response = await fetch(`${this.baseUrl}/chat/messages/${conversationId}?${params.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envía un mensaje (REST API - también disponible via WebSocket)
+   * @param payload Datos del mensaje
+   */
+  async sendMessage(payload: SendMessagePayload): Promise<{ message: Message }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca un mensaje como leído
+   * @param messageId ID del mensaje
+   */
+  async markMessageAsRead(messageId: string): Promise<{ message: Message }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/messages/${messageId}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una conversación completa como leída
+   * @param conversationId ID de la conversación
+   */
+  async markConversationAsRead(conversationId: string): Promise<{ message: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/conversations/${conversationId}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene el contador de mensajes no leídos
+   */
+  async getUnreadCount(): Promise<{ unreadCount: number }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/messages/unread-count`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      throw error;
+    }
+  }
+
+  // ==================== ADMIN METHODS ====================
+
+  /**
+   * Obtiene estadísticas generales del admin
+   * (Solo admins)
+   */
+  async getAdminStats(): Promise<AdminStats> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/stats`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de usuarios
+   * (Solo admins)
+   */
+  async getAdminUsers(params?: { page?: number; limit?: number; search?: string; role?: string }): Promise<AdminUsersResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.role) queryParams.append('role', params.role);
+
+      const response = await fetch(`${this.baseUrl}/admin/users?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin users:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene detalle de un usuario
+   * (Solo admins)
+   */
+  async getAdminUserDetail(userId: string): Promise<AdminUser> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/users/${userId}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user detail:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bloquea o desbloquea un usuario
+   * (Solo admins)
+   */
+  async toggleBlockUser(userId: string, isBlocked: boolean, reason?: string): Promise<{ message: string; user: AdminUser }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/users/${userId}/block`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isBlocked, reason })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error toggling user block:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de artistas
+   * (Solo admins)
+   */
+  async getAdminArtists(params?: { page?: number; limit?: number; search?: string; verified?: string }): Promise<AdminArtistsResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.verified !== undefined) queryParams.append('verified', params.verified);
+
+      const response = await fetch(`${this.baseUrl}/admin/artists?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin artists:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica o desverifica un artista
+   * (Solo admins)
+   */
+  async verifyArtist(artistId: string, isVerified: boolean): Promise<{ message: string; artist: AdminArtist }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/artists/${artistId}/verify`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isVerified })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error verifying artist:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de todas las reservas
+   * (Solo admins)
+   */
+  async getAdminBookings(params?: { page?: number; limit?: number; status?: string }): Promise<AdminBookingsResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+
+      const response = await fetch(`${this.baseUrl}/admin/bookings?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin bookings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene lista de reportes
+   * (Solo admins)
+   */
+  async getAdminReports(params?: { page?: number; limit?: number; status?: string }): Promise<AdminReportsResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+
+      const response = await fetch(`${this.baseUrl}/admin/reports?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching admin reports:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resuelve un reporte
+   * (Solo admins)
+   */
+  async resolveReport(reportId: string, action: 'approve' | 'reject' | 'delete_content', reason?: string): Promise<{ message: string; reportId: string; action: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/reports/${reportId}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action, reason })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error resolving report:', error);
+      throw error;
+    }
+  }
+}
+
+export const sdk = new PiumsSDK();
+export { PiumsSDK };

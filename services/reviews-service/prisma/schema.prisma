@@ -1,0 +1,188 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewStatus {
+  PENDING      // Pendiente de moderación
+  APPROVED     // Aprobada y visible
+  REJECTED     // Rechazada por moderación
+  HIDDEN       // Oculta temporalmente
+}
+
+enum ReportReason {
+  SPAM
+  OFFENSIVE
+  FAKE
+  INAPPROPRIATE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+// Reseña principal
+model Review {
+  id          String   @id @default(uuid())
+  
+  // Relaciones con otros servicios (IDs externos)
+  bookingId   String?  @unique // ID del booking (booking-service) - OPCIONAL para reviews sin reserva
+  clientId    String   // ID del cliente que dejó la reseña (users-service)
+  artistId    String   // ID del artista reseñado (artists-service)
+  serviceId   String?  // ID del servicio contratado (catalog-service) - opcional
+  
+  // Calificación (1-5 estrellas)
+  rating      Int      // 1, 2, 3, 4, 5
+  
+  // Reseña escrita (opcional, pero recomendado)
+  comment     String?  @db.Text
+  
+  // Estado y moderación
+  status      ReviewStatus @default(APPROVED)
+  
+  // Estadísticas de utilidad
+  helpfulCount    Int      @default(0) // Número de "útil"
+  notHelpfulCount Int      @default(0) // Número de "no útil"
+  
+  // Relaciones
+  photos      ReviewPhoto[]
+  response    ReviewResponse?
+  reports     ReviewReport[]
+  
+  // Verificación
+  isVerified  Boolean  @default(true) // Si la reserva fue verificada
+  
+  // Soft delete para auditorías
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([artistId])
+  @@index([clientId])
+  @@index([serviceId])
+  @@index([bookingId])
+  @@index([rating])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+// Fotos adjuntas a la reseña
+model ReviewPhoto {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  // URL de la foto (puede ser S3, Cloudinary, etc.)
+  url       String
+  
+  // Información adicional
+  caption   String?
+  order     Int      @default(0) // Orden de visualización
+  
+  // Soft delete
+  deletedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([reviewId])
+  @@map("review_photos")
+}
+
+// Respuesta del artista a la reseña
+model ReviewResponse {
+  id        String   @id @default(uuid())
+  reviewId  String   @unique
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  artistId  String   // ID del artista que responde
+  
+  // Respuesta
+  message   String   @db.Text
+  
+  // Soft delete
+  deletedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([artistId])
+  @@map("review_responses")
+}
+
+// Reportes de reseñas (moderación)
+model ReviewReport {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  // Usuario que reporta
+  reportedBy  String // userId
+  
+  // Razón del reporte
+  reason      ReportReason
+  description String?  @db.Text
+  
+  // Estado del reporte
+  status      ReportStatus @default(PENDING)
+  
+  // Resolución
+  resolvedBy  String?  // adminId que resolvió
+  resolvedAt  DateTime?
+  resolution  String?  @db.Text
+  
+  // Soft delete
+  deletedAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([reviewId])
+  @@index([reportedBy])
+  @@index([status])
+  @@map("review_reports")
+}
+
+// Estadísticas de artistas (agregadas, calculadas periódicamente)
+model ArtistRating {
+  id        String   @id @default(uuid())
+  artistId  String   @unique
+  
+  // Calificación promedio
+  averageRating     Float    @default(0)
+  
+  // Contadores por rating
+  rating1Count      Int      @default(0)
+  rating2Count      Int      @default(0)
+  rating3Count      Int      @default(0)
+  rating4Count      Int      @default(0)
+  rating5Count      Int      @default(0)
+  
+  // Total de reseñas
+  totalReviews      Int      @default(0)
+  totalWithComment  Int      @default(0)
+  totalWithPhotos   Int      @default(0)
+  
+  // Tasa de respuesta
+  responseRate      Float    @default(0) // Porcentaje de reseñas con respuesta
+  
+  // Última actualización
+  lastCalculatedAt  DateTime @default(now())
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("artist_ratings")
+}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmación de Pago - Piums</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      background: #c6f6d5;
+      color: #276749;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 20px 0;
+    }
+    .success-badge::before {
+      content: "✓";
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      background: #48bb78;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 20px;
+      margin-right: 8px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .content h2 {
+      font-size: 22px;
+      color: #2d3748;
+      margin-bottom: 20px;
+    }
+    .content p {
+      font-size: 15px;
+      color: #4a5568;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+    .payment-details {
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 25px 0;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-size: 14px;
+      color: #718096;
+    }
+    .detail-value {
+      font-size: 14px;
+      color: #2d3748;
+      font-weight: 600;
+    }
+    .total-row {
+      background: #edf2f7;
+      margin: -20px -20px 0 -20px;
+      padding: 15px 20px;
+      border-radius: 0 0 8px 8px;
+    }
+    .total-row .detail-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    .total-row .detail-value {
+      font-size: 24px;
+      color: #4299e1;
+    }
+    .booking-link {
+      background: #ebf8ff;
+      border-left: 4px solid #4299e1;
+      padding: 15px;
+      margin: 25px 0;
+      border-radius: 4px;
+    }
+    .booking-link p {
+      color: #2c5282;
+      margin: 0;
+      font-size: 14px;
+    }
+    .booking-link a {
+      color: #4299e1;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .button {
+      display: inline-block;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+      color: white !important;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      margin: 15px 0;
+      box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+    }
+    .invoice-section {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 25px;
+      text-align: center;
+    }
+    .invoice-section h3 {
+      font-size: 16px;
+      color: #2d3748;
+      margin-bottom: 15px;
+    }
+    .footer {
+      background: #f7fafc;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+    }
+    .footer p {
+      font-size: 13px;
+      color: #718096;
+      margin-bottom: 12px;
+    }
+    .footer a {
+      color: #4299e1;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    .footer .social {
+      margin-top: 20px;
+    }
+    .footer .social a {
+      display: inline-block;
+      margin: 0 8px;
+      color: #a0aec0;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>💳 Pago Recibido</h1>
+      <p>Tu transacción fue exitosa</p>
+      <div class="success-badge">Pago Confirmado</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h2>¡Gracias por tu pago, {{clientName}}!</h2>
+      
+      <p>
+        Hemos recibido tu pago correctamente. A continuación encontrarás los detalles de tu transacción.
+        Tu reserva ahora está confirmada y el artista ha sido notificado.
+      </p>
+
+      <div class="payment-details">
+        <div class="detail-row">
+          <span class="detail-label">Número de Transacción</span>
+          <span class="detail-value">{{transactionId}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Fecha y Hora</span>
+          <span class="detail-value">{{paymentDate}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Método de Pago</span>
+          <span class="detail-value">{{paymentMethod}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Código de Reserva</span>
+          <span class="detail-value">{{bookingCode}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Artista</span>
+          <span class="detail-value">{{artistName}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Servicio</span>
+          <span class="detail-value">{{serviceName}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Fecha del Servicio</span>
+          <span class="detail-value">{{serviceDate}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Subtotal</span>
+          <span class="detail-value">{{subtotal}}</span>
+        </div>
+        {{#if platformFee}}
+        <div class="detail-row">
+          <span class="detail-label">Comisión de Plataforma</span>
+          <span class="detail-value">{{platformFee}}</span>
+        </div>
+        {{/if}}
+        <div class="total-row detail-row">
+          <span class="detail-label">Total Pagado</span>
+          <span class="detail-value">{{totalAmount}}</span>
+        </div>
+      </div>
+
+      <div class="booking-link">
+        <p>
+          📋 <strong>Ver detalles completos:</strong> 
+          <a href="{{bookingUrl}}">Ver mi reserva</a>
+        </p>
+      </div>
+
+      <p>
+        Recibirás recordatorios antes de tu cita. Si necesitas realizar cambios o tienes preguntas,
+        puedes gestionar tu reserva desde tu panel de control.
+      </p>
+
+      <div style="text-align: center;">
+        <a href="{{dashboardUrl}}" class="button">Ir a Mi Panel</a>
+      </div>
+
+      <div class="invoice-section">
+        <h3>📄 Factura y Recibo</h3>
+        <p style="font-size: 14px; color: #4a5568; margin-bottom: 15px;">
+          Puedes descargar tu factura y recibo oficial en cualquier momento
+        </p>
+        <a href="{{invoiceUrl}}" class="button" style="margin: 0;">Descargar Factura</a>
+      </div>
+
+      <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #718096;">
+        <strong>¿Necesitas ayuda?</strong><br>
+        Si tienes preguntas sobre tu pago o reserva, nuestro equipo de soporte está disponible 24/7.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><strong>Piums</strong> - Conectando talento con clientes</p>
+      <p>
+        <a href="https://piums.com/billing">Facturación</a> •
+        <a href="https://piums.com/refund-policy">Política de Reembolso</a> •
+        <a href="https://piums.com/support">Soporte</a>
+      </p>
+      <p style="font-size: 12px; color: #a0aec0;">
+        © {{currentYear}} Piums. Todos los derechos reservados.
+      </p>
+      <div class="social">
+        <a href="https://facebook.com/piums">📘</a>
+        <a href="https://twitter.com/piums">🐦</a>
+        <a href="https://instagram.com/piums">📷</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

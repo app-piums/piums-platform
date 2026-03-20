@@ -1,0 +1,2375 @@
+openapi: 3.0.3
+info:
+  title: Piums Platform API
+  description: |
+    API completa de la plataforma Piums - Marketplace para contratar artistas callejeros.
+    
+    ## Autenticación
+    La mayoría de los endpoints requieren autenticación mediante JWT Bearer token.
+    
+    ```
+    Authorization: Bearer <token>
+    ```
+    
+    ## Ambientes
+    - **Development**: http://localhost:3000
+    - **Staging**: https://staging.piums.com
+    - **Production**: https://piums.com
+    
+    ## Rate Limiting
+    - **Login**: 5 requests / 15 minutos
+    - **Register**: 3 requests / hora
+    - **General**: 100 requests / 15 minutos
+    
+  version: 1.0.0
+  contact:
+    name: Piums API Support
+    email: api@piums.com
+    url: https://piums.com/docs
+  license:
+    name: Proprietary
+    url: https://piums.com/terms
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://staging.piums.com
+    description: Staging server
+  - url: https://piums.com
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Autenticación y autorización
+  - name: OAuth
+    description: Autenticación mediante proveedores externos
+  - name: Users
+    description: Gestión de usuarios
+  - name: Artists
+    description: Gestión de artistas y perfiles
+  - name: Catalog
+    description: Catálogo de servicios artísticos
+  - name: Bookings
+    description: Reservas y contrataciones
+  - name: Payments
+    description: Pagos y métodos de pago
+  - name: Reviews
+    description: Reseñas y calificaciones
+  - name: Notifications
+    description: Notificaciones y preferencias
+  - name: Search
+    description: Búsqueda y filtros
+  - name: Chat
+    description: Mensajería en tiempo real
+  - name: Health
+    description: Health checks
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenido del endpoint /api/auth/login
+
+  schemas:
+    # ========================================================================
+    # Error Responses
+    # ========================================================================
+    
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Validation failed"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    
+    # ========================================================================
+    # Auth Schemas
+    # ========================================================================
+    
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "SecurePass123!"
+        name:
+          type: string
+          example: "John Doe"
+        role:
+          type: string
+          enum: [CLIENT, ARTIST, ADMIN]
+          example: "CLIENT"
+        phone:
+          type: string
+          example: "+34600000000"
+    
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "SecurePass123!"
+    
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+        expiresIn:
+          type: string
+          example: "15m"
+    
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+    
+    # ========================================================================
+    # User Schemas
+    # ========================================================================
+    
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "John Doe"
+        role:
+          type: string
+          enum: [CLIENT, ARTIST, ADMIN]
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://res.cloudinary.com/piums/image/upload/v1234567890/avatars/user.jpg"
+        phone:
+          type: string
+          nullable: true
+          example: "+34600000000"
+        emailVerified:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        bio:
+          type: string
+        location:
+          type: string
+    
+    NotificationSettings:
+      type: object
+      properties:
+        emailNotifications:
+          type: boolean
+          example: true
+        smsNotifications:
+          type: boolean
+          example: false
+        pushNotifications:
+          type: boolean
+          example: true
+    
+    # ========================================================================
+    # Artist Schemas
+    # ========================================================================
+    
+    Artist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        stageName:
+          type: string
+          example: "El Mago de la Calle"
+        bio:
+          type: string
+        specialties:
+          type: array
+          items:
+            type: string
+          example: ["Música", "Malabares", "Magia"]
+        location:
+          type: object
+          properties:
+            city:
+              type: string
+              example: "Madrid"
+            country:
+              type: string
+              example: "España"
+            coordinates:
+              type: object
+              properties:
+                lat:
+                  type: number
+                  example: 40.4168
+                lng:
+                  type: number
+                  example: -3.7038
+        rating:
+          type: number
+          format: float
+          example: 4.8
+        reviewCount:
+          type: integer
+          example: 127
+        verified:
+          type: boolean
+          example: true
+        portfolio:
+          type: array
+          items:
+            type: string
+            format: uri
+        socialLinks:
+          type: object
+          properties:
+            instagram:
+              type: string
+            youtube:
+              type: string
+            tiktok:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+    
+    # ========================================================================
+    # Catalog Schemas
+    # ========================================================================
+    
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        artistId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "Show de Magia - 1 hora"
+        description:
+          type: string
+        category:
+          type: string
+          enum: [MUSIC, DANCE, MAGIC, JUGGLING, PAINTING, COMEDY, OTHER]
+        duration:
+          type: integer
+          description: "Duración en minutos"
+          example: 60
+        price:
+          type: number
+          format: float
+          example: 150.00
+        currency:
+          type: string
+          example: "EUR"
+        availability:
+          type: object
+          properties:
+            monday:
+              type: array
+              items:
+                type: string
+            tuesday:
+              type: array
+              items:
+                type: string
+        active:
+          type: boolean
+          example: true
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+    
+    # ========================================================================
+    # Booking Schemas
+    # ========================================================================
+    
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        artistId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: "2026-03-15"
+        time:
+          type: string
+          example: "18:00"
+        duration:
+          type: integer
+          example: 60
+        location:
+          type: object
+          properties:
+            address:
+              type: string
+            city:
+              type: string
+            postalCode:
+              type: string
+            coordinates:
+              type: object
+              properties:
+                lat:
+                  type: number
+                lng:
+                  type: number
+        price:
+          type: number
+          format: float
+          example: 150.00
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED, COMPLETED, RESCHEDULED]
+          example: "PENDING"
+        paymentStatus:
+          type: string
+          enum: [PENDING, PAID, REFUNDED, FAILED]
+        confirmationCode:
+          type: string
+          example: "BKG-ABC123"
+        notes:
+          type: string
+        rescheduledAt:
+          type: string
+          format: date-time
+          nullable: true
+        rescheduleReason:
+          type: string
+          nullable: true
+        rescheduleCount:
+          type: integer
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+    
+    CreateBookingRequest:
+      type: object
+      required:
+        - artistId
+        - serviceId
+        - date
+        - time
+        - location
+      properties:
+        artistId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        location:
+          type: object
+          required:
+            - address
+            - city
+          properties:
+            address:
+              type: string
+            city:
+              type: string
+            postalCode:
+              type: string
+        notes:
+          type: string
+    
+    RescheduleBookingRequest:
+      type: object
+      required:
+        - newDate
+        - newTime
+      properties:
+        newDate:
+          type: string
+          format: date
+        newTime:
+          type: string
+        reason:
+          type: string
+    
+    # ========================================================================
+    # Payment Schemas
+    # ========================================================================
+    
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [CARD, PAYPAL, BANK_TRANSFER]
+        last4:
+          type: string
+          example: "4242"
+        brand:
+          type: string
+          example: "Visa"
+        expiryMonth:
+          type: integer
+          example: 12
+        expiryYear:
+          type: integer
+          example: 2026
+        isDefault:
+          type: boolean
+          example: true
+        stripePaymentMethodId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    
+    AddPaymentMethodRequest:
+      type: object
+      required:
+        - stripePaymentMethodId
+      properties:
+        stripePaymentMethodId:
+          type: string
+          description: "ID del PaymentMethod de Stripe"
+        setAsDefault:
+          type: boolean
+          default: false
+    
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: float
+          example: 150.00
+        currency:
+          type: string
+          example: "EUR"
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED]
+        paymentMethodId:
+          type: string
+          format: uuid
+        stripePaymentIntentId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    
+    # ========================================================================
+    # Review Schemas
+    # ========================================================================
+    
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        artistId:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+        response:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        helpful:
+          type: integer
+          example: 12
+        createdAt:
+          type: string
+          format: date-time
+    
+    CreateReviewRequest:
+      type: object
+      required:
+        - bookingId
+        - rating
+      properties:
+        bookingId:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+    
+    # ========================================================================
+    # Notification Schemas
+    # ========================================================================
+    
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [BOOKING_CONFIRMED, BOOKING_CANCELLED, PAYMENT_RECEIVED, REVIEW_RECEIVED, MESSAGE_RECEIVED]
+        title:
+          type: string
+          example: "Nueva reserva confirmada"
+        message:
+          type: string
+        read:
+          type: boolean
+          example: false
+        data:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+    
+    # ========================================================================
+    # Search Schemas
+    # ========================================================================
+    
+    SearchFilters:
+      type: object
+      properties:
+        query:
+          type: string
+          example: "mago"
+        category:
+          type: string
+        location:
+          type: string
+        priceMin:
+          type: number
+        priceMax:
+          type: number
+        rating:
+          type: number
+        availability:
+          type: string
+          format: date
+        sort:
+          type: string
+          enum: [relevance, price_asc, price_desc, rating, reviews]
+          default: relevance
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+    
+    # ========================================================================
+    # Chat Schemas
+    # ========================================================================
+    
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        participants:
+          type: array
+          items:
+            type: string
+            format: uuid
+        lastMessage:
+          $ref: '#/components/schemas/Message'
+        unreadCount:
+          type: integer
+          example: 3
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        type:
+          type: string
+          enum: [TEXT, IMAGE, FILE]
+          default: TEXT
+        read:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+    
+    SendMessageRequest:
+      type: object
+      required:
+        - conversationId
+        - content
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        type:
+          type: string
+          enum: [TEXT, IMAGE, FILE]
+          default: TEXT
+
+    # ========================================================================
+    # Pagination
+    # ========================================================================
+    
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 156
+            pages:
+              type: integer
+              example: 8
+
+paths:
+  # ==========================================================================
+  # HEALTH
+  # ==========================================================================
+  
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Verifica el estado del API Gateway
+      responses:
+        '200':
+          description: Gateway operativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ==========================================================================
+  # AUTHENTICATION
+  # ==========================================================================
+  
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Registrar nuevo usuario
+      description: Crea una cuenta nueva en la plataforma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Datos de registro inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: El email ya está registrado
+  
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Iniciar sesión
+      description: Autenticarse con email y contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenciales inválidas
+        '429':
+          description: Demasiados intentos de login
+  
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Renovar token
+      description: Obtener un nuevo access token usando el refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  expiresIn:
+                    type: string
+        '401':
+          description: Refresh token inválido
+  
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Cerrar sesión
+      description: Invalidar el refresh token actual
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada
+        '401':
+          description: No autenticado
+  
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: Solicitar recuperación de contraseña
+      description: Envía un email con link para resetear contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Email enviado (siempre 200 por seguridad)
+        '429':
+          description: Demasiadas solicitudes
+  
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Resetear contraseña
+      description: Establecer nueva contraseña usando el token recibido por email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Contraseña actualizada
+        '400':
+          description: Token inválido o expirado
+  
+  /api/auth/change-password:
+    post:
+      tags:
+        - Auth
+      summary: Cambiar contraseña
+      description: Cambiar contraseña del usuario autenticado
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Contraseña cambiada
+        '401':
+          description: Contraseña actual incorrecta
+  
+  /api/auth/verify-email:
+    post:
+      tags:
+        - Auth
+      summary: Verificar email
+      description: Confirmar dirección de email usando token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Email verificado
+        '400':
+          description: Token inválido
+  
+  /api/auth/resend-verification:
+    post:
+      tags:
+        - Auth
+      summary: Reenviar email de verificación
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Email reenviado
+        '429':
+          description: Demasiadas solicitudes
+
+  # ==========================================================================
+  # OAUTH
+  # ==========================================================================
+  
+  /api/auth/oauth/google:
+    get:
+      tags:
+        - OAuth
+      summary: Autenticación con Google
+      description: Redirige a Google OAuth
+      responses:
+        '302':
+          description: Redirige a Google
+  
+  /api/auth/oauth/google/callback:
+    get:
+      tags:
+        - OAuth
+      summary: Callback de Google OAuth
+      description: Procesa la respuesta de Google
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirige al frontend con token
+  
+  /api/auth/oauth/facebook:
+    get:
+      tags:
+        - OAuth
+      summary: Autenticación con Facebook
+      responses:
+        '302':
+          description: Redirige a Facebook
+  
+  /api/auth/oauth/facebook/callback:
+    get:
+      tags:
+        - OAuth
+      summary: Callback de Facebook OAuth
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirige al frontend con token
+
+  # ==========================================================================
+  # USERS
+  # ==========================================================================
+  
+  /api/users/me:
+    get:
+      tags:
+        - Users
+      summary: Obtener perfil del usuario actual
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: No autenticado
+    
+    put:
+      tags:
+        - Users
+      summary: Actualizar perfil
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    delete:
+      tags:
+        - Users
+      summary: Eliminar cuenta
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Cuenta eliminada
+  
+  /api/users/me/avatar:
+    post:
+      tags:
+        - Users
+      summary: Subir avatar
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar subido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    format: uri
+        '400':
+          description: Archivo inválido (max 5MB, JPG/PNG/WebP)
+    
+    delete:
+      tags:
+        - Users
+      summary: Eliminar avatar
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Avatar eliminado
+  
+  /api/users/me/notifications-settings:
+    get:
+      tags:
+        - Users
+      summary: Obtener preferencias de notificaciones
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferencias actuales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettings'
+    
+    put:
+      tags:
+        - Users
+      summary: Actualizar preferencias de notificaciones
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettings'
+      responses:
+        '200':
+          description: Preferencias actualizadas
+
+  # ==========================================================================
+  # ARTISTS
+  # ==========================================================================
+  
+  /api/artists:
+    get:
+      tags:
+        - Artists
+      summary: Listar artistas
+      description: Obtener listado de artistas con paginación
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de artistas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Artist'
+    
+    post:
+      tags:
+        - Artists
+      summary: Crear perfil de artista
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stageName
+                - bio
+                - specialties
+              properties:
+                stageName:
+                  type: string
+                bio:
+                  type: string
+                specialties:
+                  type: array
+                  items:
+                    type: string
+                location:
+                  type: object
+      responses:
+        '201':
+          description: Perfil de artista creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+  
+  /api/artists/{id}:
+    get:
+      tags:
+        - Artists
+      summary: Obtener artista por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalles del artista
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+        '404':
+          description: Artista no encontrado
+    
+    put:
+      tags:
+        - Artists
+      summary: Actualizar perfil de artista
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stageName:
+                  type: string
+                bio:
+                  type: string
+                specialties:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Perfil actualizado
+    
+    delete:
+      tags:
+        - Artists
+      summary: Eliminar perfil de artista
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Perfil eliminado
+  
+  /api/artists/me/dashboard:
+    get:
+      tags:
+        - Artists
+      summary: Dashboard del artista
+      description: Estadísticas y métricas del artista autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Datos del dashboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      pending:
+                        type: integer
+                      confirmed:
+                        type: integer
+                  revenue:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                      thisMonth:
+                        type: number
+                      currency:
+                        type: string
+                  rating:
+                    type: object
+                    properties:
+                      average:
+                        type: number
+                      count:
+                        type: integer
+
+  /api/artists/me/bookings:
+    get:
+      tags:
+        - Artists
+      summary: Reservas del artista
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, CANCELLED, COMPLETED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de reservas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+  
+  /api/artists/bookings/{id}/accept:
+    post:
+      tags:
+        - Artists
+      summary: Aceptar reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reserva aceptada
+  
+  /api/artists/bookings/{id}/decline:
+    post:
+      tags:
+        - Artists
+      summary: Rechazar reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Reserva rechazada
+
+  # ==========================================================================
+  # CATALOG
+  # ==========================================================================
+  
+  /api/catalog/services:
+    get:
+      tags:
+        - Catalog
+      summary: Listar servicios
+      parameters:
+        - name: artistId
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de servicios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+    
+    post:
+      tags:
+        - Catalog
+      summary: Crear servicio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - category
+                - duration
+                - price
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                category:
+                  type: string
+                duration:
+                  type: integer
+                price:
+                  type: number
+      responses:
+        '201':
+          description: Servicio creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+  
+  /api/catalog/services/{id}:
+    get:
+      tags:
+        - Catalog
+      summary: Obtener servicio por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del servicio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+    
+    put:
+      tags:
+        - Catalog
+      summary: Actualizar servicio
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Servicio actualizado
+    
+    delete:
+      tags:
+        - Catalog
+      summary: Eliminar servicio
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Servicio eliminado
+
+  # ==========================================================================
+  # BOOKINGS
+  # ==========================================================================
+  
+  /api/bookings:
+    get:
+      tags:
+        - Bookings
+      summary: Listar reservas del usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de reservas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+    
+    post:
+      tags:
+        - Bookings
+      summary: Crear reserva
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Reserva creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Datos inválidos o artista no disponible
+  
+  /api/bookings/{id}:
+    get:
+      tags:
+        - Bookings
+      summary: Obtener reserva por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles de la reserva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+    
+    delete:
+      tags:
+        - Bookings
+      summary: Cancelar reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Reserva cancelada
+  
+  /api/bookings/{id}/reschedule:
+    patch:
+      tags:
+        - Bookings
+      summary: Reprogramar reserva
+      description: Permite cambiar fecha/hora de una reserva (máx 2 veces, no dentro de 24h del evento)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleBookingRequest'
+      responses:
+        '200':
+          description: Reserva reprogramada
+        '400':
+          description: No se puede reprogramar (límite alcanzado o muy cercano)
+
+  # ==========================================================================
+  # PAYMENTS
+  # ==========================================================================
+  
+  /api/payments/methods:
+    get:
+      tags:
+        - Payments
+      summary: Listar métodos de pago
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de métodos de pago
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+    
+    post:
+      tags:
+        - Payments
+      summary: Agregar método de pago
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPaymentMethodRequest'
+      responses:
+        '201':
+          description: Método de pago agregado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+  
+  /api/payments/methods/{id}:
+    delete:
+      tags:
+        - Payments
+      summary: Eliminar método de pago
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Método de pago eliminado
+  
+  /api/payments/methods/{id}/default:
+    patch:
+      tags:
+        - Payments
+      summary: Establecer método de pago por defecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Método por defecto actualizado
+  
+  /api/payments:
+    get:
+      tags:
+        - Payments
+      summary: Historial de pagos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de pagos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+    
+    post:
+      tags:
+        - Payments
+      summary: Procesar pago
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - paymentMethodId
+              properties:
+                bookingId:
+                  type: string
+                paymentMethodId:
+                  type: string
+      responses:
+        '200':
+          description: Pago procesado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  # ==========================================================================
+  # REVIEWS
+  # ==========================================================================
+  
+  /api/reviews:
+    get:
+      tags:
+        - Reviews
+      summary: Listar reseñas
+      parameters:
+        - name: artistId
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de reseñas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+    
+    post:
+      tags:
+        - Reviews
+      summary: Crear reseña
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201':
+          description: Reseña creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+  
+  /api/reviews/{id}:
+    get:
+      tags:
+        - Reviews
+      summary: Obtener reseña por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles de la reseña
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+    
+    put:
+      tags:
+        - Reviews
+      summary: Actualizar reseña
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Reseña actualizada
+    
+    delete:
+      tags:
+        - Reviews
+      summary: Eliminar reseña
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reseña eliminada
+  
+  /api/reviews/{id}/respond:
+    post:
+      tags:
+        - Reviews
+      summary: Responder a reseña (artista)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - response
+              properties:
+                response:
+                  type: string
+      responses:
+        '200':
+          description: Respuesta publicada
+  
+  /api/reviews/{id}/helpful:
+    post:
+      tags:
+        - Reviews
+      summary: Marcar reseña como útil
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Voto registrado
+
+  # ==========================================================================
+  # NOTIFICATIONS
+  # ==========================================================================
+  
+  /api/notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Listar notificaciones
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unread
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de notificaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+  
+  /api/notifications/{id}/read:
+    patch:
+      tags:
+        - Notifications
+      summary: Marcar notificación como leída
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notificación marcada como leída
+  
+  /api/notifications/read-all:
+    patch:
+      tags:
+        - Notifications
+      summary: Marcar todas como leídas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Todas las notificaciones marcadas como leídas
+
+  # ==========================================================================
+  # SEARCH
+  # ==========================================================================
+  
+  /api/search/artists:
+    get:
+      tags:
+        - Search
+      summary: Buscar artistas
+      description: Búsqueda avanzada de artistas con filtros
+      parameters:
+        - name: q
+          in: query
+          description: Término de búsqueda
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: priceMin
+          in: query
+          schema:
+            type: number
+        - name: priceMax
+          in: query
+          schema:
+            type: number
+        - name: rating
+          in: query
+          description: Rating mínimo
+          schema:
+            type: number
+        - name: availability
+          in: query
+          description: Fecha de disponibilidad
+          schema:
+            type: string
+            format: date
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, price_asc, price_desc, rating, reviews]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Resultados de búsqueda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+  
+  /api/search/services:
+    get:
+      tags:
+        - Search
+      summary: Buscar servicios
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: priceMin
+          in: query
+          schema:
+            type: number
+        - name: priceMax
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Resultados de búsqueda
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+
+  # ==========================================================================
+  # CHAT
+  # ==========================================================================
+  
+  /api/chat/conversations:
+    get:
+      tags:
+        - Chat
+      summary: Listar conversaciones
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de conversaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+    
+    post:
+      tags:
+        - Chat
+      summary: Crear conversación
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - participantId
+              properties:
+                participantId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Conversación creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  
+  /api/chat/conversations/{id}:
+    get:
+      tags:
+        - Chat
+      summary: Obtener conversación
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles de la conversación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  
+  /api/chat/conversations/{id}/messages:
+    get:
+      tags:
+        - Chat
+      summary: Obtener mensajes de una conversación
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de mensajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+  
+  /api/chat/messages:
+    post:
+      tags:
+        - Chat
+      summary: Enviar mensaje
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: Mensaje enviado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+  
+  /api/chat/messages/{id}/read:
+    patch:
+      tags:
+        - Chat
+      summary: Marcar mensaje como leído
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mensaje marcado como leído
+
+  # Profile endpoints (users-service)
+  /api/users/me/profile:
+    get:
+      tags: [Users]
+      summary: Obtener mi perfil público
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil público del usuario autenticado
+        '404':
+          description: Perfil no creado aún
+    post:
+      tags: [Users]
+      summary: Crear perfil público
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slug:
+                  type: string
+                displayName:
+                  type: string
+                bio:
+                  type: string
+                visibility:
+                  type: string
+                  enum: [PUBLIC, HIDDEN]
+      responses:
+        '201':
+          description: Perfil creado
+    put:
+      tags: [Users]
+      summary: Actualizar perfil público
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil actualizado
+
+  /api/users/me/profile/check-slug/{slug}:
+    get:
+      tags: [Users]
+      summary: Verificar disponibilidad de slug de perfil
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9-]+$'
+      responses:
+        '200':
+          description: Disponibilidad del slug
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      slug:
+                        type: string
+
+  /api/users/me/profile/cover:
+    post:
+      tags: [Users]
+      summary: Subir foto de portada del perfil
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                cover:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Foto de portada actualizada
+    delete:
+      tags: [Users]
+      summary: Eliminar foto de portada
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Foto de portada eliminada
+
+  /api/users/me/profile/{slug}:
+    get:
+      tags: [Users]
+      summary: Obtener perfil público por slug (sin autenticación)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Perfil público del usuario
+        '404':
+          description: Perfil no encontrado

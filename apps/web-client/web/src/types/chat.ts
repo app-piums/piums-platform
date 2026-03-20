@@ -1,0 +1,17 @@
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  artistName?: string;
+  artistAvatar?: string;
+  messages?: Message[];
+  unreadCount?: number;
+  lastMessageAt?: string;
+}
