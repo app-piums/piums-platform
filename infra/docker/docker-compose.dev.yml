@@ -96,6 +96,7 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       REFRESH_SECRET: dev_refresh_secret_CHANGE_IN_PRODUCTION
       REDIS_URL: redis://redis:6379
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,6 +117,7 @@ services:
       NODE_ENV: development
       PORT: 4002
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -137,6 +139,7 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       BOOKING_SERVICE_URL: http://booking-service:4008
       PAYMENTS_SERVICE_URL: http://payments-service:4005
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -155,6 +158,8 @@ services:
       NODE_ENV: development
       PORT: 4004
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_catalog
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,6 +181,7 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_changeme}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_changeme}
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -195,6 +201,7 @@ services:
       PORT: 4006
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_reviews
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -215,6 +222,7 @@ services:
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_notifications
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       REDIS_URL: redis://redis:6379
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -236,6 +244,10 @@ services:
       PORT: 4008
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_bookings
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      CATALOG_SERVICE_URL: http://catalog-service:4004
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
+      PAYMENTS_SERVICE_URL: http://payments-service:4005
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -257,6 +269,7 @@ services:
       ARTISTS_SERVICE_URL: http://artists-service:4003
       CATALOG_SERVICE_URL: http://catalog-service:4004
       REVIEWS_SERVICE_URL: http://reviews-service:4006
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
         condition: service_healthy
@@ -277,7 +290,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://gateway:3000/api
+      GATEWAY_INTERNAL_URL: http://gateway:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_CLIENT_URL: http://localhost:3000
       NEXT_PUBLIC_ARTIST_URL: http://localhost:3001
@@ -297,7 +310,7 @@ services:
       - "3001:3001"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://gateway:3000/api
+      GATEWAY_INTERNAL_URL: http://gateway:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3001
       NEXT_PUBLIC_CLIENT_URL: http://localhost:3000
       NEXT_PUBLIC_ARTIST_URL: http://localhost:3001
@@ -317,7 +330,7 @@ services:
       - "3003:3003"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://gateway:3000/api
+      GATEWAY_INTERNAL_URL: http://gateway:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3003
     depends_on:
       - gateway

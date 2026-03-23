@@ -1,10 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { Loading } from '@/components/Loading';
+import { sdk, type ArtistProfile, type Service } from '@piums/sdk';
 
 // ─── Mock data ───────────────────────────────────────────────────────────────
 const MOCK_SERVICE = {
@@ -55,13 +57,90 @@ const TIME_SLOTS = ['08:00 AM', '10:30 AM', '02:00 PM', '04:00 PM'];
 // Blocked days (just for demo)
 const BLOCKED_DAYS = new Set([3, 10, 17, 22, 28]);
 
+type DisplayService = typeof MOCK_SERVICE;
+
+const minutesToLabel = (minutes: number) => {
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours} hora${hours === 1 ? '' : 's'}`;
+  }
+  return `${minutes} minutos`;
+};
+
+const formatServiceDuration = (service?: Service | null) => {
+  if (!service) return MOCK_SERVICE.duration;
+  if (service.durationMin && service.durationMax) {
+    if (service.durationMin === service.durationMax) {
+      return minutesToLabel(service.durationMin);
+    }
+    return `${minutesToLabel(service.durationMin)} – ${minutesToLabel(service.durationMax)}`;
+  }
+  if (service.duration) {
+    return minutesToLabel(service.duration);
+  }
+  if (service.durationMin) {
+    return minutesToLabel(service.durationMin);
+  }
+  if (service.durationMax) {
+    return minutesToLabel(service.durationMax);
+  }
+  return 'Duración variable';
+};
+
+const normalizeServiceData = (service: Service | null, artist: ArtistProfile | null): DisplayService => {
+  if (!service) {
+    return MOCK_SERVICE;
+  }
+
+  const includes = service.whatIsIncluded && service.whatIsIncluded.length > 0
+    ? service.whatIsIncluded
+    : MOCK_SERVICE.includes;
+
+  const price = typeof service.basePrice === 'number' ? service.basePrice : null;
+
+  return {
+    ...MOCK_SERVICE,
+    id: service.id,
+    title: service.name || MOCK_SERVICE.title,
+    category: artist?.category || service.categoryId || MOCK_SERVICE.category,
+    popular: Boolean(service.isAvailable ?? service.status === 'ACTIVE'),
+    artistName: artist?.nombre || MOCK_SERVICE.artistName,
+    artistTag: artist?.category || MOCK_SERVICE.artistTag,
+    artistAvatar: artist?.avatar || MOCK_SERVICE.artistAvatar,
+    rating: artist?.rating || MOCK_SERVICE.rating,
+    ratingCount: artist?.reviewsCount || MOCK_SERVICE.ratingCount,
+    duration: formatServiceDuration(service),
+    images: service.images && service.images.length > 0 ? service.images : MOCK_SERVICE.images,
+    description: service.description || MOCK_SERVICE.description,
+    mision: artist?.bio || MOCK_SERVICE.mision,
+    includes,
+    servicePrices: [
+      {
+        id: service.id,
+        name: service.name || MOCK_SERVICE.servicePrices[0].name,
+        description: service.description || MOCK_SERVICE.servicePrices[0].description,
+        price,
+        hasPrice: price !== null,
+      },
+    ],
+  } as DisplayService;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatCOP(n: number) {
   return '$' + n.toLocaleString('es-CO');
 }
 
 // ─── Booking sidebar ─────────────────────────────────────────────────────────
-function BookingWidget({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
+function BookingWidget({
+  serviceData,
+  artistId,
+  serviceId,
+}: {
+  serviceData: DisplayService;
+  artistId?: string;
+  serviceId?: string;
+}) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
@@ -70,7 +149,7 @@ function BookingWidget({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
   const [year,  setYear]  = useState(now.getFullYear());
   const [selectedDay,  setSelectedDay]  = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedSvc,  setSelectedSvc]  = useState(serviceData.servicePrices[0].id);
+  const [selectedSvc,  setSelectedSvc]  = useState(serviceData.servicePrices[0]?.id ?? serviceData.id);
 
   const firstDay   = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -83,11 +162,34 @@ function BookingWidget({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0);  setYear(y => y + 1); } else setMonth(m => m + 1); };
 
-  const chosenService = serviceData.servicePrices.find(s => s.id === selectedSvc)!;
+  const fallbackOption = {
+    id: serviceData.id,
+    name: serviceData.title,
+    description: serviceData.description,
+    price: null,
+    hasPrice: false,
+  };
+
+  const chosenService = serviceData.servicePrices.find(s => s.id === selectedSvc) ?? fallbackOption;
+  const bookingServiceTarget = serviceId ?? selectedSvc;
+  const canProceed = Boolean(selectedDay && selectedTime && artistId && bookingServiceTarget);
 
   const handleContinue = () => {
-    if (!isAuthenticated) { router.push('/login?redirect=/booking'); return; }
-    router.push(`/booking?artistId=${serviceData.id}&serviceId=${selectedSvc}`);
+    const targetArtistId = artistId;
+    const targetServiceId = bookingServiceTarget;
+    if (!targetArtistId || !targetServiceId) {
+      alert('No pudimos preparar la reserva. Por favor intenta de nuevo.');
+      return;
+    }
+
+    const bookingUrl = `/booking?artistId=${encodeURIComponent(targetArtistId)}&serviceId=${encodeURIComponent(targetServiceId)}`;
+
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(bookingUrl)}`);
+      return;
+    }
+
+    router.push(bookingUrl);
   };
 
   return (
@@ -236,7 +338,7 @@ function BookingWidget({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
 
           <button
             onClick={handleContinue}
-            disabled={!selectedDay || !selectedTime}
+            disabled={!canProceed}
             className="w-full py-3.5 bg-[#FF6A00] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
           >
             Continuar al Pago
@@ -254,17 +356,23 @@ function BookingWidget({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
 }
 
 // ─── Pricing breakdown card (first image right panel) ─────────────────────────
-function PricingCard({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
-  const basePrice  = 220000;
-  const artistFee  = 30000;
-  const total      = basePrice + artistFee;
+function PricingCard({ serviceData }: { serviceData: DisplayService }) {
+  const mainOption = serviceData.servicePrices[0];
+  const hasLivePrice = typeof mainOption?.price === 'number';
+  const basePriceValue = hasLivePrice ? mainOption!.price! : 220000;
+  const artistFeeValue = Math.round(basePriceValue * 0.15);
+  const totalValue = basePriceValue + artistFeeValue;
 
   return (
     <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-2xl font-bold text-gray-900">{formatCOP(serviceData.servicePrices[0].price!)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">por sesión</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {hasLivePrice ? formatCOP(basePriceValue) : 'Cotización'}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {hasLivePrice ? 'por sesión' : 'Solicita una cotización personalizada'}
+          </p>
         </div>
         <span className="px-2.5 py-1 bg-orange-100 text-orange-600 text-xs font-semibold rounded-full">Experto</span>
       </div>
@@ -298,15 +406,15 @@ function PricingCard({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
       <div className="bg-gray-50 rounded-xl p-3 space-y-2 text-sm">
         <div className="flex justify-between text-gray-600">
           <span>Tarifa base</span>
-          <span className="font-medium">{formatCOP(basePrice)}</span>
+          <span className="font-medium">{formatCOP(basePriceValue)}</span>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Tarifa Hora de Artista</span>
-          <span className="font-medium">{formatCOP(artistFee)}</span>
+          <span className="font-medium">{formatCOP(artistFeeValue)}</span>
         </div>
         <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-[#FF6A00]">
           <span>Total</span>
-          <span>{formatCOP(total)}</span>
+          <span>{formatCOP(totalValue)}</span>
         </div>
       </div>
 
@@ -325,10 +433,97 @@ function PricingCard({ serviceData }: { serviceData: typeof MOCK_SERVICE }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ServiceDetailPage() {
+  const params = useParams<{ id?: string }>();
+  const routeServiceId = Array.isArray(params?.id) ? params?.id[0] : params?.id;
   const [showBooking, setShowBooking] = useState(false);
-  const service = MOCK_SERVICE; // TODO: fetch by params.id
+  const [serviceData, setServiceData] = useState<Service | null>(null);
+  const [artist, setArtist] = useState<ArtistProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchService = async () => {
+      if (!routeServiceId) {
+        setError('No encontramos este servicio.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await sdk.getService(routeServiceId);
+
+        if (!isMounted) return;
+
+        if (!data) {
+          setError('Este servicio no está disponible en este momento.');
+          setServiceData(null);
+          return;
+        }
+
+        setServiceData(data);
+
+        if (data.artistId) {
+          const artistProfile = await sdk.getArtist(data.artistId);
+          if (isMounted) {
+            setArtist(artistProfile);
+          }
+        } else {
+          setArtist(null);
+        }
+      } catch (err) {
+        console.error('Error loading service detail:', err);
+        if (isMounted) {
+          setError('Ocurrió un problema al cargar este servicio. Intenta nuevamente.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchService();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [routeServiceId]);
+
+  const service = useMemo(() => normalizeServiceData(serviceData, artist), [serviceData, artist]);
+  const bookingArtistId = serviceData?.artistId || artist?.id;
+  const bookingServiceId = serviceData?.id;
 
   const STEPS = ['En sitio', 'Agenda', 'Revisión', 'Confirmación'];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (!serviceData || error) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center px-4 text-center">
+        <p className="text-xl font-semibold text-gray-900 mb-3">
+          {error || 'El servicio no está disponible en este momento.'}
+        </p>
+        <p className="text-gray-600 mb-6">Explora otros artistas para encontrar la experiencia ideal.</p>
+        <Link
+          href="/artists"
+          className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20"
+        >
+          Ver artistas disponibles
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
@@ -444,7 +639,12 @@ export default function ServiceDetailPage() {
             {/* Mobile booking widget */}
             {showBooking && (
               <div className="lg:hidden">
-                <BookingWidget serviceData={service} />
+                <BookingWidget
+                  key={`booking-widget-mobile-${service.id}`}
+                  serviceData={service}
+                  artistId={bookingArtistId}
+                  serviceId={bookingServiceId}
+                />
               </div>
             )}
 
@@ -506,7 +706,12 @@ export default function ServiceDetailPage() {
             <PricingCard serviceData={service} />
 
             {/* Full booking widget */}
-            <BookingWidget serviceData={service} />
+            <BookingWidget
+              key={`booking-widget-desktop-${service.id}`}
+              serviceData={service}
+              artistId={bookingArtistId}
+              serviceId={bookingServiceId}
+            />
 
           </div>
         </div>

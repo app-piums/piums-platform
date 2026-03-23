@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { sdk } from '@piums/sdk';
 import { Footer } from "@/components/Footer";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -83,6 +84,9 @@ export default function LoginPage() {
       // Guardar token si viene en la respuesta (backup si no hay httpOnly cookie)
       if (data.token) {
         localStorage.setItem("token", data.token);
+        sdk.setAuthToken(data.token);
+      } else {
+        sdk.setAuthToken(null);
       }
 
       // Actualizar estado global de autenticación

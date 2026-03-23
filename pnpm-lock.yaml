@@ -129,7 +129,10 @@ importers:
         version: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3)(react@19.2.3)
       next-i18next:
         specifier: ^15.4.3
-        version: 15.4.3(@types/react@19.2.14)(i18next@25.8.18)(next@16.1.6)(react-i18next@16.5.8)(react@19.2.3)
+        version: 15.4.3(@types/react@19.2.14)(i18next@23.16.8)(next@16.1.6)(react-i18next@15.7.4)(react@19.2.3)
+      pigeon-maps:
+        specifier: ^0.22.1
+        version: 0.22.1(react@19.2.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -216,21 +219,27 @@ importers:
       '@piums/sdk':
         specifier: workspace:*
         version: link:../../../packages/sdk
+      i18next:
+        specifier: ^23.11.5
+        version: 23.16.8
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.3)
       next:
         specifier: 16.1.6
         version: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3)(react@19.2.3)
-      next-i18next:
-        specifier: 15.4.2
-        version: 15.4.2(@types/react@19.2.14)(i18next@25.8.18)(next@16.1.6)(react-i18next@16.5.8)(react@19.2.3)
+      pigeon-maps:
+        specifier: ^0.22.1
+        version: 0.22.1(react@19.2.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
+      react-i18next:
+        specifier: ^15.0.1
+        version: 15.7.4(i18next@23.16.8)(react-dom@19.2.3)(react@19.2.3)(typescript@5.9.3)
       socket.io-client:
         specifier: ^4.6.1
         version: 4.8.3
@@ -4988,16 +4997,10 @@ packages:
     resolution: {integrity: sha512-eYWTX7QT7kJ0sZyCPK6x1q+R63zvNKv2D6UdbMf15A8vNb2ZLyw4NNNZxPFwXlIv/U+oUtg8SakW6ZgJZcoqHQ==}
     dev: false
 
-  /i18next@25.8.18(typescript@5.9.3):
-    resolution: {integrity: sha512-lzY5X83BiL5AP77+9DydbrqkQHFN9hUzWGjqjLpPcp5ZOzuu1aSoKaU3xbBLSjWx9dAzW431y+d+aogxOZaKRA==}
-    peerDependencies:
-      typescript: ^5
-    peerDependenciesMeta:
-      typescript:
-        optional: true
+  /i18next@23.16.8:
+    resolution: {integrity: sha512-06r/TitrM88Mg5FdUXAKL96dJMzgqLE5dv3ryBAra4KCwD9mJ4ndOTS95ZuymIGoE+2hzfdaMak2X11/es7ZWg==}
     dependencies:
       '@babel/runtime': 7.29.2
-      typescript: 5.9.3
     dev: false
 
   /iconv-lite@0.4.24:
@@ -5823,29 +5826,7 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /next-i18next@15.4.2(@types/react@19.2.14)(i18next@25.8.18)(next@16.1.6)(react-i18next@16.5.8)(react@19.2.3):
-    resolution: {integrity: sha512-zgRxWf7kdXtM686ecGIBQL+Bq0+DqAhRlasRZ3vVF0TmrNTWkVhs52n//oU3Fj5O7r/xOKkECDUwfOuXVwTK/g==}
-    engines: {node: '>=14'}
-    peerDependencies:
-      i18next: '>= 23.7.13'
-      next: '>= 12.0.0'
-      react: '>= 17.0.2'
-      react-i18next: '>= 13.5.0'
-    dependencies:
-      '@babel/runtime': 7.29.2
-      '@types/hoist-non-react-statics': 3.3.7(@types/react@19.2.14)
-      core-js: 3.49.0
-      hoist-non-react-statics: 3.3.2
-      i18next: 25.8.18(typescript@5.9.3)
-      i18next-fs-backend: 2.6.1
-      next: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3)(react@19.2.3)
-      react: 19.2.3
-      react-i18next: 16.5.8(i18next@25.8.18)(react-dom@19.2.3)(react@19.2.3)(typescript@5.9.3)
-    transitivePeerDependencies:
-      - '@types/react'
-    dev: false
-
-  /next-i18next@15.4.3(@types/react@19.2.14)(i18next@25.8.18)(next@16.1.6)(react-i18next@16.5.8)(react@19.2.3):
+  /next-i18next@15.4.3(@types/react@19.2.14)(i18next@23.16.8)(next@16.1.6)(react-i18next@15.7.4)(react@19.2.3):
     resolution: {integrity: sha512-ZRmiz72o1Jvh2ZghCUQX1Ua5F/f2W1/Ila/L1ZeKVuSWiH7J4zfUedfDxNBEhj9lajREC7aoJuPXMFtKi2bdIg==}
     engines: {node: '>=14'}
     peerDependencies:
@@ -5858,11 +5839,11 @@ packages:
       '@types/hoist-non-react-statics': 3.3.7(@types/react@19.2.14)
       core-js: 3.49.0
       hoist-non-react-statics: 3.3.2
-      i18next: 25.8.18(typescript@5.9.3)
+      i18next: 23.16.8
       i18next-fs-backend: 2.6.1
       next: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3)(react@19.2.3)
       react: 19.2.3
-      react-i18next: 16.5.8(i18next@25.8.18)(react-dom@19.2.3)(react@19.2.3)(typescript@5.9.3)
+      react-i18next: 15.7.4(i18next@23.16.8)(react-dom@19.2.3)(react@19.2.3)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@types/react'
     dev: false
@@ -6278,6 +6259,14 @@ packages:
     engines: {node: '>=12'}
     dev: true
 
+  /pigeon-maps@0.22.1(react@19.2.3):
+    resolution: {integrity: sha512-mVWxgpIyhAekITeJvDGlFAo/Ytm6Fg7prpDiAuQ0Z6cJ/LwpnS8F0sF+0TDqyJu7C/DDHupkstFTNoIRqhdP5A==}
+    peerDependencies:
+      react: '*'
+    dependencies:
+      react: 19.2.3
+    dev: false
+
   /pkg-types@2.3.0:
     resolution: {integrity: sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==}
     dependencies:
@@ -6457,10 +6446,10 @@ packages:
       scheduler: 0.27.0
     dev: false
 
-  /react-i18next@16.5.8(i18next@25.8.18)(react-dom@19.2.3)(react@19.2.3)(typescript@5.9.3):
-    resolution: {integrity: sha512-2ABeHHlakxVY+LSirD+OiERxFL6+zip0PaHo979bgwzeHg27Sqc82xxXWIrSFmfWX0ZkrvXMHwhsi/NGUf5VQg==}
+  /react-i18next@15.7.4(i18next@23.16.8)(react-dom@19.2.3)(react@19.2.3)(typescript@5.9.3):
+    resolution: {integrity: sha512-nyU8iKNrI5uDJch0z9+Y5XEr34b0wkyYj3Rp+tfbahxtlswxSCjcUL9H0nqXo9IR3/t5Y5PKIA3fx3MfUyR9Xw==}
     peerDependencies:
-      i18next: '>= 25.6.2'
+      i18next: '>= 23.4.0'
       react: '>= 16.8.0'
       react-dom: '*'
       react-native: '*'
@@ -6475,11 +6464,10 @@ packages:
     dependencies:
       '@babel/runtime': 7.29.2
       html-parse-stringify: 3.0.1
-      i18next: 25.8.18(typescript@5.9.3)
+      i18next: 23.16.8
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       typescript: 5.9.3
-      use-sync-external-store: 1.6.0(react@19.2.3)
     dev: false
 
   /react-intersection-observer@10.0.3(react@19.2.3):
@@ -7531,14 +7519,6 @@ packages:
     dependencies:
       punycode: 2.3.1
     dev: true
-
-  /use-sync-external-store@1.6.0(react@19.2.3):
-    resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    dependencies:
-      react: 19.2.3
-    dev: false
 
   /util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}

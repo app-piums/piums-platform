@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useTranslation } from 'next-i18next';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -32,7 +32,6 @@ export const Navbar: React.FC = () => {
                 width={120} 
                 height={40}
                 priority
-                className="h-10 w-auto"
               />
             </Link>
             

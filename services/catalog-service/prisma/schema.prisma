@@ -122,6 +122,9 @@ model Service {
   isAvailable Boolean          @default(true)
   isFeatured  Boolean          @default(false)
   
+  // Qué incluye el servicio
+  whatIsIncluded      String[]         // Lista de ítems incluidos (ej: "Equipo de sonido", "Micrófono")
+
   // Requisitos
   requiresDeposit     Boolean  @default(false)
   depositAmount       Int?     // Monto fijo del depósito en centavos

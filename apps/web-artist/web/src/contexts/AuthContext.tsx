@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { sdk } from '@piums/sdk';
 
 interface User {
   id: string;
@@ -60,6 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Llamar endpoint de logout para limpiar cookies
       await fetch("/api/auth/logout", { method: "POST" });
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('token');
+      }
+      sdk.setAuthToken(null);
       setUser(null);
       router.push("/login");
     } catch (error) {

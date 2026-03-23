@@ -6,6 +6,18 @@ import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { LocationPickerMap } from '@/components/LocationPickerMap';
+
+type ArtistFormData = {
+  nombre: string;
+  email: string;
+  bio: string;
+  ciudad: string;
+  experienceYears: number;
+  baseLocationLabel: string;
+  baseLocationLat: number | null;
+  baseLocationLng: number | null;
+};
 
 export default function ArtistSettingsPage() {
   const router = useRouter();
@@ -16,12 +28,15 @@ export default function ArtistSettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ArtistFormData>({
     nombre: '',
     email: '',
     bio: '',
     ciudad: '',
     experienceYears: 0,
+    baseLocationLabel: '',
+    baseLocationLat: null,
+    baseLocationLng: null,
   });
 
   // Cobertura / pricing state
@@ -33,6 +48,8 @@ export default function ArtistSettingsPage() {
     depositPercentage: 30,
   });
   const [isSavingCoverage, setIsSavingCoverage] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -48,6 +65,9 @@ export default function ArtistSettingsPage() {
         bio: artistProfile.bio || '',
         ciudad: artistProfile.ciudad || '',
         experienceYears: artistProfile.experienceYears || 0,
+        baseLocationLabel: artistProfile.baseLocationLabel || '',
+        baseLocationLat: artistProfile.baseLocationLat ?? null,
+        baseLocationLng: artistProfile.baseLocationLng ?? null,
       });
       setCoverageData({
         coverageRadius: artistProfile.coverageRadius ?? 10,
@@ -76,8 +96,14 @@ export default function ArtistSettingsPage() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
-      await sdk.updateArtistProfile(formData);
+      const payload: Partial<ArtistProfile> = {
+        ...formData,
+        baseLocationLabel: formData.baseLocationLabel.trim() || undefined,
+        baseLocationLat: formData.baseLocationLat ?? undefined,
+        baseLocationLng: formData.baseLocationLng ?? undefined,
+      };
+
+      await sdk.updateArtistProfile(payload);
       alert('Perfil actualizado exitosamente');
       
       // Recargar el perfil
@@ -103,6 +129,80 @@ export default function ArtistSettingsPage() {
     }
   };
 
+  const handleCoordinateChange = (key: 'baseLocationLat' | 'baseLocationLng', value: string) => {
+    setFormData((prev) => {
+      if (value === '') {
+        return { ...prev, [key]: null };
+      }
+      const parsed = parseFloat(value);
+      if (Number.isNaN(parsed)) {
+        return prev;
+      }
+      return { ...prev, [key]: parsed };
+    });
+    if (locationError) {
+      setLocationError(null);
+    }
+  };
+
+  const handleDetectLocation = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationError('Tu navegador no permite detectar la ubicación automáticamente.');
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData((prev) => ({
+          ...prev,
+          baseLocationLat: latitude,
+          baseLocationLng: longitude,
+          baseLocationLabel:
+            prev.baseLocationLabel || `Coordenadas ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        }));
+        setIsDetectingLocation(false);
+      },
+      (error: GeolocationPositionError) => {
+        const errorMessage =
+          error.code === error.PERMISSION_DENIED
+            ? 'Necesitamos permiso para detectar tu ubicación automáticamente.'
+            : 'No pudimos obtener tu ubicación. Intenta de nuevo o ingrésala manualmente.';
+        setLocationError(errorMessage);
+        setIsDetectingLocation(false);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  };
+
+  const handleClearLocation = () => {
+    setFormData((prev) => ({
+      ...prev,
+      baseLocationLabel: '',
+      baseLocationLat: null,
+      baseLocationLng: null,
+    }));
+    setLocationError(null);
+  };
+
+  const handleMapSelect = (lat: number, lng: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      baseLocationLat: lat,
+      baseLocationLng: lng,
+      baseLocationLabel:
+        prev.baseLocationLabel || `Coordenadas ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    }));
+    setLocationError(null);
+  };
+
   const RADIUS_PRESETS = [5, 10, 20, 30, 50, 75, 100];
 
   const tabs = [
@@ -112,6 +212,8 @@ export default function ArtistSettingsPage() {
     { id: 'notifications', label: 'Notificaciones', icon: '🔔' },
     { id: 'payments', label: 'Pagos', icon: '💳' },
   ];
+
+  const hasBaseLocation = formData.baseLocationLat !== null && formData.baseLocationLng !== null;
 
   if (isLoading) {
     return (
@@ -235,6 +337,107 @@ export default function ArtistSettingsPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     placeholder="Cuéntanos sobre ti y tu experiencia..."
                   />
+                </div>
+
+                <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Ubicación base</h3>
+                      <p className="text-sm text-gray-600">
+                        Este punto se usa como referencia para calcular distancias y costos de traslado.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDetectLocation}
+                        disabled={isDetectingLocation}
+                        className="px-4 py-2 text-sm font-medium rounded-lg border border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-60"
+                      >
+                        {isDetectingLocation ? 'Detectando...' : 'Detectar automáticamente'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearLocation}
+                        disabled={!hasBaseLocation && !formData.baseLocationLabel}
+                        className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 transition-colors disabled:opacity-60"
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Referencia o descripción
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.baseLocationLabel}
+                        onChange={(e) => {
+                          setFormData({ ...formData, baseLocationLabel: e.target.value });
+                          if (locationError) setLocationError(null);
+                        }}
+                        placeholder="Zona 10, Ciudad de Guatemala"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Puedes escribir la colonia, zona o referencia que mejor describa tu punto base.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={formData.baseLocationLat ?? ''}
+                          onChange={(e) => handleCoordinateChange('baseLocationLat', e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="14.6349"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={formData.baseLocationLng ?? ''}
+                          onChange={(e) => handleCoordinateChange('baseLocationLng', e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="-90.5069"
+                        />
+                      </div>
+                    </div>
+
+                    {locationError && (
+                      <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                        {locationError}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Selecciona en el mapa
+                      </p>
+                      <LocationPickerMap
+                        latitude={formData.baseLocationLat}
+                        longitude={formData.baseLocationLng}
+                        onSelect={handleMapSelect}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Arrastra el mapa y haz clic para colocar el pin exactamente donde te ubicas. Puedes ajustar los valores manualmente si lo prefieres.
+                      </p>
+                    </div>
+
+                    {hasBaseLocation && (
+                      <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+                        Guardaremos estas coordenadas para calcular automáticamente los costos de traslado.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-4">

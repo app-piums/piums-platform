@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Calendar } from '../ui/Calendar';
+import { Loading } from '../Loading';
 
 interface TimeSlot {
   time: string;
@@ -21,6 +22,8 @@ interface CalendarPickerProps {
   onDateSelect: (date: Date) => void;
   onTimeSelect: (time: string) => void;
   minDate?: Date;
+  disabledDates?: Date[];
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -31,6 +34,8 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   onDateSelect,
   onTimeSelect,
   minDate = new Date(),
+  disabledDates = [],
+  isLoading = false,
   className = '',
 }) => {
   // Get available dates
@@ -57,6 +62,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           selectedDate={selectedDate}
           onDateSelect={onDateSelect}
           highlightedDates={availableDates}
+          disabledDates={disabledDates}
           minDate={minDate}
         />
       </div>
@@ -85,6 +91,11 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
             <p className="text-gray-500">
               Selecciona una fecha en el calendario para ver los horarios disponibles
             </p>
+          </div>
+        ) : isLoading ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+            <Loading size="sm" />
+            <p className="text-sm text-gray-500 mt-3">Cargando horarios disponibles...</p>
           </div>
         ) : timeSlots.length === 0 ? (
           <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-8 text-center">

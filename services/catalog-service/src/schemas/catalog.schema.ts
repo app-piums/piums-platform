@@ -40,7 +40,9 @@ export const createServiceSchema = z.object({
   depositAmount: z.number().int().min(0).optional(),
   depositPercentage: z.number().int().min(0).max(100).optional(),
   requiresConsultation: z.boolean().optional(),
-  
+
+  whatIsIncluded: z.array(z.string().min(1)).optional(),
+
   cancellationPolicy: z.string().optional(),
   termsAndConditions: z.string().optional(),
   
@@ -73,7 +75,9 @@ export const updateServiceSchema = z.object({
   depositAmount: z.number().int().min(0).optional(),
   depositPercentage: z.number().int().min(0).max(100).optional(),
   requiresConsultation: z.boolean().optional(),
-  
+
+  whatIsIncluded: z.array(z.string().min(1)).optional(),
+
   cancellationPolicy: z.string().optional(),
   termsAndConditions: z.string().optional(),
   

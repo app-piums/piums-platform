@@ -4,6 +4,30 @@ import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
 
+// Algunos clientes siguen enviando campos legacy en español.
+// Normalizamos esos payloads para que Prisma reciba los nombres correctos.
+const normalizeArtistPayload = (data: any) => {
+  if (!data || typeof data !== "object") {
+    return data;
+  }
+
+  const normalized = { ...data };
+  const legacyMappings: Array<[string, string]> = [
+    ["ciudad", "city"],
+    ["pais", "country"],
+    ["experienceYears", "yearsExperience"],
+  ];
+
+  for (const [legacyKey, prismaKey] of legacyMappings) {
+    if (Object.prototype.hasOwnProperty.call(normalized, legacyKey)) {
+      normalized[prismaKey] = normalized[legacyKey];
+      delete normalized[legacyKey];
+    }
+  }
+
+  return normalized;
+};
+
 export class ArtistsService {
   /**
    * Crear perfil de artista
@@ -24,9 +48,11 @@ export class ArtistsService {
         throw new AppError(400, "El precio mínimo no puede ser mayor al máximo");
       }
 
+      const normalizedData = normalizeArtistPayload(data);
+
       const artist = await prisma.artist.create({
         data: {
-          ...data,
+          ...normalizedData,
           verificationStatus: "PENDING", // Siempre inicia en PENDING
         },
         include: {
@@ -103,10 +129,12 @@ export class ArtistsService {
         throw new AppError(404, "Artista no encontrado");
       }
 
+      const normalizedData = normalizeArtistPayload(data);
+
       // Validar pricing si se actualiza
-      if (data.hourlyRateMin !== undefined && data.hourlyRateMax !== undefined) {
-        const min = data.hourlyRateMin ?? existing.hourlyRateMin;
-        const max = data.hourlyRateMax ?? existing.hourlyRateMax;
+      if (normalizedData.hourlyRateMin !== undefined && normalizedData.hourlyRateMax !== undefined) {
+        const min = normalizedData.hourlyRateMin ?? existing.hourlyRateMin;
+        const max = normalizedData.hourlyRateMax ?? existing.hourlyRateMax;
         if (min && max && min > max) {
           throw new AppError(400, "El precio mínimo no puede ser mayor al máximo");
         }
@@ -115,7 +143,7 @@ export class ArtistsService {
       const artist = await prisma.artist.update({
         where: { id },
         data: {
-          ...data,
+          ...normalizedData,
           updatedAt: new Date(),
         },
         include: {

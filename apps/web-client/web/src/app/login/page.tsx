@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslation } from "next-i18next";
+import { useTranslation } from "react-i18next";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { sdk } from '@piums/sdk';
 
 interface FieldError {
   email?: string;
@@ -69,7 +70,12 @@ export default function LoginPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || t('errorLogin'));
-      if (data.token) localStorage.setItem("token", data.token);
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        sdk.setAuthToken(data.token);
+      } else {
+        sdk.setAuthToken(null);
+      }
       if (data.user) login(data.user);
 
       // Redirigir según rol

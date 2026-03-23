@@ -72,65 +72,78 @@ export const calculateServicePrice = async (
   }
 
   const pricing = service.pricing;
-  if (!pricing) {
-    throw new Error(`Service pricing not configured: ${serviceId}`);
-  }
-
   const travelRules = service.travelRules;
 
   const items: PriceItem[] = [];
-  const currency = pricing.currency;
 
   // ==================== CALCULAR PRECIO BASE ====================
 
-  let basePriceCents = pricing.basePriceCents;
+  let basePriceCents: number;
+  let currency: string;
 
-  switch (pricing.pricingModel) {
-    case 'FIXED':
-      // Precio fijo, sin cálculos adicionales
-      items.push({
-        type: 'BASE',
-        name: service.name,
-        qty: 1,
-        unitPriceCents: basePriceCents,
-        totalPriceCents: basePriceCents,
-      });
-      break;
+  if (!pricing) {
+    // Fallback: usar basePrice del servicio cuando no hay pricing avanzado configurado
+    basePriceCents = service.basePrice || 0;
+    currency = service.currency || 'GTQ';
 
-    case 'BASE_PLUS_HOURLY':
-    case 'PACKAGE':
-      // Precio base + minutos adicionales
-      if (!durationMinutes) {
-        throw new Error('durationMinutes is required for this pricing model');
-      }
+    items.push({
+      type: 'BASE',
+      name: service.name,
+      qty: 1,
+      unitPriceCents: basePriceCents,
+      totalPriceCents: basePriceCents,
+    });
+  } else {
+    basePriceCents = pricing.basePriceCents;
+    currency = pricing.currency;
 
-      const includedMinutes = pricing.includedMinutes || 0;
-      const extraMinutes = Math.max(0, durationMinutes - includedMinutes);
-      const extraMinuteCost = pricing.extraMinutePriceCents || 0;
-      const totalExtraCost = extraMinutes * extraMinuteCost;
-
-      // Item del precio base
-      items.push({
-        type: 'BASE',
-        name: `${service.name} (incluye ${includedMinutes} min)`,
-        qty: 1,
-        unitPriceCents: basePriceCents,
-        totalPriceCents: basePriceCents,
-      });
-
-      // Item de minutos adicionales (si aplica)
-      if (extraMinutes > 0) {
+    switch (pricing.pricingModel) {
+      case 'FIXED':
+        // Precio fijo, sin cálculos adicionales
         items.push({
           type: 'BASE',
-          name: `Tiempo adicional (${extraMinutes} min)`,
-          qty: extraMinutes,
-          unitPriceCents: extraMinuteCost,
-          totalPriceCents: totalExtraCost,
-          metadata: { includedMinutes, extraMinutes },
+          name: service.name,
+          qty: 1,
+          unitPriceCents: basePriceCents,
+          totalPriceCents: basePriceCents,
         });
-        basePriceCents += totalExtraCost;
-      }
-      break;
+        break;
+
+      case 'BASE_PLUS_HOURLY':
+      case 'PACKAGE':
+        // Precio base + minutos adicionales
+        if (!durationMinutes) {
+          throw new Error('durationMinutes is required for this pricing model');
+        }
+
+        const includedMinutes = pricing.includedMinutes || 0;
+        const extraMinutes = Math.max(0, durationMinutes - includedMinutes);
+        const extraMinuteCost = pricing.extraMinutePriceCents || 0;
+        const totalExtraCost = extraMinutes * extraMinuteCost;
+
+        // Item del precio base
+        items.push({
+          type: 'BASE',
+          name: `${service.name} (incluye ${includedMinutes} min)`,
+          qty: 1,
+          unitPriceCents: basePriceCents,
+          totalPriceCents: basePriceCents,
+        });
+
+        // Item de minutos adicionales (si aplica)
+        if (extraMinutes > 0) {
+          items.push({
+            type: 'BASE',
+            name: `Tiempo adicional (${extraMinutes} min)`,
+            qty: extraMinutes,
+            unitPriceCents: extraMinuteCost,
+            totalPriceCents: totalExtraCost,
+            metadata: { includedMinutes, extraMinutes },
+          });
+          basePriceCents += totalExtraCost;
+        }
+        break;
+    }
   }
 
   // ==================== CALCULAR ADDONS ====================

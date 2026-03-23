@@ -48,6 +48,9 @@ export const createArtistSchema = z.object({
   address: z.string().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  baseLocationLabel: z.string().min(2).max(120).optional(),
+  baseLocationLat: z.number().min(-90).max(90).optional(),
+  baseLocationLng: z.number().min(-180).max(180).optional(),
   coverageRadius: z.number().int().min(1).max(500, "Radio de cobertura debe ser entre 1 y 500 km").optional(),
   
   // Pricing
@@ -85,6 +88,9 @@ export const updateArtistSchema = z.object({
   address: z.string().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  baseLocationLabel: z.string().min(2).max(120).optional(),
+  baseLocationLat: z.number().min(-90).max(90).optional(),
+  baseLocationLng: z.number().min(-180).max(180).optional(),
   coverageRadius: z.number().int().min(1).max(500).optional(),
   
   hourlyRateMin: z.number().int().min(0).optional(),

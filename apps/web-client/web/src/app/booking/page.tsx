@@ -16,6 +16,7 @@ import { ConfirmModal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload } from '@piums/sdk';
+import { LocationPickerMap } from '@/components/LocationPickerMap';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
 type DayAvailability = {
@@ -26,6 +27,24 @@ type DayAvailability = {
 type Coordinates = {
   lat: number;
   lng: number;
+};
+
+const EARTH_RADIUS_KM = 6371;
+
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const calculateDistanceKm = (from: Coordinates, to: Coordinates): number => {
+  const dLat = toRadians(to.lat - from.lat);
+  const dLng = toRadians(to.lng - from.lng);
+  const lat1 = toRadians(from.lat);
+  const lat2 = toRadians(to.lat);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_KM * c;
 };
 
 const DEFAULT_SLOT_TIMES = ['09:00', '11:30', '15:00', '18:30'];
@@ -66,7 +85,8 @@ const isMarchDate = (date: Date) => date.getMonth() === MARCH_MONTH_INDEX;
 const buildFallbackQuote = (
   service: Service,
   addonIds: string[],
-  coords?: Coordinates | null
+  coords?: Coordinates | null,
+  distanceKm?: number | null
 ): PriceQuote => {
   const baseCents = service.basePrice ?? 0;
   const selectedAddons = service.addons?.filter((addon) => addonIds.includes(addon.id)) ?? [];
@@ -96,7 +116,7 @@ const buildFallbackQuote = (
     unitPriceCents: 0,
     totalPriceCents: 0,
     metadata: {
-      distanceKm: null,
+      distanceKm: distanceKm ?? null,
       clientLat: coords?.lat ?? null,
       clientLng: coords?.lng ?? null,
       source: coords ? 'AUTO' : 'MANUAL',
@@ -186,6 +206,19 @@ function BookingContent() {
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
   const [clientCoords, setClientCoords] = useState<Coordinates | null>(null);
+  const artistBaseCoords = useMemo(() => {
+    if (artist?.baseLocationLat == null || artist?.baseLocationLng == null) {
+      return null;
+    }
+    return { lat: artist.baseLocationLat, lng: artist.baseLocationLng };
+  }, [artist?.baseLocationLat, artist?.baseLocationLng]);
+
+  const travelDistanceKm = useMemo(() => {
+    if (!clientCoords || !artistBaseCoords) {
+      return null;
+    }
+    return calculateDistanceKm(artistBaseCoords, clientCoords);
+  }, [artistBaseCoords, clientCoords]);
   const [locationMode, setLocationMode] = useState<'manual' | 'auto'>('manual');
   const [requestingLocation, setRequestingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -288,6 +321,13 @@ function BookingContent() {
     setLocationError(null);
   }, []);
 
+  const handleMapLocationSelect = useCallback((lat: number, lng: number) => {
+    setClientCoords({ lat, lng });
+    setLocationMode('auto');
+    setLocation((prev) => prev || `Coordenadas ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    setLocationError(null);
+  }, []);
+
   useEffect(() => {
     if (autoLocationRequestSent) return;
     setAutoLocationRequestSent(true);
@@ -378,15 +418,20 @@ function BookingContent() {
   }, [isAuthenticated, artistId, serviceId, loadBookingData]);
 
   const calculatePriceQuote = useCallback(
-    async (service: Service, addonIds: string[], coords?: Coordinates | null) => {
-    setPriceLoading(true);
-    setPriceError(null);
-    try {
-      const durationMinutes = getDurationMinutes(service);
+    async (
+      service: Service,
+      addonIds: string[],
+      coords?: Coordinates | null,
+      distanceKm?: number | null
+    ) => {
+      setPriceLoading(true);
+      setPriceError(null);
+      try {
+        const durationMinutes = getDurationMinutes(service);
         const payload = {
-        serviceId: service.id,
-        durationMinutes,
-        selectedAddonIds: addonIds,
+          serviceId: service.id,
+          durationMinutes,
+          selectedAddonIds: addonIds,
         } as CalculateServicePricePayload;
 
         if (coords) {
@@ -394,24 +439,28 @@ function BookingContent() {
           payload.locationLng = coords.lng;
         }
 
+        if (typeof distanceKm === 'number' && Number.isFinite(distanceKm)) {
+          payload.distanceKm = Number(distanceKm.toFixed(2));
+        }
+
         const quote = await sdk.calculateServicePrice(payload);
 
-      if (!quote) {
-        setPriceQuote(null);
-        setPriceError('No pudimos calcular el precio en este momento.');
-        return;
-      }
+        if (!quote) {
+          setPriceQuote(null);
+          setPriceError('No pudimos calcular el precio en este momento.');
+          return;
+        }
 
-      setPriceQuote(quote);
-    } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.info('Falling back to estimated pricing after pricing API error.');
+        setPriceQuote(quote);
+      } catch (error) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.info('Falling back to estimated pricing after pricing API error.');
+        }
+        setPriceQuote(buildFallbackQuote(service, addonIds, coords, distanceKm));
+        setPriceError('Mostrando un precio estimado mientras activamos el cálculo en vivo.');
+      } finally {
+        setPriceLoading(false);
       }
-        setPriceQuote(buildFallbackQuote(service, addonIds, coords));
-      setPriceError('Mostrando un precio estimado mientras activamos el cálculo en vivo.');
-    } finally {
-      setPriceLoading(false);
-    }
     }, []
   );
 
@@ -450,8 +499,8 @@ function BookingContent() {
       setPriceQuote(null);
       return;
     }
-    calculatePriceQuote(selectedService, selectedAddons, clientCoords);
-  }, [selectedService, selectedAddons, clientCoords, calculatePriceQuote]);
+    calculatePriceQuote(selectedService, selectedAddons, clientCoords, travelDistanceKm);
+  }, [selectedService, selectedAddons, clientCoords, travelDistanceKm, calculatePriceQuote]);
 
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
   const currency = priceQuote?.currency || selectedService?.currency || 'GTQ';
@@ -588,9 +637,10 @@ function BookingContent() {
 
     try {
       setSubmitting(true);
+      const effectiveArtistId = resolvedArtistId || selectedService.artistId;
       const payload = {
         clientId: user.id,
-        artistId: artist.id,
+        artistId: effectiveArtistId,
         serviceId: selectedService.id,
         scheduledDate: selectedTimeSlot.startTime,
         durationMinutes: getDurationMinutes(selectedService),
@@ -865,7 +915,8 @@ function BookingContent() {
                             <Button
                               type="button"
                               variant="outline"
-                              onClick={handleUseDetectedLocation}
+                              onClick={() => handleUseDetectedLocation()}
+
                               disabled={requestingLocation}
                               className={`${locationMode === 'auto' ? 'border-[#FF6A00] text-[#FF6A00]' : ''}`}
                             >
@@ -890,6 +941,19 @@ function BookingContent() {
                           {locationError && (
                             <p className="text-sm text-red-600">{locationError}</p>
                           )}
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Coloca el pin en el mapa
+                          </p>
+                          <LocationPickerMap
+                            latitude={clientCoords?.lat ?? null}
+                            longitude={clientCoords?.lng ?? null}
+                            onSelect={handleMapLocationSelect}
+                          />
+                          <p className="text-sm text-gray-500">
+                            Da clic en el mapa para marcar el punto exacto del evento. Puedes ajustar la dirección manualmente si lo prefieres.
+                          </p>
                         </div>
                       </div>
 

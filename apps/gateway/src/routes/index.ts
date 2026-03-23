@@ -57,7 +57,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.USERS_SERVICE_URL || "http://localhost:4002",
       changeOrigin: true,
-      pathRewrite: { "^": "/users" },
+      pathRewrite: { "^": "/api/users" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -85,7 +85,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.CATALOG_SERVICE_URL || "http://localhost:4004",
       changeOrigin: true,
-      pathRewrite: { "^": "/catalog" },
+      pathRewrite: { "^": "/api" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -100,7 +100,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
       changeOrigin: true,
-      pathRewrite: { "^": "/bookings" },
+      pathRewrite: { "^": "/api/bookings" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -115,7 +115,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
       changeOrigin: true,
-      pathRewrite: { "^": "/payments" },
+      pathRewrite: { "^": "/api/payments" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -129,7 +129,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.REVIEWS_SERVICE_URL || "http://localhost:4006",
       changeOrigin: true,
-      pathRewrite: { "^": "/reviews" },
+      pathRewrite: { "^": "/api/reviews" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -144,7 +144,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.NOTIFICATIONS_SERVICE_URL || "http://localhost:4007",
       changeOrigin: true,
-      pathRewrite: { "^": "/notifications" },
+      pathRewrite: { "^": "/api/notifications" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -158,7 +158,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.SEARCH_SERVICE_URL || "http://localhost:4009",
       changeOrigin: true,
-      pathRewrite: { "^": "/search" },
+      pathRewrite: { "^": "/api/search" },
       on: { proxyReq: fixRequestBody },
     })
   );

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { sdk } from '@piums/sdk';
 
 interface User {
   id: string;
@@ -44,12 +45,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+
+        try {
+          const tokenResponse = await fetch('/api/chat/token', { credentials: 'include' });
+          if (tokenResponse.ok) {
+            const { token } = await tokenResponse.json();
+            if (token) {
+              sdk.setAuthToken(token);
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('token', token);
+              }
+            }
+          } else {
+            sdk.setAuthToken(null);
+          }
+        } catch (tokenError) {
+          console.warn('No se pudo sincronizar el token para el SDK', tokenError);
+          sdk.setAuthToken(null);
+        }
       } else {
         setUser(null);
+        sdk.setAuthToken(null);
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('token');
+        }
       }
     } catch (error) {
       console.error("Error verificando autenticación:", error);
       setUser(null);
+      sdk.setAuthToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Llamar endpoint de logout para limpiar cookies
       await fetch("/api/auth/logout", { method: "POST" });
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('token');
+      }
+      sdk.setAuthToken(null);
       setUser(null);
       router.push("/login");
     } catch (error) {

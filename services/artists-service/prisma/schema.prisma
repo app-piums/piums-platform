@@ -61,6 +61,9 @@ model Artist {
   address       String?
   lat           Float?
   lng           Float?
+  baseLocationLabel String?
+  baseLocationLat   Float?
+  baseLocationLng   Float?
   coverageRadius Int      @default(10) // Radio en kilómetros
   
   // Pricing
