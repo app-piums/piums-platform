@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Lightbox } from '@/components/Lightbox';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
 import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
 
@@ -18,6 +19,7 @@ export default function ArtistProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const artistId = params.id as string;
   
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
@@ -31,6 +33,24 @@ export default function ArtistProfilePage() {
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const startingPrice = useMemo(() => {
+    if (services.length > 0) {
+      const validPrices = services
+        .map((service) => service.basePrice ?? 0)
+        .filter((amount) => amount && amount > 0);
+      if (validPrices.length) {
+        return Math.min(...validPrices);
+      }
+    }
+
+    if (artist?.hourlyRateMin) {
+      return Math.round(artist.hourlyRateMin / 100);
+    }
+
+    return null;
+  }, [services, artist?.hourlyRateMin]);
+
+  const highlightedServiceName = useMemo(() => services[0]?.name ?? null, [services]);
   const tabItems: Array<{ key: typeof activeTab; label: string }> = [
     { key: 'about', label: 'Acerca de' },
     { key: 'services', label: 'Servicios' },
@@ -153,6 +173,21 @@ export default function ArtistProfilePage() {
     );
   }
 
+  const artistIsFavorite = isFavorite(artist.id);
+  const handleFavoriteToggle = () => {
+    toggleFavorite({
+      id: artist.id,
+      nombre: artist.nombre,
+      category: artist.category,
+      cityId: artist.cityId,
+      avatar: artist.avatar,
+      coverPhoto: artist.coverPhoto,
+      rating: artist.rating ?? null,
+      startingPrice,
+      highlightedService: highlightedServiceName,
+    });
+  };
+
   const portfolioImages = artist.portfolio?.map(item => ({
     url: item.imageUrl || '/placeholder-image.jpg',
     title: item.title,
@@ -267,9 +302,44 @@ export default function ArtistProfilePage() {
               )}
             </div>
 
-            <Button onClick={handleBookNow} size="lg">
-              Reservar Ahora
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={handleBookNow} size="lg">
+                Reservar Ahora
+              </Button>
+              <button
+                type="button"
+                onClick={handleFavoriteToggle}
+                aria-pressed={artistIsFavorite}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors shadow-sm ${
+                  artistIsFavorite
+                    ? 'border-[#FF6A00] text-[#FF6A00] bg-[#FF6A00]/5'
+                    : 'border-gray-200 text-gray-600 hover:border-[#FF6A00]/60 hover:text-[#FF6A00]'
+                }`}
+              >
+                <svg
+                  className={`h-5 w-5 ${artistIsFavorite ? 'fill-[#FF6A00]' : ''}`}
+                  fill={artistIsFavorite ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.8}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+                {artistIsFavorite ? 'Guardado' : 'Guardar'}
+              </button>
+            </div>
+            {artistIsFavorite && (
+              <p className="flex items-center gap-1 mt-2 text-xs text-[#FF6A00]">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Añadido a tus favoritos
+              </p>
+            )}
           </div>
         </div>
 

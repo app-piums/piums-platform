@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
+import { FavoritesProvider } from "../contexts/FavoritesContext";
 import { QueryProvider } from "../providers/QueryProvider";
 import { PWAInitializer } from "../components/PWAInitializer";
+import { I18nProvider } from "../providers/I18nProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,12 +54,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-            <PWAInitializer />
-          </AuthProvider>
-        </QueryProvider>
+        <I18nProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                {children}
+                <PWAInitializer />
+              </FavoritesProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </I18nProvider>
       </body>
     </html>
   );

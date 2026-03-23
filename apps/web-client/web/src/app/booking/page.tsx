@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -15,32 +15,167 @@ import { PricingBreakdown } from '@/components/booking/PricingBreakdown';
 import { ConfirmModal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
-import type { ArtistProfile, Service, TimeSlot } from '@piums/sdk';
-import { getMockArtist, getMockServices, getMockAvailability } from '@/lib/mockData';
+import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload } from '@piums/sdk';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
+type DayAvailability = {
+  date: string;
+  slots: TimeSlot[];
+};
 
-interface Addon {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-}
+type Coordinates = {
+  lat: number;
+  lng: number;
+};
+
+const DEFAULT_SLOT_TIMES = ['09:00', '11:30', '15:00', '18:30'];
+const MARCH_MONTH_INDEX = 2; // 0-based index for March
+
+const getDateKey = (date: Date) => date.toISOString().split('T')[0];
+
+const createTimeSlotForDate = (date: Date, time: string, durationMinutes: number): TimeSlot => {
+  const [hours, minutes] = time.split(':').map(Number);
+  const start = new Date(date);
+  start.setHours(hours, minutes, 0, 0);
+  const end = new Date(start.getTime() + durationMinutes * 60000);
+
+  return {
+    time,
+    available: true,
+    startTime: start.toISOString(),
+    endTime: end.toISOString(),
+  };
+};
+
+const buildMarchAvailability = (year: number, durationMinutes: number): DayAvailability[] => {
+  const daysInMarch = new Date(year, MARCH_MONTH_INDEX + 1, 0).getDate();
+  const entries: DayAvailability[] = [];
+
+  for (let day = 1; day <= daysInMarch; day++) {
+    const date = new Date(year, MARCH_MONTH_INDEX, day);
+    const dateKey = getDateKey(date);
+    const slots = DEFAULT_SLOT_TIMES.map((slot) => createTimeSlotForDate(date, slot, durationMinutes));
+    entries.push({ date: dateKey, slots });
+  }
+
+  return entries;
+};
+
+const isMarchDate = (date: Date) => date.getMonth() === MARCH_MONTH_INDEX;
+
+const buildFallbackQuote = (
+  service: Service,
+  addonIds: string[],
+  coords?: Coordinates | null
+): PriceQuote => {
+  const baseCents = service.basePrice ?? 0;
+  const selectedAddons = service.addons?.filter((addon) => addonIds.includes(addon.id)) ?? [];
+  const addonCents = selectedAddons.reduce((sum, addon) => sum + (addon.price ?? 0), 0);
+
+  const baseItem = {
+    type: 'BASE' as const,
+    name: service.name || 'Servicio',
+    qty: 1,
+    unitPriceCents: baseCents,
+    totalPriceCents: baseCents,
+  };
+
+  const addonItems = selectedAddons.map((addon) => ({
+    type: 'ADDON' as const,
+    name: addon.name,
+    qty: 1,
+    unitPriceCents: addon.price ?? 0,
+    totalPriceCents: addon.price ?? 0,
+    metadata: { addonId: addon.id },
+  }));
+
+  const travelItem = {
+    type: 'TRAVEL' as const,
+    name: 'Costo de traslado',
+    qty: 1,
+    unitPriceCents: 0,
+    totalPriceCents: 0,
+    metadata: {
+      distanceKm: null,
+      clientLat: coords?.lat ?? null,
+      clientLng: coords?.lng ?? null,
+      source: coords ? 'AUTO' : 'MANUAL',
+    },
+  };
+
+  const items: PriceQuote['items'] = [baseItem, ...addonItems, travelItem];
+  const totalCents = baseCents + addonCents + travelItem.totalPriceCents;
+
+  return {
+    serviceId: service.id,
+    currency: service.currency || 'GTQ',
+    items,
+    subtotalCents: totalCents,
+    totalCents,
+    breakdown: {
+      baseCents,
+      addonsCents: addonCents,
+      travelCents: travelItem.totalPriceCents,
+      discountsCents: 0,
+    },
+  };
+};
+
+const getDurationMinutes = (service?: Service | null): number => {
+  if (!service) return 60;
+  return service.duration ?? service.durationMin ?? service.durationMax ?? 60;
+};
+
+const getDurationLabel = (service?: Service | null): string => {
+  const minutes = getDurationMinutes(service);
+  if (!minutes) return 'Duración variable';
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours} hora${hours === 1 ? '' : 's'}`;
+  }
+  return `${minutes} minutos`;
+};
+
+const formatCurrency = (amount: number, currency: string = 'GTQ') =>
+  new Intl.NumberFormat('es-GT', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+
+const centsToUnits = (cents?: number) => (cents ?? 0) / 100;
+
+const getDefaultAddonIds = (service?: Service | null): string[] =>
+  service?.addons?.filter((addon) => addon.isRequired || addon.isDefault).map((addon) => addon.id) ?? [];
 
 function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   
-  const artistId = searchParams.get('artistId');
-  const serviceId = searchParams.get('serviceId');
+  const sanitizeParam = (value: string | null) => {
+    if (!value || value === 'undefined' || value === 'null') {
+      return null;
+    }
+    return value;
+  };
+
+  const artistId = sanitizeParam(searchParams.get('artistId'));
+  const serviceId = sanitizeParam(searchParams.get('serviceId'));
+  const [resolvedArtistId, setResolvedArtistId] = useState<string | null>(artistId);
   
   const [step, setStep] = useState<BookingStep>('service');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [services, setServices] = useState<Service[]>([]);
-  const [addons, setAddons] = useState<Addon[]>([]);
+  const [apiAvailability, setApiAvailability] = useState<DayAvailability[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [priceQuote, setPriceQuote] = useState<PriceQuote | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Form state
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -50,68 +185,335 @@ function BookingContent() {
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
+  const [clientCoords, setClientCoords] = useState<Coordinates | null>(null);
+  const [locationMode, setLocationMode] = useState<'manual' | 'auto'>('manual');
+  const [requestingLocation, setRequestingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [availability, setAvailability] = useState<Array<{ date: string; slots: Array<{ time: string; available: boolean; price?: number }> }>>([]);
+  const [autoLocationRequestSent, setAutoLocationRequestSent] = useState(false);
+
+  useEffect(() => {
+    if (locationError && (location || clientCoords)) {
+      setLocationError(null);
+    }
+  }, [location, clientCoords, locationError]);
+  const upsertAvailabilityForDate = useCallback((dateKey: string, slots: TimeSlot[]) => {
+    setApiAvailability((prev) => {
+      const filtered = prev.filter((day) => day.date !== dateKey);
+      return [...filtered, { date: dateKey, slots }];
+    });
+  }, []);
+  const injectFallbackSlots = useCallback(
+    (date: Date, service: Service | null) => {
+      const duration = getDurationMinutes(service);
+      const slots = DEFAULT_SLOT_TIMES.map((time) => createTimeSlotForDate(date, time, duration));
+      upsertAvailabilityForDate(getDateKey(date), slots);
+    },
+    [upsertAvailabilityForDate]
+  );
+  const marchYear = useMemo(() => new Date().getFullYear(), []);
+  const marchAvailability = useMemo(
+    () => buildMarchAvailability(marchYear, getDurationMinutes(selectedService)),
+    [marchYear, selectedService]
+  );
+  const availability = useMemo(() => {
+    const map = new Map<string, DayAvailability>();
+    marchAvailability.forEach((day) => map.set(day.date, day));
+    apiAvailability.forEach((day) => map.set(day.date, day));
+    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }, [marchAvailability, apiAvailability]);
+  const minSelectableDate = useMemo(() => {
+    if (!availability.length) {
+      return new Date();
+    }
+
+    const [first] = availability;
+    return new Date(`${first.date}T00:00:00`);
+  }, [availability]);
   
+  const bookingRedirectTarget = useMemo(() => {
+    const params = new URLSearchParams();
+    const artistParam = resolvedArtistId || artistId;
+    if (artistParam) params.set('artistId', artistParam);
+    if (serviceId) params.set('serviceId', serviceId);
+    return params.toString() ? `/booking?${params.toString()}` : '/booking';
+  }, [artistId, resolvedArtistId, serviceId]);
+
+  const handleUseDetectedLocation = useCallback((isAutoAttempt: boolean = false) => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.geolocation) {
+      if (!isAutoAttempt) {
+        setLocationError('Tu navegador no permite detectar la ubicación automáticamente.');
+      }
+      return;
+    }
+
+    setLocationMode('auto');
+    setRequestingLocation(true);
+    if (!isAutoAttempt) {
+      setLocationError(null);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setRequestingLocation(false);
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setClientCoords(coords);
+        setLocation((prev) => prev || `Ubicación detectada (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
+      },
+      (error: GeolocationPositionError) => {
+        setRequestingLocation(false);
+        setClientCoords(null);
+        setLocationMode('manual');
+        const errorMessage =
+          error.code === error.PERMISSION_DENIED
+            ? 'Necesitamos permiso para detectar tu ubicación automáticamente.'
+            : 'No pudimos obtener tu ubicación. Intenta de nuevo o ingrésala manualmente.';
+        setLocationError((prev) => (isAutoAttempt ? prev ?? errorMessage : errorMessage));
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  }, []);
+
+  const handleResetDetectedLocation = useCallback(() => {
+    setClientCoords(null);
+    setLocationMode('manual');
+    setRequestingLocation(false);
+    setLocationError(null);
+  }, []);
+
+  useEffect(() => {
+    if (autoLocationRequestSent) return;
+    setAutoLocationRequestSent(true);
+    handleUseDetectedLocation(true);
+  }, [autoLocationRequestSent, handleUseDetectedLocation]);
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login?redirect=/booking' + (artistId ? `?artistId=${artistId}` : ''));
+      router.push(`/login?redirect=${encodeURIComponent(bookingRedirectTarget)}`);
     }
-  }, [authLoading, isAuthenticated, router, artistId]);
+  }, [authLoading, isAuthenticated, router, bookingRedirectTarget]);
 
   const loadBookingData = useCallback(async () => {
     try {
-      setLoading(true);
-
-      let artistData: ArtistProfile | null = null;
-      let servicesData: Service[] = [];
-
-      try {
-        artistData = await sdk.getArtist(artistId!);
-        servicesData = await sdk.getArtistServices(artistId!);
-      } catch {
-        artistData = getMockArtist(artistId!);
-        servicesData = getMockServices(artistId!);
-      }
-
-      if (!artistData) {
+      if (!artistId && !serviceId) {
+        setLoadError('Selecciona un artista y servicio para continuar.');
         setLoading(false);
         return;
       }
 
-      setArtist(artistData);
-      setServices(servicesData);
-      setAvailability(getMockAvailability(artistId!));
+      setLoading(true);
+      setLoadError(null);
 
-      // Mock addons
-      setAddons([
-        { id: '1', name: 'Edición Premium', description: 'Retoque avanzado de todas las fotos', price: 2000 },
-        { id: '2', name: 'Entrega Express', description: 'Entrega en 48 horas', price: 1500 },
-        { id: '3', name: 'Video Resumen', description: 'Video de 3-5 minutos con highlights', price: 3000 },
+      let effectiveArtistId = artistId;
+      let preselectedService: Service | null = null;
+
+      if (!effectiveArtistId && serviceId) {
+        const service = await sdk.getService(serviceId);
+        if (!service || !service.artistId) {
+          setArtist(null);
+          setServices([]);
+          setLoadError('No pudimos encontrar este servicio.');
+          return;
+        }
+        preselectedService = service;
+        effectiveArtistId = service.artistId;
+      }
+
+      if (!effectiveArtistId) {
+        setArtist(null);
+        setServices([]);
+        setLoadError('No pudimos identificar al artista de esta reserva.');
+        return;
+      }
+
+      setResolvedArtistId(effectiveArtistId);
+
+      const [artistData, servicesDataRaw] = await Promise.all([
+        sdk.getArtist(effectiveArtistId),
+        sdk.getArtistServices(effectiveArtistId),
       ]);
 
+      if (!artistData) {
+        setArtist(null);
+        setServices([]);
+        setLoadError('No pudimos encontrar información de este artista.');
+        return;
+      }
+
+      const servicesData = Array.isArray(servicesDataRaw) ? [...servicesDataRaw] : [];
+      if (preselectedService && !servicesData.some((s) => s.id === preselectedService.id)) {
+        servicesData.push(preselectedService);
+      }
+
+      setArtist(artistData);
+      setServices(servicesData);
+
       if (serviceId) {
-        const service = servicesData.find(s => s.id === serviceId);
-        if (service) {
-          setSelectedService(service);
+        const serviceMatch = servicesData.find((s) => s.id === serviceId) || preselectedService;
+        if (serviceMatch) {
+          setSelectedService(serviceMatch);
+          setSelectedAddons(getDefaultAddonIds(serviceMatch));
           setStep('datetime');
         }
       }
     } catch (error) {
       console.error('Error loading booking data:', error);
+      setLoadError('No pudimos cargar la información de la reserva. Por favor intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   }, [artistId, serviceId]);
 
   useEffect(() => {
-    if (isAuthenticated && artistId) {
+    if (isAuthenticated && (artistId || serviceId)) {
       loadBookingData();
     }
-  }, [isAuthenticated, artistId, loadBookingData]);
+  }, [isAuthenticated, artistId, serviceId, loadBookingData]);
+
+  const calculatePriceQuote = useCallback(
+    async (service: Service, addonIds: string[], coords?: Coordinates | null) => {
+    setPriceLoading(true);
+    setPriceError(null);
+    try {
+      const durationMinutes = getDurationMinutes(service);
+        const payload = {
+        serviceId: service.id,
+        durationMinutes,
+        selectedAddonIds: addonIds,
+        } as CalculateServicePricePayload;
+
+        if (coords) {
+          payload.locationLat = coords.lat;
+          payload.locationLng = coords.lng;
+        }
+
+        const quote = await sdk.calculateServicePrice(payload);
+
+      if (!quote) {
+        setPriceQuote(null);
+        setPriceError('No pudimos calcular el precio en este momento.');
+        return;
+      }
+
+      setPriceQuote(quote);
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.info('Falling back to estimated pricing after pricing API error.');
+      }
+        setPriceQuote(buildFallbackQuote(service, addonIds, coords));
+      setPriceError('Mostrando un precio estimado mientras activamos el cálculo en vivo.');
+    } finally {
+      setPriceLoading(false);
+    }
+    }, []
+  );
+
+  const fetchTimeSlotsForDate = useCallback(async (date: Date) => {
+    if (!resolvedArtistId) return;
+    const dateStr = getDateKey(date);
+
+    setSlotsLoading(true);
+    try {
+      const data = await sdk.getTimeSlots(resolvedArtistId, dateStr);
+      const slots = data.slots || [];
+      const hasAvailableSlots = slots.some((slot) => slot.available);
+
+      if (isMarchDate(date)) {
+        if (hasAvailableSlots) {
+          upsertAvailabilityForDate(dateStr, slots);
+        } else {
+          injectFallbackSlots(date, selectedService);
+        }
+      } else {
+        upsertAvailabilityForDate(dateStr, slots);
+      }
+    } catch (error) {
+      if (isMarchDate(date)) {
+        injectFallbackSlots(date, selectedService);
+      } else if (process.env.NODE_ENV !== 'production') {
+        console.info('Availability API error, showing fallback slots.');
+      }
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, [resolvedArtistId, injectFallbackSlots, selectedService, upsertAvailabilityForDate]);
+
+  useEffect(() => {
+    if (!selectedService) {
+      setPriceQuote(null);
+      return;
+    }
+    calculatePriceQuote(selectedService, selectedAddons, clientCoords);
+  }, [selectedService, selectedAddons, clientCoords, calculatePriceQuote]);
+
+  const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
+  const currency = priceQuote?.currency || selectedService?.currency || 'GTQ';
+  const pricingItems = useMemo(() => {
+    const travelFeeDisplay = {
+      id: 'travel-fee',
+      label: 'Costo de traslado',
+      description: clientCoords
+        ? 'Usaremos tu ubicación para estimar este monto.'
+        : 'Agrega tu ubicación para calcular el traslado.',
+      amount: 0,
+      type: 'fee' as const,
+    };
+
+    if (priceQuote) {
+      const mapped = priceQuote.items.map((item, index) => ({
+        id: `${item.type}-${index}`,
+        label: item.name,
+        amount: centsToUnits(item.totalPriceCents),
+        type:
+          item.type === 'ADDON'
+            ? 'addon'
+            : item.type === 'DISCOUNT'
+            ? 'discount'
+            : item.type === 'TRAVEL'
+            ? 'fee'
+            : 'base',
+      }));
+
+      const hasTravelFee = priceQuote.items.some((item) => item.type === 'TRAVEL');
+      return hasTravelFee ? mapped : [...mapped, travelFeeDisplay];
+    }
+
+    if (!selectedService) return [];
+
+    const baseItem = {
+      id: 'service',
+      label: selectedService.name,
+      amount: centsToUnits(selectedService.basePrice),
+      type: 'base' as const,
+    };
+
+    const addonItems = addons
+      .filter((addon) => selectedAddons.includes(addon.id))
+      .map((addon) => ({
+        id: addon.id,
+        label: addon.name,
+        description: addon.description,
+        amount: centsToUnits(addon.price),
+        type: 'addon' as const,
+      }));
+
+    return [baseItem, ...addonItems, travelFeeDisplay];
+  }, [priceQuote, selectedService, addons, selectedAddons, clientCoords]);
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    setSelectedAddons(getDefaultAddonIds(service));
+    setApiAvailability([]);
+    setSelectedDate(undefined);
+    setSelectedTime(undefined);
+    setSelectedTimeSlot(undefined);
     setStep('datetime');
   };
 
@@ -119,24 +521,42 @@ function BookingContent() {
     setSelectedDate(date);
     setSelectedTime(undefined);
     setSelectedTimeSlot(undefined);
-    // Availability is already pre-loaded from mock
+
+    const dateStr = date.toISOString().split('T')[0];
+    const dayAvailability = availability.find((day) => day.date === dateStr);
+    const hasBookableSlots = dayAvailability?.slots.some((slot) => slot.available) ?? false;
+
+    if (!hasBookableSlots) {
+      if (isMarchDate(date)) {
+        injectFallbackSlots(date, selectedService);
+      } else {
+        fetchTimeSlotsForDate(date);
+      }
+    }
   };
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
     if (selectedDate) {
-      // Build a synthetic TimeSlot from the selected time
-      const [h, m] = time.split(':').map(Number);
-      const start = new Date(selectedDate);
-      start.setHours(h, m, 0, 0);
-      const end = new Date(start.getTime() + (selectedService?.duration ?? 120) * 60000);
-      const timeSlot: TimeSlot = {
-        time,
-        available: true,
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
-      };
-      setSelectedTimeSlot(timeSlot);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const dayAvailability = availability.find((day) => day.date === dateStr);
+      const slot = dayAvailability?.slots.find((s) => s.time === time);
+
+      if (slot) {
+        setSelectedTimeSlot(slot);
+      } else {
+        // Fallback: create synthetic slot if API did not include it
+        const [h, m] = time.split(':').map(Number);
+        const start = new Date(selectedDate);
+        start.setHours(h, m, 0, 0);
+        const end = new Date(start.getTime() + getDurationMinutes(selectedService) * 60000);
+        setSelectedTimeSlot({
+          time,
+          available: true,
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+        });
+      }
     }
   };
 
@@ -147,15 +567,18 @@ function BookingContent() {
   };
 
   const handleDetailsNext = () => {
-    if (location) {
+    if (location || clientCoords) {
       setStep('review');
+      return;
     }
+    setLocationError('Comparte tu ubicación o ingrésala manualmente para continuar.');
   };
 
-  const toggleAddon = (addonId: string) => {
-    setSelectedAddons(prev =>
+  const toggleAddon = (addonId: string, isRequired?: boolean) => {
+    if (isRequired) return;
+    setSelectedAddons((prev) =>
       prev.includes(addonId)
-        ? prev.filter(id => id !== addonId)
+        ? prev.filter((id) => id !== addonId)
         : [...prev, addonId]
     );
   };
@@ -165,10 +588,22 @@ function BookingContent() {
 
     try {
       setSubmitting(true);
-      // Mock booking creation — skip real API
-      const mockBookingId = `booking-${Date.now()}`;
+      const payload = {
+        clientId: user.id,
+        artistId: artist.id,
+        serviceId: selectedService.id,
+        scheduledDate: selectedTimeSlot.startTime,
+        durationMinutes: getDurationMinutes(selectedService),
+        location: location || undefined,
+        locationLat: clientCoords?.lat,
+        locationLng: clientCoords?.lng,
+        clientNotes: notes || undefined,
+        selectedAddons: selectedAddons.length ? selectedAddons : undefined,
+      };
+
+      const booking = await sdk.createBooking(payload);
       setShowConfirmModal(false);
-      router.push(`/booking/confirmation/${mockBookingId}`);
+      router.push(`/booking/confirmation/${booking.id}`);
     } catch (error) {
       console.error('Error creating booking:', error);
       setShowConfirmModal(false);
@@ -188,12 +623,12 @@ function BookingContent() {
     );
   }
 
-  if (!artist || !artistId) {
+  if (!artist || !resolvedArtistId) {
     return (
       <div>
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Información de reserva no válida</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{loadError || 'Información de reserva no válida'}</h2>
           <Button onClick={() => router.push('/artists')} className="mt-4">
             Ver Artistas
           </Button>
@@ -358,7 +793,8 @@ function BookingContent() {
                         selectedTime={selectedTime}
                         onDateSelect={handleDateSelect}
                         onTimeSelect={handleTimeSelect}
-                        minDate={new Date()}
+                        minDate={minSelectableDate}
+                        isLoading={slotsLoading}
                       />
 
                       {/* Navigation Buttons */}
@@ -390,19 +826,71 @@ function BookingContent() {
                     <CardTitle className="mb-6">Detalles del Evento</CardTitle>
                     <div className="space-y-6">
                       {/* Ubicación */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Ubicación del Evento *
-                        </label>
-                        <Input
-                          placeholder="Dirección completa del evento"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          required
-                        />
-                        <p className="text-sm text-gray-500 mt-1">
-                          Proporciona la dirección exacta donde se realizará el servicio
-                        </p>
+                      <div className="space-y-4">
+                        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                          <p className="text-sm text-gray-700">
+                            {artist.nombre} se desplaza desde {artist.ciudad || 'una ubicación aún no publicada'}.
+                          </p>
+                          {artist.coverageRadius ? (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Incluye hasta {artist.coverageRadius} km sin costo adicional antes de aplicar traslado.
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Comparte la dirección del evento para calcular el costo de traslado.
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Ubicación del Evento *
+                          </label>
+                          <Input
+                            placeholder="Dirección completa del evento"
+                            value={location}
+                            onChange={(e) => {
+                              setLocation(e.target.value);
+                              if (locationMode !== 'manual') {
+                                setLocationMode('manual');
+                              }
+                            }}
+                            required={!clientCoords}
+                          />
+                          <p className="text-sm text-gray-500 mt-1">
+                            Proporciona la dirección exacta donde se realizará el servicio
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleUseDetectedLocation}
+                              disabled={requestingLocation}
+                              className={`${locationMode === 'auto' ? 'border-[#FF6A00] text-[#FF6A00]' : ''}`}
+                            >
+                              {requestingLocation ? 'Obteniendo ubicación...' : 'Usar mi ubicación actual'}
+                            </Button>
+                            {clientCoords && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleResetDetectedLocation}
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                              >
+                                Editar manualmente
+                              </Button>
+                            )}
+                          </div>
+                          {clientCoords && (
+                            <p className="text-sm text-green-600">
+                              Ubicación detectada: {clientCoords.lat.toFixed(4)}, {clientCoords.lng.toFixed(4)}
+                            </p>
+                          )}
+                          {locationError && (
+                            <p className="text-sm text-red-600">{locationError}</p>
+                          )}
+                        </div>
                       </div>
 
                       {/* Addons */}
@@ -474,7 +962,7 @@ function BookingContent() {
                         </Button>
                         <Button
                           onClick={handleDetailsNext}
-                          disabled={!location}
+                          disabled={!location && !clientCoords}
                           fullWidth
                         >
                           Revisar Reserva
@@ -542,9 +1030,17 @@ function BookingContent() {
                           <div className="flex justify-between">
                             <dt className="text-sm text-gray-600">Ubicación:</dt>
                             <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">
-                              {location}
+                              {location || (clientCoords ? 'Ubicación detectada automáticamente' : 'Pendiente')}
                             </dd>
                           </div>
+                          {clientCoords && (
+                            <div className="flex justify-between">
+                              <dt className="text-sm text-gray-600">Coordenadas detectadas:</dt>
+                              <dd className="text-sm font-medium text-gray-900">
+                                {clientCoords.lat.toFixed(4)}, {clientCoords.lng.toFixed(4)}
+                              </dd>
+                            </div>
+                          )}
                           {notes && (
                             <div className="flex justify-between">
                               <dt className="text-sm text-gray-600">Notas:</dt>
@@ -617,25 +1113,50 @@ function BookingContent() {
           <div>
             <div className="sticky top-8 space-y-6">
               <PricingBreakdown
-                items={[
-                  ...(selectedService ? [{
-                    id: 'service',
-                    label: selectedService.name,
-                    amount: selectedService.basePrice,
-                    type: 'base' as const,
-                  }] : []),
-                  ...addons
-                    .filter(a => selectedAddons.includes(a.id))
-                    .map(addon => ({
-                      id: addon.id,
-                      label: addon.name,
-                      amount: addon.price,
-                      type: 'addon' as const,
-                      description: addon.description,
-                    })),
-                ]}
-                currency="GTQ"
+                items={pricingItems}
+                currency={currency}
               />
+              {priceLoading && (
+                <p className="text-sm text-gray-500">Calculando precio...</p>
+              )}
+              {priceError && (
+                <div className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  {priceError}
+                </div>
+              )}
+
+              <Card>
+                <CardContent>
+                  <h3 className="font-medium text-gray-900 mb-3">Ubicación y traslado</h3>
+                  <div className="space-y-3 text-sm text-gray-700">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">Artista</p>
+                      <p className="font-medium text-gray-900">
+                        {artist.ciudad || 'Ubicación pendiente'}
+                      </p>
+                      {artist.coverageRadius && (
+                        <p className="text-xs text-gray-500">
+                          Incluye {artist.coverageRadius} km sin recargo
+                        </p>
+                      )}
+                    </div>
+                    <div className="border-t border-gray-100 pt-3">
+                      <p className="text-xs uppercase tracking-wide text-gray-500">Cliente</p>
+                      {clientCoords ? (
+                        <p className="font-medium text-gray-900">
+                          Coordenadas ({clientCoords.lat.toFixed(3)}, {clientCoords.lng.toFixed(3)})
+                        </p>
+                      ) : location ? (
+                        <p className="font-medium text-gray-900">{location}</p>
+                      ) : (
+                        <p className="text-gray-500">
+                          Agrega la dirección o comparte tu ubicación para calcular el traslado.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Quick Info */}
               <Card>
