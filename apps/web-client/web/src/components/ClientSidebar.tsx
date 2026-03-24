@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   userName: string;
@@ -25,11 +26,13 @@ type SidebarContentProps = {
   navItems: NavItem[];
   onLinkClick: (event: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
   onClose: () => void;
+  onLogout: () => void;
 };
 
 export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { logout } = useAuth();
 
   const navItems: NavItem[] = [
     { href: '/dashboard',  icon: HomeIcon,   label: 'Inicio' },
@@ -57,6 +60,7 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
           navItems={navItems}
           onLinkClick={handleLinkClick}
           onClose={() => setIsOpen(false)}
+          onLogout={logout}
         />
       </aside>
 
@@ -85,6 +89,7 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
               navItems={navItems}
               onLinkClick={handleLinkClick}
               onClose={() => setIsOpen(false)}
+              onLogout={logout}
             />
           </aside>
         </div>
@@ -93,7 +98,7 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
   );
 }
 
-function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: SidebarContentProps) {
+function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose, onLogout }: SidebarContentProps) {
   return (
     <>
       <div className="p-5 border-b border-gray-100 flex items-center justify-between">
@@ -152,6 +157,18 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: 
               <SettingsIcon className={`h-5 w-5 shrink-0 ${pathname.startsWith('/profile') ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
               Configuración
             </Link>
+            <button
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <svg className="h-5 w-5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Cerrar Sesión
+            </button>
           </nav>
         </div>
       </div>

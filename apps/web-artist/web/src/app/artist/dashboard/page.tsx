@@ -18,24 +18,33 @@ export default function ArtistDashboardPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<AugmentedArtistStats | null>(null);
+  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const loadDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Intentar obtener datos reales del backend
-      try {
-        const statsData = await sdk.getArtistStats();
-        setStats(statsData);
-      } catch (backendError: unknown) {
-        console.log('Backend no disponible, usando datos mock:', getErrorMessage(backendError));
-        
-        // Si falla el backend, usar datos mock
-        const { getMockArtistStats } = await import('@/lib/mockData');
-        const mockData = await getMockArtistStats();
-        setStats(mockData.stats as AugmentedArtistStats);
+
+      const [statsData, bookingsData] = await Promise.allSettled([
+        sdk.getArtistStats(),
+        sdk.getArtistBookings({ status: 'CONFIRMED', limit: 10 }),
+      ]);
+
+      if (statsData.status === 'fulfilled') setStats(statsData.value);
+      if (bookingsData.status === 'fulfilled') {
+        const now = new Date();
+        const upcoming = (bookingsData.value?.bookings ?? [])
+          .filter((b: Booking) => {
+            const d = b.startAt || b.scheduledDate;
+            return d && new Date(d) >= now;
+          })
+          .sort((a: Booking, b: Booking) => {
+            const da = new Date(a.startAt || a.scheduledDate).getTime();
+            const db = new Date(b.startAt || b.scheduledDate).getTime();
+            return da - db;
+          });
+        setUpcomingBookings(upcoming);
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err);
@@ -156,7 +165,7 @@ export default function ArtistDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Due Soon Card */}
             <div className="lg:col-span-2">
-              {stats?.upcomingBookings && stats.upcomingBookings.length > 0 ? (
+              {upcomingBookings.length > 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -164,10 +173,10 @@ export default function ArtistDashboardPage() {
                         PRÓXIMO
                       </span>
                       <h3 className="text-xl font-bold text-gray-900">
-                        {stats.upcomingBookings[0].code}
+                        {upcomingBookings[0].serviceName || upcomingBookings[0].code || 'Reserva'}
                       </h3>
                       <p className="text-gray-600 text-sm mt-1">
-                        {new Date(stats.upcomingBookings[0].scheduledDate).toLocaleDateString('es-ES', {
+                        {new Date(upcomingBookings[0].startAt || upcomingBookings[0].scheduledDate).toLocaleDateString('es-ES', {
                           weekday: 'long',
                           month: 'long',
                           day: 'numeric',
@@ -189,14 +198,18 @@ export default function ArtistDashboardPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>Faltan 2 días</span>
+                        <span>{(() => {
+                          const d = new Date(upcomingBookings[0].startAt || upcomingBookings[0].scheduledDate);
+                          const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                          return diff <= 0 ? 'Hoy' : diff === 1 ? 'Mañana' : `En ${diff} días`;
+                        })()}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         <span className="font-semibold text-gray-900">
-                          Q{stats.upcomingBookings[0].totalPrice.toLocaleString('es-GT')}
+                          Q{upcomingBookings[0].totalPrice.toLocaleString('es-GT')}
                         </span>
                       </div>
                     </div>
@@ -216,7 +229,7 @@ export default function ArtistDashboardPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <p className="text-gray-600 font-medium">No hay presentaciones próximas</p>
+                  <p className="text-gray-600 font-medium">Sin próximas presentaciones</p>
                   <p className="text-sm text-gray-500 mt-1">Tus reservas confirmadas aparecerán aquí</p>
                 </div>
               )}
@@ -358,47 +371,40 @@ export default function ArtistDashboardPage() {
               </button>
             </div>
 
-            {stats?.upcomingBookings && stats.upcomingBookings.length > 0 ? (
+            {upcomingBookings.length > 0 ? (
               <div className="space-y-3">
-                {stats.upcomingBookings.slice(0, 4).map((booking: Booking) => (
-                  <div
-                    key={booking.id}
-                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-orange-300 hover:shadow-sm transition-all cursor-pointer"
-                    onClick={() => router.push('/artist/dashboard/bookings')}
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-orange-600">
-                          {new Date(booking.scheduledDate).getDate()}
-                        </div>
-                        <div className="text-xs text-orange-500">
-                          {new Date(booking.scheduledDate).toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}
+                {upcomingBookings.slice(0, 4).map((booking: Booking) => {
+                  const dateStr = booking.startAt || booking.scheduledDate;
+                  const d = new Date(dateStr);
+                  return (
+                    <div
+                      key={booking.id}
+                      className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-orange-300 hover:shadow-sm transition-all cursor-pointer"
+                      onClick={() => router.push('/artist/dashboard/bookings')}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-600">{d.getDate()}</div>
+                          <div className="text-xs text-orange-500">{d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}</div>
                         </div>
                       </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{booking.serviceName || booking.code || 'Reserva'}</p>
+                        <p className="text-sm text-gray-600">{d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900">Q{booking.totalPrice.toLocaleString('es-GT')}</p>
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {booking.status === 'CONFIRMED' ? 'Confirmada' : booking.status}
+                        </span>
+                      </div>
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{booking.code}</p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(booking.scheduledDate).toLocaleTimeString('es-ES', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900">Q{booking.totalPrice.toLocaleString('es-GT')}</p>
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        booking.status === 'CONFIRMED'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12">
@@ -407,8 +413,8 @@ export default function ArtistDashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <p className="text-gray-600 font-medium mb-1">No upcoming gigs scheduled</p>
-                <p className="text-sm text-gray-500">Your confirmed bookings will appear here</p>
+                <p className="text-gray-600 font-medium mb-1">Sin presentaciones próximas</p>
+                <p className="text-sm text-gray-500">Tus reservas confirmadas aparecerán aquí</p>
               </div>
             )}
           </div>

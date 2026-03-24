@@ -162,6 +162,8 @@ export interface Booking {
   artistId: string;
   serviceId: string;
   scheduledDate: string; // ISO string
+  startAt?: string;      // extended field from backend response
+  endAt?: string;
   durationMinutes: number;
   location?: string;
   locationLat?: number;
@@ -178,6 +180,8 @@ export interface Booking {
   selectedAddons?: string[];
   clientNotes?: string;
   artistNotes?: string;
+  serviceName?: string;   // name of the booked service
+  artistName?: string;    // name of the artist
   createdAt: string;
   updatedAt: string;
 }

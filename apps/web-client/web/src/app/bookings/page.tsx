@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
+import { sdk } from '@piums/sdk';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 type BookingStatus = 'confirmed' | 'pending' | 'completed' | 'cancelled';
@@ -180,62 +181,51 @@ export default function BookingsPage() {
   const [stats, setStats] = useState(STATS);
 
   useEffect(() => {
-    if (!user?.id) return;
-
     const fetchBookings = async () => {
       try {
         setLoading(true);
-        // Obtener token de la sesión (asumiendo que está en el contexto o localStorage)
-        const token = localStorage.getItem('token');
-        
-        const res = await fetch(`http://localhost:3005/api/bookings?clientId=${user.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        if (!res.ok) throw new Error('Error fetching bookings');
-        const data = await res.json();
-        
-        // El API suele devolver { bookings: [], total: X } o bien un array directo
-        const bookingsList = data?.bookings || data || [];
+        const data = await sdk.listBookings({ limit: 100 });
+        const bookingsList = data?.bookings || [];
 
         if (Array.isArray(bookingsList)) {
-          // Mapear datos reales al formato de la UI
           const mappedBookings: MockBooking[] = bookingsList.map((b: any) => ({
             id: b.id,
-            status: b.status.toLowerCase() as BookingStatus,
+            status: (b.status || '').toLowerCase() as BookingStatus,
             title: b.serviceName || 'Servicio Piums',
             artistName: b.artistName || 'Artista Piums',
             imageUrl: b.artistImage || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80',
-            price: Number(b.totalPrice),
+            price: Number(b.totalPrice || 0),
             priceLabel: 'total',
-            date: new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
-            timeStart: new Date(b.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            timeEnd: new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            date: b.scheduledDate
+              ? new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+              : '—',
+            timeStart: b.scheduledDate
+              ? new Date(b.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+              : '—',
+            timeEnd: b.scheduledDate && b.durationMinutes
+              ? new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+              : '—',
             location: b.location,
           }));
 
           setBookings(mappedBookings);
 
-          // Actualizar estadísticas
           const newStats = [
-            { label: 'Reservas Totales', value: mappedBookings.length, icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
-            { label: 'Próximas',         value: mappedBookings.filter(b => b.status === 'confirmed').length, icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
-            { label: 'Pendientes',       value: mappedBookings.filter(b => b.status === 'pending').length, icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
-            { label: 'Completadas',      value: mappedBookings.filter(b => b.status === 'completed').length, icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
+            { label: 'Reservas Totales', value: mappedBookings.length,                                              icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
+            { label: 'Próximas',         value: mappedBookings.filter(b => b.status === 'confirmed').length,        icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
+            { label: 'Pendientes',       value: mappedBookings.filter(b => b.status === 'pending').length,          icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
+            { label: 'Completadas',      value: mappedBookings.filter(b => b.status === 'completed').length,        icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
           ];
           setStats(newStats);
         }
       } catch (error) {
-        console.error('Error fetching real bookings:', error);
+        console.error('Error fetching bookings:', error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchBookings();
-  }, [user?.id]);
+  }, []);
 
   const filtered = bookings.filter(b => {
     const matchTab = activeTab === 'all' || b.status === activeTab;

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardTab {
   id: string;
@@ -66,9 +67,11 @@ interface NavContentProps {
   pathname: string | null;
   t: (key: string) => string;
   onNavigate: () => void;
+  user: any;
+  onLogout: () => void;
 }
 
-const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate }) => (
+const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate, user, onLogout }) => (
   <>
     {/* Logo */}
     <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -172,11 +175,24 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
                     ${isActive ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'}
                   `}
               >
-                <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{link.icon}</div>
                 <span>{link.label}</span>
               </Link>
             );
           })}
+          <button
+            onClick={() => {
+              onLogout();
+              onNavigate();
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-150"
+          >
+            <div className="text-red-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </div>
+            <span>Cerrar Sesión</span>
+          </button>
         </nav>
       </div>
     </div>
@@ -185,15 +201,12 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
     <div className="p-4 border-t border-gray-200">
       <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
         <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-          AM
+          {user?.nombre?.charAt(0).toUpperCase() || 'A'}
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-900">Alex Morgan</p>
-          <p className="text-xs text-gray-500">Pro Creative</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{user?.nombre || 'Artista'}</p>
+          <p className="text-xs text-gray-500 truncate">{user?.role === 'artista' ? 'Artista Pro' : 'Cliente'}</p>
         </div>
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </div>
     </div>
   </>
@@ -201,6 +214,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
 
 export const DashboardSidebar: React.FC = () => {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const { t } = useTranslation('menu');
   const [isOpen, setIsOpen] = useState(false);
   const handleClose = () => setIsOpen(false);
@@ -209,7 +223,7 @@ export const DashboardSidebar: React.FC = () => {
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 min-h-screen flex-col">
-        <SidebarNavContent pathname={pathname} t={t} onNavigate={() => {}} />
+        <SidebarNavContent pathname={pathname} t={t} onNavigate={() => {}} user={user} onLogout={logout} />
       </aside>
 
       {/* ── Mobile: top bar with hamburger ── */}
@@ -241,7 +255,7 @@ export const DashboardSidebar: React.FC = () => {
           />
           {/* Drawer panel */}
           <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
-            <SidebarNavContent pathname={pathname} t={t} onNavigate={handleClose} />
+            <SidebarNavContent pathname={pathname} t={t} onNavigate={handleClose} user={user} onLogout={logout} />
           </aside>
         </div>
       )}
