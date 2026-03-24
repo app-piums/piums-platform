@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer } from "http";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -7,35 +8,31 @@ import { setupRoutes } from "./routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { logger } from "./utils/logger";
 import { globalRateLimiter } from "./middleware/rateLimiter";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
-
-// ============================================================================
-// Middleware
-// ============================================================================
 
 // Security headers
 app.use(helmet());
 
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
-  "http://localhost:3000", // Client app
-  "http://localhost:3001", // Artist app
-  "http://localhost:3002", // Admin app (future)
-  "http://localhost:3003", // Admin panel (web-admin)
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -48,41 +45,55 @@ app.use(
   })
 );
 
-// Body parsing
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Request logging
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 } else {
   app.use(morgan("combined"));
 }
 
-// Global rate limiting
 app.use(globalRateLimiter);
-
-// ============================================================================
-// Routes
+app.use((req, res, next) => {
+  if (!req.url.includes('health')) {
+    logger.info(`[GATEWAY_DEBUG] Request: ${req.method} ${req.url} (Original: ${req.originalUrl})`, "GATEWAY");
+  }
+  next();
+});
+// Server Startup and WebSocket Support
 // ============================================================================
 
 setupRoutes(app);
 
-// ============================================================================
-// Error Handling
-// ============================================================================
+// WebSocket Proxy logic
+const chatProxy = createProxyMiddleware({
+  target: process.env.CHAT_SERVICE_URL || "http://localhost:4010",
+  ws: true,
+  changeOrigin: true,
+});
+
+const notificationsProxy = createProxyMiddleware({
+  target: process.env.NOTIFICATIONS_SERVICE_URL || "http://localhost:4007",
+  ws: true,
+  changeOrigin: true,
+});
+
+httpServer.on('upgrade', (req, socket, head) => {
+  const url = req.url || '';
+  if (url.includes('/socket.io') || url.includes('/api/chat')) {
+    chatProxy.upgrade!(req, socket as any, head);
+  } else if (url.includes('/api/notifications')) {
+    notificationsProxy.upgrade!(req, socket as any, head);
+  }
+});
 
 app.use(errorHandler);
 
-// ============================================================================
-// Server Startup
-// ============================================================================
-
-app.listen(Number(PORT), HOST, () => {
+httpServer.listen(Number(PORT), HOST, () => {
   logger.info(`🚪 API Gateway running on http://${HOST}:${PORT}`, "GATEWAY");
   logger.info(`📋 Environment: ${process.env.NODE_ENV || "development"}`, "GATEWAY");
-  logger.info(`🔐 CORS Origins: ${allowedOrigins.join(", ")}`, "GATEWAY");
-  logger.info("✅ Gateway ready to proxy requests", "GATEWAY");
+  logger.info("✅ Gateway ready to proxy requests (HTTP & WS)", "GATEWAY");
 });
 
 // Graceful shutdown

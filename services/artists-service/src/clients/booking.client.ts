@@ -152,15 +152,20 @@ export class BookingServiceClient {
   /**
    * Confirmar (aceptar) booking
    */
-  async confirmBooking(bookingId: string, artistId: string): Promise<boolean> {
+  async confirmBooking(bookingId: string, artistId: string, authToken?: string): Promise<boolean> {
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(
         `${BOOKING_SERVICE_URL}/api/bookings/${bookingId}/confirm`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({ artistId }),
         }
       );
@@ -188,16 +193,22 @@ export class BookingServiceClient {
   async rejectBooking(
     bookingId: string,
     artistId: string,
-    reason: string
+    reason: string,
+    authToken?: string
   ): Promise<boolean> {
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(
         `${BOOKING_SERVICE_URL}/api/bookings/${bookingId}/reject`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({ artistId, reason }),
         }
       );

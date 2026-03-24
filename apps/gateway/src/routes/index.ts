@@ -1,10 +1,32 @@
-import { Express, Request, Response } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 import { authMiddleware } from "../middleware/auth";
 import { healthRouter } from "./health";
 import { logger } from "../utils/logger";
 
+// Middleware para transformar cookie en header Authorization
+const cookieToAuthHeader = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.headers.authorization && req.headers.cookie) {
+    const cookies = req.headers.cookie.split(';').reduce((acc: any, cookie) => {
+      const parts = cookie.trim().split('=');
+      if (parts.length >= 2) {
+        acc[parts[0]] = parts[1];
+      }
+      return acc;
+    }, {});
+    
+    const token = cookies['auth_token'] || cookies['token'];
+    if (token) {
+      req.headers.authorization = `Bearer ${token}`;
+    }
+  }
+  next();
+};
+
 export const setupRoutes = (app: Express) => {
+  // Aplicar transformación universal para todos los proxies
+  app.use(cookieToAuthHeader);
+
   // ============================================================================
   // Health Check Routes (no proxy, handled locally)
   // ============================================================================
@@ -43,7 +65,70 @@ export const setupRoutes = (app: Express) => {
       target: process.env.AUTH_SERVICE_URL || "http://localhost:4001",
       changeOrigin: true,
       pathRewrite: { "^": "/auth" },
-      on: { proxyReq: fixRequestBody },
+      on: { 
+        proxyReq: fixRequestBody,
+        proxyRes: (proxyRes, req, res) => {
+          const path = (req as any).path || req.url;
+          
+          if (path === '/me' || path === '/auth/me' || path?.endsWith('/me')) {
+            logger.info(`[GATEWAY] Intercepting auth response for: ${path}`, "GATEWAY");
+            const _write = res.write;
+            const _end = res.end;
+            let body = Buffer.from([]);
+
+            proxyRes.on('data', (chunk) => {
+              body = Buffer.concat([body, chunk]);
+            });
+
+            proxyRes.on('end', async () => {
+              try {
+                const bodyStr = body.toString();
+                logger.debug(`[GATEWAY] Auth body received: ${bodyStr.substring(0, 100)}...`, "GATEWAY");
+                const data = JSON.parse(bodyStr);
+                
+                if (data.user && data.user.role === 'artista') {
+                  logger.info(`[GATEWAY] Artist detected: ${data.user.email}. Starting translation...`, "GATEWAY");
+                  const token = req.headers.authorization?.substring(7);
+                  if (token) {
+                    const ARTISTS_SERVICE_URL = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+                    const profileRes = await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (profileRes.ok) {
+                      const profileData = await profileRes.json() as any;
+                      if (profileData.artist?.id) {
+                        data.user.authId = data.user.id;
+                        data.user.id = profileData.artist.id;
+                        logger.info(`[GATEWAY] IDENTITY TRANSLATED: ${data.user.authId} -> ${data.user.id}`, "GATEWAY");
+                      } else {
+                        logger.warn(`[GATEWAY] Artist profile ID not found in response`, "GATEWAY");
+                      }
+                    } else {
+                      logger.warn(`[GATEWAY] Failed to fetch artist profile: ${profileRes.status}`, "GATEWAY");
+                    }
+                  } else {
+                    logger.warn(`[GATEWAY] No Authorization header found for artist translation`, "GATEWAY");
+                  }
+                }
+                
+                const newBody = JSON.stringify(data);
+                res.setHeader('content-length', Buffer.byteLength(newBody));
+                res.setHeader('content-type', 'application/json');
+                _write.call(res, newBody);
+                _end.call(res);
+              } catch (e: any) {
+                logger.error(`[GATEWAY] Error in auth interception: ${e.message}`, "GATEWAY");
+                _write.call(res, body);
+                _end.call(res);
+              }
+            });
+
+            return;
+          }
+        }
+      },
+      selfHandleResponse: true // Requerido para interceptar el body
     })
   );
 
@@ -145,6 +230,17 @@ export const setupRoutes = (app: Express) => {
       target: process.env.NOTIFICATIONS_SERVICE_URL || "http://localhost:4007",
       changeOrigin: true,
       pathRewrite: { "^": "/api/notifications" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+  
+  app.use(
+    "/api/chat",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.CHAT_SERVICE_URL || "http://localhost:4010",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/chat" },
       on: { proxyReq: fixRequestBody },
     })
   );

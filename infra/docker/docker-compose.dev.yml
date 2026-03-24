@@ -49,12 +49,12 @@ services:
       dockerfile: Dockerfile
     container_name: piums-gateway
     ports:
-      - "3000:3000"
+      - "3005:3000"
     environment:
       NODE_ENV: development
       PORT: 3000
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
-      ALLOWED_ORIGINS: http://localhost:3001,http://localhost:3002,http://localhost:3003
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3005
       AUTH_SERVICE_URL: http://auth-service:4001
       USERS_SERVICE_URL: http://users-service:4002
       ARTISTS_SERVICE_URL: http://artists-service:4003
@@ -64,6 +64,7 @@ services:
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       BOOKING_SERVICE_URL: http://booking-service:4008
       SEARCH_SERVICE_URL: http://search-service:4009
+      CHAT_SERVICE_URL: http://chat-service:4010
     depends_on:
       - auth-service
       - users-service
@@ -245,8 +246,10 @@ services:
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_bookings
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       CATALOG_SERVICE_URL: http://catalog-service:4004
-      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       PAYMENTS_SERVICE_URL: http://payments-service:4005
+      CHAT_SERVICE_URL: http://chat-service:4010
+      USERS_SERVICE_URL: http://users-service:4002
+      ARTISTS_SERVICE_URL: http://artists-service:4003
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
@@ -268,8 +271,30 @@ services:
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_search
       ARTISTS_SERVICE_URL: http://artists-service:4003
       CATALOG_SERVICE_URL: http://catalog-service:4004
+      BOOKING_SERVICE_URL: http://booking-service:4008
       REVIEWS_SERVICE_URL: http://reviews-service:4006
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - piums-network
+    restart: unless-stopped
+
+  chat-service:
+    build:
+      context: ../../services/chat-service
+      dockerfile: Dockerfile
+    container_name: piums-chat-service
+    ports:
+      - "4010:4010"
+    environment:
+      NODE_ENV: development
+      PORT: 4010
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_chat
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      ARTISTS_SERVICE_URL: http://artists-service:4003
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002
     depends_on:
       postgres:
         condition: service_healthy
@@ -289,12 +314,17 @@ services:
     ports:
       - "3000:3000"
     environment:
+      PORT: 3000
       NODE_ENV: development
       GATEWAY_INTERNAL_URL: http://gateway:3000
+      GATEWAY_URL: http://gateway:3000/api
+      AUTH_SERVICE_URL: http://auth-service:4001
+      CHAT_SERVICE_URL: http://chat-service:4010
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_CLIENT_URL: http://localhost:3000
       NEXT_PUBLIC_ARTIST_URL: http://localhost:3001
       NEXT_PUBLIC_ADMIN_URL: http://localhost:3002
+      NEXT_PUBLIC_CHAT_SERVICE_URL: http://localhost:4010
     depends_on:
       - gateway
     networks:
@@ -309,12 +339,17 @@ services:
     ports:
       - "3001:3001"
     environment:
+      PORT: 3001
       NODE_ENV: development
       GATEWAY_INTERNAL_URL: http://gateway:3000
+      GATEWAY_URL: http://gateway:3000/api
+      AUTH_SERVICE_URL: http://auth-service:4001
+      CHAT_SERVICE_URL: http://chat-service:4010
       NEXT_PUBLIC_APP_URL: http://localhost:3001
       NEXT_PUBLIC_CLIENT_URL: http://localhost:3000
       NEXT_PUBLIC_ARTIST_URL: http://localhost:3001
       NEXT_PUBLIC_ADMIN_URL: http://localhost:3002
+      NEXT_PUBLIC_CHAT_SERVICE_URL: http://localhost:4010
     depends_on:
       - gateway
     networks:
@@ -327,11 +362,13 @@ services:
       dockerfile: apps/web-admin/web/Dockerfile
     container_name: piums-web-admin
     ports:
-      - "3003:3003"
+      - "3002:3003"
     environment:
       NODE_ENV: development
       GATEWAY_INTERNAL_URL: http://gateway:3000
-      NEXT_PUBLIC_APP_URL: http://localhost:3003
+      GATEWAY_URL: http://gateway:3000/api
+      AUTH_SERVICE_URL: http://auth-service:4001
+      NEXT_PUBLIC_APP_URL: http://localhost:3002
     depends_on:
       - gateway
     networks:

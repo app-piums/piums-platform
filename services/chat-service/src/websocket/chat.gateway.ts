@@ -32,11 +32,24 @@ export class ChatGateway {
 
     this.setupMiddleware();
     this.setupEventHandlers();
+    
+    // Listen to HTTP POST messages being created and broadcast them via WebSocket
+    import('../services/chat.service').then(({ chatEmitter }) => {
+      chatEmitter.on('new_message', (message, conversation) => {
+        const recipientId = conversation.userId === message.senderId ? conversation.artistId : conversation.userId;
+        
+        // Notify recipient if connected
+        this.io.to(`user:${recipientId}`).emit('message:received', message);
+        
+        // Notify sender if connected across other tabs
+        this.io.to(`user:${message.senderId}`).emit('message:received', message);
+      });
+    });
   }
 
   private setupMiddleware() {
     // Autenticación en conexión
-    this.io.use((socket: AuthenticatedSocket, next) => {
+    this.io.use(async (socket: AuthenticatedSocket, next) => {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
 
       if (!token) {
@@ -44,7 +57,7 @@ export class ChatGateway {
         return next(new Error('Authentication error: No token provided'));
       }
 
-      const user = verifySocketToken(token);
+      const user = await verifySocketToken(token);
       if (!user) {
         logger.warn('Socket connection with invalid token', 'CHAT_GATEWAY');
         return next(new Error('Authentication error: Invalid token'));
@@ -76,6 +89,13 @@ export class ChatGateway {
         type?: string;
       }) => {
         try {
+          // Obtener la conversación para saber a quién enviar y verificar status
+          const conversation = await chatService.getConversation(data.conversationId, userId);
+          
+          if (conversation.status !== 'ACTIVE') {
+            return socket.emit('message:error', { message: 'La conversación aún no está activa. El artista debe confirmar la reserva.' });
+          }
+
           const message = await chatService.sendMessage(
             data.conversationId,
             userId,
@@ -86,8 +106,6 @@ export class ChatGateway {
           // Enviar el mensaje al emisor
           socket.emit('message:sent', { message });
 
-          // Obtener la conversación para saber a quién enviar
-          const conversation = await chatService.getConversation(data.conversationId, userId);
           const recipientId = conversation.userId === userId ? conversation.artistId : conversation.userId;
 
           // Enviar al destinatario si está conectado

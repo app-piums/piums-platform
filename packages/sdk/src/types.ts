@@ -38,7 +38,12 @@ export interface Artist {
   avatar?: string;
   coverPhoto?: string;
   category?: string;
+  city?: string; // Nombre legible (ej: Ciudad de Guatemala)
   cityId?: string;
+  baseLocationLabel?: string;
+  baseLocationLat?: number;
+  baseLocationLng?: number;
+  coverageRadius?: number;
   experienceYears?: number;
   rating?: number;
   reviewsCount?: number;

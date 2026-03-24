@@ -62,7 +62,10 @@ export const MessageList: React.FC<MessageListProps> = ({
           <MessageBubble
             key={message.id}
             message={message}
-            isOwnMessage={message.senderId === currentUserId}
+            isOwnMessage={
+              message.senderId === currentUserId || 
+              (message.senderType === 'artist' && currentUserId !== 'me')
+            }
           />
         ))}
         

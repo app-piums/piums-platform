@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
+import { resolveArtistId } from '../utils/artist-resolver';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -14,7 +15,7 @@ export interface AuthRequest extends Request {
   cookies: any;
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Obtener token de cookie o header
     const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
@@ -24,8 +25,17 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    let userId = decoded.id || decoded.userId;
+
+    if (decoded.role === 'artista' || decoded.role === 'artist') {
+      const profileId = await resolveArtistId(token);
+      if (profileId) {
+        userId = profileId;
+      }
+    }
+
     req.user = {
-      id: decoded.id || decoded.userId,
+      id: userId,
       email: decoded.email,
       role: decoded.role,
     };
@@ -38,11 +48,20 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 };
 
 // Verificar token de WebSocket
-export const verifySocketToken = (token: string): { id: string; email: string; role?: string } | null => {
+export const verifySocketToken = async (token: string): Promise<{ id: string; email: string; role?: string } | null> => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    let userId = decoded.id || decoded.userId;
+
+    if (decoded.role === 'artista' || decoded.role === 'artist') {
+      const profileId = await resolveArtistId(token);
+      if (profileId) {
+        userId = profileId;
+      }
+    }
+
     return {
-      id: decoded.id || decoded.userId,
+      id: userId,
       email: decoded.email,
       role: decoded.role,
     };

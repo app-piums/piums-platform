@@ -39,7 +39,7 @@ app.use(errorHandler);
 const chatGateway = new ChatGateway(httpServer);
 logger.info('WebSocket Gateway initialized', 'SERVER');
 
-const PORT = process.env.PORT || 4007;
+const PORT = process.env.PORT || 4010;
 
 httpServer.listen(PORT, () => {
   logger.info(`Chat Service running on http://localhost:${PORT}`, 'SERVER');

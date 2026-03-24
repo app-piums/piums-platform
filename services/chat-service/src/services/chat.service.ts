@@ -2,6 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import Filter from 'bad-words';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
+import { EventEmitter } from 'events';
+
+export const chatEmitter = new EventEmitter();
 
 const prisma = new PrismaClient();
 const filter = new Filter();
@@ -110,6 +113,7 @@ export class ChatService {
       });
 
       if (existing) {
+        // Si ya existe pero el bookingId es diferente (raro), podríamos actualizarlo o simplemente devolver la existente
         return existing;
       }
 
@@ -118,14 +122,46 @@ export class ChatService {
           userId,
           artistId,
           bookingId,
+          status: 'PENDING', // Inicia como PENDING por defecto al crear desde booking
         },
       });
 
-      logger.info('Conversation created', 'CHAT_SERVICE', { conversationId: conversation.id });
+      logger.info('Conversation created', 'CHAT_SERVICE', { conversationId: conversation.id, status: conversation.status });
       return conversation;
     } catch (error: any) {
       logger.error('Error creating conversation', 'CHAT_SERVICE', error);
       throw new AppError(500, 'Error al crear conversación');
+    }
+  }
+
+  async updateConversationStatus(conversationId: string, status: 'PENDING' | 'ACTIVE' | 'ARCHIVED') {
+    try {
+      const conversation = await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { status },
+      });
+
+      logger.info('Conversation status updated', 'CHAT_SERVICE', { conversationId, status });
+      return conversation;
+    } catch (error: any) {
+      logger.error('Error updating conversation status', 'CHAT_SERVICE', error);
+      throw new AppError(500, 'Error al actualizar estado de la conversación');
+    }
+  }
+
+  async activateConversationByBookingId(bookingId: string) {
+    try {
+      const conversation = await prisma.conversation.update({
+        where: { bookingId },
+        data: { status: 'ACTIVE' },
+      });
+
+      logger.info('Conversation activated by bookingId', 'CHAT_SERVICE', { bookingId, conversationId: conversation.id });
+      return conversation;
+    } catch (error: any) {
+      logger.error('Error activating conversation by bookingId', 'CHAT_SERVICE', error);
+      // No lanzamos error si no existe la conversación, solo loggueamos
+      return null;
     }
   }
 
@@ -215,6 +251,10 @@ export class ChatService {
       });
 
       logger.info('Message sent', 'CHAT_SERVICE', { messageId: message.id });
+      
+      // Emit to WebSocket Gateway
+      chatEmitter.emit('new_message', message, conversation);
+      
       return message;
     } catch (error: any) {
       if (error instanceof AppError) throw error;

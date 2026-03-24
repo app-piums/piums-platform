@@ -1,5 +1,5 @@
-'use client';
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,66 +25,13 @@ interface MockBooking {
   cancelReason?: string;
 }
 
-const BOOKINGS: MockBooking[] = [
-  {
-    id: '1',
-    status: 'confirmed',
-    title: 'Clase Magistral de Pintura Acrílica',
-    artistName: 'Elena Rodríguez',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80',
-    price: 45,
-    priceLabel: 'por sesión',
-    date: '24 Octubre, 2023',
-    timeStart: '10:00 AM',
-    timeEnd: '12:00 PM',
-    location: 'Estudio Creativo Norte, Av. Reforma 523',
-  },
-  {
-    id: '2',
-    status: 'pending',
-    title: 'Sesión de Grabación Estudio',
-    artistName: 'Marcos Velázquez',
-    imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=300&q=80',
-    price: 120,
-    priceLabel: 'total',
-    date: '28 Octubre, 2023',
-    timeStart: '04:00 PM',
-    timeEnd: '06:00 PM',
-    pendingNote: 'Esperando confirmación del artista. (Suele responder en menos de 24 horas)',
-  },
-  {
-    id: '3',
-    status: 'completed',
-    title: 'Asesoría de Negocios Creativos',
-    artistName: 'Carlos Valencia',
-    imageUrl: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=300&q=80',
-    price: 80,
-    priceLabel: 'por sesión',
-    date: '10 Octubre, 2023',
-    timeStart: '03:00 PM',
-    timeEnd: '04:00 PM',
-    modality: 'Online (Zoom)',
-  },
-  {
-    id: '4',
-    status: 'cancelled',
-    title: 'Taller de Escritura Creativa',
-    artistName: 'Sofía López',
-    imageUrl: 'https://images.unsplash.com/photo-1476242906366-d8eb64c2f661?w=300&q=80',
-    price: 60,
-    priceLabel: 'por sesión',
-    date: '15 Octubre, 2023',
-    timeStart: '11:00 AM',
-    timeEnd: '01:00 PM',
-    cancelReason: 'Cancelada por el artista Motivo: "Imprevisto de salud. Disculpa los molestias."',
-  },
-];
+const BOOKINGS: MockBooking[] = [];
 
 const STATS = [
-  { label: 'Reservas Totales', value: 12, icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
-  { label: 'Próximas',         value: 3,  icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
-  { label: 'Pendientes',       value: 1,  icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
-  { label: 'Completadas',      value: 8,  icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
+  { label: 'Reservas Totales', value: 0, icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
+  { label: 'Próximas',         value: 0, icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
+  { label: 'Pendientes',       value: 0, icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
+  { label: 'Completadas',      value: 0, icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
 ];
 
 type TabKey = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -96,11 +43,13 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'cancelled', label: 'Canceladas'         },
 ];
 
-const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700'  },
+  accepted:  { label: 'Aceptada',    className: 'bg-green-100 text-green-700'  },
   pending:   { label: 'Pendiente',  className: 'bg-yellow-100 text-yellow-700'},
   completed: { label: 'Completada', className: 'bg-blue-100 text-blue-700'   },
   cancelled: { label: 'Cancelada',  className: 'bg-red-100 text-red-600'     },
+  rejected:  { label: 'Rechazada',  className: 'bg-red-100 text-red-600'     },
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
@@ -117,8 +66,8 @@ function BookingCard({ b }: { b: MockBooking }) {
             height={192}
             className="w-full h-full object-cover"
           />
-          <span className={`absolute top-2 left-2 text-[11px] font-bold px-2.5 py-1 rounded-full ${cfg.className}`}>
-            • {cfg.label}
+          <span className={`absolute top-2 left-2 text-[11px] font-bold px-2.5 py-1 rounded-full ${cfg?.className || 'bg-gray-100 text-gray-600'}`}>
+            • {cfg?.label || b.status}
           </span>
         </div>
         <div className="flex-1 p-4 sm:p-5 flex flex-col gap-3">
@@ -226,8 +175,69 @@ export default function BookingsPage() {
   const userName = user?.nombre ?? user?.email ?? 'Usuario';
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [search, setSearch] = useState('');
+  const [bookings, setBookings] = useState<MockBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(STATS);
 
-  const filtered = BOOKINGS.filter(b => {
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        // Obtener token de la sesión (asumiendo que está en el contexto o localStorage)
+        const token = localStorage.getItem('token');
+        
+        const res = await fetch(`http://localhost:3005/api/bookings?clientId=${user.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) throw new Error('Error fetching bookings');
+        const data = await res.json();
+        
+        // El API suele devolver { bookings: [], total: X } o bien un array directo
+        const bookingsList = data?.bookings || data || [];
+
+        if (Array.isArray(bookingsList)) {
+          // Mapear datos reales al formato de la UI
+          const mappedBookings: MockBooking[] = bookingsList.map((b: any) => ({
+            id: b.id,
+            status: b.status.toLowerCase() as BookingStatus,
+            title: b.serviceName || 'Servicio Piums',
+            artistName: b.artistName || 'Artista Piums',
+            imageUrl: b.artistImage || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80',
+            price: Number(b.totalPrice),
+            priceLabel: 'total',
+            date: new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
+            timeStart: new Date(b.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            timeEnd: new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            location: b.location,
+          }));
+
+          setBookings(mappedBookings);
+
+          // Actualizar estadísticas
+          const newStats = [
+            { label: 'Reservas Totales', value: mappedBookings.length, icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
+            { label: 'Próximas',         value: mappedBookings.filter(b => b.status === 'confirmed').length, icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
+            { label: 'Pendientes',       value: mappedBookings.filter(b => b.status === 'pending').length, icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
+            { label: 'Completadas',      value: mappedBookings.filter(b => b.status === 'completed').length, icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
+          ];
+          setStats(newStats);
+        }
+      } catch (error) {
+        console.error('Error fetching real bookings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [user?.id]);
+
+  const filtered = bookings.filter(b => {
     const matchTab = activeTab === 'all' || b.status === activeTab;
     const matchSearch = b.title.toLowerCase().includes(search.toLowerCase()) ||
                         b.artistName.toLowerCase().includes(search.toLowerCase());
@@ -262,7 +272,7 @@ export default function BookingsPage() {
         <div className="flex-1 px-4 lg:px-6 py-6 space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {STATS.map(({ label, value, icon: Icon, color }) => (
+            {stats.map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4">
                 <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
                   <Icon className="h-5 w-5" />
@@ -289,7 +299,9 @@ export default function BookingsPage() {
           </div>
           {/* Cards */}
           <div className="space-y-4">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="py-16 text-center text-gray-400">Cargando tus reservas...</div>
+            ) : filtered.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center gap-3 text-center">
                 <BookIcon className="h-10 w-10 text-gray-200" />
                 <p className="text-gray-500 font-medium">No se encontraron reservas</p>

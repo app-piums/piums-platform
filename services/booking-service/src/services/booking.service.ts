@@ -4,7 +4,11 @@ import { logger } from "../utils/logger";
 import { notificationsClient } from "../clients/notifications.client";
 import { paymentsClient } from "../clients/payments.client";
 import { catalogClient } from "../clients/catalog.client";
+import { chatClient } from "../clients/chat.client";
 import { generateBookingCode } from "./booking-code.service";
+import { usersClient } from "../clients/users.client";
+import { artistsClient } from "../clients/artists.client";
+import { notifyBookingConfirmed } from "../utils/notifications";
 
 const prisma = new PrismaClient();
 
@@ -69,12 +73,46 @@ export class BookingService {
     // Generar código único para el booking
     const code = await generateBookingCode();
 
+    // Obtener detalles del artista para coordenadas base
+    const artist = await artistsClient.getArtist(data.artistId);
+    
+    // Resolver ubicación del cliente si no se proporcionan coordenadas
+    if ((!data.locationLat || !data.locationLng) && data.clientId) {
+      const user = await usersClient.getUser(data.clientId);
+      if (user && user.addresses && user.addresses.length > 0) {
+        const defaultAddr = user.addresses.find(a => a.isDefault) || user.addresses[0];
+        if (defaultAddr.lat && defaultAddr.lng) {
+          data.locationLat = defaultAddr.lat;
+          data.locationLng = defaultAddr.lng;
+          // Si no hay string de ubicación, usar el label o street
+          if (!data.location) {
+            data.location = defaultAddr.label || defaultAddr.street || `${defaultAddr.city}, ${defaultAddr.country}`;
+          }
+          logger.info(`Ubicación de cliente resuelta automáticamente: ${data.location}`, "BOOKING_SERVICE", {
+            lat: data.locationLat,
+            lng: data.locationLng
+          });
+        }
+      }
+    }
+
+    let distanceKm = 0;
+    if (artist && artist.baseLocationLat && artist.baseLocationLng && data.locationLat && data.locationLng) {
+      distanceKm = this.getDistance(
+        artist.baseLocationLat,
+        artist.baseLocationLng,
+        data.locationLat,
+        data.locationLng
+      );
+      logger.info(`Distancia calculada para reserva: ${distanceKm.toFixed(2)} km`, "BOOKING_SERVICE");
+    }
+
     // Obtener precio del servicio desde catalog-service
     const priceQuote = await catalogClient.calculatePrice({
       serviceId: data.serviceId,
       durationMinutes: data.durationMinutes,
       selectedAddonIds: data.selectedAddons || [],
-      distanceKm: data.locationLat && data.locationLng ? undefined : 0, // TODO: calcular distancia real
+      distanceKm,
     });
 
     if (!priceQuote) {
@@ -219,6 +257,15 @@ export class BookingService {
       priority: 'high',
       category: 'booking',
     }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+
+    // Crear conversación para el chat
+    chatClient.createConversation(data.clientId, data.artistId, booking.id)
+      .then(conv => {
+        if (conv) {
+          logger.info("Conversación de chat creada", "BOOKING_SERVICE", { bookingId: booking.id, conversationId: conv.conversation.id });
+        }
+      })
+      .catch(err => logger.error("Error creando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
 
     return {
       booking,
@@ -439,21 +486,51 @@ export class BookingService {
       artistId,
     });
 
-    // Enviar notificación al cliente de confirmación
-    notificationsClient.sendNotification({
-      userId: booking.clientId,
-      type: 'BOOKING_CONFIRMED',
-      channel: 'IN_APP',
-      title: 'Reserva Confirmada',
-      message: 'Tu reserva ha sido confirmada por el artista',
-      data: {
-        bookingId: id,
-        scheduledDate: booking.scheduledDate.toISOString(),
-        artistId,
-      },
-      priority: 'high',
-      category: 'booking',
-    }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+    // Enviar notificación al cliente de confirmación con datos reales
+    (async () => {
+      try {
+        const [user, artist, service] = await Promise.all([
+          usersClient.getUser(booking.clientId),
+          artistsClient.getArtist(booking.artistId),
+          catalogClient.getService(booking.serviceId)
+        ]);
+
+        const notificationData = {
+          bookingId: id,
+          bookingCode: booking.code || id.slice(0, 8),
+          clientId: booking.clientId,
+          clientName: user?.fullName || user?.firstName || 'Cliente',
+          clientEmail: user?.email || '',
+          artistId: booking.artistId,
+          artistName: artist?.artistName || 'Artista',
+          artistEmail: artist?.email || '',
+          artistCategory: artist?.category || 'Categoría',
+          artistImage: artist?.avatar || '',
+          serviceName: service?.name || 'Servicio',
+          scheduledDate: booking.scheduledDate.toISOString(),
+          durationMinutes: booking.durationMinutes,
+          location: booking.location || '',
+          servicePrice: Number(booking.totalPrice),
+          totalPrice: Number(booking.totalPrice),
+          currency: booking.currency,
+          depositRequired: booking.depositRequired,
+          depositAmount: Number(booking.depositAmount),
+        };
+
+        await notifyBookingConfirmed(notificationData);
+      } catch (err: any) {
+        logger.error('Error enviando notificación de confirmación', 'BOOKING_SERVICE', { error: err.message });
+      }
+    })();
+
+    // Activar conversación de chat
+    chatClient.activateConversation(id, booking.clientId)
+      .then(res => {
+        if (res) {
+          logger.info("Conversación de chat activada", "BOOKING_SERVICE", { bookingId: id });
+        }
+      })
+      .catch(err => logger.error("Error activando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
 
     return updated;
   }
@@ -1246,6 +1323,23 @@ export class BookingService {
       cancelled,
       totalRevenue: totalRevenue._sum.totalPrice || 0,
     };
+  }
+
+  /**
+   * Calcula la distancia entre dos puntos (Haversine formula)
+   */
+  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 }
 

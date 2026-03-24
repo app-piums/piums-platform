@@ -184,23 +184,25 @@ export const calculateServicePrice = async (
   }
 
   // ==================== CALCULAR VIAJE ====================
-
+  
   let travelCostCents = 0;
+  const DEFAULT_PRICE_PER_KM_CENTS = 2000; // Q 20.00 por km adicional por defecto
+  const DEFAULT_INCLUDED_KM = 10;          // 10 km incluidos por defecto
 
-  if (travelRules && distanceKm !== undefined && distanceKm > 0) {
-    const includedKm = travelRules.includedKm || 0;
+  if (distanceKm !== undefined && distanceKm > 0) {
+    const includedKm = travelRules?.includedKm ?? DEFAULT_INCLUDED_KM;
+    const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
     const extraKm = Math.max(0, distanceKm - includedKm);
-    const pricePerKmCents = travelRules.pricePerKmCents || 0;
 
-    // Validar distancia máxima
-    if (travelRules.maxDistanceKm && distanceKm > travelRules.maxDistanceKm) {
+    // Validar distancia máxima si existe regla
+    if (travelRules?.maxDistanceKm && distanceKm > travelRules.maxDistanceKm) {
       throw new Error(
         `Distance ${distanceKm}km exceeds maximum allowed ${travelRules.maxDistanceKm}km`
       );
     }
 
     if (extraKm > 0 && pricePerKmCents > 0) {
-      travelCostCents = extraKm * pricePerKmCents;
+      travelCostCents = Math.round(extraKm * pricePerKmCents);
       items.push({
         type: 'TRAVEL',
         name: `Desplazamiento (${extraKm.toFixed(1)} km adicionales)`,
@@ -212,6 +214,7 @@ export const calculateServicePrice = async (
           includedKm,
           extraKm,
           pricePerKm: pricePerKmCents,
+          isDefault: !travelRules || travelRules.pricePerKmCents === null,
         },
       });
     }

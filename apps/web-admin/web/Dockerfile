@@ -36,6 +36,8 @@ ENV DOCKER_BUILD=1
 # Build only the web-admin app (not the full monorepo)
 WORKDIR /app/apps/web-admin/web
 RUN pnpm build
+RUN mkdir -p public
+
 
 # ============================================================================
 # Stage 3: Runner
@@ -49,10 +51,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/apps/web-admin/web/public ./public
+# Copy built application
+RUN mkdir -p apps/web-admin/web/public
+COPY --from=builder /app/apps/web-admin/web/public ./apps/web-admin/web/public
 COPY --from=builder /app/apps/web-admin/web/.next/standalone ./
-COPY --from=builder /app/apps/web-admin/web/.next/static ./.next/static
+COPY --from=builder /app/apps/web-admin/web/.next/static ./apps/web-admin/web/.next/static
+
 
 RUN chown -R nextjs:nodejs /app
 
@@ -66,4 +70,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3003/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "server.js"]
+CMD ["node", "apps/web-admin/web/server.js"]
+

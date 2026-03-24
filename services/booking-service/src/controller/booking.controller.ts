@@ -17,6 +17,9 @@ import {
   searchBookingsSchema,
 } from "../schemas/booking.schema";
 import { rescheduleBookingSchema } from "../schemas/reschedule.schema";
+import { usersClient } from "../clients/users.client";
+import { artistsClient } from "../clients/artists.client";
+import { catalogClient } from "../clients/catalog.client";
 
 export class BookingController {
   // ==================== RESERVAS ====================
@@ -30,33 +33,39 @@ export class BookingController {
         scheduledDate: new Date(validatedData.scheduledDate),
       });
 
-      // Enviar notificaciones de forma asíncrona (no bloquea la respuesta)
-      // TODO: Obtener datos completos de cliente y artista desde users-service y artists-service
-      notifyBookingCreated({
-        bookingId: booking.id,
-        bookingCode: booking.code || `PIU-${new Date().getFullYear()}-${booking.id.slice(0, 6)}`,
-        clientId: booking.clientId,
-        clientName: 'Cliente', // TODO: Obtener desde users-service
-        clientEmail: 'client@example.com', // TODO: Obtener desde users-service
-        artistId: booking.artistId,
-        artistName: 'Artista', // TODO: Obtener desde artists-service
-        artistEmail: 'artist@example.com', // TODO: Obtener desde artists-service
-        artistCategory: 'Categoría', // TODO: Obtener desde artists-service
-        artistImage: '', // TODO: Obtener desde artists-service
-        serviceName: 'Servicio', // TODO: Obtener desde catalog-service
-        scheduledDate: booking.scheduledDate.toISOString(),
-        durationMinutes: booking.durationMinutes,
-        location: booking.location || 'Sin ubicación',
-        servicePrice: booking.servicePrice,
-        addonsPrice: booking.addonsPrice,
-        totalPrice: booking.totalPrice,
-        currency: booking.currency,
-        depositRequired: booking.depositRequired,
-        depositAmount: booking.depositAmount ?? undefined,
-        clientNotes: booking.clientNotes ?? undefined,
+      // Obtener datos reales de forma asíncrona para las notificaciones
+      Promise.all([
+        usersClient.getUser(booking.clientId),
+        artistsClient.getArtist(booking.artistId),
+        catalogClient.getService(booking.serviceId)
+      ]).then(([user, artist, service]) => {
+        notifyBookingCreated({
+          bookingId: booking.id,
+          bookingCode: booking.code || `PIU-${new Date().getFullYear()}-${booking.id.slice(0, 6)}`,
+          clientId: booking.clientId,
+          clientName: user?.fullName || user?.firstName || 'Cliente',
+          clientEmail: user?.email || 'client@example.com',
+          artistId: booking.artistId,
+          artistName: artist?.artistName || 'Artista',
+          artistEmail: artist?.email || 'artist@example.com',
+          artistCategory: artist?.category || 'Categoría',
+          artistImage: artist?.avatar || '',
+          serviceName: service?.name || 'Servicio',
+          scheduledDate: booking.scheduledDate.toISOString(),
+          durationMinutes: booking.durationMinutes,
+          location: booking.location || 'Sin ubicación',
+          servicePrice: booking.servicePrice,
+          addonsPrice: booking.addonsPrice,
+          totalPrice: booking.totalPrice,
+          currency: booking.currency,
+          depositRequired: booking.depositRequired,
+          depositAmount: booking.depositAmount ?? undefined,
+          clientNotes: booking.clientNotes ?? undefined,
+        }).catch(err => {
+          console.error('Error sending booking notifications:', err);
+        });
       }).catch(err => {
-        console.error('Error sending booking notifications:', err);
-        // No lanzar el error para no bloquear la respuesta
+        console.error('Error fetching data for notifications:', err);
       });
 
       res.status(201).json(booking);
@@ -150,9 +159,9 @@ export class BookingController {
   async confirmBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const artistId = req.user!.id;
+      const { artistNotes, artistId: bodyArtistId } = confirmBookingSchema.parse(req.body);
       
-      const { artistNotes } = confirmBookingSchema.parse(req.body);
+      const artistId = bodyArtistId || req.user!.id;
 
       const booking = await bookingService.confirmBooking(id, artistId, artistNotes);
       res.json(booking);
@@ -164,9 +173,9 @@ export class BookingController {
   async rejectBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const artistId = req.user!.id;
+      const { reason, artistId: bodyArtistId } = rejectBookingSchema.parse(req.body);
       
-      const { reason } = rejectBookingSchema.parse(req.body);
+      const artistId = bodyArtistId || req.user!.id;
 
       const booking = await bookingService.rejectBooking(id, artistId, reason);
       res.json(booking);
@@ -397,13 +406,19 @@ export class BookingController {
         return res.status(403).json({ message: "No tienes permiso para descargar este PDF" });
       }
 
-      // TODO: Obtener datos completos de cliente, artista y servicio
+      // Obtener datos completos de cliente, artista y servicio
+      const [user, artist, service] = await Promise.all([
+        usersClient.getUser(booking.clientId),
+        artistsClient.getArtist(booking.artistId),
+        catalogClient.getService(booking.serviceId)
+      ]);
+
       const bookingData = {
         ...booking,
-        clientName: 'Cliente', // TODO: Obtener desde users-service
-        artistName: 'Artista', // TODO: Obtener desde artists-service
-        artistCategory: 'Categoría', // TODO: Obtener desde artists-service
-        serviceName: 'Servicio', // TODO: Obtener desde catalog-service
+        clientName: user?.fullName || user?.firstName || 'Cliente',
+        artistName: artist?.artistName || 'Artista',
+        artistCategory: artist?.category || 'Categoría',
+        serviceName: service?.name || 'Servicio',
       };
 
       // Generar PDF

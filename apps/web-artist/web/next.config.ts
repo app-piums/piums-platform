@@ -3,12 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  output: process.env.DOCKER_BUILD === '1' ? 'standalone' : undefined,
+  output: 'standalone',
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.GATEWAY_INTERNAL_URL || 'http://localhost:3000'}/api/:path*`,
+        destination: `${process.env.GATEWAY_INTERNAL_URL || 'http://gateway:3000'}/api/:path*`,
+
       },
     ];
   },

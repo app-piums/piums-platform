@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     // Retornar información del usuario
     return NextResponse.json({
       user: {
-        id: data.userId,
+        id: data.id || data.userId,
         nombre: data.nombre,
         email: data.email,
         pais: data.pais,

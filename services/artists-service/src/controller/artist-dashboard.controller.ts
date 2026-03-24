@@ -115,16 +115,13 @@ export const acceptBooking = async (
       throw new AppError(401, "No autenticado");
     }
     const artist = await artistsService.getArtistByAuthId(authId);
-    const bookingId = req.params.id;
-    // TODO: Llamar al booking-service para aceptar la reserva
-    // const success = await bookingServiceClient.confirmBooking(bookingId, artist.id);
-    // if (!success) {
-    //   throw new AppError(500, "Error al aceptar la reserva");
-    // }
-
-    // TODO: Llamar al booking-service para aceptar la reserva
-    // Verificar que la reserva pertenezca al artista
-    // Cambiar status a CONFIRMED
+    const bookingId = req.params.id as string;
+    const authToken = req.headers.authorization?.substring(7);
+    const success = await bookingServiceClient.confirmBooking(bookingId, artist.id, authToken);
+    
+    if (!success) {
+      throw new AppError(500, "Error al aceptar la reserva");
+    }
 
     logger.info("Reserva aceptada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
     res.json({ 
@@ -153,11 +150,13 @@ export const declineBooking = async (
     const artist = await artistsService.getArtistByAuthId(authId);
     const bookingId = req.params.id as string;
     const reason = req.body.reason as string | undefined;
+    const authToken = req.headers.authorization?.substring(7);
     // TODO: Llamar al booking-service para rechazar la reserva
     const success = await bookingServiceClient.rejectBooking(
       bookingId,
       artist.id,
-      reason || "Sin razón especificada"
+      reason || "Sin razón especificada",
+      authToken
     );
 
     if (!success) {

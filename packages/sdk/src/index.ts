@@ -7,6 +7,7 @@ export interface Artist {
   email?: string;
   categoria?: string;
   ciudad?: string;
+  city?: string;
   rating?: number;
   precioDesde?: number;
   imagenPerfil?: string;
@@ -20,6 +21,7 @@ export interface Artist {
   bookingsCount?: number;
   experienceYears?: number;
   cityId?: string;
+  coverageRadius?: number;
 }
 
 export interface PortfolioItem {

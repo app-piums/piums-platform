@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 
 const CHAT_SOCKET_URL =
-  process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4007';
+  process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4010';
 
 export default function ChatPage() {
   const router = useRouter();
@@ -168,7 +168,7 @@ export default function ChatPage() {
       if (!res.ok) throw new Error('Error al enviar mensaje');
       const msg = await res.json();
       const newMsg: Message = msg.message ?? msg;
-      setMessages(prev => [...prev, newMsg]);
+      setMessages(prev => (prev.find(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
       setConversations(prev =>
         prev.map(c =>
           c.id === currentConversation.id

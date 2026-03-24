@@ -66,11 +66,13 @@ export const cancelBookingSchema = z.object({
 // Schema para confirmar reserva
 export const confirmBookingSchema = z.object({
   artistNotes: z.string().max(1000).optional(),
+  artistId: z.string().optional(),
 });
 
 // Schema para rechazar reserva
 export const rejectBookingSchema = z.object({
   reason: z.string().min(10, "La razón debe tener al menos 10 caracteres").max(500),
+  artistId: z.string().optional(),
 });
 
 // Schema para marcar pago

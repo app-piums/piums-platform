@@ -520,14 +520,15 @@ function BookingContent() {
         id: `${item.type}-${index}`,
         label: item.name,
         amount: centsToUnits(item.totalPriceCents),
-        type:
+        type: (
           item.type === 'ADDON'
             ? 'addon'
             : item.type === 'DISCOUNT'
             ? 'discount'
             : item.type === 'TRAVEL'
             ? 'fee'
-            : 'base',
+            : 'base'
+        ) as "addon" | "discount" | "fee" | "base" | "tax" | undefined,
       }));
 
       const hasTravelFee = priceQuote.items.some((item) => item.type === 'TRAVEL');
@@ -879,7 +880,7 @@ function BookingContent() {
                       <div className="space-y-4">
                         <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                           <p className="text-sm text-gray-700">
-                            {artist.nombre} se desplaza desde {artist.ciudad || 'una ubicación aún no publicada'}.
+                            {artist.nombre} se desplaza desde {artist.baseLocationLabel || artist.city || 'una ubicación aún no publicada'}.
                           </p>
                           {artist.coverageRadius ? (
                             <p className="text-xs text-gray-500 mt-2">
@@ -1196,7 +1197,7 @@ function BookingContent() {
                     <div>
                       <p className="text-xs uppercase tracking-wide text-gray-500">Artista</p>
                       <p className="font-medium text-gray-900">
-                        {artist.ciudad || 'Ubicación pendiente'}
+                        {artist.baseLocationLabel || artist.city || 'Ubicación pendiente'}
                       </p>
                       {artist.coverageRadius && (
                         <p className="text-xs text-gray-500">

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { artistsClient, type ArtistData } from '../clients/artists.client';
 import { catalogClient, type ServiceData } from '../clients/catalog.client';
 import { reviewsClient } from '../clients/reviews.client';
+import { bookingClient } from '../clients/booking.client';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import type {
@@ -336,19 +337,22 @@ export class SearchService {
       // Fetch artist services from catalog-service
       const services = await catalogClient.getServicesByArtist(artistId);
 
-      // Build index data
-      const indexData = {
-        id: artist.id,
-        name: artist.name,
-        email: artist.email,
-        bio: artist.bio,
-        specialties: artist.specialties || [],
-        city: artist.city,
-        state: artist.state,
-        country: artist.country,
-        averageRating: rating?.averageRating || 0,
-        totalReviews: rating?.totalReviews || 0,
-        totalBookings: 0, // TODO: Add booking stats
+        // Fetch artist stats from booking-service
+        const stats = await bookingClient.getArtistStats(artistId);
+
+        // Build index data
+        const indexData = {
+          id: artist.id,
+          name: artist.name,
+          email: artist.email,
+          bio: artist.bio,
+          specialties: artist.specialties || [],
+          city: artist.city,
+          state: artist.state,
+          country: artist.country,
+          averageRating: rating?.averageRating || 0,
+          totalReviews: rating?.totalReviews || 0,
+          totalBookings: stats?.total || 0,
         responseRate: rating?.responseRate || 0,
         hourlyRateMin: artist.minHourlyRate,
         hourlyRateMax: artist.maxHourlyRate,
@@ -393,29 +397,32 @@ export class SearchService {
       // Fetch artist rating
       const rating = await reviewsClient.getArtistRating(service.artistId);
 
-      // Build index data
-      const indexData = {
-        id: service.id,
-        artistId: service.artistId,
-        artistName: artist.name,
-        title: service.title,
-        description: service.description,
-        category: service.category,
-        tags: service.tags || [],
-        price: service.price,
-        currency: service.currency,
-        pricingType: service.pricingType,
-        duration: service.duration,
-        capacity: service.capacity,
-        city: service.location?.city || artist.city,
-        state: service.location?.state || artist.state,
-        country: service.location?.country || artist.country,
-        artistRating: rating?.averageRating || 0,
-        artistReviews: rating?.totalReviews || 0,
-        artistBookings: 0, // TODO: Add booking stats
-        isActive: service.isActive,
-        isAvailable: service.isAvailable,
-        totalBookings: 0, // TODO: Add service booking stats
+        // Fetch artist stats from booking-service
+        const stats = await bookingClient.getArtistStats(service.artistId);
+
+        // Build index data
+        const indexData = {
+          id: service.id,
+          artistId: service.artistId,
+          artistName: artist.name,
+          title: service.title,
+          description: service.description,
+          category: service.category,
+          tags: service.tags || [],
+          price: service.price,
+          currency: service.currency,
+          pricingType: service.pricingType,
+          duration: service.duration,
+          capacity: service.capacity,
+          city: service.location?.city || artist.city,
+          state: service.location?.state || artist.state,
+          country: service.location?.country || artist.country,
+          artistRating: rating?.averageRating || 0,
+          artistReviews: rating?.totalReviews || 0,
+          artistBookings: stats?.total || 0,
+          isActive: service.isActive,
+          isAvailable: service.isAvailable,
+          totalBookings: stats?.completed || 0,
         lastSyncedAt: new Date()
       };
 
