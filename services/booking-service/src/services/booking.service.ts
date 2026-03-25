@@ -390,23 +390,28 @@ export class BookingService {
       selectedAddons?: string[];
       clientNotes?: string;
       artistNotes?: string;
+      reviewId?: string;
     }
   ) {
     const booking = await this.getBookingById(id);
 
-    // Verificar permisos
-    if (booking.clientId !== userId && booking.artistId !== userId) {
-      throw new AppError(403, "No tienes permiso para modificar esta reserva");
-    }
+    // If only setting reviewId (internal service call), skip permission/status checks
+    const isReviewIdOnly = data.reviewId && Object.keys(data).length === 1;
+    if (!isReviewIdOnly) {
+      // Verificar permisos
+      if (booking.clientId !== userId && booking.artistId !== userId) {
+        throw new AppError(403, "No tienes permiso para modificar esta reserva");
+      }
 
-    // No permitir modificaciones si ya está cancelada o completada
-    if (
-      booking.status === "CANCELLED_CLIENT" ||
-      booking.status === "CANCELLED_ARTIST" ||
-      booking.status === "COMPLETED" ||
-      booking.status === "REJECTED"
-    ) {
-      throw new AppError(400, "No se puede modificar una reserva cerrada");
+      // No permitir modificaciones si ya está cancelada o completada
+      if (
+        booking.status === "CANCELLED_CLIENT" ||
+        booking.status === "CANCELLED_ARTIST" ||
+        booking.status === "COMPLETED" ||
+        booking.status === "REJECTED"
+      ) {
+        throw new AppError(400, "No se puede modificar una reserva cerrada");
+      }
     }
 
     // Si cambia la fecha, verificar disponibilidad
@@ -438,6 +443,7 @@ export class BookingService {
         selectedAddons: data.selectedAddons,
         clientNotes: data.clientNotes,
         artistNotes: data.artistNotes,
+        reviewId: data.reviewId,
       },
     });
 
@@ -1325,6 +1331,121 @@ export class BookingService {
     };
   }
 
+  // ...existing code...
+
+  /**
+   * Obtiene estadísticas globales para el admin
+   */
+  async getAdminStats() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const [
+      stats,
+      revenueThisMonth,
+      bookingsThisMonth,
+      bookingsByMonth
+    ] = await Promise.all([
+      this.getBookingStats(),
+      prisma.booking.aggregate({
+        where: {
+          paymentStatus: "FULLY_PAID",
+          paidAt: { gte: startOfMonth }
+        },
+        _sum: { totalPrice: true }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startOfMonth } }
+      }),
+      this.getBookingsByMonth(6)
+    ]);
+
+    return {
+      ...stats,
+      revenueThisMonth: revenueThisMonth._sum.totalPrice || 0,
+      bookingsThisMonth,
+      bookingsByMonth
+    };
+  }
+
+  /**
+   * Obtiene conteo de bookings por mes
+   */
+  private async getBookingsByMonth(monthsCount: number) {
+    const result = [];
+    const now = new Date();
+    
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      
+      const count = await prisma.booking.count({
+        where: {
+          createdAt: {
+            gte: d,
+            lt: nextD
+          }
+        }
+      });
+      
+      const monthName = d.toLocaleString('es-ES', { month: 'short' });
+      result.push({ month: monthName, count });
+    }
+    
+    return result;
+  }
+
+  /**
+   * Búsqueda avanzada para admin
+   */
+  async adminSearchBookings(filters: {
+    search?: string;
+    status?: BookingStatus;
+    page: number;
+    limit: number;
+  }) {
+    const { search, status, page, limit } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { id: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { clientId: { contains: search, mode: 'insensitive' } },
+        { artistId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          statusHistory: {
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
+        }
+      }),
+      prisma.booking.count({ where })
+    ]);
+
+    return {
+      bookings,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
   /**
    * Calcula la distancia entre dos puntos (Haversine formula)
    */
@@ -1340,6 +1461,26 @@ export class BookingService {
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  async getUserStats(userId: string) {
+    const total = await prisma.booking.count({
+      where: { clientId: userId, deletedAt: null }
+    });
+    return { total };
+  }
+
+  async getBatchStats(artistIds: string[]) {
+    const stats = await prisma.booking.groupBy({
+      by: ['artistId'],
+      where: { artistId: { in: artistIds }, deletedAt: null },
+      _count: { id: true }
+    });
+    
+    return stats.reduce((acc: any, s: any) => {
+      acc[s.artistId] = { total: s._count.id };
+      return acc;
+    }, {});
   }
 }
 

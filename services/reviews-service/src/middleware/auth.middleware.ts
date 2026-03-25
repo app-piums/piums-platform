@@ -5,8 +5,9 @@ import { AppError } from "./errorHandler";
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 interface JwtPayload {
-  userId: string;
+  id: string;
   email: string;
+  role: string;
 }
 
 declare global {

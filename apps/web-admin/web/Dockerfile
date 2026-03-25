@@ -29,6 +29,9 @@ COPY --from=deps /app/packages ./packages
 
 COPY . .
 
+# Ensure local node_modules exist for sub-package (next binary lives here)
+RUN cd apps/web-admin/web && pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=1

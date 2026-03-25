@@ -173,7 +173,7 @@ function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
-  
+
   const sanitizeParam = (value: string | null) => {
     if (!value || value === 'undefined' || value === 'null') {
       return null;
@@ -184,7 +184,7 @@ function BookingContent() {
   const artistId = sanitizeParam(searchParams.get('artistId'));
   const serviceId = sanitizeParam(searchParams.get('serviceId'));
   const [resolvedArtistId, setResolvedArtistId] = useState<string | null>(artistId);
-  
+
   const [step, setStep] = useState<BookingStep>('service');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -196,7 +196,7 @@ function BookingContent() {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  
+
   // Form state
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -263,7 +263,7 @@ function BookingContent() {
     const [first] = availability;
     return new Date(`${first.date}T00:00:00`);
   }, [availability]);
-  
+
   const bookingRedirectTarget = useMemo(() => {
     const params = new URLSearchParams();
     const artistParam = resolvedArtistId || artistId;
@@ -524,10 +524,10 @@ function BookingContent() {
           item.type === 'ADDON'
             ? 'addon'
             : item.type === 'DISCOUNT'
-            ? 'discount'
-            : item.type === 'TRAVEL'
-            ? 'fee'
-            : 'base'
+              ? 'discount'
+              : item.type === 'TRAVEL'
+                ? 'fee'
+                : 'base'
         ) as "addon" | "discount" | "fee" | "base" | "tax" | undefined,
       }));
 
@@ -701,9 +701,9 @@ function BookingContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Breadcrumbs 
+        <Breadcrumbs
           items={[
             { label: 'Inicio', href: '/' },
             { label: 'Artistas', href: '/artists' },
@@ -712,10 +712,10 @@ function BookingContent() {
           ]}
           className="mb-6"
         />
-        
+
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Nueva Reserva</h1>
         <p className="text-gray-600 mb-8">Completa los siguientes pasos para confirmar tu reserva</p>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -725,13 +725,12 @@ function BookingContent() {
                 {steps.map((s, idx) => (
                   <React.Fragment key={s.key}>
                     <div className="flex items-center">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all ${
-                        step === s.key 
-                          ? 'bg-[#FF6A00] text-white ring-4 ring-[#FF6A00]/20' 
-                          : idx < currentStepIndex 
-                            ? 'bg-green-500 text-white' 
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all ${step === s.key
+                          ? 'bg-[#FF6A00] text-white ring-4 ring-[#FF6A00]/20'
+                          : idx < currentStepIndex
+                            ? 'bg-green-500 text-white'
                             : 'bg-gray-200 text-gray-600'
-                      }`}>
+                        }`}>
                         {idx < currentStepIndex ? (
                           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -740,16 +739,14 @@ function BookingContent() {
                           idx + 1
                         )}
                       </div>
-                      <span className={`ml-2 text-sm font-medium hidden sm:block transition-colors ${
-                        step === s.key ? 'text-[#FF6A00]' : 'text-gray-700'
-                      }`}>
+                      <span className={`ml-2 text-sm font-medium hidden sm:block transition-colors ${step === s.key ? 'text-[#FF6A00]' : 'text-gray-700'
+                        }`}>
                         {s.label}
                       </span>
                     </div>
                     {idx < steps.length - 1 && (
-                      <div className={`flex-1 h-1 mx-2 transition-all ${
-                        idx < currentStepIndex ? 'bg-green-500' : 'bg-gray-200'
-                      }`} />
+                      <div className={`flex-1 h-1 mx-2 transition-all ${idx < currentStepIndex ? 'bg-green-500' : 'bg-gray-200'
+                        }`} />
                     )}
                   </React.Fragment>
                 ))}
@@ -781,11 +778,10 @@ function BookingContent() {
                         services.map((service) => (
                           <div
                             key={service.id}
-                            className={`group p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                              selectedService?.id === service.id
+                            className={`group p-6 border-2 rounded-lg cursor-pointer transition-all ${selectedService?.id === service.id
                                 ? 'border-[#FF6A00] bg-[#FF6A00]/5 shadow-md'
                                 : 'border-gray-200 hover:border-[#FF6A00]/50 hover:shadow-sm'
-                            }`}
+                              }`}
                             onClick={() => handleServiceSelect(service)}
                           >
                             <div className="flex justify-between items-start">
@@ -968,11 +964,10 @@ function BookingContent() {
                             {addons.map((addon) => (
                               <div
                                 key={addon.id}
-                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                  selectedAddons.includes(addon.id)
+                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAddons.includes(addon.id)
                                     ? 'border-[#00AEEF] bg-[#00AEEF]/5'
                                     : 'border-gray-200 hover:border-gray-300'
-                                }`}
+                                  }`}
                                 onClick={() => toggleAddon(addon.id)}
                               >
                                 <div className="flex items-start">
@@ -980,7 +975,7 @@ function BookingContent() {
                                     <input
                                       type="checkbox"
                                       checked={selectedAddons.includes(addon.id)}
-                                      onChange={() => {}}
+                                      onChange={() => { }}
                                       className="h-4 w-4 text-[#00AEEF] focus:ring-[#00AEEF] border-gray-300 rounded"
                                     />
                                   </div>

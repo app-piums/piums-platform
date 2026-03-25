@@ -94,9 +94,29 @@ router.post(
 
 // Obtener reportes pendientes (admin)
 router.get(
-  "/reports/pending",
+  "/admin/reports/pending",
   auth,
   asHandler(reviewController.getPendingReports.bind(reviewController))
+);
+
+// Resolver reporte (admin)
+router.patch(
+  "/admin/reports/:id/resolve",
+  auth,
+  asHandler(reviewController.resolveReport.bind(reviewController))
+);
+
+// Obtener estadísticas de reportes para el dashboard (admin)
+router.get(
+  "/admin/stats",
+  auth,
+  asHandler(reviewController.getAdminStats.bind(reviewController))
+);
+
+router.post(
+  "/admin/batch-ratings",
+  auth,
+  asHandler(reviewController.getBatchRatings.bind(reviewController))
 );
 
 // ==================== ARTIST RATINGS ====================
@@ -105,6 +125,12 @@ router.get(
 router.get(
   "/artists/:artistId/rating",
   asHandler(reviewController.getArtistRating.bind(reviewController))
+);
+
+// Obtener estadísticas de un usuario específico (admin/internal)
+router.get(
+  "/users/:userId/stats",
+  asHandler(reviewController.getUserStats.bind(reviewController))
 );
 
 // Recalcular estadísticas de artista (admin/internal)

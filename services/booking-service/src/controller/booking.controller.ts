@@ -387,6 +387,52 @@ export class BookingController {
     }
   }
 
+  async getUserStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+      const stats = await bookingService.getUserStats(userId as string);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getBatchStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { artistIds } = req.body;
+      const stats = await bookingService.getBatchStats(artistIds);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAdminStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      // TODO: Verificar que el usuario es admin (podría hacerse vía middleware)
+      const stats = await bookingService.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async adminSearchBookings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const query = {
+        search: req.query.search as string,
+        status: req.query.status as any,
+        page: req.query.page ? parseInt(req.query.page as string) : 1,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      };
+
+      const result = await bookingService.adminSearchBookings(query);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   /**
    * Genera y descarga un PDF con los detalles de la reserva
    * GET /api/bookings/:id/pdf

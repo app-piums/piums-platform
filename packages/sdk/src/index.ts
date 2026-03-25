@@ -593,9 +593,9 @@ class PiumsSDK {
     }
 
     if (typeof document !== 'undefined') {
-      const match = document.cookie?.match(/(?:^|;\s*)token=([^;]+)/);
+      const match = document.cookie?.match(/(?:^|;\s*)(auth_token|token)=([^;]+)/);
       if (match) {
-        const cookieToken = decodeURIComponent(match[1]);
+        const cookieToken = decodeURIComponent(match[2]);
         this.authToken = cookieToken;
         return cookieToken;
       }
@@ -607,7 +607,10 @@ class PiumsSDK {
   private withAuth(options?: RequestInit): RequestInit {
     const token = this.getAuthToken();
     if (!token) {
-      return options ? { ...options } : {};
+      return {
+        ...(options || {}),
+        credentials: 'include'
+      };
     }
 
     const headers = new Headers(options?.headers || {});
@@ -618,6 +621,7 @@ class PiumsSDK {
     return {
       ...options,
       headers,
+      credentials: 'include',
     };
   }
 
@@ -1257,18 +1261,24 @@ class PiumsSDK {
    */
   async createReview(payload: CreateReviewPayload): Promise<ReviewDetailed> {
     try {
-      const response = await fetch(`${this.baseUrl}/reviews/reviews`, {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews`, this.withAuth({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(payload),
-      });
+      }));
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const error = await response.json();
+          errorMessage = error.message || errorMessage;
+        } catch {
+          const text = await response.text().catch(() => '');
+          if (text) errorMessage = text;
+        }
+        throw new Error(errorMessage);
       }
       
       return await response.json();

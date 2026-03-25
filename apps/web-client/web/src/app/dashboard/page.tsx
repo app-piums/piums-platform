@@ -112,7 +112,7 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
           <p className="text-sm text-gray-400 text-center py-3">Sin reservas próximas</p>
         ) : (
           upcomingBookings.map(b => (
-            <Link key={b.id} href={`/bookings`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+            <Link key={b.id} href={`/bookings/${b.id}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
               <span className="h-2.5 w-2.5 rounded-full shrink-0 bg-orange-400" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate">{b.serviceName || 'Reserva'}</p>
@@ -289,8 +289,8 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <Link href="/bookings" className="mt-3 block text-center text-sm font-medium text-[#FF6A00] hover:underline">
-                  Ver detalles →
+                <Link href={nextBooking ? `/bookings/${nextBooking.id}` : "/bookings"} className="mt-3 block text-center text-sm font-medium text-[#FF6A00] hover:underline">
+                  {nextBooking ? 'Ver detalles →' : 'Ver todas →'}
                 </Link>
               </div>
             </div>

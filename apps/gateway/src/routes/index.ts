@@ -123,9 +123,16 @@ export const setupRoutes = (app: Express) => {
                 _end.call(res);
               }
             });
-
             return;
           }
+
+          // Fallback: If not /me, just pipe the response back
+          // Required because selfHandleResponse is true
+          res.statusCode = proxyRes.statusCode || 200;
+          Object.keys(proxyRes.headers).forEach(key => {
+            res.setHeader(key, proxyRes.headers[key]!);
+          });
+          proxyRes.pipe(res);
         }
       },
       selfHandleResponse: true // Requerido para interceptar el body

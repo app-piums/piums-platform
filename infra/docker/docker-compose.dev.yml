@@ -97,6 +97,10 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       REFRESH_SECRET: dev_refresh_secret_CHANGE_IN_PRODUCTION
       REDIS_URL: redis://redis:6379
+      BOOKING_SERVICE_URL: http://booking-service:4008
+      REVIEWS_SERVICE_URL: http://reviews-service:4006
+      USERS_SERVICE_URL: http://users-service:4002
+      ARTISTS_SERVICE_URL: http://artists-service:4003
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
@@ -202,6 +206,8 @@ services:
       PORT: 4006
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_reviews
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      BOOKING_SERVICE_URL: http://booking-service:4008
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:
@@ -369,6 +375,7 @@ services:
       GATEWAY_URL: http://gateway:3000/api
       AUTH_SERVICE_URL: http://auth-service:4001
       NEXT_PUBLIC_APP_URL: http://localhost:3002
+      NEXT_PUBLIC_API_URL: http://localhost:3005/api
     depends_on:
       - gateway
     networks:

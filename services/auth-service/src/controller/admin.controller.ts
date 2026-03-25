@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
+import { bookingClient } from '../clients/booking.client';
+import { reviewsClient } from '../clients/reviews.client';
 
 // GET /api/admin/stats - Métricas generales
 export const getStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -8,43 +10,36 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
     // Obtener stats de diferentes servicios
     // Nota: En producción, estos datos vendrían de los microservicios correspondientes
     
-    const [totalUsers, totalArtists, recentUsers] = await Promise.all([
-      // Total usuarios (simulado - en producción vendría de users-service)
+    const [
+      totalUsers, 
+      totalArtists, 
+      recentUsers,
+      bookingStats,
+      reportStats
+    ] = await Promise.all([
       prisma.user.count(),
-      
-      // Total artistas (simulado - vendría de artists-service)
-      prisma.user.count({ where: { role: 'artist' } }),
-      
-      // Usuarios nuevos esta semana
+      prisma.user.count({ where: { role: 'artista' } }),
       prisma.user.count({
         where: {
           createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           }
         }
-      })
+      }),
+      bookingClient.getStats(),
+      reviewsClient.getStats(req.headers.authorization)
     ]);
 
-    // Datos simulados para demo (en producción vendrían de los servicios)
     const stats = {
       totalUsers,
       totalArtists,
-      totalBookings: 45, // Vendría de booking-service
-      totalRevenue: 12500.00, // Vendría de payments-service
+      totalBookings: bookingStats.total,
+      totalRevenue: bookingStats.totalRevenue / 100, // Convertir de centavos a moneda
       recentUsers,
-      bookingsThisMonth: 15,
-      revenueThisMonth: 4200.00,
-      pendingReports: 3,
-      
-      // Bookings por mes (últimos 6 meses)
-      bookingsByMonth: [
-        { month: 'Sep', count: 8 },
-        { month: 'Oct', count: 12 },
-        { month: 'Nov', count: 15 },
-        { month: 'Dec', count: 18 },
-        { month: 'Jan', count: 22 },
-        { month: 'Feb', count: 15 }
-      ]
+      bookingsThisMonth: bookingStats.bookingsThisMonth || 0,
+      revenueThisMonth: (bookingStats.revenueThisMonth || 0) / 100,
+      pendingReports: reportStats.pendingCount,
+      bookingsByMonth: bookingStats.bookingsByMonth || []
     };
 
     logger.info('Admin stats retrieved', 'ADMIN_CONTROLLER', { adminId: (req as any).user?.id });
@@ -73,7 +68,7 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
     }
     
     if (role) {
-      where.role = role;
+      where.role = role === 'user' ? 'cliente' : (role === 'artist' ? 'artista' : role);
     }
 
     const [users, total] = await Promise.all([
@@ -150,7 +145,7 @@ export const getArtists = async (req: Request, res: Response, next: NextFunction
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const take = parseInt(limit as string);
 
-    const where: any = { role: 'artist' };
+    const where: any = { role: 'artista' };
     
     if (search) {
       where.OR = [
@@ -188,6 +183,12 @@ export const getArtists = async (req: Request, res: Response, next: NextFunction
       count: artists.length 
     });
 
+    const artistIds = artists.map((a: any) => a.id);
+    const [bookingStats, reviewStats] = await Promise.all([
+      bookingClient.getBatchStats(artistIds),
+      reviewsClient.getBatchStats(artistIds, req.headers.authorization)
+    ]);
+
     const normalized = artists.map((a: any) => ({
       id: a.id,
       userId: a.id,
@@ -198,8 +199,8 @@ export const getArtists = async (req: Request, res: Response, next: NextFunction
       isVerified: a.isVerified ?? false,
       isActive: !a.isBlocked,
       createdAt: a.createdAt,
-      rating: null,
-      totalBookings: 0,
+      rating: reviewStats[a.id]?.rating || null,
+      totalBookings: bookingStats[a.id]?.total || 0,
     }));
 
     const totalPages = Math.ceil(total / take);
@@ -217,7 +218,7 @@ export const verifyArtist = async (req: Request, res: Response, next: NextFuncti
     const { isVerified } = req.body;
 
     const artist = await prisma.user.update({
-      where: { id, role: 'artist' },
+      where: { id, role: 'artista' },
       data: { isVerified }
     });
 
@@ -236,71 +237,89 @@ export const verifyArtist = async (req: Request, res: Response, next: NextFuncti
 // GET /api/admin/bookings - Lista todas las reservas
 export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20', status = '' } = req.query;
+    const { page = '1', limit = '20', search = '', status = '' } = req.query;
+    logger.info(`ADMIN_GET_BOOKINGS_DIAG: page=${page}, search=${search}, status=${status}`, 'ADMIN_CONTROLLER');
     
-    // En producción, esto vendría del booking-service
-    // Datos simulados para demo
-    const bookings = [
-      {
-        id: '1',
-        userId: 'user1',
-        artistId: 'artist1',
-        userName: 'Juan Pérez',
-        artistName: 'María García',
-        service: 'Tatuaje pequeño',
-        date: '2026-03-01',
-        status: 'confirmed',
-        amount: 150.00,
-        createdAt: '2026-02-20'
-      },
-      {
-        id: '2',
-        userId: 'user2',
-        artistId: 'artist2',
-        userName: 'Ana López',
-        artistName: 'Carlos Ruiz',
-        service: 'Piercing nariz',
-        date: '2026-02-28',
-        status: 'pending',
-        amount: 80.00,
-        createdAt: '2026-02-19'
-      }
-    ];
-
-    logger.info('Admin retrieved bookings list', 'ADMIN_CONTROLLER', { 
-      adminId: (req as any).user?.id 
-    });
-
-    const STATUS_ES: Record<string, string> = {
-      pending: 'pendiente',
-      confirmed: 'confirmado',
-      completed: 'completado',
-      cancelled: 'cancelado',
-      canceled: 'cancelado',
-      disputed: 'disputa',
+    // Mapear estado de español (frontend) a inglés (backend/DB)
+    const STATUS_MAP: Record<string, string> = {
+      'pendiente': 'PENDING',
+      'confirmado': 'CONFIRMED',
+      'completado': 'COMPLETED',
+      'cancelado': 'CANCELLED_CLIENT',
+      'disputa': 'IN_PROGRESS',
     };
 
-    const normalized = bookings.map((b: any) => {
-      const rawStatus = b.status ?? b.estado ?? 'pendiente';
-      return {
-        id: b.id,
-        clienteNombre: b.userName ?? b.clienteNombre ?? '—',
-        clienteEmail: b.userEmail ?? b.clienteEmail ?? '—',
-        artistaNombre: b.artistName ?? b.artistaNombre ?? '—',
-        servicio: b.service ?? b.servicio ?? '—',
-        fecha: b.date ?? b.fecha ?? b.createdAt,
-        estado: STATUS_ES[rawStatus] ?? rawStatus,
-        monto: typeof b.amount === 'number' ? b.amount : (typeof b.monto === 'number' ? b.monto : null),
-        createdAt: b.createdAt,
-      };
+    const mappedStatus = status && STATUS_MAP[status as string] ? STATUS_MAP[status as string] : status;
+
+    // Si la búsqueda parece un email, intentar encontrar el ID del usuario primero
+    let effectiveSearch = search as string;
+    if (effectiveSearch.includes('@')) {
+      const foundUser = await prisma.user.findUnique({
+        where: { email: effectiveSearch.toLowerCase() },
+        select: { id: true }
+      });
+      if (foundUser) {
+        effectiveSearch = foundUser.id;
+        logger.info(`Búsqueda por email resuelta a ID: ${effectiveSearch}`, 'ADMIN_CONTROLLER');
+      }
+    }
+
+    const result = await bookingClient.listBookings({
+      page,
+      limit,
+      search: effectiveSearch,
+      status: mappedStatus
     });
 
-    const totalPages = Math.ceil(normalized.length / parseInt(limit as string));
+    // Obtener nombres de usuarios y artistas de una vez
+    const userIds = new Set<string>();
+    result.bookings.forEach((b: any) => {
+      if (b.clientId) userIds.add(b.clientId);
+      if (b.artistId) userIds.add(b.artistId);
+    });
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: Array.from(userIds) } },
+      select: { id: true, name: true, email: true, nombre: true }
+    });
+
+    const userMap = users.reduce((acc: any, u: any) => {
+      acc[u.id] = u;
+      return acc;
+    }, {});
+
+    const STATUS_ES: Record<string, string> = {
+      PENDING: 'pendiente',
+      CONFIRMED: 'confirmado',
+      PAYMENT_PENDING: 'pago pendiente',
+      PAYMENT_COMPLETED: 'pagado',
+      IN_PROGRESS: 'en progreso',
+      COMPLETED: 'completado',
+      RESCHEDULED: 'reprogramado',
+      CANCELLED_CLIENT: 'cancelado (cliente)',
+      CANCELLED_ARTIST: 'cancelado (artista)',
+      REJECTED: 'rechazado',
+      NO_SHOW: 'no se presentó',
+    };
+
+    const normalized = result.bookings.map((b: any) => ({
+      id: b.id,
+      code: b.code || b.id.substring(0, 8),
+      clienteNombre: userMap[b.clientId]?.name || userMap[b.clientId]?.nombre || userMap[b.clientId]?.email.split('@')[0] || 'Usuario desconocido',
+      clienteEmail: userMap[b.clientId]?.email || '—',
+      artistaNombre: userMap[b.artistId]?.name || userMap[b.artistId]?.nombre || userMap[b.artistId]?.email.split('@')[0] || 'Artista desconocido', 
+      servicio: b.serviceId, // Idealmente vendría el nombre de artists-service
+      fecha: b.scheduledDate,
+      estado: STATUS_ES[b.status] || b.status.toLowerCase(),
+      monto: b.totalPrice / 100,
+      createdAt: b.createdAt,
+    }));
+
     res.json({ 
       bookings: normalized, 
-      total: normalized.length, 
+      total: result.total, 
       page: parseInt(page as string), 
-      totalPages,
+      totalPages: result.totalPages,
     });
   } catch (error: any) {
     logger.error(`Error getting bookings: ${error.message}`, 'ADMIN_CONTROLLER');
@@ -311,72 +330,43 @@ export const getBookings = async (req: Request, res: Response, next: NextFunctio
 // GET /api/admin/reports - Reportes pendientes
 export const getReports = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20', status = 'pending' } = req.query;
+    const { page = '1', limit = '20' } = req.query;
     
-    // En producción, esto vendría de un reports-service o moderation-service
-    // Datos simulados para demo
-    const reports = [
-      {
-        id: '1',
-        type: 'review',
-        reporterId: 'user1',
-        reporterName: 'Juan Pérez',
-        targetId: 'review1',
-        targetType: 'review',
-        reason: 'Contenido inapropiado',
-        description: 'El review contiene lenguaje ofensivo',
-        status: 'pending',
-        createdAt: '2026-02-24',
-        content: 'Este artista es terrible...'
-      },
-      {
-        id: '2',
-        type: 'user',
-        reporterId: 'user2',
-        reporterName: 'Ana López',
-        targetId: 'user3',
-        targetType: 'user',
-        reason: 'Spam',
-        description: 'Usuario está enviando mensajes spam',
-        status: 'pending',
-        createdAt: '2026-02-23'
-      },
-      {
-        id: '3',
-        type: 'artist',
-        reporterId: 'user4',
-        reporterName: 'Carlos Díaz',
-        targetId: 'artist1',
-        targetType: 'artist',
-        reason: 'Fraude',
-        description: 'El artista no cumplió con el servicio pagado',
-        status: 'pending',
-        createdAt: '2026-02-22'
-      }
-    ];
+    const result = await reviewsClient.getPendingReports(
+      req.headers.authorization,
+      parseInt(page as string),
+      parseInt(limit as string)
+    );
 
-    logger.info('Admin retrieved reports list', 'ADMIN_CONTROLLER', { 
-      adminId: (req as any).user?.id 
+    // Obtener nombres de los que reportan
+    const reporterIds = Array.from(new Set(result.reports.map((r: any) => r.reportedBy)));
+    const reporters = await prisma.user.findMany({
+      where: { id: { in: reporterIds } },
+      select: { id: true, name: true, email: true }
     });
 
-    const normalized = reports.map((r: any) => ({
+    const reporterMap = reporters.reduce((acc: any, u: any) => {
+      acc[u.id] = u;
+      return acc;
+    }, {});
+
+    const normalized = result.reports.map((r: any) => ({
       id: r.id,
-      reporterNombre: r.reporterName ?? r.reporterNombre ?? '—',
-      reporterEmail: r.reporterEmail ?? '—',
-      targetType: r.targetType ?? r.type ?? 'user',
-      targetId: r.targetId,
-      motivo: r.reason ?? r.motivo ?? '—',
-      descripcion: r.description ?? r.descripcion ?? '—',
-      estado: r.status ?? r.estado ?? 'pending',
+      reporterNombre: reporterMap[r.reportedBy]?.name || 'Usuario desconocido',
+      reporterEmail: reporterMap[r.reportedBy]?.email || '—',
+      targetType: 'Review',
+      targetId: r.reviewId,
+      motivo: r.reason,
+      descripcion: r.description || '—',
+      estado: r.status,
       createdAt: r.createdAt,
     }));
 
-    const totalPages = Math.ceil(normalized.length / parseInt(limit as string));
     res.json({ 
       reports: normalized, 
-      total: normalized.length, 
+      total: result.total, 
       page: parseInt(page as string), 
-      totalPages,
+      totalPages: result.totalPages,
     });
   } catch (error: any) {
     logger.error(`Error getting reports: ${error.message}`, 'ADMIN_CONTROLLER');
@@ -388,22 +378,24 @@ export const getReports = async (req: Request, res: Response, next: NextFunction
 export const resolveReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { action, reason } = req.body; // action: 'approve', 'reject', 'delete_content'
+    const { action, notes } = req.body;
 
-    // En producción, esto actualizaría el estado en la base de datos
-    // y tomaría acciones según el tipo de reporte
+    const result = await reviewsClient.resolveReport(
+      id, 
+      action, 
+      notes, 
+      req.headers.authorization
+    );
     
-    logger.info(`Report resolved`, 'ADMIN_CONTROLLER', {
+    logger.info(`Report resolved via client`, 'ADMIN_CONTROLLER', {
       adminId: (req as any).user?.id,
       reportId: id,
-      action,
-      reason
+      action
     });
 
     res.json({ 
       message: 'Report resolved successfully',
-      reportId: id,
-      action
+      result
     });
   } catch (error: any) {
     logger.error(`Error resolving report: ${error.message}`, 'ADMIN_CONTROLLER');
@@ -436,16 +428,16 @@ export const getUserDetail = async (req: Request, res: Response, next: NextFunct
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // En producción, obtendríamos también:
-    // - Historial de bookings (de booking-service)
-    // - Reseñas escritas (de reviews-service)
-    // - Reportes relacionados
+    const [bookingStats, reviewStats] = await Promise.all([
+      bookingClient.getUserStats(id),
+      reviewsClient.getUserStats(id)
+    ]);
     
     const userDetail = {
       ...user,
-      bookingsCount: 5, // Simulado
-      reviewsCount: 3,  // Simulado
-      reportsCount: 0   // Simulado
+      bookingsCount: bookingStats.total,
+      reviewsCount: reviewStats.totalReviews,
+      reportsCount: reviewStats.totalReports
     };
 
     logger.info('Admin retrieved user detail', 'ADMIN_CONTROLLER', { 

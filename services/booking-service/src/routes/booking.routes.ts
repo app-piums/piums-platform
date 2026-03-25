@@ -220,15 +220,42 @@ router.put(
 
 // ==================== ESTADÍSTICAS ====================
 
-/**
- * GET /api/stats
- * Obtener estadísticas de reservas
- * Requiere autenticación
- */
 router.get(
   "/stats",
   authenticateToken,
   bookingController.getBookingStats.bind(bookingController)
+);
+
+/**
+ * GET /api/bookings/users/:userId/stats
+ * Obtener estadísticas de un usuario específico
+ */
+router.get(
+  "/users/:userId/stats",
+  bookingController.getUserStats.bind(bookingController)
+);
+
+router.post(
+  "/admin/batch-stats",
+  bookingController.getBatchStats.bind(bookingController)
+);
+
+/**
+ * GET /api/bookings/stats/admin
+ * Obtener estadísticas globales para el admin
+ */
+router.get(
+  "/stats/admin",
+  bookingController.getAdminStats.bind(bookingController)
+);
+
+/**
+ * GET /api/bookings/admin/search
+ * Buscar en TODAS las reservas (admin)
+ */
+router.get(
+  "/admin/search",
+  bookingController.adminSearchBookings.bind(bookingController)
 );
 
 /**

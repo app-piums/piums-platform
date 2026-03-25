@@ -15,7 +15,7 @@ export class ReviewController {
 
   async createReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const data = createReviewSchema.parse(req.body);
 
       const review = await reviewService.createReview({
@@ -54,7 +54,7 @@ export class ReviewController {
   async updateReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const data = updateReviewSchema.parse(req.body);
 
       const review = await reviewService.updateReview(id, userId, data);
@@ -67,7 +67,7 @@ export class ReviewController {
   async deleteReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const review = await reviewService.deleteReview(id, userId);
       res.json({ message: "Reseña eliminada", review });
@@ -81,7 +81,7 @@ export class ReviewController {
   async respondToReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const reviewId = req.params.id as string;
-      const artistId = req.user.userId;
+      const artistId = req.user.id;
       const { message } = respondReviewSchema.parse(req.body);
 
       const response = await reviewService.respondToReview(reviewId, artistId, message);
@@ -94,7 +94,7 @@ export class ReviewController {
   async updateResponse(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const responseId = req.params.id as string;
-      const artistId = req.user.userId;
+      const artistId = req.user.id;
       const { message } = respondReviewSchema.parse(req.body);
 
       const response = await reviewService.updateResponse(responseId, artistId, message);
@@ -107,7 +107,7 @@ export class ReviewController {
   async deleteResponse(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const responseId = req.params.id as string;
-      const artistId = req.user.userId;
+      const artistId = req.user.id;
 
       const response = await reviewService.deleteResponse(responseId, artistId);
       res.json({ message: "Respuesta eliminada", response });
@@ -121,7 +121,7 @@ export class ReviewController {
   async markHelpful(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const reviewId = req.params.id as string;
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { isHelpful } = markHelpfulSchema.parse(req.body);
 
       const review = await reviewService.markHelpful(reviewId, userId, isHelpful);
@@ -136,7 +136,7 @@ export class ReviewController {
   async reportReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const reviewId = req.params.id as string;
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { reason, description } = reportReviewSchema.parse(req.body);
 
       const report = await reviewService.reportReview(reviewId, userId, reason, description);
@@ -154,6 +154,54 @@ export class ReviewController {
 
       const result = await reviewService.getPendingReports(page, limit);
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAdminStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const stats = await reviewService.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resolveReport(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { action, notes } = req.body;
+      const resolvedBy = req.user.id;
+
+      const status = action === "dismissed" ? "DISMISSED" : "RESOLVED";
+
+      const report = await reviewService.resolveReport(id, resolvedBy, {
+        status,
+        resolution: notes,
+      });
+
+      res.json(report);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUserStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+      const stats = await reviewService.getUserStats(userId as string);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getBatchRatings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { artistIds } = req.body;
+      const ratings = await reviewService.getBatchRatings(artistIds);
+      res.json(ratings);
     } catch (error) {
       next(error);
     }

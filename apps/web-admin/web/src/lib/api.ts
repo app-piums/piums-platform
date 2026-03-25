@@ -166,6 +166,7 @@ export const artistsApi = {
 
 export interface AdminBookingRow {
   id: string;
+  code?: string;           // Código PIU de la reserva (e.g. PIU-XXXX-XXXX)
   clienteNombre: string;
   clienteEmail: string;
   artistaNombre: string;
@@ -184,7 +185,7 @@ export interface PaginatedBookings {
 }
 
 export const bookingsApi = {
-  list: (params: { page?: number; limit?: number; estado?: string }) => {
+  list: (params: { page?: number; limit?: number; estado?: string; search?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")

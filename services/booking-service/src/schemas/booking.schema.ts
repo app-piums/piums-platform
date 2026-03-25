@@ -50,6 +50,7 @@ export const updateBookingSchema = z.object({
   selectedAddons: z.array(z.string().uuid()).optional(),
   clientNotes: z.string().max(1000).optional(),
   artistNotes: z.string().max(1000).optional(),
+  reviewId: z.string().optional(),
 });
 
 // Schema para cambiar estado

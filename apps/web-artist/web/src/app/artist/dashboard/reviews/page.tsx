@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { ReportModal } from '@/components/ReportModal';
 
 export default function ArtistReviewsPage() {
   const router = useRouter();
@@ -17,6 +18,8 @@ export default function ArtistReviewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [respondingToReviewId, setRespondingToReviewId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState('');
 
   const loadReviews = useCallback(async () => {
     try {
@@ -73,6 +76,22 @@ export default function ArtistReviewsPage() {
       const message = getErrorMessage(err);
       console.error('Error responding to review:', message);
       alert(message || 'Error al responder la review');
+    }
+  };
+
+  const handleOpenReport = (reviewId: string) => {
+    setSelectedReviewId(reviewId);
+    setIsReportModalOpen(true);
+  };
+
+  const handleReportSubmit = async (reviewId: string, reason: string, description: string) => {
+    try {
+      await sdk.reportReview(reviewId, { reason, description });
+      alert('Reporte enviado correctamente. El equipo de moderación lo revisará.');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error reporting review:', message);
+      alert(message || 'Error al enviar el reporte');
     }
   };
 
@@ -224,6 +243,15 @@ export default function ArtistReviewsPage() {
                               💬 Responder
                             </button>
                           )}
+                          <button
+                            onClick={() => handleOpenReport(review.id)}
+                            className="mt-4 px-4 py-2 text-red-500 hover:text-red-600 transition-colors text-sm font-medium flex items-center gap-1"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            Reportar
+                          </button>
                         </>
                       )}
                     </div>
@@ -273,6 +301,13 @@ export default function ArtistReviewsPage() {
           )}
         </div>
       </main>
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reviewId={selectedReviewId}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 }

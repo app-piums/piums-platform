@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
 import { sdk } from '@piums/sdk';
+import { ReviewModal } from '@/components/bookings/ReviewModal';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
-type BookingStatus = 'confirmed' | 'pending' | 'completed' | 'cancelled';
+type BookingStatus = 'confirmed' | 'accepted' | 'pending' | 'completed' | 'cancelled' | 'rejected';
 
 interface MockBooking {
   id: string;
@@ -24,6 +25,9 @@ interface MockBooking {
   modality?: string;
   pendingNote?: string;
   cancelReason?: string;
+  serviceId?: string;
+  artistId?: string;
+  reviewId?: string;
 }
 
 const BOOKINGS: MockBooking[] = [];
@@ -54,7 +58,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
-function BookingCard({ b }: { b: MockBooking }) {
+function BookingCard({ b, onReview }: { b: MockBooking, onReview: (b: MockBooking) => void }) {
   const cfg = STATUS_CONFIG[b.status];
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -122,27 +126,39 @@ function BookingCard({ b }: { b: MockBooking }) {
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-auto pt-1">
-            {b.status === 'confirmed' && (
+            {(b.status === 'confirmed' || b.status === 'accepted') && (
               <>
                 <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />}>Mensaje al Artista</Btn>
-                <Btn variant="ghost" href="/services/1">Ver Detalles</Btn>
+                <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
+                {!b.reviewId && (
+                  <Btn variant="ghost" className="bg-orange-50 !text-[#FF6A00]" icon={<StarIcon className="h-4 w-4" />} onClick={() => onReview(b)}>Reseñar</Btn>
+                )}
               </>
             )}
             {b.status === 'pending' && (
               <>
                 <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />}>Mensaje al Artista</Btn>
+                <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
                 <Btn variant="danger-ghost">Cancelar Solicitud</Btn>
               </>
             )}
             {b.status === 'completed' && (
               <>
-                <Btn variant="primary-solid" icon={<StarIcon className="h-4 w-4" />}>Dejar Reseña</Btn>
-                <Btn variant="ghost">Ver Recibo</Btn>
-                <Btn variant="ghost" className="ml-auto !text-[#FF6A00]">Volver a reservar</Btn>
+                {!b.reviewId && (
+                  <Btn 
+                    variant="primary-solid" 
+                    icon={<StarIcon className="h-4 w-4" />}
+                    onClick={() => onReview(b)}
+                  >
+                    Dejar Reseña
+                  </Btn>
+                )}
+                <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Recibo</Btn>
+                  <Btn variant="ghost" className="ml-auto !text-[#FF6A00]" href={`/services/${b.serviceId || '1'}`} data-serviceid={b.serviceId}>Volver a reservar</Btn>
               </>
             )}
-            {b.status === 'cancelled' && (
-              <Btn variant="ghost" href="/services/1">Ver Detalles</Btn>
+            {(b.status === 'cancelled' || b.status === 'rejected') && (
+              <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
             )}
           </div>
         </div>
@@ -151,12 +167,13 @@ function BookingCard({ b }: { b: MockBooking }) {
   );
 }
 
-function Btn({ children, variant = 'ghost', icon, href, className = '' }: {
-  children: React.ReactNode;
+function Btn({ children, variant = 'ghost', icon, href, className = '', onClick }: {
+  children?: React.ReactNode;
   variant?: 'primary-solid' | 'primary-outline' | 'ghost' | 'danger-ghost';
   icon?: React.ReactNode;
   href?: string;
   className?: string;
+  onClick?: () => void;
 }) {
   const base = 'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all';
   const v: Record<string, string> = {
@@ -167,18 +184,46 @@ function Btn({ children, variant = 'ghost', icon, href, className = '' }: {
   };
   const cls = `${base} ${v[variant]} ${className}`;
   if (href) return <Link href={href} className={cls}>{icon}{children}</Link>;
-  return <button className={cls}>{icon}{children}</button>;
+  return <button className={cls} onClick={onClick}>{icon}{children}</button>;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const userName = user?.nombre ?? user?.email ?? 'Usuario';
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [search, setSearch] = useState('');
   const [bookings, setBookings] = useState<MockBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(STATS);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<MockBooking | null>(null);
+
+  const handleOpenReview = (b: MockBooking) => {
+    setSelectedBooking(b);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewSubmit = async (rating: number, comment: string) => {
+    if (!selectedBooking) return;
+    try {
+      await sdk.createReview({
+        bookingId: selectedBooking.id,
+        rating,
+        comment
+      });
+      setIsReviewModalOpen(false);
+      setSelectedBooking(null);
+      // Mark booking as reviewed locally
+      setBookings(prev => prev.map(b =>
+        b.id === selectedBooking.id ? { ...b, reviewId: 'submitted' } : b
+      ));
+      alert('¡Gracias por tu reseña!');
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      alert(error?.message || 'Error al enviar la reseña');
+    }
+  };
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -188,25 +233,30 @@ export default function BookingsPage() {
         const bookingsList = data?.bookings || [];
 
         if (Array.isArray(bookingsList)) {
-          const mappedBookings: MockBooking[] = bookingsList.map((b: any) => ({
-            id: b.id,
-            status: (b.status || '').toLowerCase() as BookingStatus,
-            title: b.serviceName || 'Servicio Piums',
-            artistName: b.artistName || 'Artista Piums',
-            imageUrl: b.artistImage || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80',
-            price: Number(b.totalPrice || 0),
-            priceLabel: 'total',
-            date: b.scheduledDate
-              ? new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-              : '—',
-            timeStart: b.scheduledDate
-              ? new Date(b.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-              : '—',
-            timeEnd: b.scheduledDate && b.durationMinutes
-              ? new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-              : '—',
-            location: b.location,
-          }));
+          const mappedBookings: MockBooking[] = bookingsList.map((b: any) => {
+            return {
+              id: b.id,
+              status: (b.status || '').toLowerCase() as BookingStatus,
+              title: b.serviceName || 'Servicio Piums',
+              artistName: b.artistName || 'Artista Piums',
+              imageUrl: b.artistImage || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80',
+              price: Number(b.totalPrice || 0),
+              priceLabel: 'total',
+              date: b.scheduledDate
+                ? new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+                : '—',
+              timeStart: b.scheduledDate
+                ? new Date(b.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                : '—',
+              timeEnd: b.scheduledDate && b.durationMinutes
+                ? new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                : '—',
+              location: b.location,
+              serviceId: b.serviceId,
+              artistId: b.artistId,
+              reviewId: b.reviewId || undefined,
+            };
+          });
 
           setBookings(mappedBookings);
 
@@ -224,8 +274,10 @@ export default function BookingsPage() {
         setLoading(false);
       }
     };
-    fetchBookings();
-  }, []);
+    if (!authLoading && user) {
+      fetchBookings();
+    }
+  }, [authLoading, user]);
 
   const filtered = bookings.filter(b => {
     const matchTab = activeTab === 'all' || b.status === activeTab;
@@ -298,11 +350,21 @@ export default function BookingsPage() {
                 <Link href="/artists" className="text-sm text-[#FF6A00] hover:underline font-medium">Explorar artistas →</Link>
               </div>
             ) : (
-              filtered.map(b => <BookingCard key={b.id} b={b} />)
+              filtered.map(b => {
+                console.log('RENDER BookingCard:', { id: b.id, serviceId: b.serviceId, title: b.title });
+                return <BookingCard key={b.id} b={b} onReview={handleOpenReview} />;
+              })
             )}
           </div>
         </div>
       </div>
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        artistName={selectedBooking?.artistName ?? ''}
+        bookingCode={selectedBooking?.id.substring(0, 8).toUpperCase() ?? ''}
+        onSubmit={handleReviewSubmit}
+      />
     </div>
   );
 }

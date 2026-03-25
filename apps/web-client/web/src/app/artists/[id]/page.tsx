@@ -12,6 +12,7 @@ import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
+import { ReportModal } from '@/components/ReportModal';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
 import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
 
@@ -30,6 +31,8 @@ export default function ArtistProfilePage() {
   const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState('');
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -138,6 +141,21 @@ export default function ArtistProfilePage() {
 
   const closeLightbox = () => {
     setLightboxOpen(false);
+  };
+  const handleOpenReport = (reviewId: string) => {
+    setSelectedReviewId(reviewId);
+    setIsReportModalOpen(true);
+  };
+
+  const handleReportSubmit = async (reviewId: string, reason: string, description: string) => {
+    try {
+      const { sdk } = await import('@piums/sdk');
+      await sdk.reportReview(reviewId, { reason, description });
+      alert('Reporte enviado correctamente. Los administradores lo revisarán pronto.');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      alert('Error al enviar el reporte.');
+    }
   };
 
   const nextImage = () => {
@@ -523,6 +541,17 @@ export default function ArtistProfilePage() {
                           {review.comment && (
                             <p className="text-gray-700">{review.comment}</p>
                           )}
+                          <div className="flex justify-end mt-2">
+                            <button
+                              onClick={() => handleOpenReport(review.id)}
+                              className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1"
+                            >
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              Reportar
+                            </button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -567,6 +596,12 @@ export default function ArtistProfilePage() {
         </div>
       </div>
       </div>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reviewId={selectedReviewId}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 }
