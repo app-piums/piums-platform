@@ -38,6 +38,11 @@ enum DayOfWeek {
   DOMINGO
 }
 
+enum TravelAbsenceType {
+  VACATION        // Vacaciones – no visible en ningún país
+  WORKING_ABROAD  // Trabajando en otro país – visible solo en el país destino
+}
+
 model Artist {
   id        String   @id @default(uuid())
   authId    String   @unique // Referencia al user ID del auth-service
@@ -101,7 +106,11 @@ model Artist {
   rating        Float    @default(0.0)
   reviewCount   Int      @default(0)
   bookingCount  Int      @default(0)
-  
+
+  // Geolocalización en tiempo real (GPS del artista desde la app)
+  geoCountry          String?   @db.VarChar(10)  // Código ISO del país detectado por GPS
+  geoCountryUpdatedAt DateTime?                    // Última actualización de la ubicación
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   deletedAt     DateTime? // Soft delete
@@ -191,6 +200,10 @@ model ArtistBlackout {
   startAt   DateTime // Fecha y hora de inicio del bloqueo
   endAt     DateTime // Fecha y hora de fin del bloqueo
   reason    String?  // Motivo del bloqueo (vacaciones, personal, etc)
+
+  // Tipo de ausencia y país destino (solo para WORKING_ABROAD)
+  type                TravelAbsenceType @default(VACATION)
+  destinationCountry  String?           // Código ISO del país destino (ej: "US", "MX")
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

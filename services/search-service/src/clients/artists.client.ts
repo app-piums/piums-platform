@@ -21,6 +21,14 @@ export interface ArtistData {
   servicesCount?: number;
   portfolio?: any[];
   createdAt: string;
+  blackouts?: Array<{
+    id: string;
+    startAt: string;
+    endAt: string;
+    type: 'VACATION' | 'WORKING_ABROAD';
+    destinationCountry?: string | null;
+  }>;
+  geoCountry?: string | null; // Real-time GPS country code
 }
 
 export const artistsClient = {

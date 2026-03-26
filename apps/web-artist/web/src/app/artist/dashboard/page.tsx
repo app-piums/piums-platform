@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { StatsCards } from '@/components/artist/StatsCards';
 import { sdk, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
 
 type ArtistStats = Awaited<ReturnType<typeof sdk.getArtistStats>>;
 type AugmentedArtistStats = ArtistStats & {
@@ -18,6 +19,7 @@ export default function ArtistDashboardPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<AugmentedArtistStats | null>(null);
+  const artistCountryRef = useRef<string | null>(null);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,12 +28,16 @@ export default function ArtistDashboardPage() {
       setIsLoading(true);
       setError(null);
 
-      const [statsData, bookingsData] = await Promise.allSettled([
+      const [statsData, bookingsData, profileData] = await Promise.allSettled([
         sdk.getArtistStats(),
         sdk.getArtistBookings({ status: 'CONFIRMED', limit: 10 }),
+        sdk.getArtistProfile(),
       ]);
 
       if (statsData.status === 'fulfilled') setStats(statsData.value);
+      if (profileData.status === 'fulfilled') {
+        artistCountryRef.current = (profileData.value as any)?.country ?? null;
+      }
       if (bookingsData.status === 'fulfilled') {
         const now = new Date();
         const upcoming = (bookingsData.value?.bookings ?? [])
@@ -62,6 +68,22 @@ export default function ArtistDashboardPage() {
   useEffect(() => {
     void loadDashboardData();
   }, [loadDashboardData]);
+
+  const handleCountryDetected = useCallback(async (detected: string) => {
+    const homeCountry = artistCountryRef.current;
+    try {
+      const code = detected.toUpperCase();
+      if (homeCountry && code !== homeCountry.toUpperCase()) {
+        // Artist is outside their home country — apply WORKING_ABROAD geo-absence
+        await sdk.updateGeoCountry(code);
+      } else {
+        // Artist is back home — clear geo-absence
+        await sdk.updateGeoCountry(null);
+      }
+    } catch (err) {
+      console.error('Error actualizando geolocalización:', err);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -108,6 +130,7 @@ export default function ArtistDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
+      <LocationPermissionPrompt onCountryDetected={handleCountryDetected} />
       
       {/* pt-16 on mobile to clear the fixed top bar, no extra padding on lg */}
       <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">

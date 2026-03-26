@@ -157,16 +157,25 @@ export const removeAvailabilityRule = async (ruleId: string) => {
 };
 
 /**
- * Crea un bloqueo puntual en la agenda
+ * Crea un bloqueo puntual en la agenda (ausencia)
  */
 export const createBlackout = async (data: {
   artistId: string;
   startAt: Date;
   endAt: Date;
   reason?: string;
+  type?: 'VACATION' | 'WORKING_ABROAD';
+  destinationCountry?: string;
 }) => {
   return await prisma.artistBlackout.create({
-    data,
+    data: {
+      artistId: data.artistId,
+      startAt: data.startAt,
+      endAt: data.endAt,
+      reason: data.reason,
+      type: data.type ?? 'VACATION',
+      destinationCountry: data.destinationCountry ?? null,
+    },
   });
 };
 
@@ -184,9 +193,28 @@ export const getUpcomingBlackouts = async (artistId: string) => {
 };
 
 /**
- * Elimina un bloqueo
+ * Obtiene el bloqueo activo actual del artista (si existe)
  */
-export const removeBlackout = async (blackoutId: string) => {
+export const getActiveBlackout = async (artistId: string) => {
+  const now = new Date();
+  return await prisma.artistBlackout.findFirst({
+    where: {
+      artistId,
+      startAt: { lte: now },
+      endAt: { gte: now },
+    },
+    orderBy: { startAt: 'asc' },
+  });
+};
+
+/**
+ * Elimina un bloqueo (verifica propiedad del artista)
+ */
+export const removeBlackout = async (blackoutId: string, artistId: string) => {
+  const existing = await prisma.artistBlackout.findUnique({ where: { id: blackoutId } });
+  if (!existing || existing.artistId !== artistId) {
+    throw new Error('Ausencia no encontrada o no tienes permiso para eliminarla');
+  }
   return await prisma.artistBlackout.delete({
     where: { id: blackoutId },
   });

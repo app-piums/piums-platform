@@ -14,4 +14,6 @@ export interface Conversation {
   messages?: Message[];
   unreadCount?: number;
   lastMessageAt?: string;
+  status?: 'PENDING' | 'ACTIVE' | 'ARCHIVED';
+  bookingId?: string;
 }

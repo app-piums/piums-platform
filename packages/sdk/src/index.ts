@@ -287,6 +287,56 @@ export interface AvailabilityCheckResult {
   bookingId?: string;
 }
 
+export interface BlockedSlot {
+  id: string;
+  artistId: string;
+  startTime: string; // ISO string
+  endTime: string;   // ISO string
+  reason?: string;
+  isRecurring: boolean;
+  createdAt: string;
+}
+
+export interface ArtistAvailabilityConfig {
+  id: string;
+  artistId: string;
+  minAdvanceHours: number;
+  maxAdvanceDays: number;
+  bufferMinutes: number;
+  autoConfirm: boolean;
+  requiresDeposit: boolean;
+  cancellationHours: number;
+  cancellationFee: number;
+  workingHours?: Record<string, { start: string; end: string; enabled: boolean }>;
+}
+
+export interface BlockSlotPayload {
+  artistId: string;
+  startTime: string; // ISO string
+  endTime: string;   // ISO string
+  reason?: string;
+  isRecurring?: boolean;
+}
+
+export interface TravelAbsence {
+  id: string;
+  artistId: string;
+  startAt: string;   // ISO string
+  endAt: string;     // ISO string
+  type: 'VACATION' | 'WORKING_ABROAD';
+  destinationCountry?: string | null; // ISO country code, e.g. 'MX'
+  reason?: string | null;
+  createdAt: string;
+}
+
+export interface CreateAbsencePayload {
+  startAt: string;   // ISO string
+  endAt: string;     // ISO string
+  type: 'VACATION' | 'WORKING_ABROAD';
+  destinationCountry?: string; // Required when type = WORKING_ABROAD
+  reason?: string;
+}
+
 // ==================== PAYMENT TYPES ====================
 
 export interface PaymentIntent {
@@ -958,6 +1008,172 @@ class PiumsSDK {
       return {
         hasReservation: false,
       };
+    }
+  }
+
+  /**
+   * Bloquea un slot de tiempo en el calendario del artista
+   */
+  async blockSlot(payload: BlockSlotPayload): Promise<BlockedSlot> {
+    const response = await fetch(
+      `${this.baseUrl}/blocked-slots`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Obtiene los slots bloqueados de un artista
+   */
+  async getBlockedSlots(
+    artistId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<BlockedSlot[]> {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.set('startDate', startDate);
+      if (endDate) params.set('endDate', endDate);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const response = await fetch(
+        `${this.baseUrl}/artists/${artistId}/blocked-slots${qs}`,
+        this.withAuth({ credentials: 'include' })
+      );
+      if (!response.ok) return [];
+      return response.json();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Desbloquea un slot previamente bloqueado
+   */
+  async unblockSlot(slotId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/blocked-slots/${slotId}`,
+      this.withAuth({ method: 'DELETE', credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  /**
+   * Obtiene la configuración de disponibilidad del artista
+   */
+  async getArtistAvailabilityConfig(artistId: string): Promise<ArtistAvailabilityConfig> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/${artistId}/config`,
+      this.withAuth({ credentials: 'include' })
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Actualiza la configuración de disponibilidad del artista
+   */
+  async updateArtistAvailabilityConfig(
+    artistId: string,
+    data: Partial<Omit<ArtistAvailabilityConfig, 'id' | 'artistId'>>
+  ): Promise<ArtistAvailabilityConfig> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/${artistId}/config`,
+      this.withAuth({
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ artistId, ...data }),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Obtiene las ausencias/viajes del artista autenticado
+   */
+  async getAbsences(): Promise<TravelAbsence[]> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/absences`,
+      this.withAuth({ credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.absences;
+  }
+
+  /**
+   * Registra una nueva ausencia / viaje
+   */
+  async createAbsence(payload: CreateAbsencePayload): Promise<TravelAbsence> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/absences`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.absence;
+  }
+
+  /**
+   * Elimina una ausencia por ID
+   */
+  async deleteAbsence(absenceId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/absences/${absenceId}`,
+      this.withAuth({ method: 'DELETE', credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  /**
+   * Actualiza el país detectado por GPS del artista.
+   * Pasar null cuando el artista está de vuelta en su país de origen.
+   */
+  async updateGeoCountry(country: string | null): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/geo-country`,
+      this.withAuth({
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ country }),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
     }
   }
 

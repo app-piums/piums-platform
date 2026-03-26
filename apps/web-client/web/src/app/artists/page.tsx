@@ -8,6 +8,7 @@ import { ArtistCard } from '@/components/ArtistCard';
 import { useInfiniteArtists, type ArtistsFilters } from '@/hooks/useInfiniteArtists';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
 
 const CATEGORIES = [
   { value: '',          label: 'Todas las categorías' },
@@ -33,6 +34,15 @@ function ArtistsPageContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
+  const [clientCountry, setClientCountry] = useState<string>(
+    () => (typeof window !== 'undefined' ? localStorage.getItem('client_country') ?? '' : '')
+  );
+
+  const handleCountryDetected = useCallback((country: string) => {
+    const upper = country.toUpperCase();
+    localStorage.setItem('client_country', upper);
+    setClientCountry(upper);
+  }, []);
 
   const filters: ArtistsFilters = {
     q: searchQuery || undefined,
@@ -83,6 +93,7 @@ function ArtistsPageContent() {
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+      <LocationPermissionPrompt onCountryDetected={handleCountryDetected} />
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Header */}

@@ -204,6 +204,12 @@ function BookingContent() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>(undefined);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [numDays, setNumDays] = useState(1);
+
+  const effectiveDurationMinutes = isMultiDay
+    ? Math.max(numDays, 1) * 24 * 60
+    : getDurationMinutes(selectedService);
   const [location, setLocation] = useState('');
   const [clientCoords, setClientCoords] = useState<Coordinates | null>(null);
   const artistBaseCoords = useMemo(() => {
@@ -644,7 +650,7 @@ function BookingContent() {
         artistId: effectiveArtistId,
         serviceId: selectedService.id,
         scheduledDate: selectedTimeSlot.startTime,
-        durationMinutes: getDurationMinutes(selectedService),
+        durationMinutes: effectiveDurationMinutes,
         location: location || undefined,
         locationLat: clientCoords?.lat,
         locationLng: clientCoords?.lng,
@@ -995,6 +1001,46 @@ function BookingContent() {
                         </div>
                       )}
 
+                      {/* Multi-day toggle */}
+                      <div className="p-4 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">¿El servicio dura más de un día?</p>
+                            <p className="text-xs text-gray-500 mt-0.5">Activa esta opción para reservar varios días seguidos</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setIsMultiDay((v) => !v); setNumDays(1); }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              isMultiDay ? 'bg-[#FF6A00]' : 'bg-gray-200'
+                            }`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                              isMultiDay ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
+                        </div>
+                        {isMultiDay && (
+                          <div className="mt-4 flex items-center gap-3">
+                            <label className="text-sm text-gray-700 whitespace-nowrap">Número de días:</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={30}
+                              value={numDays}
+                              onChange={(e) => setNumDays(Math.min(30, Math.max(1, Number(e.target.value))))}
+                              className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-center"
+                            />
+                            <span className="text-sm text-gray-500">
+                              {numDays === 1 ? '1 día' : `${numDays} días`} · finaliza el{' '}
+                              {selectedDate
+                                ? new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })
+                                : '—'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Notas */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1084,9 +1130,19 @@ function BookingContent() {
                           <div className="flex justify-between">
                             <dt className="text-sm text-gray-600">Duración:</dt>
                             <dd className="text-sm font-medium text-gray-900">
-                              {selectedService.duration ? `${Math.floor(selectedService.duration / 60)} horas` : 'Duración variable'}
+                              {isMultiDay
+                                ? `${numDays} día${numDays === 1 ? '' : 's'}`
+                                : (selectedService.duration ? `${Math.floor(selectedService.duration / 60)} hora${Math.floor(selectedService.duration / 60) === 1 ? '' : 's'}` : 'Duración variable')}
                             </dd>
                           </div>
+                          {isMultiDay && selectedDate && (
+                            <div className="flex justify-between">
+                              <dt className="text-sm text-gray-600">Fecha de fin:</dt>
+                              <dd className="text-sm font-medium text-gray-900">
+                                {new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-MX', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                              </dd>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <dt className="text-sm text-gray-600">Ubicación:</dt>
                             <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">
