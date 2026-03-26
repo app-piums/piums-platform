@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
 import { sdk } from '@piums/sdk';
@@ -59,7 +60,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
-function BookingCard({ b, onReview, onQueja }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void }) {
+function BookingCard({ b, onReview, onQueja, onMessage }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void, onMessage: (b: MockBooking) => void }) {
   const cfg = STATUS_CONFIG[b.status];
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -129,7 +130,7 @@ function BookingCard({ b, onReview, onQueja }: { b: MockBooking, onReview: (b: M
           <div className="flex flex-wrap items-center gap-2 mt-auto pt-1">
             {(b.status === 'confirmed' || b.status === 'accepted') && (
               <>
-                <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />}>Mensaje al Artista</Btn>
+                <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />} onClick={() => onMessage(b)}>Mensaje al Artista</Btn>
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
                 {!b.reviewId && (
                   <Btn variant="ghost" className="bg-orange-50 !text-[#FF6A00]" icon={<StarIcon className="h-4 w-4" />} onClick={() => onReview(b)}>Reseñar</Btn>
@@ -139,7 +140,7 @@ function BookingCard({ b, onReview, onQueja }: { b: MockBooking, onReview: (b: M
             )}
             {b.status === 'pending' && (
               <>
-                <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />}>Mensaje al Artista</Btn>
+                <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />} onClick={() => onMessage(b)}>Mensaje al Artista</Btn>
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
                 <Btn variant="danger-ghost">Cancelar Solicitud</Btn>
               </>
@@ -193,6 +194,7 @@ function Btn({ children, variant = 'ghost', icon, href, className = '', onClick 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const userName = user?.nombre ?? user?.email ?? 'Usuario';
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [search, setSearch] = useState('');
@@ -212,6 +214,15 @@ export default function BookingsPage() {
   const handleOpenQueja = (b: MockBooking) => {
     setQuejaBooking(b);
     setIsQuejaModalOpen(true);
+  };
+
+  const handleOpenMessage = (b: MockBooking) => {
+    const artistId = b.artistId;
+    if (artistId) {
+      router.push(`/chat?artistId=${artistId}`);
+    } else {
+      router.push('/chat');
+    }
   };
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
@@ -361,7 +372,7 @@ export default function BookingsPage() {
               </div>
             ) : (
               filtered.map(b => (
-                <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} />
+                  <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} onMessage={handleOpenMessage} />
               ))
             )}
           </div>

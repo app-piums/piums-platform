@@ -9,6 +9,7 @@ export interface Message {
 
 export interface Conversation {
   id: string;
+  artistId?: string;
   artistName?: string;
   artistAvatar?: string;
   messages?: Message[];
