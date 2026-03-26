@@ -19,7 +19,7 @@ export class ReviewsClient {
       const params: any = { page, limit };
       if (estado) params.estado = estado;
 
-      const response = await axios.get(`${REVIEWS_SERVICE_URL}/api/admin/reports/pending`, {
+      const response = await axios.get(`${REVIEWS_SERVICE_URL}/api/reviews/admin/reports/pending`, {
         params,
         headers,
         timeout: 5000,
@@ -39,7 +39,7 @@ export class ReviewsClient {
       const headers: any = {};
       if (token) headers['Authorization'] = token;
 
-      const response = await axios.get(`${REVIEWS_SERVICE_URL}/api/admin/stats`, {
+      const response = await axios.get(`${REVIEWS_SERVICE_URL}/api/reviews/admin/stats`, {
         headers,
         timeout: 5000,
       });
@@ -74,7 +74,7 @@ export class ReviewsClient {
       const headers: any = {};
       if (token) headers['Authorization'] = token;
 
-      const response = await axios.post(`${REVIEWS_SERVICE_URL}/api/admin/batch-ratings`, {
+      const response = await axios.post(`${REVIEWS_SERVICE_URL}/api/reviews/admin/batch-ratings`, {
         artistIds,
       }, { 
         headers,
@@ -95,7 +95,7 @@ export class ReviewsClient {
       const headers: any = {};
       if (token) headers['Authorization'] = token;
 
-      const response = await axios.patch(`${REVIEWS_SERVICE_URL}/api/admin/reports/${id}/resolve`, {
+      const response = await axios.patch(`${REVIEWS_SERVICE_URL}/api/reviews/admin/reports/${id}/resolve`, {
         action,
         notes,
       }, { 
