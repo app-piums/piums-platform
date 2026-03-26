@@ -50,6 +50,7 @@ export interface ArtistProfile extends Artist {
   avatar?: string;
   coverPhoto?: string;
   category?: string;
+  specialties?: string[];
   cityId?: string;
   experienceYears?: number;
   reviewsCount?: number;

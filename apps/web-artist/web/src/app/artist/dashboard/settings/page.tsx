@@ -8,6 +8,17 @@ import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 
+const ARTIST_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'MUSICO', label: 'Músico' },
+  { value: 'TATUADOR', label: 'Tatuador' },
+  { value: 'FOTOGRAFO', label: 'Fotógrafo' },
+  { value: 'MAQUILLADOR', label: 'Maquillador' },
+  { value: 'DJ', label: 'DJ' },
+  { value: 'PINTOR', label: 'Pintor' },
+  { value: 'ESCULTOR', label: 'Escultor' },
+  { value: 'OTRO', label: 'Otro' },
+];
+
 type ArtistFormData = {
   nombre: string;
   email: string;
@@ -17,6 +28,8 @@ type ArtistFormData = {
   baseLocationLabel: string;
   baseLocationLat: number | null;
   baseLocationLng: number | null;
+  category: string;
+  secondaryCategory: string;
 };
 
 export default function ArtistSettingsPage() {
@@ -37,6 +50,8 @@ export default function ArtistSettingsPage() {
     baseLocationLabel: '',
     baseLocationLat: null,
     baseLocationLng: null,
+    category: '',
+    secondaryCategory: '',
   });
 
   // Cobertura / pricing state
@@ -68,6 +83,8 @@ export default function ArtistSettingsPage() {
         baseLocationLabel: artistProfile.baseLocationLabel || '',
         baseLocationLat: artistProfile.baseLocationLat ?? null,
         baseLocationLng: artistProfile.baseLocationLng ?? null,
+        category: artistProfile.category || '',
+        secondaryCategory: artistProfile.specialties?.[0] || '',
       });
       setCoverageData({
         coverageRadius: artistProfile.coverageRadius ?? 10,
@@ -96,11 +113,14 @@ export default function ArtistSettingsPage() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      const { secondaryCategory, ...restForm } = formData;
       const payload: Partial<ArtistProfile> = {
-        ...formData,
+        ...restForm,
         baseLocationLabel: formData.baseLocationLabel.trim() || undefined,
         baseLocationLat: formData.baseLocationLat ?? undefined,
         baseLocationLng: formData.baseLocationLng ?? undefined,
+        category: formData.category || undefined,
+        specialties: secondaryCategory ? [secondaryCategory] : [],
       };
 
       await sdk.updateArtistProfile(payload);
@@ -741,26 +761,41 @@ export default function ArtistSettingsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Categoría principal</label>
-                      <input
-                        type="text"
-                        value={formData.ciudad}
-                        readOnly
-                        placeholder="Ej: Fotografía, Música, DJ..."
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">La categoría se configura durante el registro.</p>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="">Seleccionar categoría...</option>
+                        {ARTIST_CATEGORIES.map((cat) => (
+                          <option key={cat.value} value={cat.value}>{cat.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Slug / URL pública</label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400 shrink-0">piums.com/</span>
-                        <input
-                          type="text"
-                          value={artist?.slug || ''}
-                          readOnly
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
-                        />
-                      </div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Categoría secundaria</label>
+                      <select
+                        value={formData.secondaryCategory}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, secondaryCategory: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="">Sin categoría secundaria</option>
+                        {ARTIST_CATEGORIES.filter((cat) => cat.value !== formData.category).map((cat) => (
+                          <option key={cat.value} value={cat.value}>{cat.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Slug / URL pública</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-400 shrink-0">piums.com/</span>
+                      <input
+                        type="text"
+                        value={artist?.slug || ''}
+                        readOnly
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
+                      />
                     </div>
                   </div>
                 </div>

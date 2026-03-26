@@ -55,6 +55,7 @@ export interface Artist {
 }
 
 export interface ArtistProfile extends Artist {
+  specialties?: string[];
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
   services?: Service[];
