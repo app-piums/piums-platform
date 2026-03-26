@@ -34,8 +34,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
+    // También devolvemos el token en el body para que el SDK pueda usarlo directamente
     const nextResponse = NextResponse.json(
-      { success: true, user: data.user, message: "Sesión iniciada" },
+      { success: true, user: data.user, token: data.token, message: "Sesión iniciada" },
       { status: 200 }
     );
 

@@ -56,12 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 window.localStorage.setItem('token', token);
               }
             }
-          } else {
-            sdk.setAuthToken(null);
           }
+          // Si chat/token falla, no limpiar el token — puede haber uno válido en localStorage desde el login
         } catch (tokenError) {
-          console.warn('No se pudo sincronizar el token para el SDK', tokenError);
-          sdk.setAuthToken(null);
+          console.warn('No se pudo sincronizar el token de chat para el SDK, usando el token existente si hay uno', tokenError);
+        }
+        
+        // Asegurar que el SDK tenga el token del localStorage (puesto por el login)
+        if (typeof window !== 'undefined') {
+          const stored = window.localStorage.getItem('token');
+          if (stored) {
+            sdk.setAuthToken(stored);
+          }
         }
       } else {
         setUser(null);

@@ -118,8 +118,16 @@ export class BookingController {
 
   async searchBookings(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      const userId = req.user!.id;
+      const isAdmin = req.user?.role === 'admin';
+
+      // Non-admin users can only see their own bookings
+      const clientId = isAdmin
+        ? (req.query.clientId as string | undefined)
+        : userId;
+
       const query = {
-        clientId: req.query.clientId as string | undefined,
+        clientId,
         artistId: req.query.artistId as string | undefined,
         serviceId: req.query.serviceId as string | undefined,
         status: req.query.status as any,

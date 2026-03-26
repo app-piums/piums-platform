@@ -350,10 +350,9 @@ export default function BookingsPage() {
                 <Link href="/artists" className="text-sm text-[#FF6A00] hover:underline font-medium">Explorar artistas →</Link>
               </div>
             ) : (
-              filtered.map(b => {
-                console.log('RENDER BookingCard:', { id: b.id, serviceId: b.serviceId, title: b.title });
-                return <BookingCard key={b.id} b={b} onReview={handleOpenReview} />;
-              })
+              filtered.map(b => (
+                <BookingCard key={b.id} b={b} onReview={handleOpenReview} />
+              ))
             )}
           </div>
         </div>

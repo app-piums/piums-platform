@@ -180,6 +180,9 @@ export interface Booking {
   selectedAddons?: string[];
   clientNotes?: string;
   artistNotes?: string;
+  cancellationReason?: string;
+  cancelReason?: string;
+  reviewId?: string | null;
   serviceName?: string;   // name of the booked service
   artistName?: string;    // name of the artist
   createdAt: string;

@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Loading } from '@/components/Loading';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { ReviewModal } from '@/components/bookings/ReviewModal';
 import { sdk, type Service, type ArtistProfile, type Booking } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -34,7 +35,8 @@ function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-export default function BookingDetailsPage({ params }: { params: { id: string } }) {
+export default function BookingDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   
@@ -44,6 +46,8 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewed, setReviewed] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -57,31 +61,25 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('[BOOKING DETAIL] params.id:', params.id);
-        // Fetch Booking
-        const b = await sdk.getBooking(params.id);
-        console.log('[BOOKING DETAIL] getBooking result:', b);
+        const b = await sdk.getBooking(id);
         if (!b) throw new Error('Reserva no encontrada');
         
-        if (isMounted) setBooking(b);
-        
-        // Parallel fetch for associated service and artist
-        if (b.serviceId) {
-          console.log('[BOOKING DETAIL] Fetching service for booking:', b.serviceId);
-          const s = await sdk.getService(b.serviceId).catch(() => null);
-          console.log('[BOOKING DETAIL] getService result:', s);
-          if (isMounted) setService(s);
+        if (isMounted) {
+          setBooking(b);
+          if (b.reviewId) setReviewed(true);
         }
         
-        if (b.artistId) {
-          console.log('[BOOKING DETAIL] Fetching artist for booking:', b.artistId);
-          const a = await sdk.getArtist(b.artistId).catch(() => null);
-          console.log('[BOOKING DETAIL] getArtist result:', a);
-          if (isMounted && a) setArtist(a);
+        // Parallel fetch for associated service and artist
+        const [s, a] = await Promise.all([
+          b.serviceId ? sdk.getService(b.serviceId).catch(() => null) : Promise.resolve(null),
+          b.artistId  ? sdk.getArtist(b.artistId).catch(() => null)  : Promise.resolve(null),
+        ]);
+        if (isMounted) {
+          setService(s);
+          if (a) setArtist(a);
         }
         
       } catch (err) {
-        console.error('[BOOKING DETAIL] Error fetching booking load data:', err);
         if (isMounted) setError(err instanceof Error ? err.message : 'Error al cargar la reserva');
       } finally {
         if (isMounted) setLoading(false);
@@ -93,7 +91,7 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
     }
 
     return () => { isMounted = false; };
-  }, [params.id, isAuthenticated]);
+  }, [id, isAuthenticated]);
 
   if (authLoading || loading) {
     return (
@@ -104,15 +102,14 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
   }
 
   if (error || !booking) {
-    console.error('Booking detail error:', error, 'Booking:', booking);
-    // Seguridad: nunca renderizar nada de servicio si no hay booking
     return (
       <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
         <Navbar />
         <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <p className="text-xl font-semibold text-gray-900 mb-3">
-            {error || 'No pudimos encontrar los detalles de esta reserva.'}
+          <p className="text-xl font-semibold text-gray-900 mb-2">
+            Reserva no encontrada
           </p>
+          <p className="text-sm text-gray-500 mb-5">{error || 'No pudimos encontrar los detalles de esta reserva.'}</p>
           <Link
             href="/bookings"
             className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl shadow-lg hover:bg-orange-600 transition"
@@ -125,10 +122,6 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
     );
   }
 
-  // Seguridad extra: si booking no existe, no renderizar nada de servicio
-  if (!booking) {
-    return null;
-  }
   // Formatting helpers
   const st = STATUS_MAP[booking.status?.toLowerCase()] || STATUS_MAP['pending'];
   const StatusIcon = st.icon;
@@ -139,6 +132,18 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
   const formattedTime = dateObj ? dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
   
   const DisplayImage = service?.images?.[0] || artist?.coverPhoto || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200';
+  const cancelReason = booking.cancellationReason || booking.cancelReason;
+  const canReview = booking.status?.toLowerCase() === 'completed' && !reviewed && !booking.reviewId;
+
+  const handleReviewSubmit = async (rating: number, comment: string) => {
+    try {
+      await sdk.createReview({ bookingId: booking.id, rating, comment });
+      setReviewed(true);
+      setIsReviewModalOpen(false);
+    } catch (err: any) {
+      alert(err?.message || 'Error al enviar la reseña');
+    }
+  };
   const priceVal = Number(booking.totalPrice || booking.amount || 0);
 
   return (
@@ -233,6 +238,17 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
               </section>
             )}
 
+            {/* Motivo de cancelación */}
+            {cancelReason && (
+              <section className="bg-red-50 border border-red-100 rounded-2xl p-5 flex items-start gap-3">
+                <XCircleIcon className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-700 mb-1">Motivo de cancelación</p>
+                  <p className="text-sm text-red-600 leading-relaxed">{cancelReason}</p>
+                </div>
+              </section>
+            )}
+
           </div>
 
           {/* ── DERECHA: Resumen Estático Sticky (Premium Widget) ── */}
@@ -281,10 +297,18 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
 
                 {/* Acciones del Dashboard Widget */}
                 <div className="bg-gray-50 p-5 px-5 flex flex-col gap-3">
-                   {booking.status === 'completed' && (
-                     <button className="w-full py-2.5 bg-white border border-[#FF6A00] text-[#FF6A00] font-semibold rounded-xl text-sm hover:bg-orange-50 transition">
+                   {canReview && (
+                     <button
+                       onClick={() => setIsReviewModalOpen(true)}
+                       className="w-full py-2.5 bg-white border border-[#FF6A00] text-[#FF6A00] font-semibold rounded-xl text-sm hover:bg-orange-50 transition"
+                     >
                        Dejar Reseña del Servicio
                      </button>
+                   )}
+                   {(reviewed || booking.reviewId) && (
+                     <div className="w-full py-2.5 bg-green-50 border border-green-200 text-green-700 font-semibold rounded-xl text-sm text-center">
+                       ✓ Reseña enviada
+                     </div>
                    )}
                    <button onClick={() => window.print()} className="w-full py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition">
                      Descargar Recibo (PDF)
@@ -316,6 +340,14 @@ export default function BookingDetailsPage({ params }: { params: { id: string } 
       </main>
 
       <Footer />
+
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        artistName={artist?.nombre || booking.artistName || 'el Artista'}
+        bookingCode={booking.code || booking.id.substring(0, 8).toUpperCase()}
+        onSubmit={handleReviewSubmit}
+      />
     </div>
   );
 }
