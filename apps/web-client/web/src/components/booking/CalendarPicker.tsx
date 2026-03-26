@@ -18,6 +18,7 @@ interface Availability {
 interface CalendarPickerProps {
   availability: Availability[];
   selectedDate?: Date;
+  rangeEndDate?: Date;
   selectedTime?: string;
   onDateSelect: (date: Date) => void;
   onTimeSelect: (time: string) => void;
@@ -30,6 +31,7 @@ interface CalendarPickerProps {
 export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   availability,
   selectedDate,
+  rangeEndDate,
   selectedTime,
   onDateSelect,
   onTimeSelect,
@@ -60,6 +62,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
         <h3 className="font-semibold text-gray-900 mb-4">Selecciona una fecha</h3>
         <Calendar
           selectedDate={selectedDate}
+          rangeEndDate={rangeEndDate}
           onDateSelect={onDateSelect}
           highlightedDates={availableDates}
           disabledDates={disabledDates}
@@ -70,7 +73,11 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       {/* Time slots */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-4">
-          {selectedDate ? 'Selecciona un horario' : 'Primero selecciona una fecha'}
+          {selectedDate
+            ? rangeEndDate
+              ? `Hora de inicio · ${selectedDate.toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })} – ${rangeEndDate.toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })}`
+              : 'Selecciona un horario'
+            : 'Primero selecciona una fecha'}
         </h3>
         
         {!selectedDate ? (
