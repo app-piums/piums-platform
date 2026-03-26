@@ -833,13 +833,74 @@ function BookingContent() {
                   <>
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <CardTitle>Selecciona Fecha y Hora</CardTitle>
+                        <CardTitle>{isMultiDay ? 'Selecciona Fechas y Hora de inicio' : 'Selecciona Fecha y Hora'}</CardTitle>
                         <p className="text-sm text-gray-600 mt-1">
                           Elige una fecha y horario disponible para tu {selectedService.name}
                         </p>
                       </div>
                     </div>
                     <div className="space-y-6">
+                      {/* Multi-day toggle */}
+                      <div className="p-4 border border-gray-200 rounded-xl bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">📅</span>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">¿El servicio dura más de un día?</p>
+                              <p className="text-xs text-gray-500 mt-0.5">Activa esta opción para reservar varios días seguidos</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setIsMultiDay((v) => !v); setNumDays(1); }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              isMultiDay ? 'bg-[#FF6A00]' : 'bg-gray-300'
+                            }`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                              isMultiDay ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
+                        </div>
+                        {isMultiDay && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Número de días:</label>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setNumDays((n) => Math.max(1, n - 1))}
+                                  className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-medium"
+                                >−</button>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={30}
+                                  value={numDays}
+                                  onChange={(e) => setNumDays(Math.min(30, Math.max(1, Number(e.target.value))))}
+                                  className="w-14 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setNumDays((n) => Math.min(30, n + 1))}
+                                  className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-medium"
+                                >+</button>
+                              </div>
+                              {selectedDate && (
+                                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-1.5">
+                                  <span className="text-xs font-medium text-orange-700">
+                                    {selectedDate.toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })}
+                                    {' → '}
+                                    {new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </span>
+                                  <span className="text-xs text-orange-500">({numDays} {numDays === 1 ? 'día' : 'días'})</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <CalendarPicker
                         availability={availability}
                         selectedDate={selectedDate}
@@ -849,6 +910,24 @@ function BookingContent() {
                         minDate={minSelectableDate}
                         isLoading={slotsLoading}
                       />
+
+                      {/* Selected range summary for multi-day */}
+                      {isMultiDay && selectedDate && selectedTime && (
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
+                          <svg className="h-5 w-5 text-green-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-medium text-green-800">Período seleccionado</p>
+                            <p className="text-sm text-green-700 mt-0.5">
+                              Inicio: {selectedDate.toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long' })} a las {selectedTime}
+                            </p>
+                            <p className="text-sm text-green-700">
+                              Fin: {new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Navigation Buttons */}
                       <div className="flex gap-3 pt-4">
@@ -1000,46 +1079,6 @@ function BookingContent() {
                           </div>
                         </div>
                       )}
-
-                      {/* Multi-day toggle */}
-                      <div className="p-4 border border-gray-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">¿El servicio dura más de un día?</p>
-                            <p className="text-xs text-gray-500 mt-0.5">Activa esta opción para reservar varios días seguidos</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => { setIsMultiDay((v) => !v); setNumDays(1); }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              isMultiDay ? 'bg-[#FF6A00]' : 'bg-gray-200'
-                            }`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                              isMultiDay ? 'translate-x-6' : 'translate-x-1'
-                            }`} />
-                          </button>
-                        </div>
-                        {isMultiDay && (
-                          <div className="mt-4 flex items-center gap-3">
-                            <label className="text-sm text-gray-700 whitespace-nowrap">Número de días:</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={30}
-                              value={numDays}
-                              onChange={(e) => setNumDays(Math.min(30, Math.max(1, Number(e.target.value))))}
-                              className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-center"
-                            />
-                            <span className="text-sm text-gray-500">
-                              {numDays === 1 ? '1 día' : `${numDays} días`} · finaliza el{' '}
-                              {selectedDate
-                                ? new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })
-                                : '—'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
 
                       {/* Notas */}
                       <div>
