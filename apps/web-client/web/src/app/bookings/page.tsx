@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
 import { sdk } from '@piums/sdk';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
+import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 type BookingStatus = 'confirmed' | 'accepted' | 'pending' | 'completed' | 'cancelled' | 'rejected';
@@ -58,7 +59,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
-function BookingCard({ b, onReview }: { b: MockBooking, onReview: (b: MockBooking) => void }) {
+function BookingCard({ b, onReview, onQueja }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void }) {
   const cfg = STATUS_CONFIG[b.status];
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -133,6 +134,7 @@ function BookingCard({ b, onReview }: { b: MockBooking, onReview: (b: MockBookin
                 {!b.reviewId && (
                   <Btn variant="ghost" className="bg-orange-50 !text-[#FF6A00]" icon={<StarIcon className="h-4 w-4" />} onClick={() => onReview(b)}>Reseñar</Btn>
                 )}
+                <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
               </>
             )}
             {b.status === 'pending' && (
@@ -154,7 +156,8 @@ function BookingCard({ b, onReview }: { b: MockBooking, onReview: (b: MockBookin
                   </Btn>
                 )}
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Recibo</Btn>
-                  <Btn variant="ghost" className="ml-auto !text-[#FF6A00]" href={`/services/${b.serviceId || '1'}`} data-serviceid={b.serviceId}>Volver a reservar</Btn>
+                <Btn variant="ghost" className="ml-auto !text-[#FF6A00]" href={`/services/${b.serviceId || '1'}`} data-serviceid={b.serviceId}>Volver a reservar</Btn>
+                <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
               </>
             )}
             {(b.status === 'cancelled' || b.status === 'rejected') && (
@@ -198,10 +201,17 @@ export default function BookingsPage() {
   const [stats, setStats] = useState(STATS);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<MockBooking | null>(null);
+  const [isQuejaModalOpen, setIsQuejaModalOpen] = useState(false);
+  const [quejaBooking, setQuejaBooking] = useState<MockBooking | null>(null);
 
   const handleOpenReview = (b: MockBooking) => {
     setSelectedBooking(b);
     setIsReviewModalOpen(true);
+  };
+
+  const handleOpenQueja = (b: MockBooking) => {
+    setQuejaBooking(b);
+    setIsQuejaModalOpen(true);
   };
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
@@ -351,7 +361,7 @@ export default function BookingsPage() {
               </div>
             ) : (
               filtered.map(b => (
-                <BookingCard key={b.id} b={b} onReview={handleOpenReview} />
+                <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} />
               ))
             )}
           </div>
@@ -364,6 +374,18 @@ export default function BookingsPage() {
         bookingCode={selectedBooking?.id.substring(0, 8).toUpperCase() ?? ''}
         onSubmit={handleReviewSubmit}
       />
+      {isQuejaModalOpen && quejaBooking && (
+        <ReportarQuejaModal
+          bookingId={quejaBooking.id}
+          artistName={quejaBooking.artistName}
+          onClose={() => { setIsQuejaModalOpen(false); setQuejaBooking(null); }}
+          onSuccess={(disputeId) => {
+            setIsQuejaModalOpen(false);
+            setQuejaBooking(null);
+            alert('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -379,6 +401,7 @@ function PinIcon({ className }: { className?: string }) { return <svg className=
 function VideoIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>; }
 function InfoIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>; }
 function XCircleIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>; }
+function FlagIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>; }
 function ChatBubbleIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>; }
 function StarIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>; }
 function CheckCircleIcon({ className }: { className?: string }) { return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>; }

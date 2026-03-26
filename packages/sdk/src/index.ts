@@ -2286,6 +2286,64 @@ class PiumsSDK {
     }
   }
 
+  // ─── Disputes ────────────────────────────────────────────────────────────────
+
+  async createDispute(payload: {
+    bookingId: string;
+    disputeType: string;
+    subject: string;
+    description: string;
+    reportedAgainst?: string;
+  }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/disputes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getMyDisputes(): Promise<{ asReporter: any[]; asReported: any[]; total: number }> {
+    const response = await fetch(`${this.baseUrl}/disputes/me`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getDisputeById(id: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/disputes/${id}`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async addDisputeMessage(disputeId: string, message: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/disputes/${disputeId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ message }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
   /**
    * Obtiene lista de reportes
    * (Solo admins)

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
+import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
 import { sdk, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 
@@ -30,6 +31,7 @@ export default function ArtistBookingsPage() {
   const [activeStatus, setActiveStatus] = useState<BookingStatus>('PENDING');
   const [error, setError] = useState<string | null>(null);
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+  const [quejaBooking, setQuejaBooking] = useState<Booking | null>(null);
   const [statusCounts, setStatusCounts] = useState<Record<string, number | null>>({
     PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null,
   });
@@ -336,6 +338,17 @@ export default function ArtistBookingsPage() {
                           </button>
                         </div>
                       )}
+                      {(booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') && (
+                        <div className="flex gap-2 px-4 pb-4 pt-1">
+                          <button
+                            onClick={() => setQuejaBooking(booking)}
+                            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>
+                            Reportar queja
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -387,6 +400,17 @@ export default function ArtistBookingsPage() {
           )}
         </div>
       </main>
+
+      {quejaBooking && (
+        <ReportarQuejaModal
+          bookingId={quejaBooking.id}
+          onClose={() => setQuejaBooking(null)}
+          onSuccess={() => {
+            setQuejaBooking(null);
+            alert('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
+          }}
+        />
+      )}
     </div>
   );
 }
