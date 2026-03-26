@@ -474,15 +474,24 @@ export class ReviewService {
   /**
    * Obtener reportes pendientes (admin)
    */
-  async getPendingReports(page = 1, limit = 20) {
+  async getPendingReports(page = 1, limit = 20, estado?: string) {
     const skip = (page - 1) * limit;
+
+    // Map frontend estado to DB status; default to PENDING
+    const statusMap: Record<string, string> = {
+      pending: 'PENDING',
+      resolved: 'RESOLVED',
+      dismissed: 'DISMISSED',
+    };
+    const statusFilter = estado ? (statusMap[estado.toLowerCase()] ?? 'PENDING') : 'PENDING';
+    const whereClause: any = { deletedAt: null };
+    if (estado !== '') whereClause.status = statusFilter;
+    // Empty string means "all"
+    if (estado === '') delete whereClause.status;
 
     const [reports, total] = await Promise.all([
       prisma.reviewReport.findMany({
-        where: {
-          status: "PENDING",
-          deletedAt: null,
-        },
+        where: whereClause,
         include: {
           review: {
             include: {
@@ -495,20 +504,15 @@ export class ReviewService {
         take: limit,
       }),
       prisma.reviewReport.count({
-        where: {
-          status: "PENDING",
-          deletedAt: null,
-        },
+        where: whereClause,
       }),
     ]);
 
     return {
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      reports,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     };
   }
 

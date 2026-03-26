@@ -151,8 +151,9 @@ export class ReviewController {
       // TODO: Verificar que el usuario es admin
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
+      const estado = req.query.estado as string | undefined;
 
-      const result = await reviewService.getPendingReports(page, limit);
+      const result = await reviewService.getPendingReports(page, limit, estado);
       res.json(result);
     } catch (error) {
       next(error);

@@ -120,11 +120,14 @@ export class BookingController {
     try {
       const userId = req.user!.id;
       const isAdmin = req.user?.role === 'admin';
+      const isArtist = req.user?.role === 'artista';
 
-      // Non-admin users can only see their own bookings
+      // Artists filter by artistId only; clients see their own bookings; admins can filter freely
       const clientId = isAdmin
         ? (req.query.clientId as string | undefined)
-        : userId;
+        : isArtist
+          ? undefined
+          : userId;
 
       const query = {
         clientId,

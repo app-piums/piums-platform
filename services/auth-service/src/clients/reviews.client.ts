@@ -11,13 +11,16 @@ export class ReviewsClient {
   /**
    * Obtiene reportes pendientes para el admin
    */
-  async getPendingReports(token?: string, page: number = 1, limit: number = 20) {
+  async getPendingReports(token?: string, page: number = 1, limit: number = 20, estado?: string) {
     try {
       const headers: any = {};
       if (token) headers['Authorization'] = token;
       
+      const params: any = { page, limit };
+      if (estado) params.estado = estado;
+
       const response = await axios.get(`${REVIEWS_SERVICE_URL}/api/admin/reports/pending`, {
-        params: { page, limit },
+        params,
         headers,
         timeout: 5000,
       });

@@ -330,12 +330,13 @@ export const getBookings = async (req: Request, res: Response, next: NextFunctio
 // GET /api/admin/reports - Reportes pendientes
 export const getReports = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20' } = req.query;
+    const { page = '1', limit = '20', estado } = req.query;
     
     const result = await reviewsClient.getPendingReports(
       req.headers.authorization,
       parseInt(page as string),
-      parseInt(limit as string)
+      parseInt(limit as string),
+      estado as string | undefined
     );
 
     // Obtener nombres de los que reportan
