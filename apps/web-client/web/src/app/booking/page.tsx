@@ -904,6 +904,11 @@ function BookingContent() {
                       <CalendarPicker
                         availability={availability}
                         selectedDate={selectedDate}
+                        rangeEndDate={
+                          isMultiDay && selectedDate && numDays > 1
+                            ? new Date(selectedDate.getTime() + (numDays - 1) * 86400000)
+                            : undefined
+                        }
                         selectedTime={selectedTime}
                         onDateSelect={handleDateSelect}
                         onTimeSelect={handleTimeSelect}

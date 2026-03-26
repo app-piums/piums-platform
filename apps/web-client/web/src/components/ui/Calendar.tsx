@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 
 interface CalendarProps {
   selectedDate?: Date;
+  rangeEndDate?: Date;
   onDateSelect?: (date: Date) => void;
   disabledDates?: Date[];
   highlightedDates?: Date[];
@@ -14,6 +15,7 @@ interface CalendarProps {
 
 export const Calendar: React.FC<CalendarProps> = ({
   selectedDate,
+  rangeEndDate,
   onDateSelect,
   disabledDates = [],
   highlightedDates = [],
@@ -76,6 +78,19 @@ export const Calendar: React.FC<CalendarProps> = ({
     return highlightedDates.some(highlightedDate => isSameDay(date, highlightedDate));
   };
 
+  const isInRange = (date: Date | null): boolean => {
+    if (!date || !selectedDate || !rangeEndDate) return false;
+    const d = date.getTime();
+    const start = new Date(selectedDate); start.setHours(0,0,0,0);
+    const end = new Date(rangeEndDate); end.setHours(23,59,59,999);
+    return d > start.getTime() && d < end.getTime();
+  };
+
+  const isRangeEnd = (date: Date | null): boolean => {
+    if (!rangeEndDate) return false;
+    return isSameDay(date, rangeEndDate);
+  };
+
   const handlePreviousMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
@@ -134,9 +149,12 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
           const isSelected = isSameDay(date, selectedDate || null);
+          const isEnd = isRangeEnd(date);
+          const inRange = isInRange(date);
           const isDisabled = isDateDisabled(date);
           const isHighlighted = isDateHighlighted(date);
           const isToday = isSameDay(date, new Date());
+          const hasRange = !!rangeEndDate;
 
           return (
             <button
@@ -144,14 +162,17 @@ export const Calendar: React.FC<CalendarProps> = ({
               onClick={() => handleDateClick(date)}
               disabled={isDisabled}
               className={`
-                aspect-square p-2 rounded-lg text-sm font-medium
+                aspect-square p-2 text-sm font-medium
                 transition-all duration-200
                 ${!date ? 'invisible' : ''}
-                ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                ${!isSelected && !isDisabled && !isToday ? 'hover:bg-gray-100 text-gray-900' : ''}
-                ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
-                ${isToday && !isSelected ? 'ring-2 ring-blue-600 ring-inset text-blue-600' : ''}
-                ${isHighlighted && !isSelected ? 'bg-purple-100 text-purple-900' : ''}
+                ${isSelected && hasRange ? 'bg-[#FF6A00] text-white rounded-l-lg rounded-r-none' : ''}
+                ${isSelected && !hasRange ? 'bg-blue-600 text-white rounded-lg hover:bg-blue-700' : ''}
+                ${isEnd ? 'bg-[#FF6A00] text-white rounded-r-lg rounded-l-none' : ''}
+                ${inRange ? 'bg-orange-100 text-orange-900 rounded-none' : ''}
+                ${!isSelected && !isEnd && !inRange && !isDisabled && !isToday ? 'hover:bg-gray-100 text-gray-900 rounded-lg' : ''}
+                ${isDisabled ? 'text-gray-300 cursor-not-allowed rounded-lg' : 'cursor-pointer'}
+                ${isToday && !isSelected && !isEnd && !inRange ? 'ring-2 ring-blue-600 ring-inset text-blue-600 rounded-lg' : ''}
+                ${isHighlighted && !isSelected && !isEnd && !inRange ? 'bg-purple-100 text-purple-900 rounded-lg' : ''}
               `}
             >
               {date?.getDate()}
