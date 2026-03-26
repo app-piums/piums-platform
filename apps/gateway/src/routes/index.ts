@@ -157,7 +157,19 @@ export const setupRoutes = (app: Express) => {
   // ============================================================================
   // Artists Service (MIXTO - algunos endpoints públicos)
   // ============================================================================
-  
+
+  // Availability routes that live under /api/artists/:id/* but belong to
+  // booking-service. This MUST be registered BEFORE the general /api/artists proxy.
+  app.use(
+    createProxyMiddleware({
+      pathFilter: (path) =>
+        /^\/api\/artists\/[^/]+\/(blocked-slots|config)/.test(path),
+      target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
+      changeOrigin: true,
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
   app.use(
     "/api/artists",
     createProxyMiddleware({
@@ -178,6 +190,22 @@ export const setupRoutes = (app: Express) => {
       target: process.env.CATALOG_SERVICE_URL || "http://localhost:4004",
       changeOrigin: true,
       pathRewrite: { "^": "/api" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // ============================================================================
+  // Blocked Slots — POST /api/blocked-slots, DELETE /api/blocked-slots/:id
+  // Routed to booking-service (requires auth for write operations)
+  // ============================================================================
+
+  app.use(
+    "/api/blocked-slots",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/blocked-slots" },
       on: { proxyReq: fixRequestBody },
     })
   );

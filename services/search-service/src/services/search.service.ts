@@ -55,6 +55,26 @@ export class SearchService {
       })
     };
 
+    // Filter artists by absence visibility rules:
+    // - VACATION: hidden in all countries (not visible anywhere)
+    // - WORKING_ABROAD: only visible in their destination country
+    if (country) {
+      where.AND = [
+        {
+          OR: [
+            { activeAbsenceType: null },
+            {
+              activeAbsenceType: 'WORKING_ABROAD',
+              activeAbsenceDest: country,
+            },
+          ],
+        },
+      ];
+    } else {
+      // No country filter: hide VACATION and WORKING_ABROAD artists globally
+      where.activeAbsenceType = null;
+    }
+
     // Add text search if query provided
     if (query) {
       // Simple approach: search in name, bio, specialties, serviceTitles
@@ -362,7 +382,36 @@ export class SearchService {
         servicesCount: services.length,
         serviceIds: services.map(s => s.id),
         serviceTitles: services.map(s => s.title),
-        lastSyncedAt: new Date()
+        lastSyncedAt: new Date(),
+        // Absence tracking: manual blackout takes priority; fall back to GPS-detected country
+        ...((() => {
+          const now = new Date();
+          // 1. Check for active manual blackout
+          const manualAbsence = (artist.blackouts ?? []).find((b: any) =>
+            new Date(b.startAt) <= now && new Date(b.endAt) >= now
+          );
+          if (manualAbsence) {
+            return {
+              activeAbsenceType: manualAbsence.type ?? null,
+              activeAbsenceUntil: new Date(manualAbsence.endAt),
+              activeAbsenceDest: manualAbsence.destinationCountry ?? null,
+            };
+          }
+          // 2. GPS-detected absence: artist is in a different country than their home
+          if (artist.geoCountry && artist.geoCountry !== artist.country) {
+            return {
+              activeAbsenceType: 'WORKING_ABROAD',
+              activeAbsenceUntil: null, // No fixed end date for geo-detected absence
+              activeAbsenceDest: artist.geoCountry,
+            };
+          }
+          // 3. No active absence
+          return {
+            activeAbsenceType: null,
+            activeAbsenceUntil: null,
+            activeAbsenceDest: null,
+          };
+        })())
       };
 
       // Upsert to index

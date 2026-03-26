@@ -230,6 +230,17 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       REDIS_URL: redis://redis:6379
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
+      FRONTEND_URL: http://localhost:3000
+      # Email config — set ENABLE_EMAIL=true and fill credentials to activate transactional emails
+      ENABLE_EMAIL: "false"
+      EMAIL_PROVIDER: nodemailer  # or sendgrid
+      EMAIL_HOST: ""
+      EMAIL_PORT: "587"
+      EMAIL_SECURE: "false"
+      EMAIL_USER: ""
+      EMAIL_PASSWORD: ""
+      EMAIL_FROM: noreply@piums.com
+      # SENDGRID_API_KEY: ""   # Uncomment and set when using SendGrid
     depends_on:
       postgres:
         condition: service_healthy
@@ -256,6 +267,7 @@ services:
       CHAT_SERVICE_URL: http://chat-service:4010
       USERS_SERVICE_URL: http://users-service:4002
       ARTISTS_SERVICE_URL: http://artists-service:4003
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:

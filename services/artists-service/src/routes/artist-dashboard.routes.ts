@@ -9,6 +9,12 @@ import {
   getMyStats,
 } from "../controller/artist-dashboard.controller";
 import { getAvailability, setAvailability } from "../controller/artists.controller";
+import {
+  getAbsences,
+  createAbsence,
+  deleteAbsence,
+} from "../controller/absence.controller";
+import { updateGeoCountry } from "../controller/geo.controller";
 
 const router = Router();
 
@@ -30,5 +36,13 @@ router.get("/me/stats", getMyStats);
 // Disponibilidad (reutilizando del controller existente)
 router.get("/me/availability", getAvailability);
 router.post("/me/availability", setAvailability);
+
+// Ausencias / Viajes
+router.get("/me/absences", getAbsences);
+router.post("/me/absences", createAbsence);
+router.delete("/me/absences/:id", deleteAbsence);
+
+// Geolocalización en tiempo real
+router.patch("/me/geo-country", updateGeoCountry);
 
 export default router;

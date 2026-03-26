@@ -260,7 +260,12 @@ export default function ChatPage() {
                 onSendMessage={handleSendMessage}
                 onTypingStart={handleTypingStart}
                 onTypingStop={handleTypingStop}
-                disabled={isSending}
+                disabled={isSending || currentConversation?.status === 'PENDING'}
+                disabledReason={
+                  currentConversation?.status === 'PENDING'
+                    ? 'En espera de confirmación de reserva para habilitar el chat'
+                    : undefined
+                }
               />
             </>
           ) : (

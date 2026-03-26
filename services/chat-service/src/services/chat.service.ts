@@ -224,6 +224,12 @@ export class ChatService {
         throw new AppError(403, 'No tienes acceso a esta conversación');
       }
 
+      // Solo se permite enviar mensajes cuando la conversación está ACTIVE.
+      // Conversaciones ligadas a una reserva inician en PENDING hasta que el artista confirma.
+      if (conversation.status !== 'ACTIVE' && conversation.bookingId) {
+        throw new AppError(403, 'El chat se habilitará cuando el artista confirme la reserva');
+      }
+
       // Moderation: filtrar malas palabras
       let filteredContent = content;
       if (type === 'text') {

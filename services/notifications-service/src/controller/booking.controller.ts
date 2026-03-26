@@ -3,6 +3,7 @@ import {
   sendBookingCreatedClientEmail,
   sendBookingCreatedArtistEmail,
   sendBookingConfirmedEmail,
+  sendBookingConfirmedArtistEmail,
   sendBookingReminder24hEmail,
   sendBookingReminder2hEmail,
 } from '../services/booking-emails.service';
@@ -44,28 +45,31 @@ export const sendBookingCreatedNotification = async (req: Request, res: Response
 
 /**
  * POST /api/notifications/booking/confirmed
- * Envía email al cliente cuando el artista confirma
+ * Envía email al cliente y artista cuando el artista confirma la reserva
  */
 export const sendBookingConfirmedNotification = async (req: Request, res: Response) => {
   try {
     const data = req.body;
     
-    if (!data.bookingId || !data.clientEmail) {
+    if (!data.bookingId || !data.clientEmail || !data.artistEmail) {
       return res.status(400).json({
-        error: 'Missing required fields: bookingId, clientEmail',
+        error: 'Missing required fields: bookingId, clientEmail, artistEmail',
       });
     }
     
-    await sendBookingConfirmedEmail(data);
+    await Promise.all([
+      sendBookingConfirmedEmail(data),
+      sendBookingConfirmedArtistEmail(data),
+    ]);
     
     return res.json({
       success: true,
-      message: 'Booking confirmed notification sent',
+      message: 'Booking confirmed notifications sent to client and artist',
     });
   } catch (error: any) {
-    logger.error('Failed to send booking confirmed notification', 'BOOKING_NOTIFICATIONS', error);
+    logger.error('Failed to send booking confirmed notifications', 'BOOKING_NOTIFICATIONS', error);
     return res.status(500).json({
-      error: 'Failed to send notification',
+      error: 'Failed to send notifications',
       message: error.message,
     });
   }

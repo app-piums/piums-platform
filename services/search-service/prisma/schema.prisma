@@ -53,6 +53,11 @@ model ArtistIndex {
   // Full-text search fields
   searchVector      Unsupported("tsvector")?
   
+  // Absence tracking (synced from artists-service blackouts)
+  activeAbsenceType   String?   // 'VACATION' | 'WORKING_ABROAD' | null
+  activeAbsenceUntil  DateTime? // When the current absence ends
+  activeAbsenceDest   String?   // Destination country ISO code (when WORKING_ABROAD)
+
   // Metadata
   lastSyncedAt      DateTime @default(now())
   createdAt         DateTime @default(now())
@@ -65,6 +70,7 @@ model ArtistIndex {
   @@index([hourlyRateMin])
   @@index([isActive])
   @@index([isAvailable])
+  @@index([activeAbsenceType])
 }
 
 // Service Search Index - Denormalized data for fast search

@@ -29,7 +29,7 @@ export const createBookingSchema = z.object({
   serviceId: z.string().uuid("serviceId inválido"),
   
   scheduledDate: z.string().datetime("Fecha inválida"),
-  durationMinutes: z.number().int().min(15, "Duración mínima: 15 minutos").max(1440, "Duración máxima: 24 horas"),
+  durationMinutes: z.number().int().min(15, "Duración mínima: 15 minutos").max(43200, "Duración máxima: 30 días"),
   
   location: z.string().optional(),
   locationLat: z.number().min(-90).max(90).optional(),
@@ -43,7 +43,7 @@ export const createBookingSchema = z.object({
 // Schema para actualizar reserva
 export const updateBookingSchema = z.object({
   scheduledDate: z.string().datetime().optional(),
-  durationMinutes: z.number().int().min(15).max(1440).optional(),
+  durationMinutes: z.number().int().min(15).max(43200).optional(),
   location: z.string().optional(),
   locationLat: z.number().min(-90).max(90).optional(),
   locationLng: z.number().min(-180).max(180).optional(),
