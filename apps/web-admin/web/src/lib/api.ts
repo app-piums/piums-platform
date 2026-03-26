@@ -233,3 +233,53 @@ export const reportsApi = {
       body: JSON.stringify({ action, notes }),
     }),
 };
+
+// ─── Disputes (Quejas) ────────────────────────────────────────────────────────
+
+export interface DisputeRow {
+  id: string;
+  bookingId: string;
+  reportedBy: string;
+  reportedAgainst?: string;
+  disputeType: string;
+  status: string;
+  subject: string;
+  description: string;
+  priority: number;
+  resolution?: string;
+  resolutionNotes?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  refundAmount?: number;
+  refundIssued?: boolean;
+  createdAt: string;
+  messages?: { id: string; message: string; createdAt: string }[];
+}
+
+export interface PaginatedDisputes {
+  disputes: DisputeRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export const disputesApi = {
+  list: (params: { page?: number; limit?: number; status?: string }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== "")
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return request<PaginatedDisputes>(`/disputes${qs ? `?${qs}` : ""}`);
+  },
+
+  updateStatus: (id: string, status: string, notes?: string) =>
+    request<{ message: string; dispute: DisputeRow }>(`/disputes/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status, notes }),
+    }),
+
+  resolve: (id: string, resolution: string, resolutionNotes: string, refundAmount?: number) =>
+    request<{ message: string; dispute: DisputeRow }>(`/disputes/${id}/resolve`, {
+      method: "POST",
+      body: JSON.stringify({ resolution, resolutionNotes, refundAmount }),
+    }),
+};
