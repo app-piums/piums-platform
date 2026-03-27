@@ -195,6 +195,21 @@ export const setupRoutes = (app: Express) => {
   );
 
   // ============================================================================
+  // Availability — GET /api/availability/calendar, /time-slots, /check-reservation
+  // Routed to booking-service (PUBLIC — no auth required for availability checks)
+  // ============================================================================
+
+  app.use(
+    "/api/availability",
+    createProxyMiddleware({
+      target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/availability" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // ============================================================================
   // Blocked Slots — POST /api/blocked-slots, DELETE /api/blocked-slots/:id
   // Routed to booking-service (requires auth for write operations)
   // ============================================================================
