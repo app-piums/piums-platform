@@ -1828,9 +1828,7 @@ class PiumsSDK {
       const queryString = params.toString();
       const url = `${this.baseUrl}/artists/dashboard/me/bookings${queryString ? `?${queryString}` : ''}`;
 
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      const response = await fetch(url, this.withAuth({ credentials: 'include' }));
       
       if (!response.ok) {
         const error = await response.json();
@@ -1897,6 +1895,32 @@ class PiumsSDK {
       return await response.json();
     } catch (error) {
       console.error('Error declining booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una reserva como completada (solo artistas)
+   * @param bookingId ID de la reserva
+   */
+  async completeBooking(bookingId: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/complete`,
+        this.withAuth({
+          method: 'PATCH',
+          credentials: 'include',
+        })
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error completing booking:', error);
       throw error;
     }
   }

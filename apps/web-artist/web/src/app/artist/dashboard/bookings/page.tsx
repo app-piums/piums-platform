@@ -32,6 +32,7 @@ export default function ArtistBookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [quejaBooking, setQuejaBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [statusCounts, setStatusCounts] = useState<Record<string, number | null>>({
     PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null,
   });
@@ -120,6 +121,42 @@ export default function ArtistBookingsPage() {
     } catch (err: unknown) {
       console.error('Error declining booking:', getErrorMessage(err));
       alert(getErrorMessage(err) || 'Error al rechazar la reserva');
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
+
+  const handleComplete = async (bookingId: string) => {
+    if (!confirm('¿Marcar esta reserva como completada? Esta acción no se puede deshacer.')) return;
+    try {
+      setProcessingBookingId(bookingId);
+      await sdk.completeBooking(bookingId);
+      setSelectedBooking(null);
+      await loadBookings();
+      void loadStatusCounts();
+      alert('Reserva marcada como completada');
+    } catch (err: unknown) {
+      console.error('Error completing booking:', getErrorMessage(err));
+      alert(getErrorMessage(err) || 'Error al completar la reserva');
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
+
+  const handleCancel = async (bookingId: string) => {
+    const reason = prompt('¿Razón de la cancelación? (mínimo 10 caracteres)');
+    if (reason === null) return;
+    if (reason.trim().length < 10) { alert('La razón debe tener al menos 10 caracteres'); return; }
+    try {
+      setProcessingBookingId(bookingId);
+      await sdk.cancelBooking(bookingId, reason.trim());
+      setSelectedBooking(null);
+      await loadBookings();
+      void loadStatusCounts();
+      alert('Reserva cancelada');
+    } catch (err: unknown) {
+      console.error('Error cancelling booking:', getErrorMessage(err));
+      alert(getErrorMessage(err) || 'Error al cancelar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -239,7 +276,8 @@ export default function ArtistBookingsPage() {
                   {bookings.map((booking) => (
                     <div
                       key={booking.id}
-                      className={`bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 overflow-hidden hover:shadow-md transition-shadow ${
+                      onClick={() => setSelectedBooking(booking)}
+                      className={`bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
                         BORDER_ACCENT[booking.status] ?? 'border-l-gray-300'
                       }`}
                     >
@@ -318,7 +356,7 @@ export default function ArtistBookingsPage() {
                       {booking.status === 'PENDING' && (
                         <div className="flex gap-2 px-4 pb-4 pt-1">
                           <button
-                            onClick={() => handleAccept(booking.id)}
+                            onClick={(e) => { e.stopPropagation(); void handleAccept(booking.id); }}
                             disabled={processingBookingId === booking.id}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 active:scale-95 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
                           >
@@ -329,7 +367,7 @@ export default function ArtistBookingsPage() {
                             )}
                           </button>
                           <button
-                            onClick={() => handleDecline(booking.id)}
+                            onClick={(e) => { e.stopPropagation(); void handleDecline(booking.id); }}
                             disabled={processingBookingId === booking.id}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white text-red-600 text-sm font-semibold rounded-lg border-2 border-red-500 hover:bg-red-50 active:scale-95 transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed"
                           >
@@ -338,10 +376,32 @@ export default function ArtistBookingsPage() {
                           </button>
                         </div>
                       )}
-                      {(booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') && (
+                      {booking.status === 'CONFIRMED' && (
+                        <div className="flex gap-2 px-4 pb-4 pt-1 flex-wrap">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); void handleComplete(booking.id); }}
+                            disabled={processingBookingId === booking.id}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                          >
+                            {processingBookingId === booking.id ? (
+                              <span className="flex items-center gap-1.5"><span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />Procesando</span>
+                            ) : (
+                              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Marcar completada</>
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setQuejaBooking(booking); }}
+                            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>
+                            Reportar queja
+                          </button>
+                        </div>
+                      )}
+                      {booking.status === 'COMPLETED' && (
                         <div className="flex gap-2 px-4 pb-4 pt-1">
                           <button
-                            onClick={() => setQuejaBooking(booking)}
+                            onClick={(e) => { e.stopPropagation(); setQuejaBooking(booking); }}
                             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>
@@ -410,6 +470,183 @@ export default function ArtistBookingsPage() {
             alert('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
           }}
         />
+      )}
+
+      {/* Booking Detail Modal */}
+      {selectedBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
+          onClick={() => setSelectedBooking(null)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`flex items-center justify-between px-5 py-4 border-b border-gray-100 border-l-4 rounded-t-2xl ${
+              BORDER_ACCENT[selectedBooking.status] ?? 'border-l-gray-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-gray-400">#{selectedBooking.code || selectedBooking.id.slice(0, 8)}</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  STATUS_STYLES[selectedBooking.status] ?? 'bg-gray-100 text-gray-600'
+                }`}>
+                  {STATUS_ES[selectedBooking.status] ?? selectedBooking.status}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-5 py-4 space-y-4">
+              {/* Price */}
+              <div className="flex items-center justify-between bg-orange-50 rounded-xl px-4 py-3">
+                <span className="text-sm text-gray-600">Total</span>
+                <span className="text-xl font-bold text-orange-600">Q{selectedBooking.totalPrice.toLocaleString('es-GT')}</span>
+              </div>
+
+              {/* Fields */}
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div>
+                    <p className="text-xs text-gray-400">Fecha</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedBooking.scheduledDate).toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                      {' · '}
+                      {new Date(selectedBooking.scheduledDate).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-6">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-gray-400">Duración</p>
+                      <p className="text-sm font-medium text-gray-900">{selectedBooking.durationMinutes} min</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400">Ubicación</p>
+                      <p className="text-sm font-medium text-gray-900 break-words">{selectedBooking.location || 'No especificada'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedBooking.clientNotes && (
+                  <div className="flex items-start gap-3 bg-amber-50 rounded-xl px-3 py-2.5">
+                    <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-amber-700 font-medium mb-0.5">Notas del cliente</p>
+                      <p className="text-xs text-amber-800 leading-relaxed">{selectedBooking.clientNotes}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Actions */}
+              <div className="border-t border-gray-100 pt-4 space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Acciones</p>
+
+                {selectedBooking.status === 'PENDING' && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => void handleAccept(selectedBooking.id)}
+                      disabled={processingBookingId === selectedBooking.id}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {processingBookingId === selectedBooking.id ? (
+                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      )}
+                      Aceptar reserva
+                    </button>
+                    <button
+                      onClick={() => void handleDecline(selectedBooking.id)}
+                      disabled={processingBookingId === selectedBooking.id}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-white text-red-600 font-semibold rounded-xl border-2 border-red-500 hover:bg-red-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                      Rechazar reserva
+                    </button>
+                    <button
+                      onClick={() => void handleCancel(selectedBooking.id)}
+                      disabled={processingBookingId === selectedBooking.id}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-white text-gray-600 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Cancelar reserva
+                    </button>
+                  </div>
+                )}
+
+                {selectedBooking.status === 'CONFIRMED' && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => void handleComplete(selectedBooking.id)}
+                      disabled={processingBookingId === selectedBooking.id}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {processingBookingId === selectedBooking.id ? (
+                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      )}
+                      Marcar como completada
+                    </button>
+                    <button
+                      onClick={() => void handleCancel(selectedBooking.id)}
+                      disabled={processingBookingId === selectedBooking.id}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-white text-gray-600 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Cancelar reserva
+                    </button>
+                    <button
+                      onClick={() => { setSelectedBooking(null); setQuejaBooking(selectedBooking); }}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-red-600 font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-all text-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>
+                      Reportar queja
+                    </button>
+                  </div>
+                )}
+
+                {selectedBooking.status === 'COMPLETED' && (
+                  <button
+                    onClick={() => { setSelectedBooking(null); setQuejaBooking(selectedBooking); }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-red-600 font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-all text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>
+                    Reportar queja
+                  </button>
+                )}
+
+                {(selectedBooking.status === 'CANCELLED' || selectedBooking.status === 'COMPLETED') && selectedBooking.status !== 'COMPLETED' && (
+                  <p className="text-center text-sm text-gray-400 py-2">No hay acciones disponibles</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

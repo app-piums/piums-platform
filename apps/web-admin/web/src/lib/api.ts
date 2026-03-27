@@ -199,15 +199,22 @@ export const bookingsApi = {
 
 export interface AdminReportRow {
   id: string;
-  reporterNombre: string;
-  reporterEmail: string;
-  targetType: "user" | "artist" | "booking";
-  targetId: string;
-  motivo: string;
-  descripcion: string;
-  estado: "pending" | "resolved" | "dismissed";
+  reviewId: string;
+  reportedBy: string;  // userId del que reportó
+  reason: string;     // SPAM | OFFENSIVE | INAPPROPRIATE | OTHER
+  description?: string;
+  status: "PENDING" | "RESOLVED" | "DISMISSED";
   createdAt: string;
   resolvedAt?: string;
+  resolvedBy?: string;
+  resolution?: string;
+  review?: {
+    id: string;
+    artistId: string;
+    clientId: string;
+    comment?: string;
+    rating: number;
+  };
 }
 
 export interface PaginatedReports {
@@ -224,11 +231,11 @@ export const reportsApi = {
         .filter(([, v]) => v !== undefined && v !== "")
         .map(([k, v]) => [k, String(v)])
     ).toString();
-    return request<PaginatedReports>(`/admin/reports${qs ? `?${qs}` : ""}`);
+    return request<PaginatedReports>(`/reviews/admin/reports/pending${qs ? `?${qs}` : ""}`);
   },
 
   resolve: (id: string, action: "resolved" | "dismissed", notes?: string) =>
-    request<{ message: string }>(`/admin/reports/${id}/resolve`, {
+    request<{ message: string }>(`/reviews/admin/reports/${id}/resolve`, {
       method: "PATCH",
       body: JSON.stringify({ action, notes }),
     }),

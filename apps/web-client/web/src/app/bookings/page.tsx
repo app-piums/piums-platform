@@ -62,9 +62,13 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
 function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void, onMessage: (b: MockBooking) => void, onAddToEvent: (b: MockBooking) => void }) {
+  const router = useRouter();
   const cfg = STATUS_CONFIG[b.status];
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <div
+      onClick={() => router.push(`/bookings/${b.id}`)}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
+    >
       <div className="flex flex-col sm:flex-row">
         <div className="relative sm:w-40 h-36 sm:h-auto shrink-0 bg-gray-100">
           <Image
@@ -72,7 +76,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: Moc
             alt={b.title}
             width={320}
             height={192}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <span className={`absolute top-2 left-2 text-[11px] font-bold px-2.5 py-1 rounded-full ${cfg?.className || 'bg-gray-100 text-gray-600'}`}>
             • {cfg?.label || b.status}
@@ -128,7 +132,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: Moc
               <p className="text-xs text-red-600 leading-relaxed">{b.cancelReason}</p>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2 mt-auto pt-1">
+          <div className="flex flex-wrap items-center gap-2 mt-auto pt-1" onClick={e => e.stopPropagation()}>
             {(b.status === 'confirmed' || b.status === 'accepted') && (
               <>
                 <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />} onClick={() => onMessage(b)}>Mensaje al Artista</Btn>

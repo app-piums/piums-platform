@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { sdk } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
@@ -217,7 +216,8 @@ function EmptyState({ onNew }: { onNew: () => void }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function EventsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const userName = user?.nombre ?? user?.email ?? 'Usuario';
 
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,20 +255,19 @@ export default function EventsPage() {
 
   if (authLoading || (loading && !error)) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={userName} />
+        <div className="flex-1 min-w-0 flex items-center justify-center">
           <Loading />
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+      <ClientSidebar userName={userName} />
+      <main className="flex-1 min-w-0 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-20 lg:pt-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -318,7 +317,6 @@ export default function EventsPage() {
           </div>
         )}
       </main>
-      <Footer />
 
       {showCreate && (
         <CreateEventModal onClose={() => setShowCreate(false)} onCreate={handleCreated} />

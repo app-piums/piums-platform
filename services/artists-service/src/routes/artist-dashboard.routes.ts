@@ -6,6 +6,7 @@ import {
   getMyBookings,
   acceptBooking,
   declineBooking,
+  completeBooking,
   getMyStats,
 } from "../controller/artist-dashboard.controller";
 import { getAvailability, setAvailability } from "../controller/artists.controller";
@@ -29,6 +30,7 @@ router.put("/me", updateMyProfile);
 router.get("/me/bookings", getMyBookings);
 router.patch("/me/bookings/:id/accept", acceptBooking);
 router.patch("/me/bookings/:id/decline", declineBooking);
+router.patch("/me/bookings/:id/complete", completeBooking);
 
 // Estadísticas
 router.get("/me/stats", getMyStats);

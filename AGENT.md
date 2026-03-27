@@ -1,6 +1,7 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
-**Fecha de última actualización**: 17 de marzo de 2026
+**Fecha de última actualización**: 27 de marzo de 2026
+**Último commit**: `6bd4c77` — fix(artists): filtros por categoria, ciudad y busqueda de texto
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
 **Credenciales de prueba**: `artista@piums.com` / `Test1234!`
@@ -172,7 +173,7 @@ Usa `credentials: 'include'` para enviar cookies automáticamente.
 
 | Grupo | Métodos |
 |---|---|
-| **Artistas (público)** | `searchArtists()`, `getArtists()`, `getArtist(id)`, `getArtistReviews()`, `getArtistRating()` |
+| **Artistas (público)** | `searchArtists()`, `getArtists(params)`, `getArtist(id)`, `getArtistReviews()`, `getArtistRating()` |
 | **Disponibilidad** | `getCalendar()`, `getTimeSlots()`, `checkAvailability()` |
 | **Servicios/Catálogo** | `getArtistServices()`, `getServiceCategories()`, `createService()`, `updateService()`, `deleteService()`, `toggleServiceStatus()` |
 | **Reservas (cliente)** | `createBooking()`, `getBooking()`, `listBookings()`, `cancelBooking()`, `updateBookingDate()` |
@@ -184,6 +185,8 @@ Usa `credentials: 'include'` para enviar cookies automáticamente.
 | **Admin** | `getAdminStats()`, `getAdminUsers()`, `getAdminUserDetail()`, `toggleBlockUser()`, `getAdminArtists()`, `verifyArtist()`, `getAdminBookings()`, `getAdminReports()`, `resolveReport()` |
 
 **Tipos principales:** `Artist`, `ArtistProfile`, `Service`, `CreateServicePayload`, `UpdateServicePayload`, `ServiceCategory`, `Booking`, `CreateBookingPayload`, `Payment`, `PaymentIntent`, `Review`, `Conversation`, `Message`
+
+**`GetArtistsParams`**: `{ page?, limit?, category?, city?, q? }` — `category` acepta enum `MUSICO | FOTOGRAFO | DJ | TATUADOR | MAQUILLADOR | PINTOR | ESCULTOR | OTRO`; `city` es nombre de región (string, no ID); `q` es texto libre para búsqueda por nombre.
 
 ---
 
@@ -209,6 +212,8 @@ Usa `credentials: 'include'` para enviar cookies automáticamente.
 - Campos de cobertura: `coverageRadius`, `hourlyRateMin`, `hourlyRateMax`, `requiresDeposit`, `depositPercentage`
 - Integra con payments-service para estadísticas de earnings
 - **Schema**: `Artist`, `ArtistAvailability`, `BlockedDate`
+- `searchArtists()`: acepta `q` (búsqueda full-text por nombre, case-insensitive), `category` (enum), `city` (string), `minRating`, geo params
+- `searchArtistsSchema`: campo `q: z.string().optional()` para búsqueda full-text
 
 ### catalog-service (4004) — `piums_catalog`
 - CRUD de servicios del artista
@@ -448,12 +453,27 @@ Cada servicio tiene su propio conjunto de docs:
 - SDK completo con ~35 métodos
 - **web-artist**: Dashboard, Reservas, Servicios CRUD, Configuración (5 pestañas: personal, cobertura, perfil público, notificaciones, pagos), Onboarding con "Omitir". Categoría principal + secundaria con `<select>` (MUSICO, TATUADOR, FOTOGRAFO, etc.)
 - **web-client**: Landing, búsqueda, perfil de artista, flujo de booking completo (selección → checkout Stripe → confirmación), mis reservas, chat, perfil, onboarding con "Omitir"
+- **Sistema de Eventos multi-artista** (commit `874e704`): CRUD de eventos en booking-service, páginas `/events` y `/events/[id]`, AddToEventModal en `/bookings`, asociación de evento en paso 3 del wizard de booking
+- **Filtros de artistas corregidos** (commit `6bd4c77`): categorías, ciudades (regiones reales), búsqueda por texto `q`
+- **Regiones dinámicas**: `CITIES_BY_COUNTRY` con GT (22 depto), MX, HN, SV, CR, CO
 - **web-admin**: Panel de administración con Moderación (Reportes + Quejas fusionados en una sola página con tabs y badge de conteo)
 - Migración completa de moneda: MXN → **GTQ** en codebase entero (schemas, servicios, frontend, mocks)
 - `Intl.NumberFormat('es-GT', { currency: 'GTQ' })` en todos los componentes de precio
 - docker-compose.dev.yml con stack completo
 
-### 🆕 Completado recientemente
+### 🆕 Completado recientemente (27 mar 2026) — commit `6bd4c77`
+- **Fix filtros página `/artists`**:
+  - SDK `GetArtistsParams`: params renombrados `categoria→category`, `ciudad→city`, añadido `q`
+  - `useInfiniteArtists.ts`: mapeo correcto `filters.category→params.category`, `filters.cityId→params.city`, `filters.q→params.q`
+  - Valores de categorías corregidos al enum real: `MUSICO`, `FOTOGRAFO`, `DJ`, `TATUADOR`, `MAQUILLADOR`, `PINTOR`, `ESCULTOR`, `OTRO`
+  - `artists-service`: añadido campo `q` en schema + filtro por nombre (case-insensitive) en `searchArtists()`
+- **Regiones dinámicas por país** en `artists/page.tsx`:
+  - `CITIES_BY_COUNTRY`: mapa por código ISO (GT, MX, HN, SV, CR, CO)
+  - GT default: 22 departamentos de Guatemala
+  - `getCitiesForCountry(country)` con fallback a GT
+  - Al cambiar país se resetea `selectedCity`
+
+### ✅ Completado anteriormente (hasta 26 mar 2026)
 - **Selección de categorías artista**: Pestaña Personal tiene `<select>` para categoría principal y secundaria (`ARTIST_CATEGORIES` constant)
 - **Booking multi-día**: Toggle en paso 2 (Fecha/Hora), controles +/− para `numDays`, `effectiveDurationMinutes = numDays × 1440`
 - **Rango de fechas en calendario**: `CalendarPicker` + `Calendar.tsx` muestran degradado naranja entre fecha inicio y fin del multi-día

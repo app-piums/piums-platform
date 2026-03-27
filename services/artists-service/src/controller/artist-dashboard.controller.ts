@@ -177,6 +177,38 @@ export const declineBooking = async (
 };
 
 /**
+ * PATCH /api/artists/me/bookings/:id/complete - Marcar reserva como completada
+ */
+export const completeBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const bookingId = req.params.id as string;
+    const authToken = req.headers.authorization?.substring(7);
+    const success = await bookingServiceClient.completeBooking(bookingId, artist.id, authToken);
+
+    if (!success) {
+      throw new AppError(500, "Error al completar la reserva");
+    }
+
+    logger.info("Reserva completada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
+    res.json({
+      message: "Reserva marcada como completada",
+      bookingId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/artists/me/stats - Obtener estadísticas del artista
  */
 

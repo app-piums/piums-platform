@@ -3,8 +3,7 @@
 import React, { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
@@ -38,7 +37,8 @@ function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
 export default function BookingDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const userName = user?.nombre ?? user?.email ?? 'Usuario';
   
   const [booking, setBooking] = useState<Booking | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -103,21 +103,15 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
 
   if (error || !booking) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <p className="text-xl font-semibold text-gray-900 mb-2">
-            Reserva no encontrada
-          </p>
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={userName} />
+        <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 text-center">
+          <p className="text-xl font-semibold text-gray-900 mb-2">Reserva no encontrada</p>
           <p className="text-sm text-gray-500 mb-5">{error || 'No pudimos encontrar los detalles de esta reserva.'}</p>
-          <Link
-            href="/bookings"
-            className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl shadow-lg hover:bg-orange-600 transition"
-          >
+          <Link href="/bookings" className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl shadow-lg hover:bg-orange-600 transition">
             Volver a mis reservas
           </Link>
-        </main>
-        <Footer />
+        </div>
       </div>
     );
   }
@@ -148,10 +142,9 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const priceVal = Number(booking.totalPrice || booking.amount || 0);
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-6 lg:py-8">
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+      <ClientSidebar userName={userName} />
+      <main className="flex-1 min-w-0 max-w-7xl mx-auto w-full px-4 md:px-6 py-6 lg:py-8 pt-20 lg:pt-8">
         <Breadcrumbs
           items={[
             { label: 'Inicio', href: '/' },
@@ -355,8 +348,6 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
 
         </div>
       </main>
-
-      <Footer />
 
       <ReviewModal
         isOpen={isReviewModalOpen}

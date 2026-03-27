@@ -33,6 +33,16 @@ export default function ArtistProfilePage() {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState('');
+  // Write-review form
+  const [completedBookings, setCompletedBookings] = useState<{ id: string; code: string }[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewBookingId, setReviewBookingId] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -127,6 +137,54 @@ export default function ArtistProfilePage() {
       loadReviews(1);
     }
   }, [activeTab, loadReviews, reviews.length]);
+
+  // Load completed bookings for this artist so the user can leave a review
+  useEffect(() => {
+    if (activeTab !== 'reviews' || !user) return;
+    (async () => {
+      try {
+        const { sdk } = await import('@piums/sdk');
+        const result = await sdk.listBookings({ status: 'COMPLETED', artistId, limit: 20 });
+        const mapped = (result.bookings ?? []).map((b: any) => ({
+          id: b.id,
+          code: b.bookingCode ?? b.id.slice(0, 8),
+        }));
+        setCompletedBookings(mapped);
+        if (mapped.length > 0) setReviewBookingId(mapped[0].id);
+      } catch {
+        // silently ignore — user may not be logged in or no bookings
+      }
+    })();
+  }, [activeTab, artistId, user]);
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) return;
+    if (!reviewBookingId) {
+      setReviewError('Necesitas una reserva completada con este artista para dejar una reseña.');
+      return;
+    }
+    try {
+      setReviewSubmitting(true);
+      setReviewError(null);
+      const { sdk } = await import('@piums/sdk');
+      await sdk.createReview({
+        bookingId: reviewBookingId,
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+      setReviewSuccess(true);
+      setShowReviewForm(false);
+      setReviewComment('');
+      setReviewRating(5);
+      // Reload reviews
+      setReviews([]);
+      loadReviews(1);
+    } catch (err: any) {
+      setReviewError(err?.message ?? 'Error al enviar la reseña');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   const handleLoadMoreReviews = () => {
     if (reviewsPage < reviewsTotalPages) {
@@ -492,6 +550,125 @@ export default function ArtistProfilePage() {
 
             {activeTab === 'reviews' && (
               <div className="space-y-4">
+
+                {/* Write-a-review block */}
+                {user && !reviewSuccess && (
+                  <Card>
+                    <CardContent>
+                      {!showReviewForm ? (
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">¿Ya trabajaste con este artista?</p>
+                          <button
+                            onClick={() => setShowReviewForm(true)}
+                            className="flex items-center gap-2 rounded-xl bg-[#FF6A00] px-4 py-2 text-sm font-semibold text-white hover:bg-[#E65F00] transition-colors"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                            Escribir reseña
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-4">Escribe tu reseña</h3>
+
+                          {/* Booking selector */}
+                          {completedBookings.length > 1 && (
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Reserva</label>
+                              <select
+                                value={reviewBookingId}
+                                onChange={e => setReviewBookingId(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20"
+                              >
+                                {completedBookings.map(b => (
+                                  <option key={b.id} value={b.id}>{b.code}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Star rating */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Calificación</label>
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onMouseEnter={() => setReviewHover(star)}
+                                  onMouseLeave={() => setReviewHover(0)}
+                                  onClick={() => setReviewRating(star)}
+                                  className="text-2xl transition-transform hover:scale-110"
+                                >
+                                  <svg
+                                    className={`h-8 w-8 ${
+                                      star <= (reviewHover || reviewRating)
+                                        ? 'text-yellow-400'
+                                        : 'text-gray-300'
+                                    } transition-colors`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                </button>
+                              ))}
+                              <span className="ml-2 self-center text-sm text-gray-500">
+                                {['', 'Pésimo', 'Malo', 'Regular', 'Bueno', 'Excelente'][reviewRating]}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Comment */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Comentario <span className="text-gray-400 font-normal">(opcional)</span>
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={reviewComment}
+                              onChange={e => setReviewComment(e.target.value)}
+                              placeholder="Cuéntanos tu experiencia con este artista…"
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 resize-none"
+                            />
+                          </div>
+
+                          {reviewError && (
+                            <p className="mb-3 text-sm text-red-500">{reviewError}</p>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => { setShowReviewForm(false); setReviewError(null); }}
+                              className="flex-1 rounded-xl border border-gray-200 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={handleSubmitReview}
+                              disabled={reviewSubmitting || reviewRating === 0}
+                              className="flex-1 rounded-xl bg-[#FF6A00] py-2 text-sm font-semibold text-white hover:bg-[#E65F00] disabled:opacity-60 transition-colors"
+                            >
+                              {reviewSubmitting ? 'Enviando…' : 'Publicar reseña'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Success banner */}
+                {reviewSuccess && (
+                  <div className="flex items-center gap-3 rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+                    <svg className="h-5 w-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-sm text-green-700 font-medium">¡Reseña publicada! Gracias por tu opinión.</p>
+                  </div>
+                )}
+
                 {loadingReviews && reviews.length === 0 ? (
                   <Card>
                     <CardContent>

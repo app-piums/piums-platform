@@ -2,8 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import ClientSidebar from '@/components/ClientSidebar';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Loading } from '@/components/Loading';
 import { Avatar } from '@/components/ui/Avatar';
@@ -712,24 +711,23 @@ function BookingContent() {
 
   if (authLoading || loading) {
     return (
-      <div>
-        <Navbar />
-        <Loading />
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={user?.nombre ?? user?.email ?? 'Usuario'} />
+        <div className="flex-1 min-w-0 flex items-center justify-center"><Loading /></div>
       </div>
     );
   }
 
   if (!artist || !resolvedArtistId) {
     return (
-      <div>
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h2 className="text-2xl font-bold text-gray-900">{loadError || 'Información de reserva no válida'}</h2>
-          <Button onClick={() => router.push('/artists')} className="mt-4">
-            Ver Artistas
-          </Button>
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={user?.nombre ?? user?.email ?? 'Usuario'} />
+        <div className="flex-1 min-w-0 flex items-center justify-center px-4">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900">{loadError || 'Información de reserva no válida'}</h2>
+            <Button onClick={() => router.push('/artists')} className="mt-4">Ver Artistas</Button>
+          </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -743,11 +741,13 @@ function BookingContent() {
 
   const currentStepIndex = steps.findIndex(s => s.key === step);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+  const userName = user?.nombre ?? user?.email ?? 'Usuario';
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  return (
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+      <ClientSidebar userName={userName} />
+      <div className="flex-1 min-w-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
         <Breadcrumbs
           items={[
             { label: 'Inicio', href: '/' },
@@ -1474,7 +1474,7 @@ function BookingContent() {
         isLoading={submitting}
       />
 
-      <Footer />
+      </div>
     </div>
   );
 }

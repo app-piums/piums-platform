@@ -3,8 +3,7 @@
 import React, { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { sdk } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
@@ -310,7 +309,8 @@ function BookingRow({ booking, eventStatus, onRemove }: { booking: any; eventSta
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const userName = user?.nombre ?? user?.email ?? 'Usuario';
 
   const [event, setEvent] = useState<any>(null);
   const [breakdown, setBreakdown] = useState<any>(null);
@@ -386,22 +386,24 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50"><Navbar /><div className="flex items-center justify-center min-h-[60vh]"><Loading /></div><Footer /></div>
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={userName} />
+        <div className="flex-1 min-w-0 flex items-center justify-center"><Loading /></div>
+      </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={userName} />
+        <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 text-center">
           <p className="text-xl font-semibold text-gray-900 mb-2">Evento no encontrado</p>
           <p className="text-sm text-gray-500 mb-5">{error || 'No pudimos encontrar este evento.'}</p>
           <Link href="/events" className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl hover:bg-orange-600 transition">
             Volver a Eventos
           </Link>
-        </main>
-        <Footer />
+        </div>
       </div>
     );
   }
@@ -413,9 +415,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const symbol = currency === 'GTQ' ? 'Q' : '$';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+      <ClientSidebar userName={userName} />
+      <main className="flex-1 min-w-0 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-20 lg:pt-10">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/events" className="flex items-center gap-1 hover:text-[#FF6A00] transition-colors">
@@ -576,7 +578,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </main>
-      <Footer />
 
       {/* Modals */}
       {showCancel && (

@@ -188,6 +188,44 @@ export class BookingServiceClient {
   }
 
   /**
+   * Completar booking (CONFIRMED → COMPLETED)
+   */
+  async completeBooking(bookingId: string, artistId: string, authToken?: string): Promise<boolean> {
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch(
+        `${BOOKING_SERVICE_URL}/api/bookings/${bookingId}/status`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ status: "COMPLETED" }),
+        }
+      );
+
+      if (!response.ok) {
+        logger.error("Error completing booking", "BOOKING_CLIENT", {
+          bookingId,
+          status: response.status,
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error: any) {
+      logger.error("Error in completeBooking", "BOOKING_CLIENT", {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  /**
    * Rechazar booking
    */
   async rejectBooking(
