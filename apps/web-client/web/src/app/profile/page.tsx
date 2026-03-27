@@ -12,8 +12,9 @@ import SecurityTab from './security/page';
 import NotificationsTab from './notifications/page';
 import PaymentsTab from './payments/page';
 import DeleteAccountTab from './delete/page';
+import LegalTab from './legal/page';
 
-type TabId = 'personal' | 'security' | 'notifications' | 'payments' | 'delete';
+type TabId = 'personal' | 'security' | 'notifications' | 'payments' | 'delete' | 'legal';
 
 const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: boolean }> = [
   { id: 'personal',      label: 'Información personal', icon: <UserIcon className="h-4 w-4" /> },
@@ -21,6 +22,7 @@ const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: bo
   { id: 'notifications', label: 'Notificaciones',       icon: <BellIcon className="h-4 w-4" /> },
   { id: 'payments',      label: 'Métodos de pago',      icon: <CardIcon className="h-4 w-4" /> },
   { id: 'delete',        label: 'Eliminar cuenta',      icon: <TrashIcon className="h-4 w-4" />, danger: true },
+  { id: 'legal',         label: 'Legal',                icon: <ScaleIcon className="h-4 w-4" /> },
 ];
 
 const DEFAULT_DIRTY_STATE: Record<TabId, boolean> = {
@@ -29,6 +31,7 @@ const DEFAULT_DIRTY_STATE: Record<TabId, boolean> = {
   notifications: false,
   payments: false,
   delete: false,
+  legal: false,
 };
 
 export default function ProfilePage() {
@@ -177,6 +180,7 @@ export default function ProfilePage() {
               )}
               {currentTab === 'payments'      && <PaymentsTab />}
               {currentTab === 'delete'        && <DeleteAccountTab />}
+              {currentTab === 'legal'         && <LegalTab />}
             </div>
           </div>
         </div>
@@ -200,4 +204,7 @@ function CardIcon({ className }: { className?: string }) {
 }
 function TrashIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+}
+function ScaleIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>;
 }

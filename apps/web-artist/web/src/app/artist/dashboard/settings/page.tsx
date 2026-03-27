@@ -8,6 +8,37 @@ import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 
+function LegalAccordion({ section }: { section: { id: string; title: string; icon: string; content: React.ReactNode } }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="border border-gray-100 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl">{section.icon}</span>
+          <span className="font-semibold text-gray-900 text-sm">{section.title}</span>
+        </div>
+        <svg
+          className={`h-4 w-4 text-gray-400 transition-transform duration-200 shrink-0 ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="px-5 pb-5 pt-1 text-sm text-gray-600 leading-relaxed space-y-3 border-t border-gray-100">
+          {section.content}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const ARTIST_CATEGORIES: { value: string; label: string }[] = [
   { value: 'MUSICO', label: 'Músico' },
   { value: 'TATUADOR', label: 'Tatuador' },
@@ -231,6 +262,7 @@ export default function ArtistSettingsPage() {
     { id: 'profile', label: 'Perfil Público', icon: '📝' },
     { id: 'notifications', label: 'Notificaciones', icon: '🔔' },
     { id: 'payments', label: 'Pagos', icon: '💳' },
+    { id: 'legal', label: 'Legal', icon: '⚖️' },
   ];
 
   const hasBaseLocation = formData.baseLocationLat !== null && formData.baseLocationLng !== null;
@@ -890,6 +922,87 @@ export default function ArtistSettingsPage() {
                 </p>
                 <p className="text-sm text-gray-500 mt-4">
                   (Próximamente: Stripe Connect, cuentas bancarias, historial de pagos)
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'legal' && (
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Legal</h2>
+                  <p className="text-sm text-gray-500">Términos, privacidad y políticas de uso de la plataforma.</p>
+                </div>
+
+                {([
+                  {
+                    id: 'terms',
+                    title: 'Términos y Condiciones de Uso',
+                    icon: '📋',
+                    content: (
+                      <>
+                        <p>Al usar Piums aceptas estos Términos y Condiciones. Piums es una plataforma que conecta a artistas y creativos con personas que requieren sus servicios.</p>
+                        <p className="font-medium text-gray-800 mt-2">1. Uso de la plataforma</p>
+                        <p>Debes ser mayor de 18 años para crear una cuenta. Eres responsable de mantener la confidencialidad de tu contraseña y de todas las actividades realizadas con tu cuenta.</p>
+                        <p className="font-medium text-gray-800 mt-2">2. Reservas y comisiones</p>
+                        <p>Piums actúa como intermediario. Los precios son establecidos por cada artista. Piums puede retener una comisión por facilitar la transacción.</p>
+                        <p className="font-medium text-gray-800 mt-2">3. Cancelaciones</p>
+                        <p>Cada artista puede definir su política de cancelación. Los reembolsos se gestionan según la política configurada en cada servicio.</p>
+                        <p className="font-medium text-gray-800 mt-2">4. Modificaciones</p>
+                        <p>Nos reservamos el derecho de modificar estos Términos en cualquier momento con notificación previa por correo electrónico.</p>
+                      </>
+                    ),
+                  },
+                  {
+                    id: 'privacy',
+                    title: 'Política de Privacidad',
+                    icon: '🔒',
+                    content: (
+                      <>
+                        <p>Tu privacidad es importante para nosotros. Esta política describe cómo recopilamos, usamos y protegemos tu información personal.</p>
+                        <p className="font-medium text-gray-800 mt-2">Datos que recopilamos</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Nombre, correo, foto de perfil y datos del negocio</li>
+                          <li>Historial de reservas, reseñas y servicios ofrecidos</li>
+                          <li>Información de pago y de cuenta Stripe Connect</li>
+                          <li>Ubicación base para cálculo de cobertura y traslados</li>
+                        </ul>
+                        <p className="font-medium text-gray-800 mt-2">Tus derechos</p>
+                        <p>Puedes solicitar acceso, rectificación o eliminación de tus datos escribiéndonos a <span className="font-medium text-orange-600">privacidad@piums.com</span>.</p>
+                      </>
+                    ),
+                  },
+                  {
+                    id: 'cookies',
+                    title: 'Política de Cookies',
+                    icon: '🍪',
+                    content: (
+                      <>
+                        <p>Usamos cookies esenciales para la autenticación y funcionamiento, analíticas para mejorar la plataforma, y de preferencias para recordar tu configuración.</p>
+                        <p className="mt-2">Puedes desactivar las cookies no esenciales desde la configuración de tu navegador.</p>
+                      </>
+                    ),
+                  },
+                  {
+                    id: 'contact',
+                    title: 'Contacto y Soporte',
+                    icon: '💬',
+                    content: (
+                      <div className="space-y-2">
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                          <div className="flex items-center gap-2 text-sm"><span>📧</span><span className="font-medium text-orange-600">soporte@piums.com</span></div>
+                          <div className="flex items-center gap-2 text-sm"><span>⚖️</span><span className="font-medium text-orange-600">privacidad@piums.com</span></div>
+                          <div className="flex items-center gap-2 text-sm"><span>🕐</span><span className="text-gray-600">Lunes a viernes, 9:00 – 18:00 (GMT-6)</span></div>
+                        </div>
+                        <p className="text-xs text-gray-400">Última actualización: marzo 2026 · Versión 1.0</p>
+                      </div>
+                    ),
+                  },
+                ] as { id: string; title: string; icon: string; content: React.ReactNode }[]).map((section) => (
+                  <LegalAccordion key={section.id} section={section} />
+                ))}
+
+                <p className="text-xs text-gray-400 text-center pt-2">
+                  Al usar Piums confirmas que has leído y aceptas nuestros términos y políticas.
                 </p>
               </div>
             )}
