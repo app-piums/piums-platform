@@ -33,7 +33,6 @@ interface MockBooking {
   eventId?: string;
 }
 
-const BOOKINGS: MockBooking[] = [];
 
 const STATS = [
   { label: 'Reservas Totales', value: 0, icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
@@ -420,10 +419,10 @@ export default function BookingsPage() {
                 ? new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
                 : '—',
               timeStart: b.scheduledDate
-                ? new Date(b.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                ? new Date(b.scheduledDate).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
                 : '—',
               timeEnd: b.scheduledDate && b.durationMinutes
-                ? new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                ? new Date(new Date(b.scheduledDate).getTime() + b.durationMinutes * 60000).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
                 : '—',
               location: b.location,
               serviceId: b.serviceId,

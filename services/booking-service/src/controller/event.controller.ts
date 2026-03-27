@@ -59,7 +59,7 @@ export class EventController {
   async getEvent(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientId = req.user!.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
       const event = await eventService.getEvent(id, clientId);
       if (!event) {
         res.status(404).json({ success: false, message: 'Evento no encontrado' });
@@ -74,7 +74,7 @@ export class EventController {
   async updateEvent(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientId = req.user!.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
       const payload = updateEventSchema.parse(req.body);
       const event = await eventService.updateEvent(id, clientId, payload);
       res.json({ success: true, data: event });
@@ -94,7 +94,7 @@ export class EventController {
   async cancelEvent(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientId = req.user!.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { cancelBookings } = cancelEventSchema.parse(req.body);
       const event = await eventService.cancelEvent(id, clientId, cancelBookings);
       res.json({ success: true, data: event });
@@ -114,7 +114,7 @@ export class EventController {
   async addBookingToEvent(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientId = req.user!.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { bookingId } = addBookingSchema.parse(req.body);
       const booking = await eventService.addBookingToEvent(id, bookingId, clientId);
       res.json({ success: true, data: booking });
@@ -138,7 +138,8 @@ export class EventController {
   async removeBookingFromEvent(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientId = req.user!.id;
-      const { id, bookingId } = req.params;
+      const id = req.params.id as string;
+      const bookingId = req.params.bookingId as string;
       await eventService.removeBookingFromEvent(id, bookingId, clientId);
       res.json({ success: true, message: 'Reserva removida del evento' });
     } catch (err: any) {
@@ -158,7 +159,7 @@ export class EventController {
   async getEventBreakdown(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const clientId = req.user!.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
       const breakdown = await eventService.getEventBreakdown(id, clientId);
       res.json({ success: true, data: breakdown });
     } catch (err: any) {
