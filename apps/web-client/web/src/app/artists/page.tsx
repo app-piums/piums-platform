@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
 import { Loading } from '@/components/Loading';
@@ -12,19 +12,113 @@ import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt'
 
 const CATEGORIES = [
   { value: '',          label: 'Todas las categorías' },
-  { value: 'musica',    label: 'Música' },
-  { value: 'fotografia', label: 'Fotografía' },
-  { value: 'catering',  label: 'Catering' },
-  { value: 'decoracion', label: 'Decoración' },
-  { value: 'animacion', label: 'Animación' },
+  { value: 'MUSICO',    label: 'Músico' },
+  { value: 'FOTOGRAFO', label: 'Fotógrafo' },
+  { value: 'DJ',        label: 'DJ' },
+  { value: 'TATUADOR',  label: 'Tatuador' },
+  { value: 'MAQUILLADOR', label: 'Maquillador' },
+  { value: 'PINTOR',    label: 'Pintor' },
+  { value: 'ESCULTOR',  label: 'Escultor' },
+  { value: 'OTRO',      label: 'Otro' },
 ];
 
-const CITIES = [
-  { value: '',  label: 'Todas las ciudades' },
-  { value: '1', label: 'Ciudad de México' },
-  { value: '2', label: 'Guadalajara' },
-  { value: '3', label: 'Monterrey' },
-];
+const CITIES_BY_COUNTRY: Record<string, { label: string; regions: { value: string; label: string }[] }> = {
+  GT: {
+    label: 'Todos los departamentos',
+    regions: [
+      { value: 'Guatemala',         label: 'Guatemala' },
+      { value: 'Sacatepéquez',      label: 'Sacatepéquez' },
+      { value: 'Chimaltenango',     label: 'Chimaltenango' },
+      { value: 'Escuintla',         label: 'Escuintla' },
+      { value: 'Santa Rosa',        label: 'Santa Rosa' },
+      { value: 'Sololá',            label: 'Sololá' },
+      { value: 'Totonicapán',       label: 'Totonicapán' },
+      { value: 'Quetzaltenango',    label: 'Quetzaltenango' },
+      { value: 'Suchitepéquez',     label: 'Suchitepéquez' },
+      { value: 'Retalhuleu',        label: 'Retalhuleu' },
+      { value: 'San Marcos',        label: 'San Marcos' },
+      { value: 'Huehuetenango',     label: 'Huehuetenango' },
+      { value: 'Quiché',            label: 'Quiché' },
+      { value: 'Baja Verapaz',      label: 'Baja Verapaz' },
+      { value: 'Alta Verapaz',      label: 'Alta Verapaz' },
+      { value: 'Petén',             label: 'Petén' },
+      { value: 'Izabal',            label: 'Izabal' },
+      { value: 'Zacapa',            label: 'Zacapa' },
+      { value: 'Chiquimula',        label: 'Chiquimula' },
+      { value: 'Jalapa',            label: 'Jalapa' },
+      { value: 'Jutiapa',           label: 'Jutiapa' },
+      { value: 'El Progreso',       label: 'El Progreso' },
+    ],
+  },
+  MX: {
+    label: 'Todos los estados',
+    regions: [
+      { value: 'Ciudad de México',  label: 'Ciudad de México' },
+      { value: 'Jalisco',           label: 'Jalisco' },
+      { value: 'Nuevo León',        label: 'Nuevo León' },
+      { value: 'Puebla',            label: 'Puebla' },
+      { value: 'Guanajuato',        label: 'Guanajuato' },
+      { value: 'Veracruz',          label: 'Veracruz' },
+      { value: 'Estado de México',  label: 'Estado de México' },
+      { value: 'Chihuahua',         label: 'Chihuahua' },
+      { value: 'Yucatán',           label: 'Yucatán' },
+      { value: 'Oaxaca',            label: 'Oaxaca' },
+    ],
+  },
+  HN: {
+    label: 'Todos los departamentos',
+    regions: [
+      { value: 'Francisco Morazán', label: 'Francisco Morazán' },
+      { value: 'Cortés',            label: 'Cortés' },
+      { value: 'Olancho',           label: 'Olancho' },
+      { value: 'Yoro',              label: 'Yoro' },
+      { value: 'Choluteca',         label: 'Choluteca' },
+    ],
+  },
+  SV: {
+    label: 'Todos los departamentos',
+    regions: [
+      { value: 'San Salvador',      label: 'San Salvador' },
+      { value: 'Santa Ana',         label: 'Santa Ana' },
+      { value: 'San Miguel',        label: 'San Miguel' },
+      { value: 'La Libertad',       label: 'La Libertad' },
+      { value: 'Sonsonate',         label: 'Sonsonate' },
+    ],
+  },
+  CR: {
+    label: 'Todas las provincias',
+    regions: [
+      { value: 'San José',           label: 'San José' },
+      { value: 'Alajuela',          label: 'Alajuela' },
+      { value: 'Cartago',           label: 'Cartago' },
+      { value: 'Heredia',           label: 'Heredia' },
+      { value: 'Guanacaste',        label: 'Guanacaste' },
+      { value: 'Puntarenas',        label: 'Puntarenas' },
+      { value: 'Limón',             label: 'Limón' },
+    ],
+  },
+  CO: {
+    label: 'Todos los departamentos',
+    regions: [
+      { value: 'Bogotá',            label: 'Bogotá' },
+      { value: 'Antioquia',         label: 'Antioquia' },
+      { value: 'Valle del Cauca',   label: 'Valle del Cauca' },
+      { value: 'Cundinamarca',      label: 'Cundinamarca' },
+      { value: 'Atlántico',          label: 'Atlántico' },
+    ],
+  },
+};
+
+const DEFAULT_COUNTRY = 'GT';
+
+function getCitiesForCountry(country: string) {
+  const key = country.toUpperCase();
+  const entry = CITIES_BY_COUNTRY[key] ?? CITIES_BY_COUNTRY[DEFAULT_COUNTRY];
+  return [
+    { value: '', label: entry.label },
+    ...entry.regions,
+  ];
+}
 
 function ArtistsPageContent() {
   const router = useRouter();
@@ -42,7 +136,10 @@ function ArtistsPageContent() {
     const upper = country.toUpperCase();
     localStorage.setItem('client_country', upper);
     setClientCountry(upper);
+    setSelectedCity('');
   }, []);
+
+  const cities = useMemo(() => getCitiesForCountry(clientCountry || DEFAULT_COUNTRY), [clientCountry]);
 
   const filters: ArtistsFilters = {
     q: searchQuery || undefined,
@@ -145,7 +242,7 @@ function ArtistsPageContent() {
                 onChange={e => { setSelectedCity(e.target.value); updateURL({ location: e.target.value }); }}
                 className="sm:w-44 px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition text-gray-700"
               >
-                {CITIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              {cities.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
               <button
                 type="submit"

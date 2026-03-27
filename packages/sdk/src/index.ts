@@ -259,8 +259,9 @@ export interface SearchParams {
 export interface GetArtistsParams {
   page?: number;
   limit?: number;
-  categoria?: string;
-  ciudad?: string;
+  category?: string;
+  city?: string;
+  q?: string;
 }
 
 export interface CalendarData {
@@ -721,11 +722,12 @@ class PiumsSDK {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
-      if (params?.categoria) queryParams.append('categoria', params.categoria);
-      if (params?.ciudad) queryParams.append('ciudad', params.ciudad);
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.city) queryParams.append('city', params.city);
+      if (params?.q) queryParams.append('q', params.q);
 
       const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

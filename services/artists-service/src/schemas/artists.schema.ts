@@ -145,6 +145,7 @@ export const availabilitySchema = z.object({
 
 // Schema para búsqueda de artistas
 export const searchArtistsSchema = z.object({
+  q: z.string().optional(),
   category: ArtistCategoryEnum.optional(),
   city: z.string().optional(),
   country: z.string().optional(),

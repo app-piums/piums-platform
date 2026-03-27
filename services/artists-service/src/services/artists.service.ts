@@ -188,6 +188,7 @@ export class ArtistsService {
    */
   async searchArtists(filters: any) {
     const {
+      q,
       category,
       city,
       country,
@@ -205,6 +206,7 @@ export class ArtistsService {
       deletedAt: null,
     };
 
+    if (q) where.nombre = { contains: q, mode: "insensitive" };
     if (category) where.category = category;
     if (city) where.city = { contains: city, mode: "insensitive" };
     if (country) where.country = { contains: country, mode: "insensitive" };

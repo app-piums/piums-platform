@@ -38,7 +38,7 @@ const getMockPage = (page: number, filters: ArtistsFilters): ArtistsPageResponse
   };
 };
 
-type ArtistsQueryParams = GetArtistsParams & { q?: string };
+type ArtistsQueryParams = GetArtistsParams;
 
 const fetchArtistsPage = async (
   page: number,
@@ -47,8 +47,8 @@ const fetchArtistsPage = async (
   try {
     const { sdk } = await import('@piums/sdk');
     const params: ArtistsQueryParams = { page, limit: ITEMS_PER_PAGE };
-    if (filters.category) params.categoria = filters.category;
-    if (filters.cityId) params.ciudad = filters.cityId;
+    if (filters.category) params.category = filters.category;
+    if (filters.cityId) params.city = filters.cityId;
     if (filters.q) params.q = filters.q;
     const result = await sdk.getArtists(params);
     return {
