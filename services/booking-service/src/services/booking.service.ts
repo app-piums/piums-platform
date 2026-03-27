@@ -9,6 +9,7 @@ import { generateBookingCode } from "./booking-code.service";
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
 import { notifyBookingConfirmed } from "../utils/notifications";
+import { createAvailabilityReservation, removeAvailabilityReservation } from "./availability.service";
 
 const prisma = new PrismaClient();
 
@@ -227,6 +228,18 @@ export class BookingService {
       depositRequired,
       paymentIntentCreated: !!paymentIntent,
     });
+
+    // Si la reserva se auto-confirma, bloquear el slot de disponibilidad
+    if (initialStatus === "CONFIRMED") {
+      const endAt = new Date(scheduledDate);
+      endAt.setMinutes(endAt.getMinutes() + data.durationMinutes);
+      createAvailabilityReservation({
+        artistId: data.artistId,
+        bookingId: booking.id,
+        startAt: scheduledDate,
+        endAt,
+      }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
+    }
 
     // Enviar notificación de reserva creada
     notificationsClient.sendNotification({
@@ -494,6 +507,16 @@ export class BookingService {
       artistId,
     });
 
+    // Bloquear el slot de disponibilidad del artista
+    const endAt = new Date(booking.scheduledDate);
+    endAt.setMinutes(endAt.getMinutes() + booking.durationMinutes);
+    createAvailabilityReservation({
+      artistId: booking.artistId,
+      bookingId: id,
+      startAt: booking.scheduledDate,
+      endAt,
+    }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
+
     // Enviar notificación al cliente de confirmación con datos reales
     (async () => {
       try {
@@ -669,6 +692,10 @@ export class BookingService {
       by: isClient ? "client" : "artist",
       refundAmount,
     });
+
+    // Liberar el slot de disponibilidad del artista
+    removeAvailabilityReservation(id)
+      .catch(() => { /* puede no existir si nunca fue CONFIRMED */ });
 
     // Enviar notificaciones de cancelación
     if (isClient) {
