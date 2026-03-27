@@ -513,16 +513,23 @@ function BookingContent() {
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
   const currency = priceQuote?.currency || selectedService?.currency || 'GTQ';
   const pricingItems = useMemo(() => {
-    const isViaticoScenario =
-      isMultiDay && numDays > 1 &&
-      travelDistanceKm != null &&
-      travelDistanceKm > (artist?.coverageRadius ?? 0);
+    // Viáticos se activa cuando: multi-día (>1 día) Y fuera del radio de cobertura.
+    // Sin ubicación aún mostramos el label "Viáticos" como indicativo si es multi-día,
+    // ya que la mayoría de reservas multi-día implican desplazamiento fuera de cobertura.
+    const coverageRadius = artist?.coverageRadius ?? 0;
+    const outsideCoverage =
+      travelDistanceKm != null ? travelDistanceKm > coverageRadius : null; // null = sin datos aún
+
+    const isMultiDayBooking = isMultiDay && numDays > 1;
+    const showViaticoLabel = isMultiDayBooking && (outsideCoverage !== false);
 
     const travelFeeDisplay = {
       id: 'travel-fee',
-      label: isViaticoScenario ? 'Viáticos' : 'Costo de traslado',
-      description: isViaticoScenario
-        ? `Incluye transporte, comida y hospedaje por ${numDays} días.`
+      label: showViaticoLabel ? 'Viáticos' : 'Costo de traslado',
+      description: showViaticoLabel
+        ? clientCoords
+          ? `Incluye transporte, comida y hospedaje por ${numDays} días.`
+          : `Agrega tu ubicación para calcular los viáticos (${numDays} días).`
         : clientCoords
           ? 'Usaremos tu ubicación para estimar este monto.'
           : 'Agrega tu ubicación para calcular el traslado.',
