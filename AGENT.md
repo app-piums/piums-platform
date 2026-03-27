@@ -531,11 +531,224 @@ cd services/booking-service && npx prisma db push
 
 ## 17. Cómo Desplegar
 
-PIUMS usa una estrategia **híbrida**: los frontends (Next.js) en **Vercel** y los microservicios en la infraestructura existente (Docker / Kubernetes).
+PIUMS usa una estrategia **híbrida**:
+- **Frontends** (Next.js) → **Vercel** (serverless, auto-deploy, CDN global)
+- **Microservicios + Gateway + DB + Redis** → **VPS o cloud** con Docker Compose (MVP) o Kubernetes (producción escalable)
 
-### 17.1 Frontends en Vercel
+```
+┌─────────────────────────────────────────────────────┐
+│                     INTERNET                        │
+└──────────┬───────────────────────┬──────────────────┘
+           │                       │
+    app.piums.com           api.piums.com
+    artist.piums.com
+    admin.piums.com
+           │                       │
+    ┌──────▼──────┐        ┌───────▼────────┐
+    │   VERCEL    │        │  VPS / Cloud   │
+    │  (Next.js)  │──────► │  API Gateway   │
+    │  3 proyectos│  HTTPS │  :3000         │
+    └─────────────┘        │                │
+                           │  9 servicios   │
+                           │  PostgreSQL    │
+                           │  Redis         │
+                           └────────────────┘
+```
 
-Cada frontend es un proyecto Vercel independiente:
+---
+
+### 17.0 Pre-requisitos
+
+Antes de desplegar necesitas tener listo:
+
+| Requisito | Para qué |
+|---|---|
+| Cuenta en [Vercel](https://vercel.com) | Frontends |
+| Servidor VPS (Hetzner / DigitalOcean / AWS EC2) con Docker instalado | Microservicios |
+| Dominio propio (ej. `piums.com`) | DNS para todos los subdominios |
+| Cuenta Stripe en modo live | Pagos reales |
+| Proyecto en Google Cloud Console | OAuth con Google |
+| Cuenta Cloudinary | Upload de avatares/imágenes |
+| Repositorio en GitHub conectado a Vercel | Auto-deploy |
+
+**Requisitos mínimos del servidor:**
+- 4 vCPU, 8 GB RAM (para correr los 9 servicios + PostgreSQL + Redis + Gateway)
+- Ubuntu 22.04 LTS
+- Docker 24+ y Docker Compose v2
+- Puerto 80 y 443 abiertos
+
+---
+
+### 17.1 Despliegue de Microservicios en el Servidor
+
+#### Paso 1 — Preparar el servidor
+
+```bash
+# Conectarse al servidor
+ssh root@IP_DEL_SERVIDOR
+
+# Instalar Docker
+curl -fsSL https://get.docker.com | sh
+systemctl enable docker && systemctl start docker
+
+# Instalar Docker Compose v2
+apt-get install docker-compose-plugin -y
+
+# Clonar el repositorio
+git clone https://github.com/app-piums/piums-platform.git /opt/piums
+cd /opt/piums
+```
+
+#### Paso 2 — Configurar variables de entorno de producción
+
+Crear el archivo `/opt/piums/.env.production`:
+
+```env
+# ── Base de datos ──────────────────────────────────────
+POSTGRES_USER=piums
+POSTGRES_PASSWORD=CAMBIAR_PASSWORD_SEGURO
+POSTGRES_DB=piums_dev
+
+# ── Redis ──────────────────────────────────────────────
+REDIS_URL=redis://piums-redis:6379
+
+# ── JWT ────────────────────────────────────────────────
+JWT_SECRET=CAMBIAR_SECRET_ALEATORIO_MIN_64_CHARS
+JWT_REFRESH_SECRET=CAMBIAR_OTRO_SECRET_DIFERENTE
+
+# ── URLs internas (entre contenedores, NO cambiar) ─────
+AUTH_SERVICE_URL=http://piums-auth-service:4001
+USERS_SERVICE_URL=http://piums-users-service:4002
+ARTISTS_SERVICE_URL=http://piums-artists-service:4003
+CATALOG_SERVICE_URL=http://piums-catalog-service:4004
+PAYMENTS_SERVICE_URL=http://piums-payments-service:4005
+REVIEWS_SERVICE_URL=http://piums-reviews-service:4006
+NOTIFICATIONS_SERVICE_URL=http://piums-notifications-service:4007
+BOOKING_SERVICE_URL=http://piums-booking-service:4008
+SEARCH_SERVICE_URL=http://piums-search-service:4009
+CHAT_SERVICE_URL=http://piums-chat-service:4010
+GATEWAY_INTERNAL_URL=http://piums-gateway:3000
+
+# ── URL pública del gateway (tu dominio real) ──────────
+GATEWAY_PUBLIC_URL=https://api.piums.com
+ALLOWED_ORIGINS=https://app.piums.com,https://artist.piums.com,https://admin.piums.com
+
+# ── Stripe ─────────────────────────────────────────────
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PLATFORM_FEE_PERCENT=15
+
+# ── OAuth Google ───────────────────────────────────────
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
+GOOGLE_CALLBACK_URL=https://api.piums.com/api/auth/google/callback
+
+# ── Cloudinary (avatares/imágenes) ────────────────────
+CLOUDINARY_CLOUD_NAME=piums
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+
+# ── Email (notificaciones) ─────────────────────────────
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USER=resend
+SMTP_PASS=re_...
+EMAIL_FROM=noreply@piums.com
+
+# ── Viáticos ───────────────────────────────────────────
+VIATICOS_FOOD_CENTS=15000
+VIATICOS_LODGING_CENTS=40000
+VIATICOS_TRANSPORT_CENTS=20000
+```
+
+> ⚠️ **Nunca subas este archivo a Git.** Está en `.gitignore`.
+
+#### Paso 3 — Levantar el stack
+
+```bash
+cd /opt/piums
+
+# Construir imágenes y levantar todos los servicios
+docker compose -f infra/docker/docker-compose.dev.yml --env-file .env.production up -d --build
+
+# Verificar que todos los contenedores estén corriendo
+docker compose -f infra/docker/docker-compose.dev.yml ps
+
+# Ejecutar migraciones de base de datos (primera vez)
+docker exec piums-auth-service npx prisma db push
+docker exec piums-users-service npx prisma db push
+docker exec piums-artists-service npx prisma db push
+docker exec piums-catalog-service npx prisma db push
+docker exec piums-booking-service npx prisma db push
+docker exec piums-payments-service npx prisma db push
+docker exec piums-reviews-service npx prisma db push
+docker exec piums-notifications-service npx prisma db push
+docker exec piums-search-service npx prisma db push
+
+# (Opcional) Cargar datos de prueba
+bash scripts/seed.sh
+```
+
+#### Paso 4 — Configurar Nginx + HTTPS
+
+Instalar Nginx y Certbot para TLS automático:
+
+```bash
+apt-get install nginx certbot python3-certbot-nginx -y
+
+# Obtener certificado SSL (requiere que el dominio ya apunte al servidor)
+certbot --nginx -d api.piums.com
+```
+
+Configuración en `/etc/nginx/sites-available/piums-api`:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name api.piums.com;
+
+    ssl_certificate     /etc/letsencrypt/live/api.piums.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.piums.com/privkey.pem;
+
+    location / {
+        proxy_pass         http://localhost:3005;  # puerto externo del gateway
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
+# Redirigir HTTP → HTTPS
+server {
+    listen 80;
+    server_name api.piums.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+```bash
+# Activar la configuración
+ln -s /etc/nginx/sites-available/piums-api /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+```
+
+#### Paso 5 — Verificar que el gateway responde
+
+```bash
+curl https://api.piums.com/api/health
+# Debe devolver: {"status":"ok","services":{...}}
+```
+
+---
+
+### 17.2 Despliegue de Frontends en Vercel
+
+Cada frontend es un **proyecto Vercel independiente**, todos apuntando al mismo repo GitHub.
 
 | Proyecto Vercel | Directorio raíz | Dominio |
 |---|---|---|
@@ -543,29 +756,68 @@ Cada frontend es un proyecto Vercel independiente:
 | `piums-web-artist` | `apps/web-artist/web` | `artist.piums.com` |
 | `piums-web-admin` | `apps/web-admin/web` | `admin.piums.com` |
 
-**Pasos para configurar un proyecto en Vercel:**
+#### Configurar cada proyecto en Vercel
 
+**Opción A — Desde vercel.com (recomendado):**
+1. Ir a `vercel.com/new` → Importar el repo de GitHub
+2. En **"Root Directory"** escribir `apps/web-client/web` (o el que corresponda)
+3. Framework: **Next.js** (auto-detectado)
+4. Agregar las variables de entorno (ver tabla abajo)
+5. Click en **Deploy**
+
+Repetir para `web-artist` y `web-admin` como proyectos separados.
+
+**Opción B — Con Vercel CLI:**
 ```bash
-# Instalar Vercel CLI
 npm i -g vercel
 
-# Desde la raíz del monorepo, vincular cada frontend
-cd apps/web-client/web && vercel link
-cd apps/web-artist/web && vercel link
+# Web Client
+cd apps/web-client/web
+vercel link          # vincula al proyecto existente o crea uno nuevo
+vercel env pull      # descarga variables de entorno de Vercel a .env.local
+vercel --prod        # despliega a producción
+
+# Web Artist
+cd apps/web-artist/web
+vercel link && vercel --prod
+
+# Web Admin
+cd apps/web-admin/web
+vercel link && vercel --prod
 ```
 
-**Variables de entorno requeridas en cada proyecto Vercel:**
+#### Variables de entorno en Vercel
 
-| Variable | Descripción | Ejemplo |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | URL pública del API Gateway | `https://api.piums.com/api` |
-| `GATEWAY_INTERNAL_URL` | URL interna para rewrites SSR | `https://api.piums.com` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clave pública Stripe | `pk_live_...` |
-| `NEXT_PUBLIC_APP_URL` | URL del propio frontend | `https://app.piums.com` |
+Configurar en el dashboard de cada proyecto (`Settings → Environment Variables`):
 
-> ⚠️ Variables con prefijo `NEXT_PUBLIC_` son expuestas al browser. Las sin prefijo solo se usan en SSR/build.
+**piums-web-client (`app.piums.com`):**
+| Variable | Valor producción |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://api.piums.com/api` |
+| `GATEWAY_INTERNAL_URL` | `https://api.piums.com` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
+| `NEXT_PUBLIC_APP_URL` | `https://app.piums.com` |
 
-**`next.config.ts` ya tiene el rewrite configurado:**
+**piums-web-artist (`artist.piums.com`):**
+| Variable | Valor producción |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://api.piums.com/api` |
+| `GATEWAY_INTERNAL_URL` | `https://api.piums.com` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
+| `NEXT_PUBLIC_APP_URL` | `https://artist.piums.com` |
+
+**piums-web-admin (`admin.piums.com`):**
+| Variable | Valor producción |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://api.piums.com/api` |
+| `GATEWAY_INTERNAL_URL` | `https://api.piums.com` |
+| `NEXT_PUBLIC_APP_URL` | `https://admin.piums.com` |
+
+> ⚠️ Variables con `NEXT_PUBLIC_` quedan expuestas en el bundle del browser. Las sin prefijo solo se usan durante el build/SSR en los servidores de Vercel.
+
+#### Cómo funciona el proxy de Vercel hacia el Gateway
+
+`next.config.ts` ya tiene el rewrite configurado:
 ```ts
 rewrites() {
   return [{
@@ -574,61 +826,112 @@ rewrites() {
   }]
 }
 ```
-Esto hace que las llamadas del cliente vayan a `/api/*` → Vercel las redirige al gateway de producción, evitando CORS.
 
-**Despliegue:**
-```bash
-# Preview (rama de feature)
-vercel
-
-# Producción
-vercel --prod
+Flujo de una petición desde el browser:
 ```
+Browser → POST app.piums.com/api/auth/login
+       → Vercel rewrite → https://api.piums.com/api/auth/login
+       → Nginx → Gateway :3000
+       → auth-service :4001
+```
+Esto evita CORS porque el browser nunca hace una petición cross-origin: todo pasa por el mismo dominio de Vercel.
 
-O conectar el repo en `vercel.com/new` y activar **"Auto-deploy on push"** en la branch `main`.
+#### Configurar dominio personalizado en Vercel
+
+1. En el proyecto Vercel → `Settings → Domains` → Agregar `app.piums.com`
+2. Vercel muestra los registros DNS a configurar (normalmente un `CNAME` apuntando a `cname.vercel-dns.com`)
+3. Agregar esos registros en tu proveedor de DNS (Cloudflare, Namecheap, etc.)
+4. Vercel gestiona el certificado TLS automáticamente
 
 ---
 
-### 17.2 Microservicios — Producción (Kubernetes)
+### 17.3 Configurar DNS
 
-Los microservicios NO van a Vercel. Se despliegan en el cluster K8s definido en `/infra/k8s/`.
+Una vez que el servidor tiene IP pública y Vercel tiene los proyectos:
 
-```bash
-# Staging
-kubectl apply -k infra/k8s/overlays/staging
-
-# Producción
-kubectl apply -k infra/k8s/overlays/production
-```
-
-El API Gateway debe tener una IP/dominio público estable (`api.piums.com`) con TLS terminado en Nginx (`/infra/nginx/`).
-
-**Variables de entorno del Gateway y servicios** se configuran como `Secret` o `ConfigMap` en K8s. Las claves mínimas por servicio:
-
-| Variable | Servicios que la requieren |
-|---|---|
-| `DATABASE_URL` | Todos los servicios |
-| `REDIS_URL` | gateway, auth, notifications |
-| `JWT_SECRET` | auth-service, gateway |
-| `STRIPE_SECRET_KEY` | payments-service |
-| `STRIPE_WEBHOOK_SECRET` | payments-service |
-| `GOOGLE_CLIENT_ID/SECRET` | auth-service |
-| `CLOUDINARY_URL` | users-service (avatares) |
+| Tipo | Nombre | Destino |
+|---|---|---|
+| `A` | `api` | `IP_DEL_SERVIDOR` |
+| `CNAME` | `app` | `cname.vercel-dns.com` |
+| `CNAME` | `artist` | `cname.vercel-dns.com` |
+| `CNAME` | `admin` | `cname.vercel-dns.com` |
 
 ---
 
-### 17.3 Flujo de CI/CD recomendado
+### 17.4 Configurar Stripe Webhooks
 
-```
-git push origin main
-      │
-      ├─── GitHub Actions ──► docker build & push → registry
-      │                       kubectl rollout (staging → prod)
-      │
-      └─── Vercel (auto) ──► build & deploy frontends
+Para que los pagos funcionen en producción, Stripe necesita notificar al servidor cuando un pago es procesado:
+
+1. Ir a `dashboard.stripe.com → Developers → Webhooks → Add endpoint`
+2. URL del endpoint: `https://api.piums.com/api/payments/webhook`
+3. Eventos a escuchar:
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `account.updated` (para Stripe Connect)
+4. Copiar el **Signing secret** (`whsec_...`) → pegar en `STRIPE_WEBHOOK_SECRET` del servidor
+
+---
+
+### 17.5 Flujo de Actualización (después del primer despliegue)
+
+**Actualizar microservicios:**
+```bash
+ssh root@IP_DEL_SERVIDOR
+cd /opt/piums
+
+# Traer últimos cambios
+git pull origin main
+
+# Reconstruir solo los servicios que cambiaron
+docker compose -f infra/docker/docker-compose.dev.yml up -d --build booking-service gateway
+
+# Si hay cambios en el schema de Prisma
+docker exec piums-booking-service npx prisma db push
 ```
 
-Vercel detecta automáticamente los cambios en `apps/web-client/web`, `apps/web-artist/web` etc. si el proyecto está configurado con el directorio raíz correcto.
+**Actualizar frontends:**
+Vercel hace auto-deploy automáticamente con cada push a `main`. Para deployar manualmente:
+```bash
+cd apps/web-client/web && vercel --prod
+```
+
+---
+
+### 17.6 Flujo de CI/CD con GitHub Actions (opcional)
+
+Crear `.github/workflows/deploy.yml` para automatizar el deploy del backend:
+
+```yaml
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - 'apps/gateway/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/piums
+            git pull origin main
+            docker compose -f infra/docker/docker-compose.dev.yml up -d --build
+```
+
+Secrets requeridos en GitHub (`Settings → Secrets`): `SERVER_IP`, `SSH_PRIVATE_KEY`.
+
+Vercel se encarga automáticamente del deploy de frontends sin necesidad de configuración adicional en GitHub Actions.
 
 ---
 
