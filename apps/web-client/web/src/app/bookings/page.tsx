@@ -30,6 +30,7 @@ interface MockBooking {
   serviceId?: string;
   artistId?: string;
   reviewId?: string;
+  eventId?: string;
 }
 
 const BOOKINGS: MockBooking[] = [];
@@ -60,7 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
-function BookingCard({ b, onReview, onQueja, onMessage }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void, onMessage: (b: MockBooking) => void }) {
+function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void, onMessage: (b: MockBooking) => void, onAddToEvent: (b: MockBooking) => void }) {
   const cfg = STATUS_CONFIG[b.status];
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -142,6 +143,11 @@ function BookingCard({ b, onReview, onQueja, onMessage }: { b: MockBooking, onRe
               <>
                 <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />} onClick={() => onMessage(b)}>Mensaje al Artista</Btn>
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
+                {b.eventId ? (
+                  <Btn variant="ghost" href={`/events/${b.eventId}`} className="!text-[#FF6A00] bg-orange-50">Ver Evento</Btn>
+                ) : (
+                  <Btn variant="ghost" className="!text-[#FF6A00] bg-orange-50" onClick={() => onAddToEvent(b)}>Agregar a Evento</Btn>
+                )}
                 <Btn variant="danger-ghost">Cancelar Solicitud</Btn>
               </>
             )}
@@ -191,7 +197,149 @@ function Btn({ children, variant = 'ghost', icon, href, className = '', onClick 
   return <button className={cls} onClick={onClick}>{icon}{children}</button>;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Add-to-Event Modal ───────────────────────────────────────────────────────
+function AddToEventModal({ booking, onClose, onDone }: {
+  booking: MockBooking;
+  onClose: () => void;
+  onDone: (bookingId: string, eventId: string) => void;
+}) {
+  const [events, setEvents] = React.useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = React.useState(true);
+  const [adding, setAdding] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Create-new-event inline form
+  const [showCreate, setShowCreate] = React.useState(false);
+  const [newName, setNewName] = React.useState('');
+  const [creating, setCreating] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await sdk.getClientEvents();
+        if (mounted) setEvents((data ?? []).filter((e: any) => e.status !== 'CANCELLED'));
+      } catch { /* ignore */ }
+      finally { if (mounted) setLoadingEvents(false); }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleAdd = async (eventId: string) => {
+    setAdding(eventId);
+    setError(null);
+    try {
+      await sdk.addBookingToEvent(eventId, booking.id);
+      onDone(booking.id, eventId);
+    } catch (err: any) {
+      setError(err.message || 'Error al agregar la reserva');
+    } finally {
+      setAdding(null);
+    }
+  };
+
+  const handleCreateAndAdd = async () => {
+    if (!newName.trim()) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const event = await sdk.createEvent({ name: newName.trim() });
+      await sdk.addBookingToEvent(event.id, booking.id);
+      onDone(booking.id, event.id);
+    } catch (err: any) {
+      setError(err.message || 'Error al crear el evento');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const STATUS_LABEL: Record<string, string> = { DRAFT: 'Borrador', ACTIVE: 'Activo' };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Agregar a Evento</h2>
+            <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs">{booking.title} · {booking.artistName}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+          {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+
+          {loadingEvents ? (
+            <p className="text-center text-sm text-gray-400 py-6">Cargando eventos…</p>
+          ) : events.length === 0 && !showCreate ? (
+            <p className="text-center text-sm text-gray-500 py-4">No tienes eventos activos aún.</p>
+          ) : (
+            <ul className="space-y-2">
+              {events.map((ev: any) => (
+                <li key={ev.id} className="flex items-center justify-between gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{ev.name}</p>
+                    <p className="text-xs text-gray-400">{STATUS_LABEL[ev.status] ?? ev.status} · {(ev.bookings ?? []).length} reservas</p>
+                  </div>
+                  <button
+                    onClick={() => handleAdd(ev.id)}
+                    disabled={adding === ev.id}
+                    className="shrink-0 bg-[#FF6A00] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#e55a00] disabled:opacity-50"
+                  >
+                    {adding === ev.id ? '…' : 'Agregar'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Crear nuevo evento inline */}
+          {showCreate ? (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-gray-800">Nombre del nuevo evento</p>
+              <input
+                type="text"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
+                placeholder="Ej: Boda García-López"
+                maxLength={200}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setShowCreate(false)} className="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button
+                  onClick={handleCreateAndAdd}
+                  disabled={creating || !newName.trim()}
+                  className="flex-1 bg-[#FF6A00] text-white rounded-lg py-2 text-sm font-bold hover:bg-[#e55a00] disabled:opacity-50"
+                >
+                  {creating ? 'Creando…' : 'Crear y agregar'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-500 hover:border-[#FF6A00] hover:text-[#FF6A00] transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Crear nuevo evento y agregar
+            </button>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-100 shrink-0">
+          <button onClick={onClose} className="w-full border border-gray-300 rounded-xl py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 export default function BookingsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -203,8 +351,9 @@ export default function BookingsPage() {
   const [stats, setStats] = useState(STATS);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<MockBooking | null>(null);
-  const [isQuejaModalOpen, setIsQuejaModalOpen] = useState(false);
-  const [quejaBooking, setQuejaBooking] = useState<MockBooking | null>(null);
+  const [isQuejaModalOpen, setIsQuejaModalOpen] = React.useState(false);
+  const [quejaBooking, setQuejaBooking] = React.useState<MockBooking | null>(null);
+  const [addToEventBooking, setAddToEventBooking] = React.useState<MockBooking | null>(null);
 
   const handleOpenReview = (b: MockBooking) => {
     setSelectedBooking(b);
@@ -276,6 +425,7 @@ export default function BookingsPage() {
               serviceId: b.serviceId,
               artistId: b.artistId,
               reviewId: b.reviewId || undefined,
+              eventId: b.eventId || undefined,
             };
           });
 
@@ -372,7 +522,7 @@ export default function BookingsPage() {
               </div>
             ) : (
               filtered.map(b => (
-                  <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} onMessage={handleOpenMessage} />
+                <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} onMessage={handleOpenMessage} onAddToEvent={(b) => setAddToEventBooking(b)} />
               ))
             )}
           </div>
@@ -394,6 +544,16 @@ export default function BookingsPage() {
             setIsQuejaModalOpen(false);
             setQuejaBooking(null);
             alert('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
+          }}
+        />
+      )}
+      {addToEventBooking && (
+        <AddToEventModal
+          booking={addToEventBooking}
+          onClose={() => setAddToEventBooking(null)}
+          onDone={(bookingId, eventId) => {
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, eventId } : b));
+            setAddToEventBooking(null);
           }}
         />
       )}

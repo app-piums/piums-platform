@@ -240,6 +240,20 @@ export const setupRoutes = (app: Express) => {
   );
 
   // ============================================================================
+  // Events (PROTEGIDO) — booking-service handles /api/events/*
+  // ============================================================================
+  app.use(
+    "/api/events",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/events" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // ============================================================================
   // Payments Service (PROTEGIDO)
   // ============================================================================
   

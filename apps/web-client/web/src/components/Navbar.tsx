@@ -66,6 +66,16 @@ export const Navbar: React.FC = () => {
               >
                 {t('bookings')}
               </Link>
+              <Link
+                href="/events"
+                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                  pathname?.startsWith('/events')
+                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Eventos
+              </Link>
             </div>
           </div>
 
@@ -103,6 +113,13 @@ export const Navbar: React.FC = () => {
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         {t('bookings')}
+                      </Link>
+                      <Link
+                        href="/events"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Eventos
                       </Link>
                       <hr className="my-1" />
                       <button

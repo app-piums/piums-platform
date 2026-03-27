@@ -183,6 +183,7 @@ function BookingContent() {
 
   const artistId = sanitizeParam(searchParams.get('artistId'));
   const serviceId = sanitizeParam(searchParams.get('serviceId'));
+  const eventId = sanitizeParam(searchParams.get('eventId'));
   const [resolvedArtistId, setResolvedArtistId] = useState<string | null>(artistId);
 
   const [step, setStep] = useState<BookingStep>('service');
@@ -230,6 +231,9 @@ function BookingContent() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [autoLocationRequestSent, setAutoLocationRequestSent] = useState(false);
+  const [clientEvents, setClientEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(eventId);
 
   useEffect(() => {
     if (locationError && (location || clientCoords)) {
@@ -339,6 +343,17 @@ function BookingContent() {
     setAutoLocationRequestSent(true);
     handleUseDetectedLocation(true);
   }, [autoLocationRequestSent, handleUseDetectedLocation]);
+
+  useEffect(() => {
+    if (step !== 'details') return;
+    let mounted = true;
+    setEventsLoading(true);
+    sdk.getClientEvents()
+      .then((data: any) => { if (mounted) setClientEvents((data ?? []).filter((e: any) => e.status !== 'CANCELLED')); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setEventsLoading(false); });
+    return () => { mounted = false; };
+  }, [step]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -679,6 +694,7 @@ function BookingContent() {
         locationLng: clientCoords?.lng,
         clientNotes: notes || undefined,
         selectedAddons: selectedAddons.length ? selectedAddons : undefined,
+        eventId: selectedEventId || undefined,
       };
 
       const booking = await sdk.createBooking(payload);
@@ -1125,6 +1141,61 @@ function BookingContent() {
                         </p>
                       </div>
 
+                      {/* Evento */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Asociar a un Evento <span className="text-gray-400 font-normal">(Opcional)</span>
+                        </label>
+                        {eventId ? (
+                          <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                            <svg className="h-5 w-5 text-[#FF6A00] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-semibold text-orange-800">
+                                {clientEvents.find((e: any) => e.id === eventId)?.name || 'Cargando evento…'}
+                              </p>
+                              <p className="text-xs text-orange-600 mt-0.5">Esta reserva quedará asociada a este evento automáticamente</p>
+                            </div>
+                          </div>
+                        ) : eventsLoading ? (
+                          <p className="text-sm text-gray-400">Cargando eventos…</p>
+                        ) : clientEvents.length === 0 ? (
+                          <p className="text-sm text-gray-500">No tienes eventos activos. <a href="/events" className="text-[#FF6A00] underline">Crea uno aquí</a>.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedEventId(null)}
+                              className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${
+                                selectedEventId === null
+                                  ? 'border-gray-400 bg-gray-50 font-medium text-gray-700'
+                                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                              }`}
+                            >
+                              Sin evento
+                            </button>
+                            {clientEvents.map((ev: any) => (
+                              <button
+                                key={ev.id}
+                                type="button"
+                                onClick={() => setSelectedEventId(ev.id)}
+                                className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${
+                                  selectedEventId === ev.id
+                                    ? 'border-[#FF6A00] bg-orange-50 font-medium text-orange-900'
+                                    : 'border-gray-200 text-gray-700 hover:border-[#FF6A00]/40'
+                                }`}
+                              >
+                                <span className="font-semibold">{ev.name}</span>
+                                <span className="ml-2 text-xs text-gray-400">
+                                  {ev.status === 'DRAFT' ? 'Borrador' : 'Activo'} · {(ev.bookings ?? []).length} reservas
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       {/* Buttons */}
                       <div className="flex gap-3 pt-4">
                         <Button variant="outline" onClick={() => setStep('datetime')} fullWidth>
@@ -1229,6 +1300,14 @@ function BookingContent() {
                               <dt className="text-sm text-gray-600">Notas:</dt>
                               <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">
                                 {notes}
+                              </dd>
+                            </div>
+                          )}
+                          {selectedEventId && (
+                            <div className="flex justify-between">
+                              <dt className="text-sm text-gray-600">Evento:</dt>
+                              <dd className="text-sm font-medium text-orange-700">
+                                {clientEvents.find((e: any) => e.id === selectedEventId)?.name || selectedEventId}
                               </dd>
                             </div>
                           )}
