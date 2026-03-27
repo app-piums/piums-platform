@@ -67,7 +67,8 @@ export default function ArtistSettingsPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const currentTab = activeTab ?? 'personal';
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -257,12 +258,12 @@ export default function ArtistSettingsPage() {
   const RADIUS_PRESETS = [5, 10, 20, 30, 50, 75, 100];
 
   const tabs = [
-    { id: 'personal', label: 'Datos Personales', icon: '👤' },
-    { id: 'coverage', label: 'Cobertura', icon: '📍' },
-    { id: 'profile', label: 'Perfil Público', icon: '📝' },
-    { id: 'notifications', label: 'Notificaciones', icon: '🔔' },
-    { id: 'payments', label: 'Pagos', icon: '💳' },
-    { id: 'legal', label: 'Legal', icon: '⚖️' },
+    { id: 'personal',      label: 'Datos Personales', icon: <ArtistUserIcon className="h-4 w-4" /> },
+    { id: 'coverage',      label: 'Cobertura',         icon: <ArtistMapPinIcon className="h-4 w-4" /> },
+    { id: 'profile',       label: 'Perfil Público',    icon: <ArtistPencilIcon className="h-4 w-4" /> },
+    { id: 'notifications', label: 'Notificaciones',    icon: <ArtistBellIcon className="h-4 w-4" /> },
+    { id: 'payments',      label: 'Pagos',             icon: <ArtistCardIcon className="h-4 w-4" /> },
+    { id: 'legal',         label: 'Legal',             icon: <ArtistScaleIcon className="h-4 w-4" /> },
   ];
 
   const hasBaseLocation = formData.baseLocationLat !== null && formData.baseLocationLng !== null;
@@ -286,13 +287,29 @@ export default function ArtistSettingsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
-      
-      <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Configuración</h1>
-            <p className="text-gray-500 text-sm">Administra tu perfil y preferencias</p>
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Desktop header */}
+        <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
+            {(artist?.nombre || 'A').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">{artist?.nombre || 'Configuración'}</h1>
+            <p className="text-sm text-gray-400">{artist?.email || ''}</p>
+          </div>
+        </header>
+
+        <div className="flex-1 p-4 pt-20 lg:p-8 lg:pt-8">
+          {/* Mobile header */}
+          <div className="lg:hidden flex items-center gap-3 mb-5">
+            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
+              {(artist?.nombre || 'A').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="font-bold text-gray-900">{artist?.nombre || 'Configuración'}</p>
+              <p className="text-sm text-gray-400">{artist?.email || ''}</p>
+            </div>
           </div>
 
           {error && (
@@ -301,30 +318,47 @@ export default function ArtistSettingsPage() {
             </div>
           )}
 
-          {/* Settings Tabs - scrollable on mobile */}
-          <div className="flex gap-1 mb-5 border-b border-gray-200 overflow-x-auto scrollbar-hide">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  whitespace-nowrap px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors relative flex items-center gap-1.5 shrink-0
-                  ${
-                    activeTab === tab.id
-                      ? 'text-orange-600 border-b-2 border-orange-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }
-                `}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Sidebar nav — visible on desktop always; on mobile only when no tab selected */}
+            <nav className={`lg:w-56 shrink-0 ${activeTab ? 'hidden lg:block' : 'block'}`}>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                {tabs.map((tab) => {
+                  const active = currentTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left transition-colors border-b border-gray-50 last:border-b-0
+                        ${active ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                    >
+                      <span className={active ? 'text-orange-600' : 'text-gray-400'}>{tab.icon}</span>
+                      {tab.label}
+                      <svg className="ml-auto h-4 w-4 text-gray-300 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      {active && (
+                        <span className="hidden lg:inline ml-auto h-1.5 w-1.5 rounded-full bg-orange-500" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
 
-          {/* Tab Content */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {activeTab === 'personal' && (
+            {/* Tab content — visible on desktop always; on mobile only when tab selected */}
+            <div className={`flex-1 min-w-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 ${activeTab ? 'block' : 'hidden lg:block'}`}>
+              {/* Mobile back button */}
+              <button
+                onClick={() => setActiveTab(null)}
+                className="lg:hidden flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-800 mb-5 -mt-1 transition-colors"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver a configuración
+              </button>
+
+              {currentTab === 'personal' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Datos Personales</h2>
 
@@ -510,7 +544,7 @@ export default function ArtistSettingsPage() {
               </div>
             )}
 
-            {activeTab === 'coverage' && (
+            {currentTab === 'coverage' && (
               <div className="space-y-8">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Cobertura y Traslado</h2>
@@ -705,7 +739,7 @@ export default function ArtistSettingsPage() {
               </div>
             )}
 
-            {activeTab === 'profile' && (
+            {currentTab === 'profile' && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Perfil Público</h2>
@@ -838,7 +872,7 @@ export default function ArtistSettingsPage() {
               </div>
             )}
 
-            {activeTab === 'notifications' && (
+            {currentTab === 'notifications' && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Notificaciones</h2>
@@ -911,7 +945,7 @@ export default function ArtistSettingsPage() {
               </div>
             )}
 
-            {activeTab === 'payments' && (
+            {currentTab === 'payments' && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">💳</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -926,7 +960,7 @@ export default function ArtistSettingsPage() {
               </div>
             )}
 
-            {activeTab === 'legal' && (
+            {currentTab === 'legal' && (
               <div className="space-y-4">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Legal</h2>
@@ -1006,6 +1040,7 @@ export default function ArtistSettingsPage() {
                 </p>
               </div>
             )}
+            </div>
           </div>
 
           {/* Artist ID Info (for developers) */}
@@ -1019,7 +1054,27 @@ export default function ArtistSettingsPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
+}
+
+// ─── Icons ───────────────────────────────────────────────────────────────────
+function ArtistUserIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
+}
+function ArtistMapPinIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+}
+function ArtistPencilIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>;
+}
+function ArtistBellIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>;
+}
+function ArtistCardIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>;
+}
+function ArtistScaleIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>;
 }
