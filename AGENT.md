@@ -529,7 +529,110 @@ cd services/booking-service && npx prisma db push
 
 ---
 
-## 17. Convenciones del Código
+## 17. Cómo Desplegar
+
+PIUMS usa una estrategia **híbrida**: los frontends (Next.js) en **Vercel** y los microservicios en la infraestructura existente (Docker / Kubernetes).
+
+### 17.1 Frontends en Vercel
+
+Cada frontend es un proyecto Vercel independiente:
+
+| Proyecto Vercel | Directorio raíz | Dominio |
+|---|---|---|
+| `piums-web-client` | `apps/web-client/web` | `app.piums.com` |
+| `piums-web-artist` | `apps/web-artist/web` | `artist.piums.com` |
+| `piums-web-admin` | `apps/web-admin/web` | `admin.piums.com` |
+
+**Pasos para configurar un proyecto en Vercel:**
+
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
+
+# Desde la raíz del monorepo, vincular cada frontend
+cd apps/web-client/web && vercel link
+cd apps/web-artist/web && vercel link
+```
+
+**Variables de entorno requeridas en cada proyecto Vercel:**
+
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | URL pública del API Gateway | `https://api.piums.com/api` |
+| `GATEWAY_INTERNAL_URL` | URL interna para rewrites SSR | `https://api.piums.com` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clave pública Stripe | `pk_live_...` |
+| `NEXT_PUBLIC_APP_URL` | URL del propio frontend | `https://app.piums.com` |
+
+> ⚠️ Variables con prefijo `NEXT_PUBLIC_` son expuestas al browser. Las sin prefijo solo se usan en SSR/build.
+
+**`next.config.ts` ya tiene el rewrite configurado:**
+```ts
+rewrites() {
+  return [{
+    source: '/api/:path*',
+    destination: `${process.env.GATEWAY_INTERNAL_URL}/api/:path*`
+  }]
+}
+```
+Esto hace que las llamadas del cliente vayan a `/api/*` → Vercel las redirige al gateway de producción, evitando CORS.
+
+**Despliegue:**
+```bash
+# Preview (rama de feature)
+vercel
+
+# Producción
+vercel --prod
+```
+
+O conectar el repo en `vercel.com/new` y activar **"Auto-deploy on push"** en la branch `main`.
+
+---
+
+### 17.2 Microservicios — Producción (Kubernetes)
+
+Los microservicios NO van a Vercel. Se despliegan en el cluster K8s definido en `/infra/k8s/`.
+
+```bash
+# Staging
+kubectl apply -k infra/k8s/overlays/staging
+
+# Producción
+kubectl apply -k infra/k8s/overlays/production
+```
+
+El API Gateway debe tener una IP/dominio público estable (`api.piums.com`) con TLS terminado en Nginx (`/infra/nginx/`).
+
+**Variables de entorno del Gateway y servicios** se configuran como `Secret` o `ConfigMap` en K8s. Las claves mínimas por servicio:
+
+| Variable | Servicios que la requieren |
+|---|---|
+| `DATABASE_URL` | Todos los servicios |
+| `REDIS_URL` | gateway, auth, notifications |
+| `JWT_SECRET` | auth-service, gateway |
+| `STRIPE_SECRET_KEY` | payments-service |
+| `STRIPE_WEBHOOK_SECRET` | payments-service |
+| `GOOGLE_CLIENT_ID/SECRET` | auth-service |
+| `CLOUDINARY_URL` | users-service (avatares) |
+
+---
+
+### 17.3 Flujo de CI/CD recomendado
+
+```
+git push origin main
+      │
+      ├─── GitHub Actions ──► docker build & push → registry
+      │                       kubectl rollout (staging → prod)
+      │
+      └─── Vercel (auto) ──► build & deploy frontends
+```
+
+Vercel detecta automáticamente los cambios en `apps/web-client/web`, `apps/web-artist/web` etc. si el proyecto está configurado con el directorio raíz correcto.
+
+---
+
+## 18. Convenciones del Código
 
 - **Moneda**: siempre `GTQ`, locale `es-GT`, símbolo `Q`
 - **Precios en backend**: centavos enteros (GTQ cents)
