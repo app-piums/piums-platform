@@ -538,20 +538,27 @@ function BookingContent() {
     };
 
     if (priceQuote) {
-      const mapped = priceQuote.items.map((item, index) => ({
-        id: `${item.type}-${index}`,
-        label: item.name,
-        amount: centsToUnits(item.totalPriceCents),
-        type: (
-          item.type === 'ADDON'
-            ? 'addon'
-            : item.type === 'DISCOUNT'
-              ? 'discount'
-              : item.type === 'TRAVEL'
-                ? 'fee'
-                : 'base'
-        ) as "addon" | "discount" | "fee" | "base" | "tax" | undefined,
-      }));
+      const mapped = priceQuote.items.map((item, index) => {
+        const isTravel = item.type === 'TRAVEL';
+        return {
+          id: `${item.type}-${index}`,
+          // Always use our computed label/description for TRAVEL items so
+          // multi-day bookings show "Viáticos" even when the fallback quote
+          // has a hardcoded name like "Costo de traslado".
+          label: isTravel ? travelFeeDisplay.label : item.name,
+          description: isTravel ? travelFeeDisplay.description : undefined,
+          amount: centsToUnits(item.totalPriceCents),
+          type: (
+            item.type === 'ADDON'
+              ? 'addon'
+              : item.type === 'DISCOUNT'
+                ? 'discount'
+                : item.type === 'TRAVEL'
+                  ? 'fee'
+                  : 'base'
+          ) as "addon" | "discount" | "fee" | "base" | "tax" | undefined,
+        };
+      });
 
       const hasTravelFee = priceQuote.items.some((item) => item.type === 'TRAVEL');
       return hasTravelFee ? mapped : [...mapped, travelFeeDisplay];
