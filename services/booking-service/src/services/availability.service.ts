@@ -2,6 +2,16 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Guatemala is UTC-6 with no DST. Convert a UTC Date to its GT local date string (YYYY-MM-DD).
+const GT_OFFSET_MS = -6 * 60 * 60 * 1000;
+function toGTDateStr(utcDate: Date): string {
+  const local = new Date(utcDate.getTime() + GT_OFFSET_MS);
+  const y = local.getUTCFullYear();
+  const m = String(local.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(local.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Verifica si existe una reserva de disponibilidad que se solape con el rango dado
  */
@@ -162,9 +172,8 @@ export const getMonthlyCalendar = async (
     const current = new Date(res.startAt);
     const end = new Date(res.endAt);
     while (current <= end) {
-      const dateStr = current.toISOString().split('T')[0];
-      occupiedDatesSet.add(dateStr);
-      current.setDate(current.getDate() + 1);
+      occupiedDatesSet.add(toGTDateStr(current));
+      current.setUTCDate(current.getUTCDate() + 1);
     }
   });
 
@@ -172,9 +181,8 @@ export const getMonthlyCalendar = async (
     const current = new Date(slot.startTime);
     const end = new Date(slot.endTime);
     while (current <= end) {
-      const dateStr = current.toISOString().split('T')[0];
-      blockedDatesSet.add(dateStr);
-      current.setDate(current.getDate() + 1);
+      blockedDatesSet.add(toGTDateStr(current));
+      current.setUTCDate(current.getUTCDate() + 1);
     }
   });
 
@@ -293,7 +301,7 @@ export const getDailyTimeSlots = async (
   }
 
   return {
-    date: date.toISOString().split('T')[0],
+    date: toGTDateStr(date),
     slots,
   };
 };

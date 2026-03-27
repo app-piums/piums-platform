@@ -192,6 +192,8 @@ function BookingContent() {
   const [services, setServices] = useState<Service[]>([]);
   const [apiAvailability, setApiAvailability] = useState<DayAvailability[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [disabledDates, setDisabledDates] = useState<Date[]>([]);
   const [priceQuote, setPriceQuote] = useState<PriceQuote | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
@@ -265,13 +267,10 @@ function BookingContent() {
     return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [marchAvailability, apiAvailability]);
   const minSelectableDate = useMemo(() => {
-    if (!availability.length) {
-      return new Date();
-    }
-
-    const [first] = availability;
-    return new Date(`${first.date}T00:00:00`);
-  }, [availability]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }, []);
 
   const bookingRedirectTarget = useMemo(() => {
     const params = new URLSearchParams();
@@ -415,6 +414,21 @@ function BookingContent() {
       setArtist(artistData);
       setServices(servicesData);
 
+      // Fetch blocked/occupied dates for current month
+      const now = new Date();
+      sdk.getCalendar(effectiveArtistId, now.getFullYear(), now.getMonth() + 1)
+        .then((data: any) => {
+          const blocked: Date[] = [
+            ...(data.blockedDates ?? []),
+            ...(data.occupiedDates ?? []),
+          ].map((d: string) => {
+            const [y, mo, day] = d.split('-').map(Number);
+            return new Date(y, mo - 1, day);
+          });
+          setDisabledDates(blocked);
+        })
+        .catch(() => {});
+
       if (serviceId) {
         const serviceMatch = servicesData.find((s) => s.id === serviceId) || preselectedService;
         if (serviceMatch) {
@@ -485,6 +499,29 @@ function BookingContent() {
       }
     }, [effectiveDurationMinutes]
   );
+
+  const fetchCalendarForMonth = useCallback(async (artistId: string, year: number, month: number) => {
+    setCalendarLoading(true);
+    try {
+      const data = await sdk.getCalendar(artistId, year, month);
+      const blocked: Date[] = [
+        ...(data.blockedDates ?? []),
+        ...(data.occupiedDates ?? []),
+      ].map((d: string) => {
+        const [y, m, day] = d.split('-').map(Number);
+        return new Date(y, m - 1, day);
+      });
+      setDisabledDates((prev) => {
+        // Merge: keep dates outside this month, replace this month's entries
+        const outside = prev.filter((d) => !(d.getFullYear() === year && d.getMonth() + 1 === month));
+        return [...outside, ...blocked];
+      });
+    } catch {
+      // silently ignore — calendar still works without blocked-date highlights
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, []);
 
   const fetchTimeSlotsForDate = useCallback(async (date: Date) => {
     if (!resolvedArtistId) return;
@@ -951,8 +988,13 @@ function BookingContent() {
                         selectedTime={selectedTime}
                         onDateSelect={handleDateSelect}
                         onTimeSelect={handleTimeSelect}
+                        onMonthChange={(y, m) => {
+                          if (resolvedArtistId) fetchCalendarForMonth(resolvedArtistId, y, m);
+                        }}
                         minDate={minSelectableDate}
+                        disabledDates={disabledDates}
                         isLoading={slotsLoading}
+                        isMonthLoading={calendarLoading}
                       />
 
                       {/* Selected range summary for multi-day */}
@@ -1163,35 +1205,24 @@ function BookingContent() {
                         ) : clientEvents.length === 0 ? (
                           <p className="text-sm text-gray-500">No tienes eventos activos. <a href="/events" className="text-[#FF6A00] underline">Crea uno aquí</a>.</p>
                         ) : (
-                          <div className="space-y-2">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedEventId(null)}
-                              className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${
-                                selectedEventId === null
-                                  ? 'border-gray-400 bg-gray-50 font-medium text-gray-700'
-                                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                              }`}
+                          <div className="relative">
+                            <select
+                              value={selectedEventId ?? ''}
+                              onChange={(e) => setSelectedEventId(e.target.value || null)}
+                              className="w-full appearance-none rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm text-gray-700 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 focus:bg-white outline-none transition hover:border-gray-300"
                             >
-                              Sin evento
-                            </button>
-                            {clientEvents.map((ev: any) => (
-                              <button
-                                key={ev.id}
-                                type="button"
-                                onClick={() => setSelectedEventId(ev.id)}
-                                className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${
-                                  selectedEventId === ev.id
-                                    ? 'border-[#FF6A00] bg-orange-50 font-medium text-orange-900'
-                                    : 'border-gray-200 text-gray-700 hover:border-[#FF6A00]/40'
-                                }`}
-                              >
-                                <span className="font-semibold">{ev.name}</span>
-                                <span className="ml-2 text-xs text-gray-400">
-                                  {ev.status === 'DRAFT' ? 'Borrador' : 'Activo'} · {(ev.bookings ?? []).length} reservas
-                                </span>
-                              </button>
-                            ))}
+                              <option value="">Sin evento</option>
+                              {clientEvents.map((ev: any) => (
+                                <option key={ev.id} value={ev.id}>
+                                  {ev.name} — {ev.status === 'DRAFT' ? 'Borrador' : 'Activo'} · {(ev.bookings ?? []).length} reservas
+                                </option>
+                              ))}
+                            </select>
+                            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
                           </div>
                         )}
                       </div>

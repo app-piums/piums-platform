@@ -22,9 +22,11 @@ interface CalendarPickerProps {
   selectedTime?: string;
   onDateSelect: (date: Date) => void;
   onTimeSelect: (time: string) => void;
+  onMonthChange?: (year: number, month: number) => void;
   minDate?: Date;
   disabledDates?: Date[];
   isLoading?: boolean;
+  isMonthLoading?: boolean;
   className?: string;
 }
 
@@ -35,9 +37,11 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   selectedTime,
   onDateSelect,
   onTimeSelect,
+  onMonthChange,
   minDate = new Date(),
   disabledDates = [],
   isLoading = false,
+  isMonthLoading = false,
   className = '',
 }) => {
   // Get available dates
@@ -60,100 +64,94 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       {/* Calendar */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-4">Selecciona una fecha</h3>
-        <Calendar
-          selectedDate={selectedDate}
-          rangeEndDate={rangeEndDate}
-          onDateSelect={onDateSelect}
-          highlightedDates={availableDates}
-          disabledDates={disabledDates}
-          minDate={minDate}
-        />
+        <div className="relative">
+          <Calendar
+            selectedDate={selectedDate}
+            rangeEndDate={rangeEndDate}
+            onDateSelect={onDateSelect}
+            onMonthChange={onMonthChange}
+            highlightedDates={availableDates}
+            disabledDates={disabledDates}
+            minDate={minDate}
+          />
+          {isMonthLoading && (
+            <div className="absolute inset-0 bg-white/70 rounded-xl flex items-center justify-center z-10">
+              <div className="flex flex-col items-center gap-2">
+                <svg className="animate-spin h-6 w-6 text-[#FF6A00]" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-xs text-gray-500">Cargando fechas...</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Time slots */}
+      {/* Time input */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-4">
           {selectedDate
             ? rangeEndDate
               ? `Hora de inicio · ${selectedDate.toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })} – ${rangeEndDate.toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })}`
-              : 'Selecciona un horario'
+              : 'Selecciona una hora'
             : 'Primero selecciona una fecha'}
         </h3>
-        
+
         {!selectedDate ? (
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
-            <svg
-              className="w-16 h-16 mx-auto text-gray-300 mb-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
+            <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="text-gray-500">
-              Selecciona una fecha en el calendario para ver los horarios disponibles
-            </p>
+            <p className="text-gray-500">Selecciona una fecha en el calendario para continuar</p>
           </div>
         ) : isLoading ? (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
             <Loading size="sm" />
-            <p className="text-sm text-gray-500 mt-3">Cargando horarios disponibles...</p>
-          </div>
-        ) : timeSlots.length === 0 ? (
-          <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-8 text-center">
-            <svg
-              className="w-16 h-16 mx-auto text-yellow-400 mb-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <p className="text-yellow-800 font-medium mb-1">No hay horarios disponibles</p>
-            <p className="text-yellow-600 text-sm">
-              Para esta fecha. Por favor, selecciona otra fecha.
-            </p>
+            <p className="text-sm text-gray-500 mt-3">Cargando...</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 max-h-96 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-2">
-              {timeSlots.map((slot) => (
-                <button
-                  key={slot.time}
-                  onClick={() => slot.available && onTimeSelect(slot.time)}
-                  disabled={!slot.available}
-                  className={`
-                    p-3 rounded-lg border-2 transition-all duration-200
-                    ${
-                      selectedTime === slot.time
-                        ? 'border-blue-600 bg-blue-50 text-blue-900'
-                        : slot.available
-                        ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                        : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  <div className="font-semibold">{slot.time}</div>
-                  {slot.price && slot.available && (
-                    <div className="text-xs text-gray-600 mt-1">
-                      ${slot.price.toLocaleString('es-MX')}
-                    </div>
-                  )}
-                  {!slot.available && (
-                    <div className="text-xs text-gray-400 mt-1">No disponible</div>
-                  )}
-                </button>
-              ))}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+            <div>
+              <label htmlFor="booking-time" className="block text-sm font-medium text-gray-700 mb-1.5">
+                ¿A qué hora deseas comenzar?
+              </label>
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <input
+                  id="booking-time"
+                  type="time"
+                  value={selectedTime || ''}
+                  onChange={(e) => e.target.value && onTimeSelect(e.target.value)}
+                  className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 pl-10 pr-4 py-3 text-base font-semibold text-gray-900 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 focus:bg-white outline-none transition hover:border-gray-300"
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-gray-400">Escribe o usa el selector del navegador para elegir la hora</p>
+            </div>
+
+            {/* Quick time suggestions */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Horarios sugeridos</p>
+              <div className="flex flex-wrap gap-2">
+                {['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => onTimeSelect(t)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                      selectedTime === t
+                        ? 'border-[#FF6A00] bg-[#FF6A00]/10 text-[#FF6A00]'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-[#FF6A00]/50 hover:text-[#FF6A00]'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
