@@ -533,11 +533,11 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 // ========================================
 
 export const getMe = async (req: Request, res: Response) => {
-  // req.user is populated by isAdmin middleware
   const { id } = (req as any).user;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, nombre: true, role: true },
+    select: { id: true, email: true, nombre: true, role: true, telefono: true, avatar: true, pais: true },
   });
+  if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user });
 };
