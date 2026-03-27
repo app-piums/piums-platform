@@ -183,15 +183,23 @@ export const calculateServicePrice = async (
     }
   }
 
-  // ==================== CALCULAR VIAJE ====================
-  
-  let travelCostCents = 0;
+  // ==================== CALCULAR VIAJE / VIÁTICOS ====================
+
+  // Tarifas de viáticos configurables por variable de entorno (en centavos GTQ)
+  const VIATICOS_FOOD_PER_DAY_CENTS     = parseInt(process.env.VIATICOS_FOOD_CENTS     ?? '15000', 10); // Q 150/día
+  const VIATICOS_LODGING_PER_DAY_CENTS  = parseInt(process.env.VIATICOS_LODGING_CENTS  ?? '40000', 10); // Q 400/día
+  const VIATICOS_TRANSPORT_CENTS        = parseInt(process.env.VIATICOS_TRANSPORT_CENTS ?? '20000', 10); // Q 200 fijo
+
   const DEFAULT_PRICE_PER_KM_CENTS = 2000; // Q 20.00 por km adicional por defecto
   const DEFAULT_INCLUDED_KM = 10;          // 10 km incluidos por defecto
 
+  // numDays: derivado de durationMinutes — multi-día cuando >= 1440 min (24h)
+  const numDays = durationMinutes ? Math.ceil(durationMinutes / 1440) : 1;
+
+  let travelCostCents = 0;
+
   if (distanceKm !== undefined && distanceKm > 0) {
     const includedKm = travelRules?.includedKm ?? DEFAULT_INCLUDED_KM;
-    const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
     const extraKm = Math.max(0, distanceKm - includedKm);
 
     // Validar distancia máxima si existe regla
@@ -201,22 +209,53 @@ export const calculateServicePrice = async (
       );
     }
 
-    if (extraKm > 0 && pricePerKmCents > 0) {
-      travelCostCents = Math.round(extraKm * pricePerKmCents);
-      items.push({
-        type: 'TRAVEL',
-        name: `Desplazamiento (${extraKm.toFixed(1)} km adicionales)`,
-        qty: 1,
-        unitPriceCents: travelCostCents,
-        totalPriceCents: travelCostCents,
-        metadata: {
-          totalKm: distanceKm,
-          includedKm,
-          extraKm,
-          pricePerKm: pricePerKmCents,
-          isDefault: !travelRules || travelRules.pricePerKmCents === null,
-        },
-      });
+    if (extraKm > 0) {
+      if (numDays > 1) {
+        // ── VIÁTICOS: multi-día + fuera de cobertura → tarifa plana plataforma ──
+        const foodTotal    = VIATICOS_FOOD_PER_DAY_CENTS    * numDays;
+        const lodgingTotal = VIATICOS_LODGING_PER_DAY_CENTS * numDays;
+        travelCostCents    = foodTotal + lodgingTotal + VIATICOS_TRANSPORT_CENTS;
+
+        items.push({
+          type: 'TRAVEL',
+          name: `Viáticos (${numDays} días)`,
+          qty: 1,
+          unitPriceCents: travelCostCents,
+          totalPriceCents: travelCostCents,
+          metadata: {
+            type: 'VIATICOS',
+            numDays,
+            foodPerDay:    VIATICOS_FOOD_PER_DAY_CENTS,
+            lodgingPerDay: VIATICOS_LODGING_PER_DAY_CENTS,
+            transport:     VIATICOS_TRANSPORT_CENTS,
+            foodTotal,
+            lodgingTotal,
+            distanceKm,
+            includedKm,
+          },
+        });
+      } else {
+        // ── TRASLADO: día único + fuera de cobertura → precio por km ──
+        const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
+        if (pricePerKmCents > 0) {
+          travelCostCents = Math.round(extraKm * pricePerKmCents);
+          items.push({
+            type: 'TRAVEL',
+            name: `Desplazamiento (${extraKm.toFixed(1)} km adicionales)`,
+            qty: 1,
+            unitPriceCents: travelCostCents,
+            totalPriceCents: travelCostCents,
+            metadata: {
+              type: 'TRASLADO',
+              totalKm: distanceKm,
+              includedKm,
+              extraKm,
+              pricePerKm: pricePerKmCents,
+              isDefault: !travelRules || travelRules.pricePerKmCents === null,
+            },
+          });
+        }
+      }
     }
   }
 

@@ -433,7 +433,9 @@ function BookingContent() {
       setPriceLoading(true);
       setPriceError(null);
       try {
-        const durationMinutes = getDurationMinutes(service);
+        // Use effectiveDurationMinutes so multi-day bookings reach the backend
+        // with the full duration (numDays × 1440 min), enabling viáticos logic.
+        const durationMinutes = effectiveDurationMinutes;
         const payload = {
           serviceId: service.id,
           durationMinutes,
@@ -467,7 +469,7 @@ function BookingContent() {
       } finally {
         setPriceLoading(false);
       }
-    }, []
+    }, [effectiveDurationMinutes]
   );
 
   const fetchTimeSlotsForDate = useCallback(async (date: Date) => {
@@ -511,12 +513,19 @@ function BookingContent() {
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
   const currency = priceQuote?.currency || selectedService?.currency || 'GTQ';
   const pricingItems = useMemo(() => {
+    const isViaticoScenario =
+      isMultiDay && numDays > 1 &&
+      travelDistanceKm != null &&
+      travelDistanceKm > (artist?.coverageRadius ?? 0);
+
     const travelFeeDisplay = {
       id: 'travel-fee',
-      label: 'Costo de traslado',
-      description: clientCoords
-        ? 'Usaremos tu ubicación para estimar este monto.'
-        : 'Agrega tu ubicación para calcular el traslado.',
+      label: isViaticoScenario ? 'Viáticos' : 'Costo de traslado',
+      description: isViaticoScenario
+        ? `Incluye transporte, comida y hospedaje por ${numDays} días.`
+        : clientCoords
+          ? 'Usaremos tu ubicación para estimar este monto.'
+          : 'Agrega tu ubicación para calcular el traslado.',
       amount: 0,
       type: 'fee' as const,
     };
@@ -561,7 +570,7 @@ function BookingContent() {
       }));
 
     return [baseItem, ...addonItems, travelFeeDisplay];
-  }, [priceQuote, selectedService, addons, selectedAddons, clientCoords]);
+  }, [priceQuote, selectedService, addons, selectedAddons, clientCoords, isMultiDay, numDays, travelDistanceKm, artist]);
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);

@@ -429,7 +429,7 @@ Cada servicio tiene su propio conjunto de docs:
 
 ---
 
-## 15. Estado Actual (17 marzo 2026)
+## 15. Estado Actual (27 marzo 2026)
 
 ### ✅ Completado (actualizado)
 - Arquitectura de microservicios completa (9 servicios)
@@ -446,19 +446,32 @@ Cada servicio tiene su propio conjunto de docs:
 - Media assets polimórficos para portfolio, certifications, reviews
 - Categories geográficas (Country → State → City)
 - SDK completo con ~35 métodos
-- **web-artist**: Dashboard, Reservas, Servicios CRUD, Configuración (5 pestañas: personal, cobertura, perfil público, notificaciones, pagos), Onboarding con "Omitir"
+- **web-artist**: Dashboard, Reservas, Servicios CRUD, Configuración (5 pestañas: personal, cobertura, perfil público, notificaciones, pagos), Onboarding con "Omitir". Categoría principal + secundaria con `<select>` (MUSICO, TATUADOR, FOTOGRAFO, etc.)
 - **web-client**: Landing, búsqueda, perfil de artista, flujo de booking completo (selección → checkout Stripe → confirmación), mis reservas, chat, perfil, onboarding con "Omitir"
+- **web-admin**: Panel de administración con Moderación (Reportes + Quejas fusionados en una sola página con tabs y badge de conteo)
 - Migración completa de moneda: MXN → **GTQ** en codebase entero (schemas, servicios, frontend, mocks)
 - `Intl.NumberFormat('es-GT', { currency: 'GTQ' })` en todos los componentes de precio
 - docker-compose.dev.yml con stack completo
+
+### 🆕 Completado recientemente
+- **Selección de categorías artista**: Pestaña Personal tiene `<select>` para categoría principal y secundaria (`ARTIST_CATEGORIES` constant)
+- **Booking multi-día**: Toggle en paso 2 (Fecha/Hora), controles +/− para `numDays`, `effectiveDurationMinutes = numDays × 1440`
+- **Rango de fechas en calendario**: `CalendarPicker` + `Calendar.tsx` muestran degradado naranja entre fecha inicio y fin del multi-día
+- **Viáticos** (`pricing.service.ts`): cuando `numDays > 1` Y `distanceKm > includedKm` → tarifa plana de plataforma (env-overrideable):
+  - Comida: Q 150/día (`VIATICOS_FOOD_CENTS=15000`)
+  - Hospedaje: Q 400/día (`VIATICOS_LODGING_CENTS=40000`)
+  - Transporte: Q 200 fijo (`VIATICOS_TRANSPORT_CENTS=20000`)
+  - Día único + lejos: sigue usando precio por km (comportamiento anterior intacto)
+  - UI: label cambia a "Viáticos" / "Costo de traslado" según escenario; ícono avión en `PricingBreakdown`
+  - `calculatePriceQuote` callback ahora pasa `effectiveDurationMinutes` a la API
 
 ### ⚠️ Pendiente / Incompleto
 - Stripe Connect: configuración de cuenta bancaria en Settings > Pagos (placeholder)
 - Unit/integration tests
 - Seed data completo (`scripts/seed.sh`) ✅ implementado — ejecutar cuando los servicios estén corriendo
 
-### ✅ Completado recientemente
-- **Dockerfiles**: Todos los 8 servicios tienen Dockerfile ✅ (AGENT.md estaba desactualizado)
+### ✅ Histórico (antes de 27 marzo)
+- **Dockerfiles**: Todos los 8 servicios tienen Dockerfile ✅
 - **Chat en tiempo real**: `chat-service` con Socket.io ya implementado (puerto 4007). Frontend `web-client` conectado con API real + Socket.io. Frontend `web-artist` corregido (puerto 4007, evento `message:received`)
 - **Upload de avatares**: `avatar.controller.ts` completo con Cloudinary, rutas registradas en `users.routes.ts`
 - **Dispute service**: `dispute.service.ts`, `dispute.controller.ts`, `dispute.routes.ts` implementados y registrados en `booking-service` ✅
