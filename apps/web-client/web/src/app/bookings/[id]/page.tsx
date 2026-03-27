@@ -134,6 +134,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const DisplayImage = service?.images?.[0] || artist?.coverPhoto || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200';
   const cancelReason = booking.cancellationReason || booking.cancelReason;
   const canReview = booking.status?.toLowerCase() === 'completed' && !reviewed && !booking.reviewId;
+  const canAddToEvent = booking.status?.toUpperCase() === 'PENDING' && !booking.eventId;
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
     try {
@@ -309,6 +310,22 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                      <div className="w-full py-2.5 bg-green-50 border border-green-200 text-green-700 font-semibold rounded-xl text-sm text-center">
                        ✓ Reseña enviada
                      </div>
+                   )}
+                   {canAddToEvent && (
+                     <Link
+                       href="/events"
+                       className="block w-full py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl text-sm text-center hover:bg-gray-50 transition"
+                     >
+                       Agregar a un Evento
+                     </Link>
+                   )}
+                   {booking.eventId && (
+                     <Link
+                       href={`/events/${booking.eventId}`}
+                       className="block w-full py-2.5 bg-orange-50 border border-[#FF6A00]/30 text-[#FF6A00] font-semibold rounded-xl text-sm text-center hover:bg-orange-100 transition"
+                     >
+                       Ver Evento asociado
+                     </Link>
                    )}
                    <button onClick={() => window.print()} className="w-full py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition">
                      Descargar Recibo (PDF)

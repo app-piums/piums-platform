@@ -201,6 +201,7 @@ export interface CreateBookingPayload {
   locationLng?: number;
   selectedAddons?: string[];
   clientNotes?: string;
+  eventId?: string;
 }
 
 export interface PriceItem {
@@ -2395,6 +2396,117 @@ class PiumsSDK {
       console.error('Error resolving report:', error);
       throw error;
     }
+  }
+
+  // ============================================================================
+  // Events
+  // ============================================================================
+
+  async createEvent(payload: { name: string; description?: string; location?: string; locationLat?: number; locationLng?: number; notes?: string }) {
+    const response = await fetch(`${this.baseUrl}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getClientEvents(): Promise<any[]> {
+    const response = await fetch(`${this.baseUrl}/events`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getEvent(eventId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async updateEvent(eventId: string, payload: { name?: string; description?: string; location?: string; notes?: string }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async cancelEvent(eventId: string, cancelBookings: boolean): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ cancelBookings }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async addBookingToEvent(eventId: string, bookingId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}/bookings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ bookingId }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async removeBookingFromEvent(eventId: string, bookingId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}/bookings/${bookingId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+  }
+
+  async getEventBreakdown(eventId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}/breakdown`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
   }
 }
 

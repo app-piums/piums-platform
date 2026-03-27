@@ -38,6 +38,8 @@ export const createBookingSchema = z.object({
   selectedAddons: z.array(z.string().uuid()).optional(),
   
   clientNotes: z.string().max(1000).optional(),
+  
+  eventId: z.string().uuid().optional(),
 });
 
 // Schema para actualizar reserva

@@ -29,6 +29,7 @@ export class BookingService {
     locationLng?: number;
     selectedAddons?: string[];
     clientNotes?: string;
+    eventId?: string;
   }) {
     const scheduledDate = new Date(data.scheduledDate);
 
@@ -152,6 +153,7 @@ export class BookingService {
         selectedAddons: data.selectedAddons || [],
         clientNotes: data.clientNotes,
         paymentStatus: depositRequired ? "PENDING" : "DEPOSIT_PAID",
+        eventId: data.eventId || null,
       },
     });
 

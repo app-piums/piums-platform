@@ -8,6 +8,7 @@ import healthRoutes from "./routes/health.routes";
 import bookingRoutes from "./routes/booking.routes";
 import availabilityRoutes from "./routes/availability.routes";
 import disputeRoutes from "./routes/dispute.routes";
+import eventRoutes from "./routes/event.routes";
 
 // Cargar variables de entorno
 dotenv.config();
@@ -57,6 +58,7 @@ app.use("/health", healthRoutes);
 app.use("/api", bookingRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api", disputeRoutes);
+app.use("/api", eventRoutes);
 
 // Ruta 404
 app.use((req, res) => {
