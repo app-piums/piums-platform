@@ -1,7 +1,7 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
-**Fecha de última actualización**: 27 de marzo de 2026
-**Último commit**: `6bd4c77` — fix(artists): filtros por categoria, ciudad y busqueda de texto
+**Fecha de última actualización**: 30 de marzo de 2026
+**Último commit**: `dave` branch — fix(web): ReportModal z-index, toast system, rating sync, GTQ currency
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
 **Credenciales de prueba**: `artista@piums.com` / `Test1234!`
@@ -41,7 +41,7 @@ Opera bajo la **moneda GTQ (Quetzal guatemalteco)**. Locale: `es-GT`. Símbolo: 
 - **Base de datos**: PostgreSQL 16 (una DB por servicio, prefijo `piums_*`)
 - **Cache/Queues**: Redis 7
 - **Frontend**: Next.js 14 (App Router) + Tailwind CSS
-- **Auth**: JWT + cookies HTTP-only + Passport.js (Google, Facebook OAuth)
+- **Auth**: JWT + cookies HTTP-only + Passport.js (Google, Facebook OAuth) + TikTok OAuth (planificado)
 - **Pagos**: Stripe (PaymentIntents + Connect para payouts a artistas)
 - **Monorepo**: pnpm workspaces
 - **Infra**: Docker Compose (dev) + Kubernetes (staging/prod) + Nginx + Terraform
@@ -434,7 +434,7 @@ Cada servicio tiene su propio conjunto de docs:
 
 ---
 
-## 15. Estado Actual (27 marzo 2026)
+## 15. Estado Actual (30 marzo 2026)
 
 ### ✅ Completado (actualizado)
 - Arquitectura de microservicios completa (9 servicios)
@@ -461,6 +461,107 @@ Cada servicio tiene su propio conjunto de docs:
 - `Intl.NumberFormat('es-GT', { currency: 'GTQ' })` en todos los componentes de precio
 - docker-compose.dev.yml con stack completo
 
+### 🆕 Completado recientemente (28-30 mar 2026) — branch `dave`
+
+#### Fix: Sistema de notificaciones toast (alert → toast)
+- Creada utilidad DOM-based `src/lib/toast.ts` en `web-client` y `web-artist` (zero dependencies)
+- Reemplazados **33 `alert()`** en web-client y **21 `alert()`** en web-artist
+- Toast se muestra en esquina superior-derecha, auto-cierra en 4s
+- API: `toast.success('msg')`, `toast.error('msg')`, `toast.warning('msg')`, `toast.info('msg')`
+
+#### Fix: Moneda GTQ — formato Quetzal (Q)
+- Reemplazado símbolo `$` y etiqueta `GTQ` separada por `Q` (prefijo) en todos los componentes de precio
+- Locale `es-GT` aplicado en `toLocaleString('es-GT')` y `Intl.NumberFormat('es-GT', { currency: 'GTQ' })`
+- Archivos corregidos en web-client:
+  - `src/app/booking/page.tsx`, `src/app/bookings/page.tsx`
+  - `src/app/services/[id]/page.tsx`, `src/app/search/page.tsx`
+  - `src/app/booking/checkout/page.tsx`, `src/app/booking/confirmation/[id]/page.tsx`
+  - `src/components/artist/StatsCards.tsx` (subtítulo `GTQ` → `Quetzales`)
+
+#### Fix: ReportModal — pantalla gris al hacer "Reportar reseña"
+- **Causa raíz**: el backdrop `fixed inset-0 bg-gray-500/75` se renderizaba encima del diálogo porque el card no era un elemento posicionado
+- **Fix**: añadido `relative z-10` al card del diálogo; backdrop solo ocupa z-index base; outer container usa `fixed inset-0 z-50 flex items-center justify-center`
+- Aplicado en `apps/web-client/web/src/components/ReportModal.tsx`
+- Aplicado en `apps/web-artist/web/src/components/ReportModal.tsx`
+
+#### Fix: Rating del artista no se actualizaba tras nueva reseña
+- Añadido endpoint interno en `artists-service`: `PATCH /artists/internal/:id/rating` (sin auth, solo internal network)
+- Añadida llamada de sincronización en `reviews-service/src/services/review.service.ts` al final de `updateArtistRating()` 
+- Añadida variable `ARTISTS_SERVICE_URL: http://artists-service:4003` a reviews-service en `docker-compose.dev.yml`
+- Sincronización retroactiva ejecutada: 2 artistas actualizados (200 OK), 1 artista stale ignorado (no existe en artists-service)
+
+---
+
+### 🆕 Planificado / En diseño: Login Social Extendido
+
+#### Estado Actual del OAuth
+- ✅ **Google OAuth** — implementado con Passport.js (`passport-google-oauth20`)
+  - Ruta: `GET /api/auth/google` → callback `GET /api/auth/google/callback`
+  - Scope: `profile email`
+  - Variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
+- ✅ **Facebook OAuth** — implementado con Passport.js (`passport-facebook`)
+  - Ruta: `GET /api/auth/facebook` → callback `GET /api/auth/facebook/callback`
+  - Scope: `email`
+  - Variables: `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_CALLBACK_URL`
+- 🔄 **TikTok OAuth** — planificado (ver detalles abajo)
+
+#### TikTok OAuth — Plan de Implementación
+
+TikTok usa OAuth 2.0 con PKCE a través del **TikTok Login Kit** (API v2).
+
+**Flujo:**
+```
+Usuario pulsa "Continuar con TikTok"
+      ↓
+GET /api/auth/tiktok
+  → Genera code_verifier + code_challenge (PKCE SHA-256)
+  → Guarda code_verifier en sesión
+  → Redirige a: https://www.tiktok.com/v2/auth/authorize?
+        client_key=CLIENT_KEY
+        &response_type=code
+        &scope=user.info.basic,user.info.email
+        &redirect_uri=CALLBACK_URL
+        &code_challenge=...
+        &code_challenge_method=S256
+      ↓
+TikTok redirige a: GET /api/auth/tiktok/callback?code=...
+  → POST https://open.tiktokapis.com/v2/oauth/token/
+        con { client_key, client_secret, code, grant_type: "authorization_code", redirect_uri, code_verifier }
+  → Recibe { access_token, open_id, ... }
+  → GET https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,email
+  → Upsert User en piums_auth DB
+  → Emite JWT + Sets cookie
+  → Redirige a /artist/dashboard o /dashboard
+```
+
+**Variables de entorno a agregar:**
+```env
+TIKTOK_CLIENT_KEY=...         # "Client Key" del TikTok Developer Portal
+TIKTOK_CLIENT_SECRET=...      # "Client Secret" del TikTok Developer Portal
+TIKTOK_CALLBACK_URL=https://api.piums.com/api/auth/tiktok/callback
+```
+
+**Archivos a crear/modificar en auth-service:**
+| Archivo | Acción |
+|---|---|
+| `src/strategies/tiktok.strategy.ts` | Nueva estrategia custom (no hay `passport-tiktok` v2 oficial) |
+| `src/routes/auth.routes.ts` | Agregar rutas `GET /tiktok` y `GET /tiktok/callback` |
+| `src/controller/auth.controller.ts` | Handlers `tiktokAuth()` y `tiktokCallback()` |
+
+**Pantallas de login (frontend) a actualizar:**
+- `apps/web-client/web/src/app/login/page.tsx` — agregar botón TikTok
+- `apps/web-artist/web/src/app/login/page.tsx` — agregar botón TikTok
+- Ícono: SVG de TikTok, fondo negro (`#000000`)
+
+**Notas importantes TikTok:**
+- TikTok requiere registro en [developers.tiktok.com](https://developers.tiktok.com) y revisión del app
+- Scope `user.info.email` requiere aprobación especial de TikTok (puede no estar disponible en sandbox)
+- En sandbox, solo cuentas de prueba registradas en el portal pueden autenticarse
+- PKCE es **obligatorio** en TikTok Login Kit v2 (a diferencia de Google/Facebook que lo tienen opcional)
+- No hay librería Passport.js oficial mantenida para TikTok v2 — implementar strategy custom con `fetch`
+
+---
+
 ### 🆕 Completado recientemente (27 mar 2026) — commit `6bd4c77`
 - **Fix filtros página `/artists`**:
   - SDK `GetArtistsParams`: params renombrados `categoria→category`, `ciudad→city`, añadido `q`
@@ -486,6 +587,7 @@ Cada servicio tiene su propio conjunto de docs:
   - `calculatePriceQuote` callback ahora pasa `effectiveDurationMinutes` a la API
 
 ### ⚠️ Pendiente / Incompleto
+- **TikTok OAuth**: estrategia custom a implementar en auth-service + botones en login pages
 - Stripe Connect: configuración de cuenta bancaria en Settings > Pagos (placeholder)
 - Unit/integration tests
 - Seed data completo (`scripts/seed.sh`) ✅ implementado — ejecutar cuando los servicios estén corriendo
