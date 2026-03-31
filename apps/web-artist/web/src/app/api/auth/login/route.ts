@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Establecer cookie de autenticación
     responseWithCookies.cookies.set('auth_token', data.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.HTTPS_ENABLED === 'true',
       sameSite: 'strict',
       maxAge: 3600, // 1 hora
       path: '/',
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (data.user?.role) {
       responseWithCookies.cookies.set('user_role', data.user.role, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
         maxAge: 3600, // 1 hora
         path: '/',
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (data.refreshToken) {
       responseWithCookies.cookies.set('refreshToken', data.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
         maxAge: 604800, // 7 días
         path: '/',

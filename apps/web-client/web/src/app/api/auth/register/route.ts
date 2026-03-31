@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       // Token de acceso (1 hora)
       responseWithCookies.cookies.set('auth_token', data.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
         maxAge: 3600, // 1 hora
         path: '/',
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       // Establecer cookie de rol — siempre 'cliente' en web-client
       responseWithCookies.cookies.set('user_role', 'cliente', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
         maxAge: 3600,
         path: '/',
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       if (data.refreshToken) {
         responseWithCookies.cookies.set('refreshToken', data.refreshToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: process.env.HTTPS_ENABLED === 'true',
           sameSite: 'strict',
           maxAge: 604800, // 7 días
           path: '/',
