@@ -147,9 +147,10 @@ router.get(
   asHandler(reviewController.getArtistRating.bind(reviewController))
 );
 
-// Obtener estadísticas de un usuario específico (admin/internal)
+// Obtener estadísticas de un usuario específico (requiere autenticación)
 router.get(
   "/users/:userId/stats",
+  auth,
   asHandler(reviewController.getUserStats.bind(reviewController))
 );
 

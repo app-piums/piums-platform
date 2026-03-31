@@ -22,6 +22,7 @@ export default function ArtistDashboardPage() {
   const artistCountryRef = useRef<string | null>(null);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [artistProfile, setArtistProfile] = useState<any>(null);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -36,7 +37,9 @@ export default function ArtistDashboardPage() {
 
       if (statsData.status === 'fulfilled') setStats(statsData.value);
       if (profileData.status === 'fulfilled') {
-        artistCountryRef.current = (profileData.value as any)?.country ?? null;
+        const profile = profileData.value as any;
+        artistCountryRef.current = profile?.country ?? null;
+        setArtistProfile(profile);
       }
       if (bookingsData.status === 'fulfilled') {
         const now = new Date();
@@ -158,7 +161,9 @@ export default function ArtistDashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <button className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all text-sm font-medium">
+              <button
+                onClick={() => router.push('/artist/dashboard/services')}
+                className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all text-sm font-medium">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -261,63 +266,52 @@ export default function ArtistDashboardPage() {
             {/* Profile Strength Card */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
               <h3 className="text-lg font-bold mb-4">Fortaleza del Perfil</h3>
-              
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-300">Completado</span>
-                  <span className="text-2xl font-bold">85%</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full" style={{ width: '85%' }}></div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-300">Foto de perfil agregada</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-300">Servicios publicados</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-300">Portafolio cargado</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-400">Agregar redes sociales</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-400">Obtener primera reseña</span>
-                </div>
-              </div>
+              {(() => {
+                const checks = [
+                  { label: 'Foto de perfil agregada', done: !!(artistProfile?.imageUrl || artistProfile?.profilePicture) },
+                  { label: 'Descripción de perfil', done: !!(artistProfile?.bio && artistProfile.bio.length > 10) },
+                  { label: 'Servicios publicados', done: !!(stats && stats.bookings.total > 0) },
+                  { label: 'Redes sociales vinculadas', done: !!(artistProfile?.socialLinks && Object.values(artistProfile.socialLinks).some((v: any) => !!v)) },
+                  { label: 'Primera reseña obtenida', done: !!(stats && (stats.rating?.totalReviews ?? 0) > 0) },
+                ];
+                const pct = artistProfile
+                  ? Math.round((checks.filter(c => c.done).length / checks.length) * 100)
+                  : 0;
+                return (
+                  <>
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-300">Completado</span>
+                        <span className="text-2xl font-bold">{pct}%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full transition-all duration-700"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {checks.map(({ label, done }) => (
+                        <div key={label} className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-green-500' : 'bg-gray-600'}`}>
+                            {done ? (
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm ${done ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
