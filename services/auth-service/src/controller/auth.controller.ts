@@ -22,7 +22,16 @@ async function createUserAndRespond(
   nombre: string,
   email: string,
   password: string,
-  role: string
+  role: string,
+  extra?: {
+    ciudad?: string;
+    birthDate?: string;
+    documentType?: string;
+    documentNumber?: string;
+    documentFrontUrl?: string;
+    documentBackUrl?: string | null;
+    documentSelfieUrl?: string;
+  }
 ) {
   // Validar unicidad de email
   const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -42,6 +51,13 @@ async function createUserAndRespond(
       role,             // ✅ Guardar rol correcto (artista / cliente)
       emailVerified: isDev,
       status: userStatus,
+      ciudad: extra?.ciudad,
+      birthDate: extra?.birthDate ? new Date(extra.birthDate) : undefined,
+      documentType: extra?.documentType,
+      documentNumber: extra?.documentNumber,
+      documentFrontUrl: extra?.documentFrontUrl,
+      documentBackUrl: extra?.documentBackUrl ?? null,
+      documentSelfieUrl: extra?.documentSelfieUrl,
     },
   });
 
@@ -110,8 +126,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 // ─────────────────────────────────────────────────────────────────────────
 export const registerArtist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password } = registerArtistSchema.parse(req.body);
-    await createUserAndRespond(req, res, nombre, email, password, 'artista');
+    const { nombre, email, password, ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = registerArtistSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, 'artista', {
+      ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl,
+    });
   } catch (error: any) {
     logger.error("Error en registro de artista", "AUTH_CONTROLLER", { message: error.message });
     next(error);
@@ -123,8 +141,8 @@ export const registerArtist = async (req: Request, res: Response, next: NextFunc
 // ─────────────────────────────────────────────────────────────────────────
 export const registerClient = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password } = registerClientSchema.parse(req.body);
-    await createUserAndRespond(req, res, nombre, email, password, 'cliente');
+    const { nombre, email, password, ciudad, birthDate } = registerClientSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, 'cliente', { ciudad, birthDate });
   } catch (error: any) {
     logger.error("Error en registro de cliente", "AUTH_CONTROLLER", { message: error.message });
     next(error);

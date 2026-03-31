@@ -143,6 +143,17 @@ export const setupRoutes = (app: Express) => {
   );
 
   // ============================================================================
+  // Document upload (PÚBLICO - llamado durante registro, antes de tener auth)
+  // ============================================================================
+  app.use(
+    "/api/users/documents/upload",
+    createProxyMiddleware({
+      target: process.env.USERS_SERVICE_URL || "http://localhost:4002",
+      changeOrigin: true,
+    })
+  );
+
+  // ============================================================================
   // Users Service (PROTEGIDO)
   // ============================================================================
   

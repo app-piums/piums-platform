@@ -10,6 +10,7 @@ import {
   deleteAddress,
 } from "../controller/users.controller";
 import { uploadAvatar, deleteAvatar } from "../controller/avatar.controller";
+import { uploadDocument } from "../controller/document.controller";
 import {
   getNotificationSettings,
   updateNotificationSettings,
@@ -22,6 +23,9 @@ const router = Router();
 
 // Rutas públicas/internas
 router.post("/", createUser); // Solo para uso interno
+
+// Subida de documentos de identidad (sin auth – se usa durante el registro)
+router.post("/documents/upload", upload.single('file'), handleMulterError, uploadDocument);
 
 // Rutas protegidas
 router.get("/me", authenticateToken, getMyProfile);

@@ -6,7 +6,7 @@ const FETCH_TIMEOUT = 10000; // 10 segundos
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nombre, email, password } = body;
+    const { nombre, email, password, ciudad, birthDate } = body;
 
     // Validación básica
     if (!nombre || !email || !password) {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ nombre, email, password }),
+        body: JSON.stringify({ nombre, email, password, ciudad, birthDate }),
         signal: controller.signal,
       });
 
