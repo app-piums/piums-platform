@@ -16,6 +16,7 @@ export const Footer: React.FC = () => {
                 width={56} 
                 height={56}
                 className="h-14 w-auto"
+                unoptimized
               />
             </div>
             <p className="text-sm text-gray-400 mb-4">

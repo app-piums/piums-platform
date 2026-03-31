@@ -33,6 +33,7 @@ export const Navbar: React.FC = () => {
                 height={56}
                 priority
                 className="h-14 w-auto"
+                unoptimized
               />
             </Link>
             
