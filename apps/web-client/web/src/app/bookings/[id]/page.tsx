@@ -278,13 +278,13 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="pt-2">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-600">Servicio Base</span>
-                      <span className="text-sm font-medium text-gray-900">Q{priceVal.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-gray-900">${priceVal.toLocaleString('en-US')}</span>
                     </div>
                     {/* Si hubiera traslados o fees se listarían aquí filtrando metadata */}
                     
                     <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-100">
                       <span className="font-bold text-gray-900">Total Pagado</span>
-                      <span className="text-lg font-black text-[#FF6A00]">Q{priceVal.toLocaleString()}</span>
+                      <span className="text-lg font-black text-[#FF6A00]">${priceVal.toLocaleString('en-US')}</span>
                     </div>
                   </div>
 

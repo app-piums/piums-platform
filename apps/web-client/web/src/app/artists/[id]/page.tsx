@@ -719,7 +719,7 @@ export default function ArtistProfilePage() {
                               </div>
                             </div>
                             <span className="text-sm text-gray-500">
-                              {new Date(review.createdAt).toLocaleDateString('es-MX', {
+                              {new Date(review.createdAt).toLocaleDateString('es-GT', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'

@@ -128,7 +128,7 @@ const buildFallbackQuote = (
 
   return {
     serviceId: service.id,
-    currency: service.currency || 'GTQ',
+    currency: service.currency || 'USD',
     items,
     subtotalCents: totalCents,
     totalCents,
@@ -156,8 +156,8 @@ const getDurationLabel = (service?: Service | null): string => {
   return `${minutes} minutos`;
 };
 
-const formatCurrency = (amount: number, currency: string = 'GTQ') =>
-  new Intl.NumberFormat('es-GT', {
+const formatCurrency = (amount: number, currency: string = 'USD') =>
+  new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -563,7 +563,7 @@ function BookingContent() {
   }, [selectedService, selectedAddons, clientCoords, travelDistanceKm, calculatePriceQuote]);
 
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
-  const currency = priceQuote?.currency || selectedService?.currency || 'GTQ';
+  const currency = priceQuote?.currency || selectedService?.currency || 'USD';
   const pricingItems = useMemo(() => {
     // Viáticos se activa cuando: multi-día (>1 día) Y fuera del radio de cobertura.
     // Sin ubicación aún mostramos el label "Viáticos" como indicativo si es multi-día,
@@ -893,7 +893,7 @@ function BookingContent() {
                               </div>
                               <div className="text-right ml-4">
                                 <p className="text-2xl font-bold text-[#FF6A00]">
-                                  Q{(service.basePrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  ${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
                               </div>
                             </div>
@@ -1158,7 +1158,7 @@ function BookingContent() {
                                   </div>
                                   <div className="ml-4 text-right">
                                     <p className="font-semibold text-[#00AEEF]">
-                                      +Q{(addon.price / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      +${(addon.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
                                   </div>
                                 </div>
@@ -1286,7 +1286,7 @@ function BookingContent() {
                           <div className="flex justify-between">
                             <dt className="text-sm text-gray-600">Fecha:</dt>
                             <dd className="text-sm font-medium text-gray-900">
-                              {selectedDate.toLocaleDateString('es-MX', {
+                              {selectedDate.toLocaleDateString('es-GT', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
@@ -1310,7 +1310,7 @@ function BookingContent() {
                             <div className="flex justify-between">
                               <dt className="text-sm text-gray-600">Fecha de fin:</dt>
                               <dd className="text-sm font-medium text-gray-900">
-                                {new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-MX', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                {new Date(selectedDate.getTime() + (numDays - 1) * 86400000).toLocaleDateString('es-GT', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                               </dd>
                             </div>
                           )}
@@ -1526,7 +1526,7 @@ function BookingContent() {
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </span>
                   <span className="text-sm text-gray-700 capitalize">
-                    {selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {selectedDate.toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1541,7 +1541,7 @@ function BookingContent() {
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </span>
                     <span className="text-sm font-semibold text-gray-900">
-                      Q{(selectedService.basePrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-gray-400 font-normal">GTQ</span>
+                      ${(selectedService.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-gray-400 font-normal">USD</span>
                     </span>
                   </div>
                 )}

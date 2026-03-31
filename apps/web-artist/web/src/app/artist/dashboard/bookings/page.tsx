@@ -314,7 +314,7 @@ export default function ArtistBookingsPage() {
                         </div>
                         {/* Price — prominent on header */}
                         <p className="text-base font-bold text-orange-600 shrink-0 ml-2">
-                          Q{(booking.totalPrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${(booking.totalPrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
@@ -537,7 +537,7 @@ export default function ArtistBookingsPage() {
               {/* Price */}
               <div className="flex items-center justify-between bg-orange-50 rounded-xl px-4 py-3">
                 <span className="text-sm text-gray-600">Total</span>
-                <span className="text-xl font-bold text-orange-600">Q{(selectedBooking.totalPrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-xl font-bold text-orange-600">${(selectedBooking.totalPrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
 
               {/* Fields */}

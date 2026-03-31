@@ -23,9 +23,9 @@ export default function BookmarksPage() {
 
   const formatCurrency = (amount?: number | null) => {
     if (!amount) return null;
-    return new Intl.NumberFormat('es-GT', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'GTQ',
+      currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount / 100);

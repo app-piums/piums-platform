@@ -42,7 +42,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   location,
   duration,
   amount,
-  currency = 'GTQ',
+  currency = 'USD',
   actions = [],
   className = '',
 }) => {
@@ -188,7 +188,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
             <span className="text-sm font-medium text-gray-600">Total</span>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">
-                ${amount.toLocaleString('es-MX')}
+                ${amount.toLocaleString('en-US')}
               </p>
               <p className="text-xs text-gray-500">{currency}</p>
             </div>

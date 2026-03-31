@@ -79,7 +79,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
       <StatCard
         title="Ingresos Totales"
-        value={`Q${totalRevenue.toLocaleString('es-GT')}`}
+        value={`$${totalRevenue.toLocaleString('en-US')}`}
         iconBgColor="bg-green-50"
         icon={
           <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
       
       <StatCard
         title="Pagos Pendientes"
-        value={`Q${pendingPayouts.toLocaleString('es-GT')}`}
+        value={`$${pendingPayouts.toLocaleString('en-US')}`}
         iconBgColor="bg-orange-50"
         icon={
           <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

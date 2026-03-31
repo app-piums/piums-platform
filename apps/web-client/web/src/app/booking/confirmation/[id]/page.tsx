@@ -75,7 +75,7 @@ export default function BookingConfirmationPage() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
+    return date.toLocaleDateString('es-GT', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -85,7 +85,7 @@ export default function BookingConfirmationPage() {
 
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('es-MX', {
+    return date.toLocaleTimeString('es-GT', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
@@ -394,7 +394,7 @@ END:VCALENDAR`;
                   {booking.createdAt && (
                     <div className="pt-4 border-t border-gray-200">
                       <p className="text-xs text-gray-500">
-                        Creada el {new Date(booking.createdAt).toLocaleDateString('es-MX', {
+                        Creada el {new Date(booking.createdAt).toLocaleDateString('es-GT', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -416,7 +416,7 @@ END:VCALENDAR`;
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Servicio</span>
                     <span className="font-medium text-gray-900">
-                      Q{(booking.servicePrice / 100).toLocaleString('es-GT')}
+                      ${(booking.servicePrice / 100).toLocaleString('en-US')}
                     </span>
                   </div>
 
@@ -424,7 +424,7 @@ END:VCALENDAR`;
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Extras</span>
                       <span className="font-medium text-gray-900">
-                        Q{(booking.addonsPrice / 100).toLocaleString('es-GT')}
+                        ${(booking.addonsPrice / 100).toLocaleString('en-US')}
                       </span>
                     </div>
                   )}
@@ -433,7 +433,7 @@ END:VCALENDAR`;
                     <div className="flex justify-between">
                       <span className="font-semibold text-gray-900">Total</span>
                       <span className="font-bold text-xl text-gray-900">
-                        Q{(booking.totalPrice / 100).toLocaleString('es-GT')}
+                        ${(booking.totalPrice / 100).toLocaleString('en-US')}
                       </span>
                     </div>
                   </div>
@@ -443,7 +443,7 @@ END:VCALENDAR`;
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Depósito requerido</span>
                         <span className="font-medium text-orange-600">
-                          Q{(booking.depositAmount / 100).toLocaleString('es-GT')}
+                          ${(booking.depositAmount / 100).toLocaleString('en-US')}
                         </span>
                       </div>
                     </div>

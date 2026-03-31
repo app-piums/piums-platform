@@ -127,7 +127,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
                       <input
                         type="text"
                         id="currentDate"
-                        value={new Date(currentDate).toLocaleDateString('es-MX', {
+                        value={new Date(currentDate).toLocaleDateString('es-GT', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',

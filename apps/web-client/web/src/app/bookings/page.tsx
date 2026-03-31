@@ -94,7 +94,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-lg font-bold text-[#FF6A00]">Q{b.price.toLocaleString('es-GT')}</p>
+              <p className="text-lg font-bold text-[#FF6A00]">$${b.price.toLocaleString('en-US')}</p>
               <p className="text-[11px] text-gray-400">{b.priceLabel}</p>
             </div>
           </div>

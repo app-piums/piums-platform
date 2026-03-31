@@ -191,7 +191,7 @@ export default function ArtistCalendarPage() {
     }
   };
 
-  const monthName = currentMonth.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+  const monthName = currentMonth.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
   const days = getDaysInMonth(currentMonth);
   const firstDow = getFirstDayOfWeek(currentMonth);
 
