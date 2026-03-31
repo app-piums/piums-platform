@@ -49,6 +49,17 @@ export const authenticateToken = (
   }
 };
 
+export const requireAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return next(new AppError(403, 'Acceso denegado: se requiere rol de administrador'));
+  }
+  next();
+};
+
 // Middleware opcional de autenticación
 export const optionalAuth = (
   req: Request,

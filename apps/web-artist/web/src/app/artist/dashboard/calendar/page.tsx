@@ -340,7 +340,14 @@ export default function ArtistCalendarPage() {
                   disabled={saving || selectedDayStatus === 'blocked'}
                   className="flex-1 min-w-[130px] px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? '...' : '🚫 Bloquear día'}
+                  {saving ? '...' : (
+                    <span className="flex items-center gap-1.5">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      Bloquear día
+                    </span>
+                  )}
                 </button>
                 <button
                   onClick={handleMarkAvailable}

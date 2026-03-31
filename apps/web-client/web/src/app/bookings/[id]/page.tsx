@@ -9,6 +9,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
 import { sdk, type Service, type ArtistProfile, type Booking } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/lib/toast';
 
 // Icons
 const ClockIcon = ({ className }: { className?: string }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -136,10 +137,10 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
       setReviewed(true);
       setIsReviewModalOpen(false);
     } catch (err: any) {
-      alert(err?.message || 'Error al enviar la reseña');
+      toast.error(err?.message || 'Error al enviar la reseña');
     }
   };
-  const priceVal = Number(booking.totalPrice || booking.amount || 0);
+  const priceVal = Number(booking.totalPrice || booking.amount || 0) / 100;
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">

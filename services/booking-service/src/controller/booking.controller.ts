@@ -27,9 +27,13 @@ export class BookingController {
   async createBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const validatedData = createBookingSchema.parse(req.body);
+
+      // Always use the authenticated user's ID as clientId — never trust the body
+      const clientId = req.user!.id;
       
       const { booking } = await bookingService.createBooking({
         ...validatedData,
+        clientId,
         scheduledDate: new Date(validatedData.scheduledDate),
       });
 
@@ -170,9 +174,9 @@ export class BookingController {
   async confirmBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const { artistNotes, artistId: bodyArtistId } = confirmBookingSchema.parse(req.body);
+      const { artistNotes } = confirmBookingSchema.parse(req.body);
       
-      const artistId = bodyArtistId || req.user!.id;
+      const artistId = req.user!.id;
 
       const booking = await bookingService.confirmBooking(id, artistId, artistNotes);
       res.json(booking);
@@ -184,9 +188,9 @@ export class BookingController {
   async rejectBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const { reason, artistId: bodyArtistId } = rejectBookingSchema.parse(req.body);
+      const { reason } = rejectBookingSchema.parse(req.body);
       
-      const artistId = bodyArtistId || req.user!.id;
+      const artistId = req.user!.id;
 
       const booking = await bookingService.rejectBooking(id, artistId, reason);
       res.json(booking);
@@ -198,9 +202,9 @@ export class BookingController {
   async cancelBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user!.id;
-      
       const { reason } = cancelBookingSchema.parse(req.body);
+
+      const userId = req.user!.id;
 
       const booking = await bookingService.cancelBooking(id, userId, reason);
       res.json(booking);
@@ -212,9 +216,9 @@ export class BookingController {
   async changeStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user!.id;
-      
       const { status, reason } = changeStatusSchema.parse(req.body);
+      
+      const userId = req.user!.id;
 
       const booking = await bookingService.changeStatus(id, userId, status, reason);
       res.json(booking);

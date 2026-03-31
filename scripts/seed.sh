@@ -98,18 +98,18 @@ CLIENT_DATA=(
   "Diego Fuentes|Flores|Petén"
 )
 
-# Artistas: "nombre|artistName|bio|category|specialties|ciudad|departamento|rateMin|rateMax|years|deposit|depositPct"
+# Artistas: "nombre|artistName|bio|category|specialties|ciudad|departamento|rateMin|rateMax|years|deposit|depositPct|instagram|tiktok|facebook|website"
 ARTIST_DATA=(
-  "María González|María G.|Guitarrista y vocalista pop/folk.|MUSICO|Guitarra acústica,Voz,Pop,Folk|Ciudad de Guatemala|Guatemala|50000|150000|10|true|30"
-  "Roberto Pérez|Rob Photography|Fotógrafo de bodas y eventos corporativos.|FOTOGRAFO|Bodas,Quinceañeras,Eventos corporativos,Retratos|Antigua Guatemala|Sacatepéquez|40000|120000|8|true|50"
-  "Alejandro Díaz|DJ Alex|DJ residente con 15 años en clubes de Guatemala.|DJ|Electrónica,Reggaeton,Salsa,House|Ciudad de Guatemala|Guatemala|60000|200000|15|true|40"
-  "Sofía Morales|Sofía Beauty|Maquilladora certificada en novia y artístico.|MAQUILLADOR|Novia,Artístico,Editorial,Airbrush|Quetzaltenango|Quetzaltenango|30000|80000|6|false|0"
-  "Diego Castro|Diego Ink|Tatuador realismo y blackwork, estudio en Zona 10.|TATUADOR|Realismo,Blackwork,Neotradicional,Geométrico|Ciudad de Guatemala|Guatemala|80000|300000|12|true|25"
-  "Paola Ajú|Paola Dance|Bailarina y coreógrafa especializada en danza contemporánea.|OTRO|Contemporáneo,Ballet,Jazz,Fusión|Cobán|Alta Verapaz|35000|100000|7|true|30"
-  "Humberto Ruiz|Humo Barbería|Barbero artístico con técnicas clásicas y modernas.|OTRO|Degradado,Barba,Diseño,Clásico|Escuintla|Escuintla|15000|45000|5|false|0"
-  "Claudia Chávez|Claudia Eventos|Planificadora de bodas y quinceañeras en Oriente.|OTRO|Bodas,Quinceañeras,Corporativo,Social|Chiquimula|Chiquimula|70000|250000|9|true|50"
-  "Samuel Tzul|Sam Lights|Iluminador y técnico de sonido para conciertos.|OTRO|Iluminación,Sonido,Conciertos,Eventos|Huehuetenango|Huehuetenango|45000|130000|11|true|35"
-  "Renata Morán|Rena Violin|Violinista clásica y fusión disponible para eventos del norte.|MUSICO|Violín clásico,Fusión,Instrumental,Bodas|Flores|Petén|55000|160000|8|true|30"
+  "María González|María G.|Guitarrista y vocalista apasionada por el folk y pop latinoamericano, con más de 10 años en bodas, tardes culturales y festivales de Guatemala. Su música fusiona cuerdas acústicas y letras emotivas que conectan con cada audiencia.|MUSICO|Guitarra acústica,Voz,Pop,Folk|Ciudad de Guatemala|Guatemala|50000|150000|10|true|30|https://www.instagram.com/mariagmusic|https://www.tiktok.com/@mariagmusic||"
+  "Roberto Pérez|Rob Photography|Fotógrafo especializado en bodas y retratos con 8 años documentando momentos únicos en Guatemala. Su trabajo captura la luz natural y los instantes auténticos que hacen irrepetible cada historia. Premio regional de fotografía nupcial 2023.|FOTOGRAFO|Bodas,Quinceañeras,Eventos corporativos,Retratos|Antigua Guatemala|Sacatepéquez|40000|120000|8|true|50|https://www.instagram.com/robphotography.gt|||https://robphotography.com.gt"
+  "Alejandro Díaz|DJ Alex|DJ residente en la escena musical guatemalteca desde 2009 con más de 800 eventos tocados. Especialista en electrónica, reggaeton y fusión latina que lleva cada pista de baile al máximo. Equipamiento profesional de última generación para sonidos impecables.|DJ|Electrónica,Reggaeton,Salsa,House|Ciudad de Guatemala|Guatemala|60000|200000|15|true|40|https://www.instagram.com/djalexguatemala|https://www.tiktok.com/@djalexgt|https://www.facebook.com/DJAlexGuatemala|"
+  "Sofía Morales|Sofía Beauty|Maquilladora certificada en novia, editorial y artístico con formación en la Academia de Belleza Internacional y especialización en Airbrush Makeup. Seis años transformando looks en Quetzaltenango y el altiplano guatemalteco.|MAQUILLADOR|Novia,Artístico,Editorial,Airbrush|Quetzaltenango|Quetzaltenango|30000|80000|6|false|0|https://www.instagram.com/sofiabeauty.quetzal|https://www.tiktok.com/@sofiabeautygt||"
+  "Diego Castro|Diego Ink|Tatuador reconocido por su hiperrealismo y blackwork de alta precisión, con estudio en Zona 10 Ciudad de Guatemala. Doce años de carrera, más de 2000 tatuajes y presencia en convenciones internacionales avalan su arte.|TATUADOR|Realismo,Blackwork,Neotradicional,Geométrico|Ciudad de Guatemala|Guatemala|80000|300000|12|true|25|https://www.instagram.com/diegoink.tattoo|||https://diegoink.art"
+  "Paola Ajú|Paola Dance|Bailarina y coreógrafa formada en danza contemporánea y técnica Graham, directora artística de espectáculos en Alta Verapaz. Sus piezas fusionan la tradición guatemalteca con movimiento moderno creando shows únicos.|OTRO|Contemporáneo,Ballet,Jazz,Fusión|Cobán|Alta Verapaz|35000|100000|7|true|30|https://www.instagram.com/paoladance.gt|https://www.tiktok.com/@paoladancegt||"
+  "Humberto Ruiz|Humo Barbería|Barbero artístico experto en degradados, diseños geométricos y técnicas de navaja clásica con 5 años en Escuintla. Su estética visual y precisión lo posicionan como uno de los mejores barberos del sur del país.|OTRO|Degradado,Barba,Diseño,Clásico|Escuintla|Escuintla|15000|45000|5|false|0|https://www.instagram.com/humobarber.escuintla|https://www.tiktok.com/@humobarberia||"
+  "Claudia Chávez|Claudia Eventos|Planificadora de bodas y eventos sociales con más de 200 eventos coordinados en 9 años cubriendo el oriente de Guatemala. Su enfoque en detalles y red de proveedores garantizan momentos inolvidables.|OTRO|Bodas,Quinceañeras,Corporativo,Social|Chiquimula|Chiquimula|70000|250000|9|true|50|https://www.instagram.com/claudia.eventos.gt||https://www.facebook.com/claudiaeventsgt|https://claudiaeventos.com"
+  "Samuel Tzul|Sam Lights|Técnico de iluminación y sonido con 11 años en conciertos y festivales por toda Guatemala. Propietario de equipamiento propio: consolas Behringer X32, moving heads y PA Yamaha 4000W.|OTRO|Iluminación,Sonido,Conciertos,Eventos|Huehuetenango|Huehuetenango|45000|130000|11|true|35|https://www.instagram.com/samlightsgt||https://www.facebook.com/SamLightsGuatemala|"
+  "Renata Morán|Rena Violin|Violinista clásica y de fusión graduada del Conservatorio Nacional de Guatemala, especialista en repertorio contemporáneo y pop orquestal. Disponible para bodas y galas en Petén y norte del país.|MUSICO|Violín clásico,Fusión,Instrumental,Bodas|Flores|Petén|55000|160000|8|true|30|https://www.instagram.com/renaviolin|https://www.tiktok.com/@renaviolin||https://renataviolin.com"
 )
 
 # Servicios: "índice_artista(0-9)|categoría_slug|slug|nombre|descripción|pricingType|basePrice|tags|whatIsIncluded"
@@ -222,7 +222,7 @@ echo ""
 echo "🎨 Creando 10 artistas de prueba..."
 ARTIST_COUNT=0
 for i in "${!ARTIST_DATA[@]}"; do
-  IFS='|' read -r nombre artistName bio category specialties_raw ciudad departamento rateMin rateMax years deposit depositPct <<< "${ARTIST_DATA[$i]}"
+  IFS='|' read -r nombre artistName bio category specialties_raw ciudad departamento rateMin rateMax years deposit depositPct instagram tiktokUrl facebook website <<< "${ARTIST_DATA[$i]}"
   idx=$(printf "%02d" $((i + 1)))
   email="artist${idx}@piums.com"
 
@@ -258,6 +258,10 @@ for i in "${!ARTIST_DATA[@]}"; do
         \"hourlyRateMax\": $rateMax,
         \"currency\": \"GTQ\",
         \"yearsExperience\": $years,
+        \"instagram\": \"$instagram\",
+        \"tiktok\": \"$tiktokUrl\",
+        \"facebook\": \"$facebook\",
+        \"website\": \"$website\",
         $deposit_fields
       }" 2>/dev/null) || true
 
@@ -345,7 +349,84 @@ done
 echo "   → $SERVICE_COUNT servicios de catálogo creados"
 
 # ---------------------------------------------------------------------------
-# 5. Resumen
+# 5. Crear portfolio items para cada artista
+# ---------------------------------------------------------------------------
+# Formato: "artist_idx|title|description|type|url|category|tags|isFeatured"
+PORTFOLIO_DATA=(
+  # María González (0)
+  "0|Concierto en Palacio Cultural|Presentación especial ante más de 200 asistentes en el Festival de Cultura 2024.|image|https://picsum.photos/seed/maria-pf1/800/600|Conciertos|música,folk,guitarra,concierto|true"
+  "0|Serenata de Bodas en Antigua|Actuación íntima al atardecer para boda al aire libre en Antigua Guatemala.|image|https://picsum.photos/seed/maria-pf2/800/600|Bodas|boda,serenata,íntimo,acústico|false"
+  # Roberto Pérez (1)
+  "1|Boda en el Jardín de Antigua|Cobertura completa de boda con 320 fotos editadas entregadas en galería privada.|image|https://picsum.photos/seed/rob-pf1/800/600|Bodas|fotografía,boda,jardín,antigua|true"
+  "1|Sesión Lifestyle Lago Atitlán|Sesión de pareja al amanecer en el Lago de Atitlán con volcanes de fondo.|image|https://picsum.photos/seed/rob-pf2/800/600|Lifestyle|fotografía,pareja,atitlán,naturaleza|false"
+  # Alejandro Díaz (2)
+  "2|Festival Electronic Nights 2024|Producción técnica y set en vivo de 4 horas en el festival más grande del año.|image|https://picsum.photos/seed/alex-pf1/800/600|Festivales|dj,festival,electrónica,producción|true"
+  "2|Boda en Casa Santo Domingo|Cobertura musical completa de 6 horas: coctel y pista de baile en Antigua.|image|https://picsum.photos/seed/alex-pf2/800/600|Bodas|dj,boda,coctel,música|false"
+  # Sofía Morales (3)
+  "3|Maquillaje Nupcial Editorial|Trabajo nupcial publicado en revista Boda Guatemala, look airbrush de día completo.|image|https://picsum.photos/seed/sofia-pf1/800/600|Editorial|maquillaje,novia,airbrush,editorial|true"
+  "3|Quinceañera Gala en Xela|Transformación completa para quinceañera con peinado y maquillaje glamuroso de gala.|image|https://picsum.photos/seed/sofia-pf2/800/600|Quinceañeras|maquillaje,quinceañera,glamour,xela|false"
+  # Diego Castro (4)
+  "4|Hiperrealismo: Retrato Familiar|Tatuaje hiperrealista de retrato familiar en brazo completo, 3 sesiones.|image|https://picsum.photos/seed/diego-pf1/800/600|Hiperrealismo|tatuaje,hiperrealismo,retrato,brazo|true"
+  "4|Blackwork Geométrico Espalda|Diseño geométrico blackwork en espalda completa, trabajo de 6 sesiones.|image|https://picsum.photos/seed/diego-pf2/800/600|Blackwork|tatuaje,blackwork,geométrico,espalda|false"
+  # Paola Ajú (5)
+  "5|Gala de Danza Contemporánea 2024|Presentación principal en la Gala Cultural de Alta Verapaz ante 500 asistentes.|image|https://picsum.photos/seed/paola-pf1/800/600|Galas|danza,contemporánea,gala,cobán|true"
+  "5|Coreografía de Boda Sorpresa|Show de danza fusión sorpresa para boda en Cobán con ovación de pie del público.|image|https://picsum.photos/seed/paola-pf2/800/600|Bodas|danza,boda,sorpresa,fusión|false"
+  # Humberto Ruiz (6)
+  "6|Degradado con Diseño Geométrico|Corte + diseño de líneas geométricas + degradado skin fade de alta precisión.|image|https://picsum.photos/seed/humberto-pf1/800/600|Cortes|barbería,degradado,geométrico,diseño|true"
+  "6|Barba Classic Viking|Tratamiento y diseño de barba voluminosa estilo Viking con productos premium.|image|https://picsum.photos/seed/humberto-pf2/800/600|Barbas|barbería,barba,viking,diseño|false"
+  # Claudia Chávez (7)
+  "7|Boda Campestre en Chiquimula|Coordinación completa de boda campestre para 250 invitados con 6 meses de producción.|image|https://picsum.photos/seed/claudia-pf1/800/600|Bodas|boda,coordinación,campestre,chiquimula|true"
+  "7|Quinceañera Cielo y Estrellas|Temática inmersiva para 180 invitados con decoración y show especial de luz y color.|image|https://picsum.photos/seed/claudia-pf2/800/600|Quinceañeras|quinceañera,temática,evento,oriente|false"
+  # Samuel Tzul (8)
+  "8|Producción Técnica Feria Huehue 2024|Diseño de iluminación y PA para concierto principal de la Feria de Huehuetenango.|image|https://picsum.photos/seed/samuel-pf1/800/600|Conciertos|iluminación,sonido,feria,concierto|true"
+  "8|Boda al Aire Libre Cuchumatanes|Sonido e iluminación decorativa para ceremonia y recepción en los Cuchumatanes.|image|https://picsum.photos/seed/samuel-pf2/800/600|Bodas|sonido,iluminación,boda,cuchumatanes|false"
+  # Renata Morán (9)
+  "9|Ceremonia Boda Premium en Petén|Interpretación de violín solista durante ceremonia religiosa y coctel en Flores.|image|https://picsum.photos/seed/renata-pf1/800/600|Bodas|violín,ceremonia,boda,flores|true"
+  "9|Cuarteto Gala Corporativa|Ensamble de cuarteto de cuerdas para gala corporativa de empresa multinacional.|image|https://picsum.photos/seed/renata-pf2/800/600|Galas|cuarteto,cuerdas,gala,corporativo|false"
+)
+
+echo ""
+echo "🖼️  Agregando items de portfolio a artistas..."
+PORTFOLIO_COUNT=0
+for row in "${PORTFOLIO_DATA[@]}"; do
+  IFS='|' read -r artist_idx title description type url category tags_raw isFeatured <<< "$row"
+
+  artist_token="${ARTIST_TOKENS[$artist_idx]:-}"
+  artist_id="${ARTIST_IDS[$artist_idx]:-}"
+
+  if [ -z "$artist_token" ] || [ -z "$artist_id" ]; then
+    echo "   ⚠️  Saltando portfolio '$title' — artista[$artist_idx] sin token/ID"
+    continue
+  fi
+
+  tags_json=$(echo "$tags_raw" | jq -Rc 'split(",")')
+
+  pf_response=$(curl -s -X POST "$ARTISTS_URL/artists/$artist_id/portfolio" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $artist_token" \
+    -d "{
+      \"title\": \"$title\",
+      \"description\": \"$description\",
+      \"type\": \"$type\",
+      \"url\": \"$url\",
+      \"category\": \"$category\",
+      \"tags\": $tags_json,
+      \"isFeatured\": $isFeatured
+    }" 2>/dev/null) || true
+
+  pf_id=$(echo "$pf_response" | jq -r '.id // .portfolioItem.id // empty' 2>/dev/null) || true
+  if [ -n "$pf_id" ]; then
+    echo "   ✅ $title (artista[$artist_idx])"
+    PORTFOLIO_COUNT=$((PORTFOLIO_COUNT + 1))
+  else
+    pf_msg=$(echo "$pf_response" | jq -r '.message // empty' 2>/dev/null) || true
+    echo "   ⚠️  No se pudo agregar '$title': $pf_msg"
+  fi
+done
+echo "   → $PORTFOLIO_COUNT items de portfolio creados"
+
+# ---------------------------------------------------------------------------
+# 6. Resumen
 # ---------------------------------------------------------------------------
 echo ""
 echo "✅ Seed completado exitosamente"

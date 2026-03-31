@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
 
-const PAYMENTS_SERVICE_URL = process.env.PAYMENTS_SERVICE_URL || "http://localhost:4007";
+const PAYMENTS_SERVICE_URL = process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005";
 
 interface PaymentStats {
   totalRevenue: number;

@@ -208,6 +208,7 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       BOOKING_SERVICE_URL: http://booking-service:4008
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
+      ARTISTS_SERVICE_URL: http://artists-service:4003
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
     depends_on:
       postgres:

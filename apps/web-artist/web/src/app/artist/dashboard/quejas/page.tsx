@@ -19,7 +19,11 @@ interface Dispute {
   description: string;
   createdAt: string;
   messages?: any[];
+  myRole?: 'reporter' | 'reported';
 }
+
+// 'client' in web-client · 'artist' in web-artist — matches the senderType the backend assigns
+const MY_SENDER_TYPE = 'artist' as const;
 
 const STATUS_CONFIG: Record<DisputeStatus, { label: string; className: string }> = {
   OPEN:          { label: 'Abierta',        className: 'bg-red-100 text-red-700' },
@@ -57,7 +61,11 @@ export default function ArtistQuejasPage() {
       try {
         setLoading(true);
         const data = await sdk.getMyDisputes();
-        setDisputes(data.asReporter ?? []);
+        const asReporter = (data.asReporter ?? []).map((d: any) => ({ ...d, myRole: 'reporter' as const }));
+        const asReported = (data.asReported ?? []).map((d: any) => ({ ...d, myRole: 'reported' as const }));
+        setDisputes([...asReporter, ...asReported].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ));
       } catch (err: any) {
         setError(err?.message || 'Error al cargar las quejas');
       } finally {
@@ -80,7 +88,7 @@ export default function ArtistQuejasPage() {
 
           {loading ? (
             <div className="flex h-64 items-center justify-center">
-              <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : error ? (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
@@ -88,17 +96,17 @@ export default function ArtistQuejasPage() {
               <button onClick={() => location.reload()} className="text-sm text-red-500 underline">Reintentar</button>
             </div>
           ) : disputes.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm py-16 flex flex-col items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center">
-                <svg className="w-7 h-7 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 flex flex-col items-center gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center">
+                <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-gray-600 font-semibold">Sin quejas registradas</p>
+              <p className="text-gray-500 font-medium">No tienes quejas registradas</p>
               <p className="text-sm text-gray-400 text-center max-w-xs">
                 Si tienes algún problema con una reserva, puedes reportarlo desde la sección de Reservas.
               </p>
-              <Link href="/artist/dashboard/bookings" className="mt-2 text-sm font-medium text-orange-500 hover:underline">
+              <Link href="/artist/dashboard/bookings" className="mt-2 text-sm font-medium text-[#FF6A00] hover:underline">
                 Ver mis reservas →
               </Link>
             </div>
@@ -116,123 +124,58 @@ export default function ArtistQuejasPage() {
 }
 
 function DisputeCard({ dispute }: { dispute: Dispute }) {
-  const [expanded, setExpanded] = useState(false);
-  const [messages, setMessages] = useState<any[]>(dispute.messages ?? []);
-  const [newMsg, setNewMsg] = useState('');
-  const [sending, setSending] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-
   const statusCfg = STATUS_CONFIG[dispute.status] ?? STATUS_CONFIG.OPEN;
   const isActive = dispute.status !== 'RESOLVED' && dispute.status !== 'CLOSED';
-
-  const handleExpand = async () => {
-    if (!expanded && messages.length === 0) {
-      try {
-        setLoadingDetail(true);
-        const data = await sdk.getDisputeById(dispute.id);
-        setMessages(data.messages ?? []);
-      } catch {
-        // ignore
-      } finally {
-        setLoadingDetail(false);
-      }
-    }
-    setExpanded(v => !v);
-  };
-
-  const sendMessage = async () => {
-    if (!newMsg.trim()) return;
-    try {
-      setSending(true);
-      const msg = await sdk.addDisputeMessage(dispute.id, newMsg.trim());
-      setMessages(prev => [...prev, msg]);
-      setNewMsg('');
-    } catch {
-      alert('Error al enviar el mensaje');
-    } finally {
-      setSending(false);
-    }
-  };
+  const previewMsg = (dispute.messages ?? []).filter((m: any) => !m.isStatusUpdate).at(-1);
+  const hasUnread = isActive && !!previewMsg && previewMsg.senderType !== MY_SENDER_TYPE;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <button
-        onClick={handleExpand}
-        className="w-full text-left px-5 py-4 flex items-start justify-between gap-4 hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusCfg.className}`}>
-              {statusCfg.label}
-            </span>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">
-              {TYPE_LABELS[dispute.disputeType] ?? dispute.disputeType}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-gray-900 truncate">{dispute.subject}</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {new Date(dispute.createdAt).toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-        <svg
-          className={`w-5 h-5 text-gray-400 shrink-0 mt-0.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {expanded && (
-        <div className="border-t border-gray-100 px-5 pb-5 pt-4 space-y-4">
-          <p className="text-sm text-gray-600 leading-relaxed">{dispute.description}</p>
-
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Hilo de conversación</p>
-            {loadingDetail ? (
-              <div className="flex justify-center py-6">
-                <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : messages.filter(m => !m.isStatusUpdate).length === 0 ? (
-              <p className="text-xs text-gray-400 italic">Aún no hay mensajes de seguimiento.</p>
+    <Link
+      href={`/artist/dashboard/quejas/${dispute.id}`}
+      className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+    >
+      <div className="px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusCfg.className}`}>
+                {statusCfg.label}
+              </span>
+              <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                {TYPE_LABELS[dispute.disputeType] ?? dispute.disputeType}
+              </span>
+              {dispute.myRole === 'reported' && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                  Fuiste reportado
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-gray-900 mb-0.5">{dispute.subject}</p>
+            {previewMsg ? (
+              <p className={`text-xs flex items-center gap-1.5 truncate ${hasUnread ? 'text-[#FF6A00] font-medium' : 'text-gray-400'}`}>
+                {hasUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FF6A00] shrink-0" />}
+                <span className="font-medium shrink-0">
+                  {previewMsg.senderType === MY_SENDER_TYPE ? 'Tú:'
+                    : previewMsg.senderType === 'staff' ? 'Piums:'
+                    : previewMsg.senderType === 'client' ? 'Cliente:'
+                    : 'Artista:'}
+                </span>
+                <span className="truncate">{previewMsg.message}</span>
+              </p>
             ) : (
-              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                {messages.filter(m => !m.isStatusUpdate).map((m) => (
-                  <div key={m.id} className={`flex ${m.senderType === 'staff' ? 'justify-start' : 'justify-end'}`}>
-                    <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm ${
-                      m.senderType === 'staff' ? 'bg-gray-100 text-gray-700' : 'bg-orange-500 text-white'
-                    }`}>
-                      {m.senderType === 'staff' && (
-                        <p className="text-[10px] font-semibold text-gray-500 mb-1 uppercase">Piums Support</p>
-                      )}
-                      <p>{m.message}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {isActive && (
-              <div className="flex gap-2 mt-3">
-                <input
-                  type="text"
-                  value={newMsg}
-                  onChange={e => setNewMsg(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                  placeholder="Agrega información adicional…"
-                  className="flex-1 text-sm rounded-xl border border-gray-200 px-3.5 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/15 transition"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={sending || !newMsg.trim()}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
-                >
-                  {sending ? '…' : 'Enviar'}
-                </button>
-              </div>
+              <p className="text-xs text-gray-400">
+                {new Date(dispute.createdAt).toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
             )}
           </div>
+          <div className="shrink-0 flex items-center gap-1.5 text-[#FF6A00]">
+            {hasUnread && <span className="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse" />}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </Link>
   );
 }

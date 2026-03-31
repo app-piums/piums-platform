@@ -139,19 +139,19 @@ function BookingSummary() {
         <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>Servicio Artístico (x2 hrs)</span>
-            <span className="font-medium">${b.priceBase.toFixed(2)}</span>
+            <span className="font-medium">Q{b.priceBase.toLocaleString('es-GT')}</span>
           </div>
           <div className="flex justify-between text-gray-600">
             <span>Tarifa de servicio Piums</span>
-            <span className="font-medium">${b.piumsFee.toFixed(2)}</span>
+            <span className="font-medium">Q{b.piumsFee.toLocaleString('es-GT')}</span>
           </div>
           <div className="flex justify-between text-green-600">
             <span>{b.discountLabel}</span>
-            <span className="font-medium">${b.discount.toFixed(2)}</span>
+            <span className="font-medium">Q{b.discount.toLocaleString('es-GT')}</span>
           </div>
           <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
             <span>Total a pagar</span>
-            <span>${b.total.toFixed(2)}</span>
+            <span>Q{b.total.toLocaleString('es-GT')}</span>
           </div>
         </div>
 

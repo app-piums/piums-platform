@@ -39,7 +39,7 @@ router.post("/logout", logout);
 // Password reset
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordLimiter, resetPassword);
-router.post("/change-password", changePassword); // Requiere autenticación
+router.post("/change-password", authenticate, changePassword); // Requiere autenticación
 
 // Email verification
 router.post("/verify-email", verifyEmail);

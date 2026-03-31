@@ -6,6 +6,8 @@ import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
 import { sdk, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/lib/toast';
 
 type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'ALL';
 
@@ -23,6 +25,8 @@ type ArtistBookingsResponse = {
 
 export default function ArtistBookingsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const userName = (user as any)?.nombre ?? (user as any)?.email ?? 'Artista';
   const [isLoading, setIsLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [total, setTotal] = useState(0);
@@ -99,10 +103,10 @@ export default function ArtistBookingsPage() {
       await sdk.acceptBooking(bookingId);
       await loadBookings();
       void loadStatusCounts();
-      alert('Reserva aceptada exitosamente');
+      toast.success('Reserva aceptada exitosamente');
     } catch (err: unknown) {
       console.error('Error accepting booking:', getErrorMessage(err));
-      alert(getErrorMessage(err) || 'Error al aceptar la reserva');
+      toast.error(getErrorMessage(err) || 'Error al aceptar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -117,10 +121,10 @@ export default function ArtistBookingsPage() {
       await sdk.declineBooking(bookingId, reason);
       await loadBookings();
       void loadStatusCounts();
-      alert('Reserva rechazada');
+      toast.success('Reserva rechazada');
     } catch (err: unknown) {
       console.error('Error declining booking:', getErrorMessage(err));
-      alert(getErrorMessage(err) || 'Error al rechazar la reserva');
+      toast.error(getErrorMessage(err) || 'Error al rechazar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -134,10 +138,10 @@ export default function ArtistBookingsPage() {
       setSelectedBooking(null);
       await loadBookings();
       void loadStatusCounts();
-      alert('Reserva marcada como completada');
+      toast.success('Reserva marcada como completada');
     } catch (err: unknown) {
       console.error('Error completing booking:', getErrorMessage(err));
-      alert(getErrorMessage(err) || 'Error al completar la reserva');
+      toast.error(getErrorMessage(err) || 'Error al completar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -146,17 +150,17 @@ export default function ArtistBookingsPage() {
   const handleCancel = async (bookingId: string) => {
     const reason = prompt('¿Razón de la cancelación? (mínimo 10 caracteres)');
     if (reason === null) return;
-    if (reason.trim().length < 10) { alert('La razón debe tener al menos 10 caracteres'); return; }
+    if (reason.trim().length < 10) { toast.warning('La razón debe tener al menos 10 caracteres'); return; }
     try {
       setProcessingBookingId(bookingId);
-      await sdk.cancelBooking(bookingId, reason.trim());
+      await sdk.artistCancelBooking(bookingId, reason.trim());
       setSelectedBooking(null);
       await loadBookings();
       void loadStatusCounts();
-      alert('Reserva cancelada');
+      toast.success('Reserva cancelada');
     } catch (err: unknown) {
       console.error('Error cancelling booking:', getErrorMessage(err));
-      alert(getErrorMessage(err) || 'Error al cancelar la reserva');
+      toast.error(getErrorMessage(err) || 'Error al cancelar la reserva');
     } finally {
       setProcessingBookingId(null);
     }
@@ -193,63 +197,80 @@ export default function ArtistBookingsPage() {
     ? statusCountValues.reduce((sum, value) => sum + value, 0)
     : null;
 
-  const CHIP_CONFIG: Array<{
-    value: BookingStatus;
-    label: string;
-    inactiveCls: string;
-    activeCls: string;
-    ringCls: string;
-  }> = [
-    { value: 'PENDING',   label: 'Pendientes', inactiveCls: 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100',     activeCls: 'bg-amber-500 text-white',    ringCls: 'ring-amber-400'  },
-    { value: 'CONFIRMED', label: 'Confirmadas', inactiveCls: 'border border-green-300 text-green-700 bg-green-50 hover:bg-green-100',     activeCls: 'bg-green-600 text-white',    ringCls: 'ring-green-400'  },
-    { value: 'COMPLETED', label: 'Completadas', inactiveCls: 'border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100',        activeCls: 'bg-blue-600 text-white',     ringCls: 'ring-blue-400'   },
-    { value: 'CANCELLED', label: 'Canceladas',  inactiveCls: 'border border-gray-300 text-gray-600 bg-gray-50 hover:bg-gray-100',        activeCls: 'bg-gray-500 text-white',     ringCls: 'ring-gray-400'   },
-    { value: 'ALL',       label: 'Todas',       inactiveCls: 'border border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100', activeCls: 'bg-orange-500 text-white',   ringCls: 'ring-orange-400' },
+  const TABS: Array<{ value: BookingStatus; label: string }> = [
+    { value: 'PENDING',   label: 'Pendientes'  },
+    { value: 'CONFIRMED', label: 'Confirmadas' },
+    { value: 'COMPLETED', label: 'Completadas' },
+    { value: 'CANCELLED', label: 'Canceladas'  },
+    { value: 'ALL',       label: 'Todas'        },
+  ];
+
+  const STATS = [
+    { label: 'Total Reservas', count: allCount,                    color: 'text-[#FF6A00] bg-orange-50', icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
+    { label: 'Confirmadas',    count: statusCounts.CONFIRMED,      color: 'text-blue-600 bg-blue-50',    icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+    { label: 'Pendientes',     count: statusCounts.PENDING,        color: 'text-yellow-600 bg-yellow-50', icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg> },
+    { label: 'Completadas',    count: statusCounts.COMPLETED,      color: 'text-green-600 bg-green-50',  icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
       <DashboardSidebar />
-      
-      <main className="flex-1 min-w-0 overflow-x-hidden p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Reservas</h1>
-            <p className="text-gray-500 text-sm">Gestiona las reservas recibidas</p>
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top bar */}
+        <header className="bg-white border-b border-gray-100 px-4 lg:px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 mt-14 lg:mt-0">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Reservas</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Gestiona las reservas recibidas</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 px-4 lg:px-6 py-6 space-y-6">
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {STATS.map(({ label, count, color, icon }) => (
+              <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4">
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+                  {icon}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {count === null ? (
+                      <span className="inline-block w-8 h-6 rounded bg-gray-100 animate-pulse" />
+                    ) : count}
+                  </p>
+                  <p className="text-xs text-gray-400 leading-tight">{label}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Filter chips with live counts */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {CHIP_CONFIG.map(({ value, label, inactiveCls, activeCls, ringCls }) => {
-              const count = value === 'ALL' ? allCount : (statusCounts[value] ?? null);
-              const isActive = activeStatus === value;
-              return (
-                <button
-                  key={value}
-                  onClick={() => { setActiveStatus(value); setCurrentPage(1); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150 active:scale-95 ${
-                    isActive ? `${activeCls} ring-2 ring-offset-1 ${ringCls}` : inactiveCls
-                  }`}
-                >
-                  {label}
-                  <span className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold rounded-full ${
-                    isActive ? 'bg-black/10' : 'bg-white/80 shadow-sm'
-                  }`}>
-                    {count === null
-                      ? <span className="inline-block w-4 h-2 rounded animate-pulse bg-current opacity-40" />
-                      : count}
-                  </span>
-                </button>
-              );
-            })}
+          {/* Tabs */}
+          <div className="flex gap-1 overflow-x-auto pb-0.5">
+            {TABS.map(tab => (
+              <button
+                key={tab.value}
+                onClick={() => { setActiveStatus(tab.value); setCurrentPage(1); }}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                  activeStatus === tab.value
+                    ? 'bg-[#FF6A00] text-white shadow-sm shadow-orange-200'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00] mx-auto mb-4"></div>
                 <p className="text-gray-500 text-sm">Cargando reservas...</p>
               </div>
             </div>
@@ -277,7 +298,7 @@ export default function ArtistBookingsPage() {
                     <div
                       key={booking.id}
                       onClick={() => setSelectedBooking(booking)}
-                      className={`bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
+                      className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-4 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
                         BORDER_ACCENT[booking.status] ?? 'border-l-gray-300'
                       }`}
                     >
@@ -293,7 +314,7 @@ export default function ArtistBookingsPage() {
                         </div>
                         {/* Price — prominent on header */}
                         <p className="text-base font-bold text-orange-600 shrink-0 ml-2">
-                          Q{booking.totalPrice.toLocaleString('es-GT')}
+                          Q{(booking.totalPrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
@@ -390,6 +411,14 @@ export default function ArtistBookingsPage() {
                             )}
                           </button>
                           <button
+                            onClick={(e) => { e.stopPropagation(); void handleCancel(booking.id); }}
+                            disabled={processingBookingId === booking.id}
+                            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            Cancelar
+                          </button>
+                          <button
                             onClick={(e) => { e.stopPropagation(); setQuejaBooking(booking); }}
                             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                           >
@@ -413,7 +442,7 @@ export default function ArtistBookingsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
                   <div className="h-16 w-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -427,8 +456,7 @@ export default function ArtistBookingsPage() {
                   </p>
                 </div>
               )}
-
-              {/* Pagination */}
+          {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-8">
                   <p className="text-sm text-gray-600">
@@ -459,7 +487,7 @@ export default function ArtistBookingsPage() {
             </>
           )}
         </div>
-      </main>
+      </div>
 
       {quejaBooking && (
         <ReportarQuejaModal
@@ -467,7 +495,7 @@ export default function ArtistBookingsPage() {
           onClose={() => setQuejaBooking(null)}
           onSuccess={() => {
             setQuejaBooking(null);
-            alert('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
+            toast.success('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
           }}
         />
       )}
@@ -509,7 +537,7 @@ export default function ArtistBookingsPage() {
               {/* Price */}
               <div className="flex items-center justify-between bg-orange-50 rounded-xl px-4 py-3">
                 <span className="text-sm text-gray-600">Total</span>
-                <span className="text-xl font-bold text-orange-600">Q{selectedBooking.totalPrice.toLocaleString('es-GT')}</span>
+                <span className="text-xl font-bold text-orange-600">Q{(selectedBooking.totalPrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
 
               {/* Fields */}

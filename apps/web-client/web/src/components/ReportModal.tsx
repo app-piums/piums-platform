@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -11,10 +10,11 @@ interface ReportModalProps {
 }
 
 const REPORT_REASONS = [
-  { id: 'SPAM', label: 'Spam o contenido comercial' },
-  { id: 'OFFENSIVE', label: 'Contenido ofensivo o acoso' },
-  { id: 'INAPPROPRIATE', label: 'Contenido inapropiado' },
-  { id: 'OTHER', label: 'Otro motivo' },
+  { id: 'SPAM',         label: 'Spam o contenido comercial',  icon: '🚫' },
+  { id: 'OFFENSIVE',    label: 'Contenido ofensivo o acoso',   icon: '⚠️' },
+  { id: 'INAPPROPRIATE',label: 'Contenido inapropiado',        icon: '🔞' },
+  { id: 'FAKE',         label: 'Falso o engañoso',             icon: '❌' },
+  { id: 'OTHER',        label: 'Otro motivo',                  icon: '📝' },
 ];
 
 export const ReportModal: React.FC<ReportModalProps> = ({
@@ -44,7 +44,6 @@ export const ReportModal: React.FC<ReportModalProps> = ({
       setDescription('');
       onClose();
     } catch (err) {
-      console.error('Error al enviar reporte:', err);
       setError('No se pudo enviar el reporte. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
@@ -54,83 +53,109 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
-        
-        <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-6 pt-5 pb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100">
-                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">Reportar Reseña</h3>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Motivo del reporte</label>
-                <div className="space-y-2">
-                  {REPORT_REASONS.map((r) => (
-                    <label key={r.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
-                      <input
-                        type="radio"
-                        name="reason"
-                        value={r.id}
-                        checked={reason === r.id}
-                        onChange={(e) => setReason(e.target.value)}
-                        className="h-4 w-4 text-red-600 focus:ring-red-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">{r.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción adicional (opcional)
-                </label>
-                <textarea
-                  id="description"
-                  rows={3}
-                  className="w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm"
-                  placeholder="Proporciona más detalles..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-
-              {error && (
-                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="submit"
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                  disabled={loading}
-                >
-                  {loading ? 'Enviando...' : 'Enviar Reporte'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={onClose}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Reportar reseña</h2>
+              <p className="text-xs text-gray-400">Ayúdanos a mantener la comunidad segura</p>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Motivo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Motivo del reporte</label>
+            <div className="grid grid-cols-2 gap-2">
+              {REPORT_REASONS.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setReason(r.id)}
+                  className={`text-left px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                    reason === r.id
+                      ? 'border-amber-400 bg-amber-50 text-amber-700 font-medium'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="mr-1.5">{r.icon}</span>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Descripción adicional
+              {reason !== 'OTHER' && <span className="ml-1 text-gray-400 font-normal">(opcional)</span>}
+              {reason === 'OTHER' && <span className="ml-1 text-red-500">*</span>}
+            </label>
+            <textarea
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Proporciona más detalles sobre el contenido inapropiado…"
+              disabled={loading}
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/15 transition resize-none"
+            />
+          </div>
+
+          <p className="text-xs text-gray-400 leading-relaxed">
+            Los reportes son anónimos. El equipo de Piums revisará este contenido y tomará las medidas necesarias.
+          </p>
+
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5">
+              <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading || (reason === 'OTHER' && !description.trim())}
+              className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Enviando…
+                </span>
+              ) : 'Enviar reporte'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

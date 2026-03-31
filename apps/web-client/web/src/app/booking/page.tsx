@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload } from '@piums/sdk';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
+import { toast } from '@/lib/toast';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
 type DayAvailability = {
@@ -740,7 +741,7 @@ function BookingContent() {
       console.error('Error creating booking:', error);
       setShowConfirmModal(false);
       const message = error instanceof Error ? error.message : 'Error al crear la reserva. Por favor intenta de nuevo.';
-      alert(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -892,9 +893,8 @@ function BookingContent() {
                               </div>
                               <div className="text-right ml-4">
                                 <p className="text-2xl font-bold text-[#FF6A00]">
-                                  ${service.basePrice.toLocaleString()}
+                                  Q{(service.basePrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
-                                <p className="text-sm text-gray-500 mt-1">GTQ</p>
                               </div>
                             </div>
                           </div>
@@ -920,7 +920,9 @@ function BookingContent() {
                       <div className="p-4 border border-gray-200 rounded-xl bg-gray-50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <span className="text-lg">📅</span>
+                            <svg className="h-5 w-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                             <div>
                               <p className="text-sm font-medium text-gray-900">¿El servicio dura más de un día?</p>
                               <p className="text-xs text-gray-500 mt-0.5">Activa esta opción para reservar varios días seguidos</p>
@@ -1156,7 +1158,7 @@ function BookingContent() {
                                   </div>
                                   <div className="ml-4 text-right">
                                     <p className="font-semibold text-[#00AEEF]">
-                                      +${addon.price.toLocaleString()}
+                                      +Q{(addon.price / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
                                   </div>
                                 </div>
@@ -1494,15 +1496,64 @@ function BookingContent() {
         onClose={() => !submitting && setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
         title="Confirmar Reserva"
-        message={
-          selectedService && selectedDate && selectedTime
-            ? `¿Confirmas la reserva de "${selectedService.name}" con ${artist.nombre} el ${selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} a las ${selectedTime}?`
-            : '¿Estás seguro de que deseas crear esta reserva?'
-        }
+        message=""
         confirmLabel={submitting ? "Creando..." : "Sí, confirmar"}
         cancelLabel="Cancelar"
         variant="info"
         isLoading={submitting}
+        confirmClassName="bg-[#FF6A00] hover:bg-[#e55a00] text-white"
+        details={
+          selectedService && selectedDate && selectedTime && artist ? (
+            <div className="space-y-4">
+              {/* Artist row */}
+              <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl border border-orange-100">
+                <Avatar src={artist.avatar} fallback={artist.nombre} size="md" />
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">{artist.nombre}</p>
+                  <p className="text-xs text-gray-500">{artist.category}</p>
+                </div>
+              </div>
+              {/* Details rows */}
+              <div className="space-y-3 px-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-[#FF6A00] flex-shrink-0">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  </span>
+                  <span className="text-sm text-gray-700">{selectedService.name}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-[#FF6A00] flex-shrink-0 mt-0.5">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </span>
+                  <span className="text-sm text-gray-700 capitalize">
+                    {selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[#FF6A00] flex-shrink-0">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </span>
+                  <span className="text-sm text-gray-700">{selectedTime}</span>
+                </div>
+                {selectedService.basePrice != null && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#FF6A00] flex-shrink-0">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      Q{(selectedService.basePrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-gray-400 font-normal">GTQ</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 pt-2 border-t border-gray-100 text-center">
+                Al confirmar aceptas la política de cancelación del artista.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-700">¿Estás seguro de que deseas crear esta reserva?</p>
+          )
+        }
       />
 
       </div>

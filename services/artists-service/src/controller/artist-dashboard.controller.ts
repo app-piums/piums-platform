@@ -209,9 +209,44 @@ export const completeBooking = async (
 };
 
 /**
- * GET /api/artists/me/stats - Obtener estadísticas del artista
+ * POST /api/artists/dashboard/me/bookings/:id/cancel - Cancelar reserva como artista
  */
+export const cancelBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const bookingId = req.params.id as string;
+    const { reason } = req.body as { reason?: string };
+    if (!reason || reason.trim().length < 10) {
+      throw new AppError(400, "La razón debe tener al menos 10 caracteres");
+    }
+    const authToken = req.headers.authorization?.substring(7);
+    const success = await bookingServiceClient.cancelBooking(bookingId, artist.id, reason.trim(), authToken);
 
+    if (!success) {
+      throw new AppError(500, "Error al cancelar la reserva");
+    }
+
+    logger.info("Reserva cancelada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
+    res.json({
+      message: "Reserva cancelada",
+      bookingId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/artists/dashboard/me/stats - Obtener estadísticas del artista
+ */
 export const getMyStats = async (
   req: AuthRequest,
   res: Response,

@@ -15,6 +15,7 @@ import { useFavorites } from '@/contexts/FavoritesContext';
 import { ReportModal } from '@/components/ReportModal';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
 import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
+import { toast } from '@/lib/toast';
 
 export default function ArtistProfilePage() {
   const params = useParams();
@@ -163,6 +164,11 @@ export default function ArtistProfilePage() {
       setReviewError('Necesitas una reserva completada con este artista para dejar una reseña.');
       return;
     }
+    const trimmedComment = reviewComment.trim();
+    if (trimmedComment && trimmedComment.length < 3) {
+      setReviewError('El comentario debe tener al menos 3 caracteres.');
+      return;
+    }
     try {
       setReviewSubmitting(true);
       setReviewError(null);
@@ -170,7 +176,7 @@ export default function ArtistProfilePage() {
       await sdk.createReview({
         bookingId: reviewBookingId,
         rating: reviewRating,
-        comment: reviewComment.trim() || undefined,
+        comment: trimmedComment || undefined,
       });
       setReviewSuccess(true);
       setShowReviewForm(false);
@@ -209,10 +215,10 @@ export default function ArtistProfilePage() {
     try {
       const { sdk } = await import('@piums/sdk');
       await sdk.reportReview(reviewId, { reason, description });
-      alert('Reporte enviado correctamente. Los administradores lo revisarán pronto.');
+      toast.success('Reporte enviado correctamente. Los administradores lo revisarán pronto.');
     } catch (error) {
       console.error('Error submitting report:', error);
-      alert('Error al enviar el reporte.');
+      toast.error('Error al enviar el reporte.');
     }
   };
 
@@ -630,8 +636,13 @@ export default function ArtistProfilePage() {
                               value={reviewComment}
                               onChange={e => setReviewComment(e.target.value)}
                               placeholder="Cuéntanos tu experiencia con este artista…"
+                              maxLength={2000}
                               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 resize-none"
                             />
+                            <div className="mt-1 flex justify-between text-xs text-gray-400">
+                              <span>{reviewComment.trim().length > 0 && reviewComment.trim().length < 3 ? <span className="text-red-500">Mínimo 3 caracteres</span> : null}</span>
+                              <span>{reviewComment.length}/2000</span>
+                            </div>
                           </div>
 
                           {reviewError && (

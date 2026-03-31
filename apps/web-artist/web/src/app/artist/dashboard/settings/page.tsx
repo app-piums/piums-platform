@@ -7,8 +7,9 @@ import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
+import { toast } from '@/lib/toast';
 
-function LegalAccordion({ section }: { section: { id: string; title: string; icon: string; content: React.ReactNode } }) {
+function LegalAccordion({ section }: { section: { id: string; title: string; icon: React.ReactNode; content: React.ReactNode } }) {
   const [open, setOpen] = React.useState(false);
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -18,7 +19,7 @@ function LegalAccordion({ section }: { section: { id: string; title: string; ico
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xl">{section.icon}</span>
+          <span className="text-[#FF6A00]">{section.icon}</span>
           <span className="font-semibold text-gray-900 text-sm">{section.title}</span>
         </div>
         <svg
@@ -156,14 +157,14 @@ export default function ArtistSettingsPage() {
       };
 
       await sdk.updateArtistProfile(payload);
-      alert('Perfil actualizado exitosamente');
+      toast.success('Perfil actualizado exitosamente');
       
       // Recargar el perfil
       await loadProfile();
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       console.error('Error updating profile:', message);
-      alert(message || 'Error al actualizar el perfil');
+      toast.error(message || 'Error al actualizar el perfil');
     } finally {
       setIsSaving(false);
     }
@@ -173,9 +174,9 @@ export default function ArtistSettingsPage() {
     try {
       setIsSavingCoverage(true);
       await sdk.updateArtistProfile(coverageData);
-      alert('Configuración de cobertura actualizada');
+      toast.success('Configuración de cobertura actualizada');
     } catch (err: unknown) {
-      alert(getErrorMessage(err) || 'Error al guardar');
+      toast.error(getErrorMessage(err) || 'Error al guardar');
     } finally {
       setIsSavingCoverage(false);
     }
@@ -882,7 +883,11 @@ export default function ArtistSettingsPage() {
                 {([
                   {
                     section: 'Reservas',
-                    icon: '📅',
+                    icon: (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    ),
                     items: [
                       { id: 'booking_new', label: 'Nueva solicitud de reserva', desc: 'Cuando un cliente solicita tu servicio', defaultOn: true },
                       { id: 'booking_confirmed', label: 'Reserva confirmada', desc: 'Cuando una reserva es aceptada', defaultOn: true },
@@ -892,7 +897,11 @@ export default function ArtistSettingsPage() {
                   },
                   {
                     section: 'Pagos',
-                    icon: '💰',
+                    icon: (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ),
                     items: [
                       { id: 'payment_received', label: 'Pago recibido', desc: 'Cuando recibes un pago o anticipo', defaultOn: true },
                       { id: 'payment_pending', label: 'Pago pendiente', desc: 'Recordatorio de pagos no recibidos', defaultOn: false },
@@ -900,7 +909,11 @@ export default function ArtistSettingsPage() {
                   },
                   {
                     section: 'Reseñas y mensajes',
-                    icon: '⭐',
+                    icon: (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    ),
                     items: [
                       { id: 'review_new', label: 'Nueva reseña', desc: 'Cuando un cliente deja una valoración', defaultOn: true },
                       { id: 'message_new', label: 'Mensaje nuevo', desc: 'Cuando recibes un mensaje de un cliente', defaultOn: true },
@@ -908,16 +921,20 @@ export default function ArtistSettingsPage() {
                   },
                   {
                     section: 'Marketing',
-                    icon: '📣',
+                    icon: (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      </svg>
+                    ),
                     items: [
                       { id: 'promo_tips', label: 'Consejos para mejorar tu perfil', desc: 'Sugerencias para atraer más clientes', defaultOn: false },
                       { id: 'promo_news', label: 'Novedades de Piums', desc: 'Nuevas funciones y actualizaciones', defaultOn: false },
                     ],
                   },
-                ] as { section: string; icon: string; items: { id: string; label: string; desc: string; defaultOn: boolean }[] }[]).map((group) => (
+                ] as { section: string; icon: React.ReactNode; items: { id: string; label: string; desc: string; defaultOn: boolean }[] }[]).map((group) => (
                   <div key={group.section} className="border border-gray-200 rounded-xl overflow-hidden">
                     <div className="bg-gray-50 px-5 py-3 flex items-center gap-2 border-b border-gray-200">
-                      <span>{group.icon}</span>
+                      <span className="text-[#FF6A00]">{group.icon}</span>
                       <span className="font-semibold text-gray-800 text-sm">{group.section}</span>
                     </div>
                     <div className="divide-y divide-gray-100">
@@ -971,7 +988,11 @@ export default function ArtistSettingsPage() {
                   {
                     id: 'terms',
                     title: 'Términos y Condiciones de Uso',
-                    icon: '📋',
+                    icon: (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    ),
                     content: (
                       <>
                         <p>Al usar Piums aceptas estos Términos y Condiciones. Piums es una plataforma que conecta a artistas y creativos con personas que requieren sus servicios.</p>
@@ -989,7 +1010,11 @@ export default function ArtistSettingsPage() {
                   {
                     id: 'privacy',
                     title: 'Política de Privacidad',
-                    icon: '🔒',
+                    icon: (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    ),
                     content: (
                       <>
                         <p>Tu privacidad es importante para nosotros. Esta política describe cómo recopilamos, usamos y protegemos tu información personal.</p>
@@ -1008,7 +1033,11 @@ export default function ArtistSettingsPage() {
                   {
                     id: 'cookies',
                     title: 'Política de Cookies',
-                    icon: '🍪',
+                    icon: (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    ),
                     content: (
                       <>
                         <p>Usamos cookies esenciales para la autenticación y funcionamiento, analíticas para mejorar la plataforma, y de preferencias para recordar tu configuración.</p>
@@ -1019,19 +1048,38 @@ export default function ArtistSettingsPage() {
                   {
                     id: 'contact',
                     title: 'Contacto y Soporte',
-                    icon: '💬',
+                    icon: (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    ),
                     content: (
                       <div className="space-y-2">
                         <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                          <div className="flex items-center gap-2 text-sm"><span>📧</span><span className="font-medium text-orange-600">soporte@piums.com</span></div>
-                          <div className="flex items-center gap-2 text-sm"><span>⚖️</span><span className="font-medium text-orange-600">privacidad@piums.com</span></div>
-                          <div className="flex items-center gap-2 text-sm"><span>🕐</span><span className="text-gray-600">Lunes a viernes, 9:00 – 18:00 (GMT-6)</span></div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="font-medium text-orange-600">soporte@piums.com</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
+                            <span className="font-medium text-orange-600">privacidad@piums.com</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-gray-600">Lunes a viernes, 9:00 – 18:00 (GMT-6)</span>
+                          </div>
                         </div>
                         <p className="text-xs text-gray-400">Última actualización: marzo 2026 · Versión 1.0</p>
                       </div>
                     ),
                   },
-                ] as { id: string; title: string; icon: string; content: React.ReactNode }[]).map((section) => (
+                ] as { id: string; title: string; icon: React.ReactNode; content: React.ReactNode }[]).map((section) => (
                   <LegalAccordion key={section.id} section={section} />
                 ))}
 

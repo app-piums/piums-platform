@@ -2,9 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
+import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
@@ -12,11 +10,13 @@ import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import type { Booking, Artist, Service } from '@piums/sdk';
+import { toast } from '@/lib/toast';
 
 export default function BookingConfirmationPage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const userName = (user as any)?.name || (user as any)?.nombre || (user as any)?.email?.split('@')[0] || 'Cliente';
   const bookingId = params.id as string;
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -177,59 +177,59 @@ END:VCALENDAR`;
     } else {
       // Fallback: copiar al portapapeles
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copiado al portapapeles');
+      toast.success('Link copiado al portapapeles');
     }
   };
 
   if (authLoading || loading) {
     return (
-      <div>
-        <Navbar />
-        <Loading />
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName="" />
+        <div className="flex-1 flex items-center justify-center">
+          <Loading />
+        </div>
       </div>
     );
   }
 
   if (error || !booking) {
     return (
-      <div>
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <Card>
-            <CardContent className="text-center py-12">
-              <svg className="mx-auto h-16 w-16 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {error || 'Reserva no encontrada'}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                No pudimos cargar los detalles de tu reserva.
-              </p>
-              <Button onClick={() => router.push('/bookings')}>
-                Ver Mis Reservas
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+        <ClientSidebar userName={userName} />
+        <div className="flex-1 min-w-0 flex flex-col">
+          <header className="bg-white border-b border-gray-100 px-4 lg:px-6 py-4 sticky top-0 z-30 mt-14 lg:mt-0">
+            <h1 className="text-xl font-bold text-gray-900">Confirmación</h1>
+          </header>
+          <div className="flex-1 px-4 lg:px-6 py-8 flex items-center justify-center">
+            <Card className="max-w-md w-full">
+              <CardContent className="text-center py-12">
+                <svg className="mx-auto h-16 w-16 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{error || 'Reserva no encontrada'}</h2>
+                <p className="text-gray-600 mb-6">No pudimos cargar los detalles de tu reserva.</p>
+                <Button onClick={() => router.push('/bookings')}>Ver Mis Reservas</Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Breadcrumbs 
-          items={[
-            { label: 'Inicio', href: '/' },
-            { label: 'Reservas', href: '/bookings' },
-            { label: 'Confirmación' }
-          ]}
-          className="mb-6"
-        />
+    <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
+      <ClientSidebar userName={userName} />
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top bar */}
+        <header className="bg-white border-b border-gray-100 px-4 lg:px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 mt-14 lg:mt-0">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Confirmación de Reserva</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Inicio &rsaquo; Reservas &rsaquo; Confirmación</p>
+          </div>
+        </header>
+
+        <div className="flex-1 px-4 lg:px-6 py-6">
 
         {/* Success Header */}
         <Card className="mb-6">
@@ -254,8 +254,8 @@ END:VCALENDAR`;
           </CardContent>
         </Card>
 
-        {/* Booking Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Booking Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Artist & Service Info */}
@@ -416,7 +416,7 @@ END:VCALENDAR`;
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Servicio</span>
                     <span className="font-medium text-gray-900">
-                      ${(booking.servicePrice / 100).toLocaleString()} {booking.currency}
+                      Q{(booking.servicePrice / 100).toLocaleString('es-GT')}
                     </span>
                   </div>
 
@@ -424,7 +424,7 @@ END:VCALENDAR`;
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Extras</span>
                       <span className="font-medium text-gray-900">
-                        ${(booking.addonsPrice / 100).toLocaleString()} {booking.currency}
+                        Q{(booking.addonsPrice / 100).toLocaleString('es-GT')}
                       </span>
                     </div>
                   )}
@@ -433,7 +433,7 @@ END:VCALENDAR`;
                     <div className="flex justify-between">
                       <span className="font-semibold text-gray-900">Total</span>
                       <span className="font-bold text-xl text-gray-900">
-                        ${(booking.totalPrice / 100).toLocaleString()} {booking.currency}
+                        Q{(booking.totalPrice / 100).toLocaleString('es-GT')}
                       </span>
                     </div>
                   </div>
@@ -443,7 +443,7 @@ END:VCALENDAR`;
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Depósito requerido</span>
                         <span className="font-medium text-orange-600">
-                          ${(booking.depositAmount / 100).toLocaleString()} {booking.currency}
+                          Q{(booking.depositAmount / 100).toLocaleString('es-GT')}
                         </span>
                       </div>
                     </div>
@@ -483,10 +483,9 @@ END:VCALENDAR`;
               </Button>
             </div>
           </div>
+          </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

@@ -834,8 +834,9 @@ class PiumsSDK {
       })
     );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
     }
     return response.json();
   }
@@ -851,8 +852,9 @@ class PiumsSDK {
       })
     );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
     }
     return response.json();
   }
@@ -882,26 +884,28 @@ class PiumsSDK {
       })
     );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
     }
     return response.json();
   }
 
   async getArtistReviews(artistId: string, page: number = 1, limit: number = 10): Promise<{ reviews: Review[]; total: number; page: number; totalPages: number }> {
     try {
-      const response = await fetch(`${this.baseUrl}/reviews/reviews?artistId=${artistId}&page=${page}&limit=${limit}&sortBy=createdAt&sortOrder=desc`);
+      const response = await fetch(`${this.baseUrl}/reviews/reviews?artistId=${artistId}&page=${page}&limit=${limit}&sortBy=recent`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
+      const pagination = result.pagination || {};
       return {
         reviews: result.data || result.reviews || [],
-        total: result.total || 0,
-        page: result.page || page,
-        totalPages: result.totalPages || 1
+        total: pagination.total ?? result.total ?? 0,
+        page: pagination.page ?? result.page ?? page,
+        totalPages: pagination.totalPages ?? result.totalPages ?? 1
       };
     } catch (error) {
       console.error('Error fetching artist reviews:', error);
@@ -1200,8 +1204,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1300,8 +1305,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1334,8 +1340,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1363,8 +1370,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1390,8 +1398,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1441,8 +1450,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1496,7 +1506,12 @@ class PiumsSDK {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const error = await response.json();
-          errorMessage = error.message || errorMessage;
+          // Prefer field-level Zod error messages over the generic message
+          if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
+            errorMessage = error.errors[0].message || error.message || errorMessage;
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
         } catch {
           const text = await response.text().catch(() => '');
           if (text) errorMessage = text;
@@ -1581,8 +1596,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1604,8 +1620,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1632,8 +1649,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1660,8 +1678,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1688,8 +1707,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1736,8 +1756,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       const result = await response.json();
@@ -1767,8 +1788,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       const result = await response.json();
@@ -1798,8 +1820,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       const result = await response.json();
@@ -1831,8 +1854,9 @@ class PiumsSDK {
       const response = await fetch(url, this.withAuth({ credentials: 'include' }));
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1857,8 +1881,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1888,8 +1913,9 @@ class PiumsSDK {
       );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1914,13 +1940,39 @@ class PiumsSDK {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
 
       return await response.json();
     } catch (error) {
       console.error('Error completing booking:', error);
+      throw error;
+    }
+  }
+
+  async artistCancelBooking(bookingId: string, reason: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/cancel`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ reason }),
+        })
+      );
+
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
       throw error;
     }
   }
@@ -1948,8 +2000,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1970,8 +2023,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1997,8 +2051,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2030,8 +2085,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2057,8 +2113,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2080,8 +2137,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2103,8 +2161,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2124,8 +2183,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2148,8 +2208,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2176,8 +2237,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2198,8 +2260,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2223,8 +2286,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2251,8 +2315,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2276,8 +2341,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2303,8 +2369,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2388,8 +2455,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -2413,8 +2481,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();

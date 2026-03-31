@@ -6,6 +6,7 @@ interface CalendarProps {
   selectedDate?: Date;
   rangeEndDate?: Date;
   onDateSelect?: (date: Date) => void;
+  onMonthChange?: (year: number, month: number) => void;
   disabledDates?: Date[];
   highlightedDates?: Date[];
   minDate?: Date;
@@ -17,6 +18,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   selectedDate,
   rangeEndDate,
   onDateSelect,
+  onMonthChange,
   disabledDates = [],
   highlightedDates = [],
   minDate,
@@ -67,7 +69,11 @@ export const Calendar: React.FC<CalendarProps> = ({
   const isDateDisabled = (date: Date | null) => {
     if (!date) return true;
     
-    if (minDate && date < minDate) return true;
+    if (minDate) {
+      const minNormalized = new Date(minDate);
+      minNormalized.setHours(0, 0, 0, 0);
+      if (date < minNormalized) return true;
+    }
     if (maxDate && date > maxDate) return true;
     
     return disabledDates.some(disabledDate => isSameDay(date, disabledDate));
@@ -92,11 +98,15 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const handlePreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
+    setCurrentMonth(prev);
+    onMonthChange?.(prev.getFullYear(), prev.getMonth() + 1);
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    const next = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
+    setCurrentMonth(next);
+    onMonthChange?.(next.getFullYear(), next.getMonth() + 1);
   };
 
   const handleDateClick = (date: Date | null) => {

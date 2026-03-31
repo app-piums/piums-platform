@@ -198,7 +198,7 @@ export class TokenService {
       // Obtener usuario para generar nuevo access token
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true },
+        select: { id: true, email: true, role: true },
       });
 
       if (!user) {
@@ -210,6 +210,7 @@ export class TokenService {
       const newAccessToken = this.signAccessToken({
         id: user.id,
         email: user.email,
+        role: user.role,
         jti,
       });
       const newRefreshToken = this.signRefreshToken({ id: user.id, jti });

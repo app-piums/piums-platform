@@ -555,6 +555,40 @@ export class ReviewService {
   }
 
   /**
+   * Obtener mensajes de un reporte
+   */
+  async getReportMessages(reportId: string) {
+    const report = await prisma.reviewReport.findUnique({
+      where: { id: reportId, deletedAt: null },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+    if (!report) throw new AppError(404, "Reporte no encontrado");
+    return report.messages;
+  }
+
+  /**
+   * Agregar un mensaje a un reporte (staff → cliente/artista)
+   */
+  async addReportMessage(
+    reportId: string,
+    senderId: string,
+    senderType: "staff" | "client" | "artist",
+    message: string
+  ) {
+    const report = await prisma.reviewReport.findUnique({
+      where: { id: reportId, deletedAt: null },
+    });
+    if (!report) throw new AppError(404, "Reporte no encontrado");
+
+    const msg = await (prisma as any).reportMessage.create({
+      data: { reportId, senderId, senderType, message },
+    });
+
+    logger.info("Mensaje agregado a reporte", "REVIEW_SERVICE", { reportId, senderType });
+    return msg;
+  }
+
+  /**
    * Obtener estadísticas de reportes para el admin
    */
   async getAdminStats() {
@@ -694,6 +728,18 @@ export class ReviewService {
       averageRating,
       responseRate,
     });
+
+    // Sync rating and reviewCount to artists-service
+    try {
+      const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      await fetch(`${artistsUrl}/artists/internal/${artistId}/rating`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: averageRating, reviewCount: totalReviews }),
+      });
+    } catch (syncErr) {
+      logger.warn('Failed to sync rating to artists-service', 'REVIEW_SERVICE', { artistId, syncErr });
+    }
   }
 
   /**

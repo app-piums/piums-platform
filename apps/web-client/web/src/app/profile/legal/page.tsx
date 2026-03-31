@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 type Section = {
   id: string;
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   content: React.ReactNode;
 };
 
@@ -20,7 +20,7 @@ function Accordion({ section }: { section: Section }) {
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xl">{section.icon}</span>
+          <span className="text-[#FF6A00]">{section.icon}</span>
           <span className="font-semibold text-gray-900 text-sm">{section.title}</span>
         </div>
         <svg
@@ -45,7 +45,11 @@ const SECTIONS: Section[] = [
   {
     id: 'terms',
     title: 'Términos y Condiciones de Uso',
-    icon: '📋',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
     content: (
       <>
         <p>
@@ -85,7 +89,11 @@ const SECTIONS: Section[] = [
   {
     id: 'privacy',
     title: 'Política de Privacidad',
-    icon: '🔒',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    ),
     content: (
       <>
         <p>
@@ -123,7 +131,11 @@ const SECTIONS: Section[] = [
   {
     id: 'cookies',
     title: 'Política de Cookies',
-    icon: '🍪',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
     content: (
       <>
         <p>
@@ -155,21 +167,31 @@ const SECTIONS: Section[] = [
   {
     id: 'contact',
     title: 'Contacto y Soporte',
-    icon: '💬',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
     content: (
       <>
         <p>¿Tienes preguntas sobre nuestros términos o privacidad? Contáctanos:</p>
         <div className="bg-gray-50 rounded-lg p-4 space-y-2 mt-2">
           <div className="flex items-center gap-2 text-sm">
-            <span>📧</span>
+            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
             <span className="font-medium text-[#FF6A00]">soporte@piums.com</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span>⚖️</span>
+            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+            </svg>
             <span className="font-medium text-[#FF6A00]">privacidad@piums.com</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span>🕐</span>
+            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <span className="text-gray-600">Lunes a viernes, 9:00 – 18:00 (GMT-6)</span>
           </div>
         </div>

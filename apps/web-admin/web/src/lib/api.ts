@@ -208,6 +208,7 @@ export interface AdminReportRow {
   resolvedAt?: string;
   resolvedBy?: string;
   resolution?: string;
+  messages?: { id: string; message: string; senderType: string; createdAt: string }[];
   review?: {
     id: string;
     artistId: string;
@@ -239,6 +240,17 @@ export const reportsApi = {
       method: "PATCH",
       body: JSON.stringify({ action, notes }),
     }),
+
+  getMessages: (id: string) =>
+    request<{ messages: { id: string; message: string; senderType: string; createdAt: string }[] }>(
+      `/reviews/admin/reports/${id}/messages`
+    ),
+
+  addMessage: (id: string, message: string) =>
+    request<{ id: string; message: string; senderType: string; createdAt: string }>(
+      `/reviews/admin/reports/${id}/messages`,
+      { method: "POST", body: JSON.stringify({ message }) }
+    ),
 };
 
 // ─── Disputes (Quejas) ────────────────────────────────────────────────────────
@@ -277,6 +289,15 @@ export const disputesApi = {
     ).toString();
     return request<PaginatedDisputes>(`/disputes${qs ? `?${qs}` : ""}`);
   },
+
+  getById: (id: string) =>
+    request<DisputeRow>(`/disputes/${id}`),
+
+  addMessage: (id: string, message: string) =>
+    request<{ id: string; message: string; senderType: string; createdAt: string }>(
+      `/disputes/${id}/messages`,
+      { method: "POST", body: JSON.stringify({ message }) }
+    ),
 
   updateStatus: (id: string, status: string, notes?: string) =>
     request<{ message: string; dispute: DisputeRow }>(`/disputes/${id}/status`, {

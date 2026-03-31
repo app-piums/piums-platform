@@ -7,6 +7,7 @@ import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { ReportModal } from '@/components/ReportModal';
+import { toast } from '@/lib/toast';
 
 export default function ArtistReviewsPage() {
   const router = useRouter();
@@ -59,13 +60,13 @@ export default function ArtistReviewsPage() {
 
   const handleRespond = async (reviewId: string) => {
     if (!responseText.trim()) {
-      alert('Por favor escribe una respuesta');
+      toast.warning('Por favor escribe una respuesta');
       return;
     }
 
     try {
       await sdk.respondToReview(reviewId, responseText);
-      alert('Respuesta publicada exitosamente');
+      toast.success('Respuesta publicada exitosamente');
       
       // Recargar reviews
       await loadReviews();
@@ -75,7 +76,7 @@ export default function ArtistReviewsPage() {
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       console.error('Error responding to review:', message);
-      alert(message || 'Error al responder la review');
+      toast.error(message || 'Error al responder la review');
     }
   };
 
@@ -87,11 +88,11 @@ export default function ArtistReviewsPage() {
   const handleReportSubmit = async (reviewId: string, reason: string, description: string) => {
     try {
       await sdk.reportReview(reviewId, { reason, description });
-      alert('Reporte enviado correctamente. El equipo de moderación lo revisará.');
+      toast.success('Reporte enviado correctamente. El equipo de moderación lo revisará.');
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       console.error('Error reporting review:', message);
-      alert(message || 'Error al enviar el reporte');
+      toast.error(message || 'Error al enviar el reporte');
     }
   };
 
@@ -238,9 +239,12 @@ export default function ArtistReviewsPage() {
                           ) : (
                             <button
                               onClick={() => setRespondingToReviewId(review.id)}
-                              className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                              className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm flex items-center gap-1.5"
                             >
-                              💬 Responder
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Responder
                             </button>
                           )}
                           <button

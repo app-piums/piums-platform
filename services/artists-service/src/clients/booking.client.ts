@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
 
-const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || "http://localhost:4005";
+const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || "http://localhost:4008";
 
 interface BookingFilters {
   artistId: string;
@@ -204,7 +204,7 @@ export class BookingServiceClient {
         {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ status: "COMPLETED" }),
+          body: JSON.stringify({ status: "COMPLETED", artistId }),
         }
       );
 
@@ -262,6 +262,49 @@ export class BookingServiceClient {
       return true;
     } catch (error: any) {
       logger.error("Error in rejectBooking", "BOOKING_CLIENT", {
+        error: error.message,
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Cancelar booking (como artista)
+   */
+  async cancelBooking(
+    bookingId: string,
+    artistId: string,
+    reason: string,
+    authToken?: string
+  ): Promise<boolean> {
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch(
+        `${BOOKING_SERVICE_URL}/api/bookings/${bookingId}/cancel`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ artistId, reason }),
+        }
+      );
+
+      if (!response.ok) {
+        logger.error("Error cancelling booking", "BOOKING_CLIENT", {
+          bookingId,
+          status: response.status,
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error: any) {
+      logger.error("Error in cancelBooking", "BOOKING_CLIENT", {
         error: error.message,
       });
       return false;

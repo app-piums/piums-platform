@@ -8,6 +8,7 @@ import ClientSidebar from '@/components/ClientSidebar';
 import { sdk } from '@piums/sdk';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
 import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
+import { toast } from '@/lib/toast';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 type BookingStatus = 'confirmed' | 'accepted' | 'pending' | 'completed' | 'cancelled' | 'rejected';
@@ -60,7 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
-function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void, onMessage: (b: MockBooking) => void, onAddToEvent: (b: MockBooking) => void }) {
+function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }: { b: MockBooking, onReview: (b: MockBooking) => void, onQueja: (b: MockBooking) => void, onMessage: (b: MockBooking) => void, onAddToEvent: (b: MockBooking) => void, onCancel: (b: MockBooking) => void }) {
   const router = useRouter();
   const cfg = STATUS_CONFIG[b.status];
   return (
@@ -93,7 +94,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: Moc
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-lg font-bold text-[#FF6A00]">${b.price.toFixed(2)}</p>
+              <p className="text-lg font-bold text-[#FF6A00]">Q{b.price.toLocaleString('es-GT')}</p>
               <p className="text-[11px] text-gray-400">{b.priceLabel}</p>
             </div>
           </div>
@@ -140,6 +141,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: Moc
                   <Btn variant="ghost" className="bg-orange-50 !text-[#FF6A00]" icon={<StarIcon className="h-4 w-4" />} onClick={() => onReview(b)}>Reseñar</Btn>
                 )}
                 <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
+                <Btn variant="danger-ghost" onClick={() => onCancel(b)}>Cancelar Reserva</Btn>
               </>
             )}
             {b.status === 'pending' && (
@@ -151,7 +153,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent }: { b: Moc
                 ) : (
                   <Btn variant="ghost" className="!text-[#FF6A00] bg-orange-50" onClick={() => onAddToEvent(b)}>Agregar a Evento</Btn>
                 )}
-                <Btn variant="danger-ghost">Cancelar Solicitud</Btn>
+                <Btn variant="danger-ghost" onClick={() => onCancel(b)}>Cancelar Solicitud</Btn>
               </>
             )}
             {b.status === 'completed' && (
@@ -377,6 +379,19 @@ export default function BookingsPage() {
     }
   };
 
+  const handleCancelBooking = async (b: MockBooking) => {
+    const reason = prompt('¿Razón de la cancelación? (mínimo 10 caracteres)');
+    if (reason === null) return;
+    if (reason.trim().length < 10) { toast.warning('La razón debe tener al menos 10 caracteres'); return; }
+    try {
+      await sdk.cancelBooking(b.id, reason.trim());
+      setBookings(prev => prev.map(bk => bk.id === b.id ? { ...bk, status: 'cancelled' as BookingStatus } : bk));
+      toast.success('Reserva cancelada exitosamente');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al cancelar la reserva');
+    }
+  };
+
   const handleReviewSubmit = async (rating: number, comment: string) => {
     if (!selectedBooking) return;
     try {
@@ -391,10 +406,10 @@ export default function BookingsPage() {
       setBookings(prev => prev.map(b =>
         b.id === selectedBooking.id ? { ...b, reviewId: 'submitted' } : b
       ));
-      alert('¡Gracias por tu reseña!');
+      toast.success('¡Gracias por tu reseña!');
     } catch (error: any) {
       console.error('Error submitting review:', error);
-      alert(error?.message || 'Error al enviar la reseña');
+      toast.error(error?.message || 'Error al enviar la reseña');
     }
   };
 
@@ -413,7 +428,7 @@ export default function BookingsPage() {
               title: b.serviceName || 'Servicio Piums',
               artistName: b.artistName || 'Artista Piums',
               imageUrl: b.artistImage || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80',
-              price: Number(b.totalPrice || 0),
+              price: Number(b.totalPrice || 0) / 100,
               priceLabel: 'total',
               date: b.scheduledDate
                 ? new Date(b.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -525,7 +540,7 @@ export default function BookingsPage() {
               </div>
             ) : (
               filtered.map(b => (
-                <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} onMessage={handleOpenMessage} onAddToEvent={(b) => setAddToEventBooking(b)} />
+                <BookingCard key={b.id} b={b} onReview={handleOpenReview} onQueja={handleOpenQueja} onMessage={handleOpenMessage} onAddToEvent={(b) => setAddToEventBooking(b)} onCancel={handleCancelBooking} />
               ))
             )}
           </div>
@@ -546,7 +561,7 @@ export default function BookingsPage() {
           onSuccess={(disputeId) => {
             setIsQuejaModalOpen(false);
             setQuejaBooking(null);
-            alert('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
+            toast.success('Tu queja fue enviada. Puedes seguir el estado en la sección Quejas.');
           }}
         />
       )}

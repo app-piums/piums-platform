@@ -26,8 +26,9 @@ export default function BookmarksPage() {
     return new Intl.NumberFormat('es-GT', {
       style: 'currency',
       currency: 'GTQ',
-      maximumFractionDigits: 0,
-    }).format(amount);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount / 100);
   };
 
   return (

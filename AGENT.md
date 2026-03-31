@@ -194,6 +194,8 @@ Usa `credentials: 'include'` para enviar cookies automáticamente.
 
 ### auth-service (4001) — `piums_auth`
 - JWT + Refresh tokens + Sessions
+- **Duración de tokens**: access token **15 minutos** (`JWT_EXPIRY=15m`), refresh token **7 días** (`JWT_REFRESH_EXPIRY=7d`), OAuth tokens **7 días**
+- Reset de contraseña: **1 hora** | Verificación de email: **24 horas**
 - OAuth2: Google, Facebook (Passport.js)
 - 2FA ready (campos en schema)
 - Bloqueo por intentos fallidos (`failedLoginAttempts`, `lockedUntil`)

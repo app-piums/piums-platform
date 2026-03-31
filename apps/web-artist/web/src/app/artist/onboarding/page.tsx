@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { toast } from '@/lib/toast';
 
 // Disciplinas creativas disponibles
 const creativeDisciplines = [
@@ -108,7 +109,7 @@ export default function ArtistOnboardingPage() {
       router.push('/artist/dashboard');
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      alert('Hubo un error. Por favor intenta nuevamente.');
+      toast.error('Hubo un error. Por favor intenta nuevamente.');
     } finally {
       setIsLoading(false);
     }

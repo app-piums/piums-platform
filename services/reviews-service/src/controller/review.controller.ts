@@ -188,6 +188,28 @@ export class ReviewController {
     }
   }
 
+  async getReportMessages(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const messages = await reviewService.getReportMessages(id);
+      res.json({ messages });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addReportMessage(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { message } = req.body;
+      const senderId = req.user.id;
+      const msg = await reviewService.addReportMessage(id, senderId, "staff", message);
+      res.status(201).json(msg);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getUserStats(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId } = req.params;

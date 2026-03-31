@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   reportsApi,
@@ -186,7 +187,6 @@ function ResolveReportModal({
     </div>
   );
 }
-
 function ResolveDisputeModal({
   dispute,
   onClose,
@@ -377,14 +377,22 @@ function ReportesSection() {
                     Reseña: <span className="font-mono">{r.reviewId.slice(0, 8)}</span>
                   </p>
                 </div>
-                {r.status === "PENDING" && (
-                  <button
-                    onClick={() => setResolving(r)}
-                    className="shrink-0 rounded-lg bg-[#FF6A00]/10 px-4 py-2 text-sm font-medium text-[#FF6A00] hover:bg-[#FF6A00]/20 transition-colors"
+                <div className="flex shrink-0 flex-col gap-2">
+                  <Link
+                    href={`/reports/reviews/${r.id}`}
+                    className="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100 transition-colors dark:bg-blue-950 dark:text-blue-400 dark:hover:bg-blue-900 text-center"
                   >
-                    Resolver
-                  </button>
-                )}
+                    Contactar
+                  </Link>
+                  {r.status === "PENDING" && (
+                    <button
+                      onClick={() => setResolving(r)}
+                      className="rounded-lg bg-[#FF6A00]/10 px-4 py-2 text-sm font-medium text-[#FF6A00] hover:bg-[#FF6A00]/20 transition-colors"
+                    >
+                      Resolver
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -410,6 +418,7 @@ function ReportesSection() {
           error={resolveMutation.isError ? (resolveMutation.error as Error).message : null}
         />
       )}
+
     </>
   );
 }
@@ -518,6 +527,12 @@ function QuejasSection() {
                   </div>
                   {canAct && (
                     <div className="flex shrink-0 flex-col gap-2">
+                      <Link
+                        href={`/reports/disputes/${d.id}`}
+                        className="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100 transition-colors dark:bg-blue-950 dark:text-blue-400 dark:hover:bg-blue-900 text-center"
+                      >
+                        Mensajes
+                      </Link>
                       <button
                         onClick={() => setResolving(d)}
                         className="rounded-lg bg-[#FF6A00]/10 px-4 py-2 text-sm font-medium text-[#FF6A00] hover:bg-[#FF6A00]/20 transition-colors"

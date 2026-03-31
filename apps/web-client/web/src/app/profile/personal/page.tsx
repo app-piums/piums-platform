@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
+import { toast } from '@/lib/toast';
 
 type PersonalInfoTabProps = {
   onDirtyChange?: (isDirty: boolean) => void;
@@ -50,10 +51,10 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
       setAvatarPreview(undefined);
       setInitialAvatar(undefined);
       setAvatarFile(null);
-      alert('Avatar eliminado correctamente');
+      toast.success('Avatar eliminado correctamente');
     } catch (err) {
       console.error('Error al eliminar avatar:', err);
-      alert('Error al eliminar avatar');
+      toast.error('Error al eliminar avatar');
     } finally {
       setAvatarUploading(false);
     }
@@ -106,10 +107,10 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
       setAvatarPreview(data.avatar);
       setInitialAvatar(data.avatar);
       setAvatarFile(null);
-      alert('Avatar actualizado correctamente');
+      toast.success('Avatar actualizado correctamente');
     } catch (err) {
       console.error('Error al subir avatar:', err);
-      alert('Error al subir avatar');
+      toast.error('Error al subir avatar');
     } finally {
       setAvatarUploading(false);
     }
@@ -132,10 +133,10 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setInitialData({ ...formData });
       setEditing(false);
-      alert('Perfil actualizado correctamente');
+      toast.success('Perfil actualizado correctamente');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Error al actualizar el perfil');
+      toast.error('Error al actualizar el perfil');
     } finally {
       setLoading(false);
     }

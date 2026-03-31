@@ -37,14 +37,14 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+        className="fixed inset-0 backdrop-blur-sm bg-black/20 transition-opacity"
         onClick={handleBackdropClick}
       />
 
       {/* Modal panel */}
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         <div
-          className={`relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full ${sizeClasses[size]}`}
+          className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 w-full ${sizeClasses[size]}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -89,6 +89,8 @@ interface ConfirmModalProps {
   cancelLabel?: string;
   isLoading?: boolean;
   variant?: 'danger' | 'warning' | 'info';
+  details?: React.ReactNode;
+  confirmClassName?: string;
 }
 
 export function ConfirmModal({
@@ -101,6 +103,8 @@ export function ConfirmModal({
   cancelLabel = 'Cancelar',
   isLoading = false,
   variant = 'info',
+  details,
+  confirmClassName,
 }: ConfirmModalProps) {
   const iconColors = {
     danger: 'bg-red-100 text-red-600',
@@ -113,6 +117,8 @@ export function ConfirmModal({
     warning: 'bg-yellow-600 hover:bg-yellow-700',
     info: 'bg-blue-600 hover:bg-blue-700',
   };
+
+  const finalConfirmClass = confirmClassName ?? buttonVariants[variant];
 
   return (
     <Modal
@@ -129,35 +135,39 @@ export function ConfirmModal({
             onClick={onConfirm}
             loading={isLoading}
             disabled={isLoading}
-            className={buttonVariants[variant]}
+            className={finalConfirmClass}
           >
             {confirmLabel}
           </Button>
         </div>
       }
     >
-      <div className="flex items-start space-x-4">
-        <div className={`flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center ${iconColors[variant]}`}>
-          {variant === 'danger' && (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          )}
-          {variant === 'warning' && (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          )}
-          {variant === 'info' && (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
+      {details ? (
+        <div>{details}</div>
+      ) : (
+        <div className="flex items-start space-x-4">
+          <div className={`flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center ${iconColors[variant]}`}>
+            {variant === 'danger' && (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            )}
+            {variant === 'warning' && (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            )}
+            {variant === 'info' && (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-gray-700">{message}</p>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="text-sm text-gray-700">{message}</p>
-        </div>
-      </div>
+      )}
     </Modal>
   );
 }

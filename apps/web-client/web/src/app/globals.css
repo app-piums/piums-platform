@@ -57,3 +57,58 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ─── Microinteracciones Piums ────────────────────────────────────── */
+
+/* 1. Spinners → azul acento (naranja = CTA, azul = estado de carga) */
+[class~="animate-spin"][class*="border-[#FF6A00]"] {
+  border-color: #00AEEF;
+  border-top-color: transparent;
+}
+
+/* 2. Card hover: halo naranja sutil en Link-wrapped cards */
+a[class*="rounded-2xl"][class*="border"],
+a[class*="rounded-xl"][class*="border"] {
+  transition: box-shadow 0.2s ease;
+}
+a[class*="rounded-2xl"][class*="border"]:hover,
+a[class*="rounded-xl"][class*="border"]:hover {
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.13), 0 6px 20px rgba(255, 106, 0, 0.07);
+}
+
+/* Card hover: div containers */
+div[class*="rounded-xl"][class*="border"][class*="bg-white"],
+div[class*="rounded-2xl"][class*="border"][class*="bg-white"] {
+  transition: box-shadow 0.2s ease;
+}
+div[class*="rounded-xl"][class*="border"][class*="bg-white"]:hover,
+div[class*="rounded-2xl"][class*="border"][class*="bg-white"]:hover {
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.13), 0 6px 20px rgba(255, 106, 0, 0.07);
+}
+
+/* 3. Ripple naranja en botones primarios (CSS puro, sin JS) */
+@keyframes piums-ripple {
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
+  to   { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+button[class*="bg-[#FF6A00]"] {
+  position: relative;
+  overflow: hidden;
+}
+button[class*="bg-[#FF6A00]"]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+button[class*="bg-[#FF6A00]"]:active::after {
+  animation: piums-ripple 0.45s ease-out forwards;
+}

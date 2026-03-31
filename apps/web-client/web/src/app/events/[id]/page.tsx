@@ -7,6 +7,7 @@ import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { sdk } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/lib/toast';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const PlusIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>;
@@ -356,7 +357,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       setEvent(updated);
       setShowCancel(false);
     } catch (err: any) {
-      alert(err.message || 'Error al cancelar el evento');
+      toast.error(err.message || 'Error al cancelar el evento');
     } finally {
       setCancelling(false);
     }
@@ -371,7 +372,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         bookings: (prev.bookings ?? []).filter((b: any) => b.id !== bookingId),
       }));
     } catch (err: any) {
-      alert(err.message || 'Error al quitar la reserva');
+      toast.error(err.message || 'Error al quitar la reserva');
     }
   };
 

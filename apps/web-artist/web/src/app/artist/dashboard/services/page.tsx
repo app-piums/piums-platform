@@ -272,7 +272,7 @@ export default function ArtistServicesPage() {
                         <div className="flex items-center gap-6 mb-4">
                           <div>
                             <p className="text-xs text-gray-500">Precio base</p>
-                            <p className="text-xl font-bold text-gray-900">Q{service.basePrice.toLocaleString('es-GT')}</p>
+                            <p className="text-xl font-bold text-gray-900">Q{(service.basePrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           </div>
                           {duration ? (
                             <div>

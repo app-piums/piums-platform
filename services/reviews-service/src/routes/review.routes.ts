@@ -1,6 +1,6 @@
 import { Router, RequestHandler } from "express";
 import { reviewController } from "../controller/review.controller";
-import { authenticateToken } from "../middleware/auth.middleware";
+import { authenticateToken, requireAdmin } from "../middleware/auth.middleware";
 import {
   createReviewLimiter,
   responseReviewLimiter,
@@ -11,6 +11,7 @@ import {
 const router: Router = Router();
 const asHandler = (fn: Function): RequestHandler => fn as unknown as RequestHandler;
 const auth = authenticateToken as RequestHandler;
+const adminOnly = requireAdmin as RequestHandler;
 
 // ==================== REVIEWS ====================
 
@@ -96,6 +97,7 @@ router.post(
 router.get(
   "/admin/reports/pending",
   auth,
+  adminOnly,
   asHandler(reviewController.getPendingReports.bind(reviewController))
 );
 
@@ -103,19 +105,37 @@ router.get(
 router.patch(
   "/admin/reports/:id/resolve",
   auth,
+  adminOnly,
   asHandler(reviewController.resolveReport.bind(reviewController))
+);
+
+// Mensajes de seguimiento de un reporte (admin)
+router.get(
+  "/admin/reports/:id/messages",
+  auth,
+  adminOnly,
+  asHandler(reviewController.getReportMessages.bind(reviewController))
+);
+
+router.post(
+  "/admin/reports/:id/messages",
+  auth,
+  adminOnly,
+  asHandler(reviewController.addReportMessage.bind(reviewController))
 );
 
 // Obtener estadísticas de reportes para el dashboard (admin)
 router.get(
   "/admin/stats",
   auth,
+  adminOnly,
   asHandler(reviewController.getAdminStats.bind(reviewController))
 );
 
 router.post(
   "/admin/batch-ratings",
   auth,
+  adminOnly,
   asHandler(reviewController.getBatchRatings.bind(reviewController))
 );
 
@@ -137,6 +157,7 @@ router.get(
 router.post(
   "/artists/:artistId/rating/update",
   auth,
+  adminOnly,
   asHandler(reviewController.updateArtistRating.bind(reviewController))
 );
 

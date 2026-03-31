@@ -13,7 +13,7 @@ export const createReviewSchema = z.object({
     .max(MAX_RATING, `Rating máximo es ${MAX_RATING}`),
   comment: z
     .string()
-    .min(10, "El comentario debe tener al menos 10 caracteres")
+    .min(3, "El comentario debe tener al menos 3 caracteres")
     .max(2000, "El comentario no puede exceder 2000 caracteres")
     .optional(),
   photos: z
@@ -37,7 +37,7 @@ export const updateReviewSchema = z.object({
     .optional(),
   comment: z
     .string()
-    .min(10, "El comentario debe tener al menos 10 caracteres")
+    .min(3, "El comentario debe tener al menos 3 caracteres")
     .max(2000, "El comentario no puede exceder 2000 caracteres")
     .optional(),
 });
