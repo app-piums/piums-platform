@@ -22,13 +22,25 @@ export const registerSchema = z.object({
 });
 
 // Schema específico para registro de artistas (rol fijo: artista)
+// Requiere documento de identidad obligatorio
 export const registerArtistSchema = baseRegisterSchema.extend({
   role: z.literal("artista").default("artista"),
+  nombreArtistico: z.string().max(50).optional(),
+  ciudad: z.string().min(2, "Ingresa tu ciudad"),
+  birthDate: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")),
+  documentType: z.enum(["DPI", "PASSPORT", "RESIDENCE_CARD"], { errorMap: () => ({ message: "Tipo de documento inválido" }) }),
+  documentNumber: z.string().min(6, "Número de documento muy corto").max(20, "Número de documento muy largo"),
+  documentFrontUrl: z.string().url("URL del documento inválida"),
+  documentBackUrl: z.string().url("URL inválida").optional().nullable(),
+  documentSelfieUrl: z.string().url("URL de selfie inválida"),
 });
 
 // Schema específico para registro de clientes (rol fijo: cliente)
+// Sin documento de identidad
 export const registerClientSchema = baseRegisterSchema.extend({
   role: z.literal("cliente").default("cliente"),
+  ciudad: z.string().min(2, "Ingresa tu ciudad").optional(),
+  birthDate: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")).optional(),
 });
 
 export const loginSchema = z.object({

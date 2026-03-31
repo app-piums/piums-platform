@@ -17,6 +17,8 @@ interface FieldError {
   terms?: string;
   pais?: string;
   telefono?: string;
+  ciudad?: string;
+  birthDate?: string;
 }
 
 export default function RegisterPage() {
@@ -32,6 +34,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [telefono, setTelefono] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -88,6 +92,17 @@ export default function RegisterPage() {
           return t('errorTelefonoRequired');
         if ((value as string).length < 8) 
           return t('errorTelefonoInvalid');
+        return "";
+      case "ciudad":
+        if (!value || typeof value !== 'string' || !value.trim())
+          return "Ingresa tu ciudad";
+        return "";
+      case "birthDate":
+        if (!value || typeof value !== 'string') return "Ingresa tu fecha de nacimiento";
+        const bd = new Date(value);
+        if (isNaN(bd.getTime())) return "Fecha inválida";
+        const age = (Date.now() - bd.getTime()) / (365.25 * 24 * 3600 * 1000);
+        if (age < 18) return "Debes ser mayor de 18 años para registrarte";
         return "";
       case "terms":
         if (!value) 
@@ -205,6 +220,10 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
+      pais: validateField("pais", selectedCountry?.code || ""),
+      telefono: validateField("telefono", telefono),
+      ciudad: validateField("ciudad", ciudad),
+      birthDate: validateField("birthDate", birthDate),
       terms: validateField("terms", acceptTerms),
     };
 
@@ -214,6 +233,10 @@ export default function RegisterPage() {
       email: true,
       password: true,
       confirmPassword: true,
+      pais: true,
+      telefono: true,
+      ciudad: true,
+      birthDate: true,
       terms: true,
     });
 
@@ -234,6 +257,8 @@ export default function RegisterPage() {
           nombre,
           email,
           password,
+          ciudad: ciudad || undefined,
+          birthDate: birthDate || undefined,
         }),
         credentials: 'include', // 🔒 Importante para cookies httpOnly
       });
@@ -538,6 +563,55 @@ export default function RegisterPage() {
                   <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                     Solo números, sin espacios ni guiones
                   </p>
+                </div>
+
+                {/* Ciudad */}
+                <div>
+                  <label htmlFor="ciudad" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                    Ciudad <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="ciudad"
+                    name="ciudad"
+                    type="text"
+                    value={ciudad}
+                    onChange={(e) => setCiudad(e.target.value)}
+                    onBlur={(e) => handleBlur("ciudad", e.target.value)}
+                    className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                      touched.ciudad && errors.ciudad
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "border-zinc-300 focus:border-zinc-500 focus:ring-zinc-500 dark:border-zinc-700"
+                    }`}
+                    placeholder="Ej: Guatemala City, Quetzaltenango…"
+                  />
+                  {touched.ciudad && errors.ciudad && (
+                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.ciudad}</p>
+                  )}
+                </div>
+
+                {/* Fecha de nacimiento */}
+                <div>
+                  <label htmlFor="birthDate" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                    Fecha de nacimiento <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="birthDate"
+                    name="birthDate"
+                    type="date"
+                    max={new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000).toISOString().split('T')[0]}
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    onBlur={(e) => handleBlur("birthDate", e.target.value)}
+                    className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 ${
+                      touched.birthDate && errors.birthDate
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "border-zinc-300 focus:border-zinc-500 focus:ring-zinc-500 dark:border-zinc-700"
+                    }`}
+                  />
+                  {touched.birthDate && errors.birthDate && (
+                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.birthDate}</p>
+                  )}
+                  <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">Debes ser mayor de 18 años</p>
                 </div>
 
                 {/* Términos y condiciones */}

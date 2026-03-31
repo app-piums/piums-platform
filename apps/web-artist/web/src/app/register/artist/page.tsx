@@ -16,8 +16,22 @@ interface FieldError {
   confirmPassword?: string;
   pais?: string;
   telefono?: string;
+  ciudad?: string;
+  birthDate?: string;
+  documentType?: string;
+  documentNumber?: string;
+  documentFrontUrl?: string;
+  documentSelfieUrl?: string;
   terms?: string;
 }
+
+type DocumentType = "DPI" | "PASSPORT" | "RESIDENCE_CARD";
+
+const DOCUMENT_LABELS: Record<DocumentType, string> = {
+  DPI: "DPI (Documento Personal de Identificación)",
+  PASSPORT: "Pasaporte",
+  RESIDENCE_CARD: "Tarjeta de Residencia",
+};
 
 export default function RegisterArtistPage() {
   const router = useRouter();
@@ -25,21 +39,43 @@ export default function RegisterArtistPage() {
   const [step, setStep] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Step 1
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Step 2
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [telefono, setTelefono] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  // Step 3 — Identity document
+  const [documentType, setDocumentType] = useState<DocumentType>("DPI");
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [documentFrontUrl, setDocumentFrontUrl] = useState("");
+  const [documentBackUrl, setDocumentBackUrl] = useState("");
+  const [documentSelfieUrl, setDocumentSelfieUrl] = useState("");
+  const [uploadingFront, setUploadingFront] = useState(false);
+  const [uploadingBack, setUploadingBack] = useState(false);
+  const [uploadingSelfie, setUploadingSelfie] = useState(false);
+  const [frontPreview, setFrontPreview] = useState("");
+  const [backPreview, setBackPreview] = useState("");
+  const [selfiePreview, setSelfiePreview] = useState("");
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-
   const [errors, setErrors] = useState<FieldError>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const maxBirthDate = new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   useEffect(() => {
     const firstErrorField = Object.keys(errors).find(key => errors[key as keyof FieldError]);
@@ -70,8 +106,40 @@ export default function RegisterArtistPage() {
         if (!selectedCountry) return "Selecciona tu país";
         return "";
       case "telefono":
-        if (!value || typeof value !== 'string') return "El teléfono es necesario";
+        if (!value || typeof value !== "string")
+          return "El teléfono es necesario";
         if (value.length < 8) return "Ingresa un número de teléfono válido";
+        return "";
+      case "ciudad":
+        if (!value || typeof value !== "string" || !value.trim())
+          return "La ciudad es obligatoria";
+        if (value.trim().length < 2) return "Ingresa una ciudad válida";
+        return "";
+      case "birthDate": {
+        if (!value || typeof value !== "string") return "La fecha de nacimiento es obligatoria";
+        const birth = new Date(value);
+        const today = new Date();
+        const age =
+          today.getFullYear() -
+          birth.getFullYear() -
+          (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
+        if (age < 18) return "Debes ser mayor de 18 años para registrarte";
+        return "";
+      }
+      case "documentType":
+        if (!value) return "Selecciona el tipo de documento";
+        return "";
+      case "documentNumber":
+        if (!value || typeof value !== "string" || !value.trim())
+          return "El número de documento es obligatorio";
+        if (value.trim().length < 6)
+          return "El número debe tener al menos 6 caracteres";
+        return "";
+      case "documentFrontUrl":
+        if (!value) return "Sube la foto frontal de tu documento";
+        return "";
+      case "documentSelfieUrl":
+        if (!value) return "Sube tu selfie con el documento";
         return "";
       case "terms":
         if (!value) return "Debes aceptar los términos y condiciones";
@@ -92,13 +160,21 @@ export default function RegisterArtistPage() {
     handleBlur("pais", !!country);
   };
 
-  const canProceedToStep2 = () => {
-    return !["nombre", "email", "password", "confirmPassword"].some(
-      f => validateField(f, f === "nombre" ? nombre : f === "email" ? email : f === "password" ? password : confirmPassword)
+  const canProceedToStep2 = () =>
+    !["nombre", "email", "password", "confirmPassword"].some((f) =>
+      validateField(
+        f,
+        f === "nombre"
+          ? nombre
+          : f === "email"
+          ? email
+          : f === "password"
+          ? password
+          : confirmPassword
+      )
     );
-  };
 
-  const handleNextStep = () => {
+  const handleNextToStep2 = () => {
     const step1Errors: FieldError = {
       nombre: validateField("nombre", nombre),
       email: validateField("email", email),
@@ -107,12 +183,69 @@ export default function RegisterArtistPage() {
     };
     setErrors(step1Errors);
     setTouched({ nombre: true, email: true, password: true, confirmPassword: true });
-    if (Object.values(step1Errors).some(e => e)) {
+    if (Object.values(step1Errors).some((e) => e)) {
       setGeneralError("Por favor completa todos los campos correctamente");
       return;
     }
     setGeneralError("");
     setStep(2);
+  };
+
+  const handleNextToStep3 = () => {
+    const step2Errors: FieldError = {
+      pais: validateField("pais", ""),
+      telefono: validateField("telefono", telefono),
+      ciudad: validateField("ciudad", ciudad),
+      birthDate: validateField("birthDate", birthDate),
+      terms: validateField("terms", acceptTerms),
+    };
+    setErrors(step2Errors);
+    setTouched((prev) => ({
+      ...prev,
+      pais: true,
+      telefono: true,
+      ciudad: true,
+      birthDate: true,
+      terms: true,
+    }));
+    if (Object.values(step2Errors).some((e) => e)) {
+      setGeneralError("Por favor completa todos los campos del paso 2");
+      return;
+    }
+    setGeneralError("");
+    setStep(3);
+  };
+
+  // ── Document upload ───────────────────────────────────────────────────────
+
+  const uploadFile = async (
+    file: File,
+    folder: "front" | "back" | "selfie",
+    setUploading: (v: boolean) => void,
+    setUrl: (u: string) => void,
+    setPreview: (p: string) => void
+  ) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/users/documents/upload?folder=${folder}`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Error al subir imagen");
+      const data = await res.json();
+      setUrl(data.url);
+      setPreview(URL.createObjectURL(file));
+      setErrors((prev) => ({
+        ...prev,
+        [`document${folder.charAt(0).toUpperCase() + folder.slice(1)}Url`]: "",
+      }));
+    } catch (err) {
+      setGeneralError(getErrorMessage(err));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSkipLocation = () => {
@@ -125,7 +258,7 @@ export default function RegisterArtistPage() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          sessionStorage.setItem('piums_artist_location', JSON.stringify(coords));
+          sessionStorage.setItem("piums_artist_location", JSON.stringify(coords));
         },
         () => {}
       );
@@ -134,24 +267,113 @@ export default function RegisterArtistPage() {
     router.push("/artist/onboarding");
   };
 
+  // ── Reusable upload image block ───────────────────────────────────────────
+  const renderUploadBox = (
+    label: string,
+    hint: string,
+    folder: "front" | "back" | "selfie",
+    uploading: boolean,
+    preview: string,
+    errorKey: keyof FieldError,
+    setUploading: (v: boolean) => void,
+    setUrl: (u: string) => void,
+    setPreview: (p: string) => void,
+    optional?: boolean
+  ) => (
+    <div>
+      <label className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+        {label}{" "}
+        {optional ? (
+          <span className="text-xs text-zinc-400">(opcional)</span>
+        ) : (
+          <span className="text-red-500">*</span>
+        )}
+      </label>
+      <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>
+      {preview ? (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={preview}
+            alt={label}
+            className="w-full h-36 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setPreview("");
+              setUrl("");
+            }}
+            className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <label
+          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
+            touched[errorKey] && errors[errorKey]
+              ? "border-red-400 bg-red-50 dark:border-red-700 dark:bg-red-900/10"
+              : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-600 dark:hover:border-zinc-500"
+          }`}
+        >
+          {uploading ? (
+            <svg className="h-6 w-6 animate-spin text-zinc-500" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <svg className="h-6 w-6 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          )}
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            {uploading ? "Subiendo…" : "Haz clic o arrastra la imagen"}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                uploadFile(file, folder, setUploading, setUrl, setPreview);
+                setTouched((prev) => ({ ...prev, [errorKey]: true }));
+              }
+            }}
+          />
+        </label>
+      )}
+      {touched[errorKey] && errors[errorKey] && (
+        <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors[errorKey]}</p>
+      )}
+    </div>
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError("");
 
-    const newErrors: FieldError = {
-      nombre: validateField("nombre", nombre),
-      email: validateField("email", email),
-      password: validateField("password", password),
-      confirmPassword: validateField("confirmPassword", confirmPassword),
-      pais: validateField("pais", ""),
-      telefono: validateField("telefono", telefono),
-      terms: validateField("terms", acceptTerms),
+    const step3Errors: FieldError = {
+      documentType: validateField("documentType", documentType),
+      documentNumber: validateField("documentNumber", documentNumber),
+      documentFrontUrl: validateField("documentFrontUrl", documentFrontUrl),
+      documentSelfieUrl: validateField("documentSelfieUrl", documentSelfieUrl),
     };
-    setErrors(newErrors);
-    setTouched({ nombre: true, email: true, password: true, confirmPassword: true, pais: true, telefono: true, terms: true });
+    setErrors(step3Errors);
+    setTouched((prev) => ({
+      ...prev,
+      documentType: true,
+      documentNumber: true,
+      documentFrontUrl: true,
+      documentSelfieUrl: true,
+    }));
 
-    if (Object.values(newErrors).some(e => e)) {
-      setGeneralError("Por favor revisa la información ingresada");
+    if (Object.values(step3Errors).some((e) => e)) {
+      setGeneralError("Por favor completa la verificación de identidad");
       return;
     }
 
@@ -160,8 +382,21 @@ export default function RegisterArtistPage() {
       const response = await fetch("/api/auth/register/artist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, email, password }),
-        credentials: 'include',
+        body: JSON.stringify({
+          nombre,
+          email,
+          password,
+          pais: selectedCountry?.code,
+          telefono: selectedCountry ? `${selectedCountry.dialCode}${telefono}` : telefono,
+          ciudad,
+          birthDate,
+          documentType,
+          documentNumber,
+          documentFrontUrl,
+          documentBackUrl: documentBackUrl || undefined,
+          documentSelfieUrl,
+        }),
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -184,21 +419,43 @@ export default function RegisterArtistPage() {
           {/* Progress */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Paso {step} de 2</span>
-              <span className="text-xs text-zinc-500">{step === 1 ? "Información básica" : "Datos de contacto"}</span>
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Paso {step} de 3
+              </span>
+              <span className="text-xs text-zinc-500">
+                {step === 1
+                  ? "Información básica"
+                  : step === 2
+                  ? "Datos de contacto"
+                  : "Verificación de identidad"}
+              </span>
             </div>
             <div className="h-2 bg-zinc-200 rounded-full overflow-hidden dark:bg-zinc-700">
-              <div className="h-full bg-[#FF6A00] transition-all duration-300" style={{ width: `${(step / 2) * 100}%` }} />
+              <div
+                className="h-full bg-[#FF6A00] transition-all duration-300"
+                style={{ width: `${(step / 3) * 100}%` }}
+              />
             </div>
           </div>
 
           <div className="space-y-6 rounded-xl bg-white p-8 shadow-xl dark:bg-zinc-900">
             <div className="text-center">
               <div className="flex justify-center mb-6">
-                <Image src="/logo.jpg" alt="Piums" width={150} height={50} priority className="h-12 w-auto" />
+                <Image
+                  src="/logo.jpg"
+                  alt="Piums"
+                  width={150}
+                  height={50}
+                  priority
+                  className="h-12 w-auto"
+                />
               </div>
-              <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Crea tu perfil de artista</h2>
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Únete a PIUMS y monetiza tu talento creativo</p>
+              <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                Crea tu perfil de artista
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                Únete a PIUMS y monetiza tu talento creativo
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6" ref={formRef}>
@@ -213,11 +470,14 @@ export default function RegisterArtistPage() {
                     <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <p className="text-sm text-green-800 dark:text-green-200">¡Cuenta creada exitosamente! Redirigiendo...</p>
+                    <p className="text-sm text-green-800 dark:text-green-200">
+                      ¡Cuenta creada exitosamente! Redirigiendo...
+                    </p>
                   </div>
                 </div>
               )}
 
+              {/* ── STEP 1: Basic info ──────────────────────────────────── */}
               {step === 1 && (
                 <div className="space-y-4">
                   {/* Nombre */}
@@ -227,11 +487,19 @@ export default function RegisterArtistPage() {
                     </label>
                     <input
                       id="nombre" name="nombre" type="text" autoComplete="name" required
-                      value={nombre} onChange={e => setNombre(e.target.value)} onBlur={e => handleBlur("nombre", e.target.value)}
-                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.nombre && errors.nombre ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      onBlur={(e) => handleBlur("nombre", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                        touched.nombre && errors.nombre
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
                       placeholder="Juan Pérez"
                     />
-                    {touched.nombre && errors.nombre && <p className="mt-1.5 text-sm text-red-600">{errors.nombre}</p>}
+                    {touched.nombre && errors.nombre && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.nombre}</p>
+                    )}
                   </div>
 
                   {/* Email */}
@@ -241,11 +509,19 @@ export default function RegisterArtistPage() {
                     </label>
                     <input
                       id="email" name="email" type="email" autoComplete="email" required
-                      value={email} onChange={e => setEmail(e.target.value)} onBlur={e => handleBlur("email", e.target.value)}
-                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.email && errors.email ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onBlur={(e) => handleBlur("email", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                        touched.email && errors.email
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
                       placeholder="tu@email.com"
                     />
-                    {touched.email && errors.email && <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>}
+                    {touched.email && errors.email && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>
+                    )}
                   </div>
 
                   {/* Password */}
@@ -255,14 +531,27 @@ export default function RegisterArtistPage() {
                     </label>
                     <input
                       id="password" name="password" type="password" autoComplete="new-password" required
-                      value={password} onChange={e => setPassword(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       onFocus={() => setShowPasswordRequirements(true)}
-                      onBlur={e => { handleBlur("password", e.target.value); setShowPasswordRequirements(false); }}
-                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.password && errors.password ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      onBlur={(e) => {
+                        handleBlur("password", e.target.value);
+                        setShowPasswordRequirements(false);
+                      }}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                        touched.password && errors.password
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
                       placeholder="••••••••"
                     />
-                    {touched.password && errors.password && <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>}
-                    <PasswordStrengthIndicator password={password} show={showPasswordRequirements || password.length > 0} />
+                    {touched.password && errors.password && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>
+                    )}
+                    <PasswordStrengthIndicator
+                      password={password}
+                      show={showPasswordRequirements || password.length > 0}
+                    />
                   </div>
 
                   {/* Confirmar Password */}
@@ -272,15 +561,25 @@ export default function RegisterArtistPage() {
                     </label>
                     <input
                       id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required
-                      value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onBlur={e => handleBlur("confirmPassword", e.target.value)}
-                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.confirmPassword && errors.confirmPassword ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onBlur={(e) => handleBlur("confirmPassword", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                        touched.confirmPassword && errors.confirmPassword
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
                       placeholder="••••••••"
                     />
-                    {touched.confirmPassword && errors.confirmPassword && <p className="mt-1.5 text-sm text-red-600">{errors.confirmPassword}</p>}
+                    {touched.confirmPassword && errors.confirmPassword && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.confirmPassword}</p>
+                    )}
                   </div>
 
                   <button
-                    type="button" onClick={handleNextStep} disabled={!canProceedToStep2()}
+                    type="button"
+                    onClick={handleNextToStep2}
+                    disabled={!canProceedToStep2()}
                     className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-50 dark:text-zinc-900"
                   >
                     Continuar →
@@ -288,6 +587,7 @@ export default function RegisterArtistPage() {
                 </div>
               )}
 
+              {/* ── STEP 2: Contact ─────────────────────────────────────── */}
               {step === 2 && (
                 <div className="space-y-4">
                   {/* País */}
@@ -296,13 +596,25 @@ export default function RegisterArtistPage() {
                       País <span className="text-red-500">*</span>
                     </label>
                     <select
-                      id="pais" name="pais" required value={selectedCountry?.code || ""} onChange={handleCountryChange}
-                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 ${touched.pais && errors.pais ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
+                      id="pais" name="pais" required
+                      value={selectedCountry?.code || ""}
+                      onChange={handleCountryChange}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 ${
+                        touched.pais && errors.pais
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
                     >
                       <option value="">Selecciona tu país</option>
-                      {countries.map(c => <option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+                      {countries.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.name}
+                        </option>
+                      ))}
                     </select>
-                    {touched.pais && errors.pais && <p className="mt-1.5 text-sm text-red-600">{errors.pais}</p>}
+                    {touched.pais && errors.pais && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.pais}</p>
+                    )}
                   </div>
 
                   {/* Teléfono */}
@@ -313,43 +625,234 @@ export default function RegisterArtistPage() {
                     <div className="flex gap-2">
                       <div className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800">
                         <span className="text-xl">{selectedCountry?.flag || "🌍"}</span>
-                        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{selectedCountry?.dialCode || "+___"}</span>
+                        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                          {selectedCountry?.dialCode || "+___"}
+                        </span>
                       </div>
                       <input
                         id="telefono" name="telefono" type="tel" autoComplete="tel" required
-                        value={telefono} onChange={e => setTelefono(e.target.value.replace(/\D/g, ""))} onBlur={e => handleBlur("telefono", e.target.value)}
-                        className={`flex-1 rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${touched.telefono && errors.telefono ? "border-red-500 focus:ring-red-500" : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"}`}
-                        placeholder="12345678" maxLength={15}
+                        value={telefono}
+                        onChange={(e) => setTelefono(e.target.value.replace(/\D/g, ""))}
+                        onBlur={(e) => handleBlur("telefono", e.target.value)}
+                        className={`flex-1 rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                          touched.telefono && errors.telefono
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                        }`}
+                        placeholder="12345678"
+                        maxLength={15}
                       />
                     </div>
-                    {touched.telefono && errors.telefono && <p className="mt-1.5 text-sm text-red-600">{errors.telefono}</p>}
+                    {touched.telefono && errors.telefono && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.telefono}</p>
+                    )}
+                  </div>
+
+                  {/* Ciudad */}
+                  <div>
+                    <label htmlFor="ciudad" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Ciudad <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="ciudad" name="ciudad" type="text"
+                      value={ciudad}
+                      onChange={(e) => setCiudad(e.target.value)}
+                      onBlur={(e) => handleBlur("ciudad", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                        touched.ciudad && errors.ciudad
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
+                      placeholder="Ej: Guatemala City, Quetzaltenango…"
+                    />
+                    {touched.ciudad && errors.ciudad && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.ciudad}</p>
+                    )}
+                  </div>
+
+                  {/* Fecha de nacimiento */}
+                  <div>
+                    <label htmlFor="birthDate" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Fecha de nacimiento <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="birthDate" name="birthDate" type="date"
+                      max={maxBirthDate}
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      onBlur={(e) => handleBlur("birthDate", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 ${
+                        touched.birthDate && errors.birthDate
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
+                    />
+                    {touched.birthDate && errors.birthDate && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.birthDate}</p>
+                    )}
+                    <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                      Debes ser mayor de 18 años
+                    </p>
                   </div>
 
                   {/* Términos */}
                   <div>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
-                        type="checkbox" checked={acceptTerms}
-                        onChange={e => { setAcceptTerms(e.target.checked); handleBlur("terms", e.target.checked); }}
+                        type="checkbox"
+                        checked={acceptTerms}
+                        onChange={(e) => {
+                          setAcceptTerms(e.target.checked);
+                          handleBlur("terms", e.target.checked);
+                        }}
                         className="mt-1 h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800"
                       />
                       <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                        Acepto los <a href="/terms" className="font-medium underline">Términos y Condiciones</a> y la{" "}
-                        <a href="/privacy" className="font-medium underline">Política de Privacidad</a>
+                        Acepto los{" "}
+                        <a href="/terms" className="font-medium underline">
+                          Términos y Condiciones
+                        </a>{" "}
+                        y la{" "}
+                        <a href="/privacy" className="font-medium underline">
+                          Política de Privacidad
+                        </a>
                       </span>
                     </label>
-                    {touched.terms && errors.terms && <p className="mt-1.5 text-sm text-red-600">{errors.terms}</p>}
+                    {touched.terms && errors.terms && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.terms}</p>
+                    )}
                   </div>
 
                   <div className="space-y-3">
                     <button
-                      type="submit" disabled={loading}
+                      type="button"
+                      onClick={handleNextToStep3}
+                      className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-zinc-50 dark:text-zinc-900"
+                    >
+                      Continuar →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    >
+                      ← Volver
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── STEP 3: Identity document ───────────────────────────── */}
+              {step === 3 && (
+                <div className="space-y-5">
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 dark:bg-amber-900/20 dark:border-amber-700">
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      Para proteger a nuestra comunidad, todos los artistas deben verificar
+                      su identidad antes de publicar servicios.
+                    </p>
+                  </div>
+
+                  {/* Tipo de documento */}
+                  <div>
+                    <label htmlFor="documentType" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Tipo de documento <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="documentType"
+                      value={documentType}
+                      onChange={(e) => {
+                        setDocumentType(e.target.value as DocumentType);
+                        if (e.target.value !== "DPI") {
+                          setDocumentBackUrl("");
+                          setBackPreview("");
+                        }
+                      }}
+                      className="block w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:bg-zinc-800 dark:text-zinc-50 dark:border-zinc-700"
+                    >
+                      {Object.entries(DOCUMENT_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Número de documento */}
+                  <div>
+                    <label htmlFor="documentNumber" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                      Número de documento <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="documentNumber"
+                      name="documentNumber"
+                      type="text"
+                      value={documentNumber}
+                      onChange={(e) => setDocumentNumber(e.target.value)}
+                      onBlur={(e) => handleBlur("documentNumber", e.target.value)}
+                      className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                        touched.documentNumber && errors.documentNumber
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-zinc-300 focus:ring-zinc-500 dark:border-zinc-700"
+                      }`}
+                      placeholder={documentType === "DPI" ? "Ej: 1234567890101" : "Ej: A12345678"}
+                    />
+                    {touched.documentNumber && errors.documentNumber && (
+                      <p className="mt-1.5 text-sm text-red-600">{errors.documentNumber}</p>
+                    )}
+                  </div>
+
+                  {/* Front photo */}
+                  {renderUploadBox(
+                    "Foto frontal del documento",
+                    "Foto clara de la parte delantera de tu DPI, pasaporte o tarjeta",
+                    "front",
+                    uploadingFront,
+                    frontPreview,
+                    "documentFrontUrl",
+                    setUploadingFront,
+                    setDocumentFrontUrl,
+                    setFrontPreview
+                  )}
+
+                  {/* Back photo — only for DPI */}
+                  {documentType === "DPI" &&
+                    renderUploadBox(
+                      "Foto posterior del documento",
+                      "Foto clara de la parte trasera de tu DPI",
+                      "back",
+                      uploadingBack,
+                      backPreview,
+                      "documentFrontUrl",
+                      setUploadingBack,
+                      setDocumentBackUrl,
+                      setBackPreview,
+                      true
+                    )}
+
+                  {/* Selfie with document */}
+                  {renderUploadBox(
+                    "Selfie sosteniendo el documento",
+                    "Foto tuya sujetando el documento junto a tu rostro claramente visible",
+                    "selfie",
+                    uploadingSelfie,
+                    selfiePreview,
+                    "documentSelfieUrl",
+                    setUploadingSelfie,
+                    setDocumentSelfieUrl,
+                    setSelfiePreview
+                  )}
+
+                  <div className="space-y-3">
+                    <button
+                      type="submit"
+                      disabled={loading}
                       className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-50 dark:text-zinc-900"
                     >
                       {loading ? "Creando tu cuenta..." : "Crear mi cuenta de artista"}
                     </button>
                     <button
-                      type="button" onClick={() => setStep(1)}
+                      type="button"
+                      onClick={() => setStep(2)}
                       className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                     >
                       ← Volver
@@ -397,10 +900,15 @@ export default function RegisterArtistPage() {
                 </div>
                 <div className="text-center text-sm">
                   <span className="text-zinc-600 dark:text-zinc-400">¿Ya tienes cuenta? </span>
-                  <a href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">Inicia sesión aquí</a>
+                  <a href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">
+                    Inicia sesión aquí
+                  </a>
                 </div>
                 <div className="text-center">
-                  <a href="/register/client" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors">
+                  <a
+                    href="/register/client"
+                    className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors"
+                  >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
@@ -429,14 +937,22 @@ export default function RegisterArtistPage() {
               </p>
             </div>
             <div className="space-y-3">
-              <button onClick={handleAcceptLocation} className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900">
+              <button
+                onClick={handleAcceptLocation}
+                className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900"
+              >
                 Permitir Ubicación
               </button>
-              <button onClick={handleSkipLocation} className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              <button
+                onClick={handleSkipLocation}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              >
                 Ahora No
               </button>
             </div>
-            <p className="mt-4 text-xs text-center text-zinc-500">Puedes cambiar esto más tarde en la configuración</p>
+            <p className="mt-4 text-xs text-center text-zinc-500">
+              Puedes cambiar esto más tarde en la configuración
+            </p>
           </div>
         </div>
       )}
