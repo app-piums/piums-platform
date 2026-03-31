@@ -12,7 +12,8 @@ import {
   verifyEmail,
   resendVerification,
   logout,
-  getMe
+  getMe,
+  updateProfile
 } from "../controller/auth.controller";
 import { isAdmin } from "../middleware/isAdmin";
 import { authenticate } from "../middleware/authenticate";
@@ -47,6 +48,7 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
 
 // Get current authenticated user (any authenticated user)
 router.get("/me", authenticate, getMe);
+router.patch("/profile", authenticate, updateProfile);
 
 export default router;
 

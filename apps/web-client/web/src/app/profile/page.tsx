@@ -13,11 +13,13 @@ import NotificationsTab from './notifications/page';
 import PaymentsTab from './payments/page';
 import DeleteAccountTab from './delete/page';
 import LegalTab from './legal/page';
+import VerifyClientTab from './verify/page';
 
-type TabId = 'personal' | 'security' | 'notifications' | 'payments' | 'delete' | 'legal';
+type TabId = 'personal' | 'security' | 'notifications' | 'payments' | 'delete' | 'legal' | 'verificar';
 
-const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: boolean }> = [
-  { id: 'personal',      label: 'Información personal', icon: <UserIcon className="h-4 w-4" /> },
+const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: boolean; badge?: boolean }> = [
+  { id: 'personal',      label: 'Információn personal', icon: <UserIcon className="h-4 w-4" /> },
+  { id: 'verificar',     label: 'Verificar cuenta',   icon: <ShieldIcon className="h-4 w-4" /> },
   { id: 'security',      label: 'Seguridad',            icon: <LockIcon className="h-4 w-4" /> },
   { id: 'notifications', label: 'Notificaciones',       icon: <BellIcon className="h-4 w-4" /> },
   { id: 'payments',      label: 'Métodos de pago',      icon: <CardIcon className="h-4 w-4" /> },
@@ -32,6 +34,7 @@ const DEFAULT_DIRTY_STATE: Record<TabId, boolean> = {
   payments: false,
   delete: false,
   legal: false,
+  verificar: false,
 };
 
 export default function ProfilePage() {
@@ -77,6 +80,7 @@ export default function ProfilePage() {
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
 
   const userName = user?.nombre ?? 'Usuario';
+  const needsVerification = !user?.ciudad || !user?.birthDate;
 
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
@@ -130,6 +134,7 @@ export default function ProfilePage() {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {TABS.map(tab => {
                   const active = currentTab === tab.id;
+                  const showBadge = tab.id === 'verificar' && needsVerification;
                   return (
                     <button
                       key={tab.id}
@@ -145,10 +150,13 @@ export default function ProfilePage() {
                         {tab.icon}
                       </span>
                       {tab.label}
+                      {showBadge && (
+                        <span className="ml-1 h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                      )}
                       <svg className="ml-auto h-4 w-4 text-gray-300 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      {active && (
+                      {active && !showBadge && (
                         <span className={`hidden lg:inline ml-auto h-1.5 w-1.5 rounded-full ${tab.danger ? 'bg-red-500' : 'bg-[#FF6A00]'}`} />
                       )}
                     </button>
@@ -172,6 +180,7 @@ export default function ProfilePage() {
               {currentTab === 'personal'      && (
                 <PersonalInfoTab onDirtyChange={(dirty) => handleDirtyChange('personal', dirty)} />
               )}
+              {currentTab === 'verificar'     && <VerifyClientTab />}
               {currentTab === 'security'      && (
                 <SecurityTab onDirtyChange={(dirty) => handleDirtyChange('security', dirty)} />
               )}
@@ -192,6 +201,9 @@ export default function ProfilePage() {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 function UserIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
+}
+function ShieldIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>;
 }
 function LockIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;

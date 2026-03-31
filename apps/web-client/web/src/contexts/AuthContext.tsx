@@ -13,6 +13,13 @@ interface User {
   telefono?: string;
   token?: string;
   avatar?: string;
+  ciudad?: string | null;
+  birthDate?: string | null;
+  documentType?: string | null;
+  documentNumber?: string | null;
+  documentFrontUrl?: string | null;
+  documentBackUrl?: string | null;
+  documentSelfieUrl?: string | null;
 }
 
 interface AuthState {

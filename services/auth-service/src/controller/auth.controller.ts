@@ -342,6 +342,16 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
         emailVerified: true,
         role: true,
         status: true,
+        pais: true,
+        telefono: true,
+        avatar: true,
+        ciudad: true,
+        birthDate: true,
+        documentType: true,
+        documentNumber: true,
+        documentFrontUrl: true,
+        documentBackUrl: true,
+        documentSelfieUrl: true,
       },
     });
 
@@ -554,8 +564,61 @@ export const getMe = async (req: Request, res: Response) => {
   const { id } = (req as any).user;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, nombre: true, role: true, telefono: true, avatar: true, pais: true },
+    select: {
+      id: true,
+      email: true,
+      nombre: true,
+      role: true,
+      telefono: true,
+      avatar: true,
+      pais: true,
+      ciudad: true,
+      birthDate: true,
+      documentType: true,
+      documentNumber: true,
+      documentFrontUrl: true,
+      documentBackUrl: true,
+      documentSelfieUrl: true,
+    },
   });
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user });
+};
+
+export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = (req as any).user;
+    const { ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = req.body;
+
+    const updateData: Record<string, unknown> = {};
+    if (ciudad !== undefined) updateData.ciudad = ciudad;
+    if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
+    if (documentType !== undefined) updateData.documentType = documentType;
+    if (documentNumber !== undefined) updateData.documentNumber = documentNumber;
+    if (documentFrontUrl !== undefined) updateData.documentFrontUrl = documentFrontUrl;
+    if (documentBackUrl !== undefined) updateData.documentBackUrl = documentBackUrl ?? null;
+    if (documentSelfieUrl !== undefined) updateData.documentSelfieUrl = documentSelfieUrl;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        role: true,
+        ciudad: true,
+        birthDate: true,
+        documentType: true,
+        documentNumber: true,
+        documentFrontUrl: true,
+        documentBackUrl: true,
+        documentSelfieUrl: true,
+      },
+    });
+
+    res.json({ user });
+  } catch (error: any) {
+    next(error);
+  }
 };

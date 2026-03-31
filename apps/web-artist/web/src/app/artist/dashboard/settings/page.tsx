@@ -8,6 +8,7 @@ import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 function LegalAccordion({ section }: { section: { id: string; title: string; icon: React.ReactNode; content: React.ReactNode } }) {
   const [open, setOpen] = React.useState(false);
@@ -66,12 +67,27 @@ type ArtistFormData = {
 
 export default function ArtistSettingsPage() {
   const router = useRouter();
+  const { user: authUser, updateUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const currentTab = activeTab ?? 'personal';
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Verification form state
+  const [verifyData, setVerifyData] = useState({
+    ciudad: '',
+    birthDate: '',
+    documentType: 'DPI' as 'DPI' | 'PASSPORT' | 'RESIDENCE_CARD',
+    documentNumber: '',
+    documentFrontUrl: '',
+    documentBackUrl: '',
+    documentSelfieUrl: '',
+  });
+  const [verifyPreviews, setVerifyPreviews] = useState({ front: '', back: '', selfie: '' });
+  const [verifyUploading, setVerifyUploading] = useState({ front: false, back: false, selfie: false });
+  const [isSavingVerify, setIsSavingVerify] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<ArtistFormData>({
@@ -98,6 +114,29 @@ export default function ArtistSettingsPage() {
   const [isSavingCoverage, setIsSavingCoverage] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Populate verification form from authUser
+  useEffect(() => {
+    if (authUser) {
+      setVerifyData((prev) => ({
+        ...prev,
+        ciudad: authUser.ciudad || '',
+        birthDate: authUser.birthDate
+          ? new Date(authUser.birthDate).toISOString().split('T')[0]
+          : '',
+        documentType: (authUser.documentType as 'DPI' | 'PASSPORT' | 'RESIDENCE_CARD') || 'DPI',
+        documentNumber: authUser.documentNumber || '',
+        documentFrontUrl: authUser.documentFrontUrl || '',
+        documentBackUrl: authUser.documentBackUrl || '',
+        documentSelfieUrl: authUser.documentSelfieUrl || '',
+      }));
+      setVerifyPreviews({
+        front: authUser.documentFrontUrl || '',
+        back: authUser.documentBackUrl || '',
+        selfie: authUser.documentSelfieUrl || '',
+      });
+    }
+  }, [authUser]);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -258,13 +297,83 @@ export default function ArtistSettingsPage() {
 
   const RADIUS_PRESETS = [5, 10, 20, 30, 50, 75, 100];
 
+  const MAX_BIRTH_DATE = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split('T')[0];
+  })();
+
+  const uploadVerifyFile = async (
+    file: File,
+    folder: 'front' | 'back' | 'selfie',
+  ) => {
+    setVerifyUploading((prev) => ({ ...prev, [folder]: true }));
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/users/documents/upload?folder=${folder}`, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Error al subir imagen');
+      const data = await res.json();
+      const urlKey = folder === 'front' ? 'documentFrontUrl' : folder === 'back' ? 'documentBackUrl' : 'documentSelfieUrl';
+      setVerifyData((prev) => ({ ...prev, [urlKey]: data.url }));
+      setVerifyPreviews((prev) => ({ ...prev, [folder]: URL.createObjectURL(file) }));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al subir imagen');
+    } finally {
+      setVerifyUploading((prev) => ({ ...prev, [folder]: false }));
+    }
+  };
+
+  const handleSaveVerify = async () => {
+    if (!verifyData.ciudad.trim()) { toast.error('Ingresa tu ciudad'); return; }
+    if (!verifyData.birthDate) { toast.error('Ingresa tu fecha de nacimiento'); return; }
+    if (!verifyData.documentNumber.trim()) { toast.error('Ingresa tu número de documento'); return; }
+    if (!verifyData.documentFrontUrl) { toast.error('Sube la foto frontal de tu documento'); return; }
+    if (!verifyData.documentSelfieUrl) { toast.error('Sube tu selfie con el documento'); return; }
+
+    setIsSavingVerify(true);
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ciudad: verifyData.ciudad.trim(),
+          birthDate: verifyData.birthDate,
+          documentType: verifyData.documentType,
+          documentNumber: verifyData.documentNumber.trim(),
+          documentFrontUrl: verifyData.documentFrontUrl,
+          documentBackUrl: verifyData.documentBackUrl || null,
+          documentSelfieUrl: verifyData.documentSelfieUrl,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.message || 'Error al guardar');
+      }
+      // Refresh user in context
+      const meRes = await fetch('/api/auth/me', { credentials: 'include' });
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        updateUser(meData.user);
+      }
+      toast.success('Verificación guardada correctamente');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setIsSavingVerify(false);
+    }
+  };
+
+  const needsVerification = !authUser?.ciudad || !authUser?.birthDate || !authUser?.documentFrontUrl;
+
   const tabs = [
-    { id: 'personal',      label: 'Datos Personales', icon: <ArtistUserIcon className="h-4 w-4" /> },
-    { id: 'coverage',      label: 'Cobertura',         icon: <ArtistMapPinIcon className="h-4 w-4" /> },
-    { id: 'profile',       label: 'Perfil Público',    icon: <ArtistPencilIcon className="h-4 w-4" /> },
-    { id: 'notifications', label: 'Notificaciones',    icon: <ArtistBellIcon className="h-4 w-4" /> },
-    { id: 'payments',      label: 'Pagos',             icon: <ArtistCardIcon className="h-4 w-4" /> },
-    { id: 'legal',         label: 'Legal',             icon: <ArtistScaleIcon className="h-4 w-4" /> },
+    { id: 'personal',      label: 'Datos Personales',    icon: <ArtistUserIcon className="h-4 w-4" /> },
+    { id: 'verificar',     label: 'Verificar identidad', icon: <ArtistShieldIcon className="h-4 w-4" />, badge: needsVerification },
+    { id: 'coverage',      label: 'Cobertura',           icon: <ArtistMapPinIcon className="h-4 w-4" /> },
+    { id: 'profile',       label: 'Perfil Público',      icon: <ArtistPencilIcon className="h-4 w-4" /> },
+    { id: 'notifications', label: 'Notificaciones',      icon: <ArtistBellIcon className="h-4 w-4" /> },
+    { id: 'payments',      label: 'Pagos',               icon: <ArtistCardIcon className="h-4 w-4" /> },
+    { id: 'legal',         label: 'Legal',               icon: <ArtistScaleIcon className="h-4 w-4" /> },
   ];
 
   const hasBaseLocation = formData.baseLocationLat !== null && formData.baseLocationLng !== null;
@@ -325,6 +434,7 @@ export default function ArtistSettingsPage() {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {tabs.map((tab) => {
                   const active = currentTab === tab.id;
+                  const tabBadge = (tab as { badge?: boolean }).badge;
                   return (
                     <button
                       key={tab.id}
@@ -334,10 +444,13 @@ export default function ArtistSettingsPage() {
                     >
                       <span className={active ? 'text-orange-600' : 'text-gray-400'}>{tab.icon}</span>
                       {tab.label}
+                      {tabBadge && (
+                        <span className="ml-1 h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                      )}
                       <svg className="ml-auto h-4 w-4 text-gray-300 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      {active && (
+                      {active && !tabBadge && (
                         <span className="hidden lg:inline ml-auto h-1.5 w-1.5 rounded-full bg-orange-500" />
                       )}
                     </button>
@@ -358,6 +471,154 @@ export default function ArtistSettingsPage() {
                 </svg>
                 Volver a configuración
               </button>
+
+              {currentTab === 'verificar' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Verificar identidad</h2>
+                    <p className="text-sm text-gray-500 mt-1">Completa tu información de identidad para operar en la plataforma y recibir reservas.</p>
+                  </div>
+
+                  {!needsVerification && (
+                    <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+                      <svg className="h-5 w-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">Identidad verificada</p>
+                        <p className="text-sm text-green-700 mt-0.5">Tu información está completa. Puedes actualizarla en cualquier momento.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {needsVerification && (
+                    <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <svg className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800">Verificación pendiente</p>
+                        <p className="text-sm text-amber-700 mt-0.5">Necesitas completar tu verificación para recibir reservas en la plataforma.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ciudad + birthDate */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Ciudad <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={verifyData.ciudad}
+                        onChange={(e) => setVerifyData((p) => ({ ...p, ciudad: e.target.value }))}
+                        placeholder="Guatemala, Quetzaltenango..."
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha de nacimiento <span className="text-red-500">*</span></label>
+                      <input
+                        type="date"
+                        value={verifyData.birthDate}
+                        onChange={(e) => setVerifyData((p) => ({ ...p, birthDate: e.target.value }))}
+                        max={MAX_BIRTH_DATE}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Debes ser mayor de 18 años.</p>
+                    </div>
+                  </div>
+
+                  {/* Document type + number */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de documento <span className="text-red-500">*</span></label>
+                      <select
+                        value={verifyData.documentType}
+                        onChange={(e) => setVerifyData((p) => ({ ...p, documentType: e.target.value as 'DPI' | 'PASSPORT' | 'RESIDENCE_CARD', documentBackUrl: '' }))}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm bg-white"
+                      >
+                        <option value="DPI">DPI (Guatemala)</option>
+                        <option value="PASSPORT">Pasaporte</option>
+                        <option value="RESIDENCE_CARD">Tarjeta de residencia</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Número de documento <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={verifyData.documentNumber}
+                        onChange={(e) => setVerifyData((p) => ({ ...p, documentNumber: e.target.value }))}
+                        placeholder="1234567890101"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Document photo uploads */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-800">Fotos del documento</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Front */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Frente <span className="text-red-500">*</span></label>
+                        <label className="block w-full h-36 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition-colors overflow-hidden relative">
+                          {verifyPreviews.front ? (
+                            <img src={verifyPreviews.front} alt="Frente" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full gap-1 text-gray-400">
+                              {verifyUploading.front ? <span className="text-xs">Subiendo...</span> : <><svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span className="text-xs">Foto frontal</span></> }
+                            </div>
+                          )}
+                          <input type="file" accept="image/*" className="sr-only" disabled={verifyUploading.front} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadVerifyFile(f, 'front'); }} />
+                        </label>
+                      </div>
+
+                      {/* Back — only for DPI */}
+                      {verifyData.documentType === 'DPI' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Reverso</label>
+                          <label className="block w-full h-36 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition-colors overflow-hidden relative">
+                            {verifyPreviews.back ? (
+                              <img src={verifyPreviews.back} alt="Reverso" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-full gap-1 text-gray-400">
+                                {verifyUploading.back ? <span className="text-xs">Subiendo...</span> : <><svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span className="text-xs">Foto reverso</span></> }
+                              </div>
+                            )}
+                            <input type="file" accept="image/*" className="sr-only" disabled={verifyUploading.back} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadVerifyFile(f, 'back'); }} />
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Selfie */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Selfie con documento <span className="text-red-500">*</span></label>
+                        <label className="block w-full h-36 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition-colors overflow-hidden relative">
+                          {verifyPreviews.selfie ? (
+                            <img src={verifyPreviews.selfie} alt="Selfie" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full gap-1 text-gray-400">
+                              {verifyUploading.selfie ? <span className="text-xs">Subiendo...</span> : <><svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg><span className="text-xs">Selfie con doc.</span></> }
+                            </div>
+                          )}
+                          <input type="file" accept="image/*" className="sr-only" disabled={verifyUploading.selfie} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadVerifyFile(f, 'selfie'); }} />
+                        </label>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400">Las imágenes son procesadas de forma segura y solo se usan para verificar tu identidad.</p>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={handleSaveVerify}
+                      disabled={isSavingVerify || verifyUploading.front || verifyUploading.back || verifyUploading.selfie}
+                      className="px-6 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isSavingVerify ? 'Guardando...' : 'Guardar verificación'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {currentTab === 'personal' && (
               <div className="space-y-6">
@@ -1110,6 +1371,9 @@ export default function ArtistSettingsPage() {
 // ─── Icons ───────────────────────────────────────────────────────────────────
 function ArtistUserIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
+}
+function ArtistShieldIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>;
 }
 function ArtistMapPinIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
