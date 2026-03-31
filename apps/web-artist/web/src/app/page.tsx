@@ -11,7 +11,7 @@ export default function Home() {
         {/* Navbar */}
         <nav className="flex items-center justify-between px-8 py-5 border-b border-zinc-800">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Piums for Artists"
             width={120}
             height={40}

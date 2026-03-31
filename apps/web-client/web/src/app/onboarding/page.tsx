@@ -402,7 +402,7 @@ function StepRefine({
    Shared UI
    ════════════════════════════════════════════════════════════════════════════ */
 function PiumsLogo() {
-  return <Image src="/logo.jpg" alt="PIUMS" width={100} height={34} className="h-8 w-auto" />;
+  return <Image src="/logo.png" alt="PIUMS" width={100} height={34} className="h-8 w-auto" />;
 }
 
 /* ─── Icons (inline SVG para no depender de librerías) ───────────────────── */

@@ -545,7 +545,7 @@ export default function ServiceDetailPage() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
           <Link href="/dashboard" className="shrink-0">
-            <Image src="/logo.jpg" alt="PIUMS" width={90} height={30} className="h-7 w-auto" />
+            <Image src="/logo.png" alt="PIUMS" width={90} height={30} className="h-7 w-auto" />
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-gray-500">
             <Link href="/artists"  className="hover:text-gray-900 transition-colors">Explorar Artistas</Link>
@@ -733,7 +733,7 @@ export default function ServiceDetailPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-gray-100 bg-white mt-8">
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3">
-          <Image src="/logo.jpg" alt="PIUMS" width={70} height={24} className="h-5 w-auto" />
+          <Image src="/logo.png" alt="PIUMS" width={70} height={24} className="h-5 w-auto" />
           <p className="text-xs text-gray-400">
             © 2026 Piums · La plataforma de la Economía Naranja
           </p>

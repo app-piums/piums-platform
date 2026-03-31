@@ -163,7 +163,7 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">
-            <Image src="/logo.jpg" alt="PIUMS" width={90} height={30} className="h-8 w-auto" priority />
+            <Image src="/logo.png" alt="PIUMS" width={90} height={30} className="h-8 w-auto" priority />
           </div>
 
           {/* Heading */}

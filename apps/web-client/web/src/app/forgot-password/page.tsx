@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex">
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-96 xl:w-[480px] flex-col justify-between bg-zinc-950 px-12 py-14">
-        <Image src="/logo.jpg" alt="PIUMS" width={100} height={34} className="h-9 w-auto" priority />
+        <Image src="/logo.png" alt="PIUMS" width={100} height={34} className="h-9 w-auto" priority />
         <div>
           <h2 className="text-3xl font-bold text-white leading-tight">
             Recupera el acceso<br />
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
 
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">
-            <Image src="/logo.jpg" alt="PIUMS" width={90} height={30} className="h-8 w-auto" priority />
+            <Image src="/logo.png" alt="PIUMS" width={90} height={30} className="h-8 w-auto" priority />
           </div>
 
           {step === 'form' ? (

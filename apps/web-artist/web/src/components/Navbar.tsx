@@ -25,7 +25,7 @@ export const Navbar: React.FC = () => {
           <div className="flex">
             <Link href="/dashboard" className="flex items-center">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.png" 
                 alt="Piúms" 
                 width={120} 
                 height={40}

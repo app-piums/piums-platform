@@ -68,7 +68,7 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
 
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
         <Link href="/dashboard" onClick={(event) => handleLinkClick(event, '/dashboard')}>
-          <Image src="/logo.jpg" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
+          <Image src="/logo.png" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
         </Link>
         <button
           onClick={() => setIsOpen(true)}
@@ -105,7 +105,7 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose, on
     <>
       <div className="p-5 border-b border-gray-100 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2" onClick={(event) => onLinkClick(event, '/dashboard')}>
-          <Image src="/logo.jpg" alt="PIUMS" width={80} height={28} className="h-7 w-auto" priority />
+          <Image src="/logo.png" alt="PIUMS" width={80} height={28} className="h-7 w-auto" priority />
         </Link>
         <button
           className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"

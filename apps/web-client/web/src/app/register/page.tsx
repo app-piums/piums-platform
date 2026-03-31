@@ -316,7 +316,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <div className="flex justify-center mb-6">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.png" 
                 alt="Piúms" 
                 width={150} 
                 height={50}
