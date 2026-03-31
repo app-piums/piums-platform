@@ -50,7 +50,7 @@ export default function ArtistProfilePage() {
   const startingPrice = useMemo(() => {
     if (services.length > 0) {
       const validPrices = services
-        .map((service) => service.basePrice ?? 0)
+        .map((service) => (service.basePrice ?? 0) / 100)
         .filter((amount) => amount && amount > 0);
       if (validPrices.length) {
         return Math.min(...validPrices);
@@ -495,7 +495,7 @@ export default function ArtistProfilePage() {
                             <p className="text-sm text-gray-600 mt-1">{service.description}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-[#FF6A00]">${service.basePrice.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-[#FF6A00]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                             <p className="text-sm text-gray-500">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                         </div>

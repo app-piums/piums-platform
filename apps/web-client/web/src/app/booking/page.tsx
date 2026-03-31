@@ -563,7 +563,7 @@ function BookingContent() {
   }, [selectedService, selectedAddons, clientCoords, travelDistanceKm, calculatePriceQuote]);
 
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
-  const currency = priceQuote?.currency || selectedService?.currency || 'USD';
+  const currency = 'USD';
   const pricingItems = useMemo(() => {
     // Viáticos se activa cuando: multi-día (>1 día) Y fuera del radio de cobertura.
     // Sin ubicación aún mostramos el label "Viáticos" como indicativo si es multi-día,
