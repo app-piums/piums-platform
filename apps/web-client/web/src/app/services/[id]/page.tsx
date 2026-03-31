@@ -129,7 +129,7 @@ const normalizeServiceData = (service: Service | null, artist: ArtistProfile | n
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatCOP(n: number) {
-  return 'Q' + (n / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '$' + (n / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ─── Booking sidebar ─────────────────────────────────────────────────────────

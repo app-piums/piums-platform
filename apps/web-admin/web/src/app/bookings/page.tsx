@@ -42,7 +42,7 @@ function EstadoBadge({ estado }: { estado: string }) {
 
 function MontoCell({ monto }: { monto: number | null | undefined }) {
   if (monto == null) return <span className="text-zinc-400">—</span>;
-  return <span>Q{monto.toLocaleString("es-GT", { minimumFractionDigits: 2 })}</span>;
+  return <span>${monto.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>;
 }
 
 /** Resaltar coincidencia de código PIU en el texto */
@@ -203,7 +203,7 @@ function BookingsContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Fecha</span>
-                    <span>{new Date(b.fecha).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                    <span>{new Date(b.fecha).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Monto</span>
@@ -265,7 +265,7 @@ function BookingsContent() {
                     <td className="px-5 py-3.5 text-sm text-zinc-700 dark:text-zinc-300">{b.artistaNombre}</td>
                     <td className="px-5 py-3.5 text-sm text-zinc-500 dark:text-zinc-400">{b.servicio}</td>
                     <td className="px-5 py-3.5 text-xs text-zinc-500">
-                      {new Date(b.fecha).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                      {new Date(b.fecha).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}
                     </td>
                     <td className="px-5 py-3.5 text-sm font-medium text-zinc-900 dark:text-zinc-50">
                       <MontoCell monto={b.monto} />

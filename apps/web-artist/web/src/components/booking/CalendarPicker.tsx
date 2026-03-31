@@ -132,7 +132,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                   <div className="font-semibold">{slot.time}</div>
                   {slot.price && slot.available && (
                     <div className="text-xs text-gray-600 mt-1">
-                      Q{slot.price.toLocaleString('es-GT')}
+                      ${slot.price.toLocaleString('en-US')}
                     </div>
                   )}
                   {!slot.available && (

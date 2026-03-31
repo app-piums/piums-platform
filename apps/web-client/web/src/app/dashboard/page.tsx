@@ -340,7 +340,7 @@ export default function DashboardPage() {
                       <p className="font-semibold text-gray-900 text-sm truncate">{artist.nombre}</p>
                       <p className="text-xs text-gray-400 truncate">{artist.category ?? artist.categoria ?? '—'}</p>
                       {artist.precioDesde && (
-                        <p className="text-sm font-bold text-[#FF6A00] mt-1">desde Q{artist.precioDesde}</p>
+                        <p className="text-sm font-bold text-[#FF6A00] mt-1">desde ${artist.precioDesde}</p>
                       )}
                     </div>
                   </Link>

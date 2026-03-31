@@ -157,7 +157,7 @@ export default function ArtistReviewsPage() {
                         <div>
                           {renderStars(review.rating)}
                           <p className="text-sm text-gray-500 mt-1">
-                            {new Date(review.createdAt).toLocaleDateString('es-MX', {
+                            {new Date(review.createdAt).toLocaleDateString('es-GT', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric',
@@ -204,7 +204,7 @@ export default function ArtistReviewsPage() {
                           </p>
                           <p className="text-gray-800">{review.response.message}</p>
                           <p className="text-xs text-gray-500 mt-2">
-                            {new Date(review.response.createdAt).toLocaleDateString('es-MX')}
+                            {new Date(review.response.createdAt).toLocaleDateString('es-GT')}
                           </p>
                         </div>
                       ) : (

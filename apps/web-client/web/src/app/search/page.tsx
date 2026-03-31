@@ -229,7 +229,7 @@ function SearchContent() {
                             <p className="text-xs text-gray-400 mt-2">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <p className="text-lg font-bold text-[#FF6A00]">Q{(service.basePrice / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-lg font-bold text-[#FF6A00]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             <button
                               onClick={() => router.push(`/artists/${service.artistId}`)}
                               className="mt-2 text-xs font-medium text-[#FF6A00] border border-[#FF6A00]/30 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"

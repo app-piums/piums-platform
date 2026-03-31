@@ -124,8 +124,8 @@ function DashboardContent() {
         />
         <StatCard
           label="Ingresos totales"
-          value={`Q${stats.totalRevenue.toLocaleString("es-GT", { minimumFractionDigits: 2 })}`}
-          sub={`Q${stats.revenueThisMonth.toLocaleString("es-GT", { minimumFractionDigits: 2 })} este mes`}
+          value={`$${stats.totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+          sub={`$${stats.revenueThisMonth.toLocaleString("en-US", { minimumFractionDigits: 2 })} este mes`}
           color="bg-green-50 dark:bg-green-950"
           icon={
             <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

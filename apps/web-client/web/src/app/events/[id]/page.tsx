@@ -269,8 +269,8 @@ function BookingRow({ booking, eventStatus, onRemove }: { booking: any; eventSta
   const formattedDate = date ? date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const formattedTime = date ? date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
   const price = Number(booking.totalPrice || booking.amount || 0);
-  const curr = booking.currency || 'GTQ';
-  const symbol = curr === 'GTQ' ? 'Q' : '$';
+  const curr = booking.currency || 'USD';
+  const symbol = '$';
 
   return (
     <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
@@ -283,7 +283,7 @@ function BookingRow({ booking, eventStatus, onRemove }: { booking: any; eventSta
         <p className="text-xs text-gray-500">{booking.artistName || booking.artistId} · {formattedDate} {formattedTime}</p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-sm font-bold text-[#FF6A00]">{symbol}{(price / 100).toLocaleString('es-GT', { minimumFractionDigits: 2 })}</p>
+        <p className="text-sm font-bold text-[#FF6A00]">{symbol}{(price / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
         {eventStatus !== 'CANCELLED' && (
           <Link
             href={`/bookings/${booking.id}`}
@@ -412,8 +412,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const bookings: any[] = event.bookings ?? [];
   const isCancelled = event.status === 'CANCELLED';
   const grandTotal = breakdown?.grandTotalCents ?? 0;
-  const currency = breakdown?.currency || 'GTQ';
-  const symbol = currency === 'GTQ' ? 'Q' : '$';
+  const currency = breakdown?.currency || 'USD';
+  const symbol = '$';
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
@@ -548,7 +548,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         <div key={b.id || b.bookingId} className="flex items-center justify-between text-sm">
                           <span className={`truncate flex-1 ${isActive ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{label}</span>
                           <span className={`font-medium ml-3 shrink-0 ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-                            {symbol}{(price / 100).toLocaleString('es-GT', { minimumFractionDigits: 2 })}
+                            {symbol}{(price / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                       );
@@ -556,7 +556,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="border-t border-gray-100 pt-3 mt-1 flex items-center justify-between font-bold">
                       <span className="text-gray-900">Total estimado</span>
                       <span className="text-[#FF6A00] text-lg">
-                        {symbol}{(grandTotal / 100).toLocaleString('es-GT', { minimumFractionDigits: 2 })}
+                        {symbol}{(grandTotal / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400">* Solo incluye reservas activas</p>
