@@ -29,10 +29,10 @@ export const Navbar: React.FC = () => {
               <Image 
                 src="/logo.png" 
                 alt="Piúms" 
-                width={40} 
-                height={40}
+                width={56} 
+                height={56}
                 priority
-                className="h-10 w-auto"
+                className="h-14 w-auto"
               />
             </Link>
             
