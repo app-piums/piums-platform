@@ -237,7 +237,7 @@ function ResolveDisputeModal({
         {showRefund && (
           <div className="mt-4">
             <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Monto a reembolsar (MXN, opcional)
+              Monto a reembolsar (USD, opcional)
             </label>
             <input
               type="number"
