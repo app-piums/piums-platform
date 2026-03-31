@@ -32,8 +32,6 @@ export async function GET(request: NextRequest) {
         id: data.id || data.userId,
         nombre: data.nombre,
         email: data.email,
-        pais: data.pais,
-        telefono: data.telefono,
         avatar: data.avatar,
         ciudad: data.ciudad ?? null,
         birthDate: data.birthDate ?? null,
