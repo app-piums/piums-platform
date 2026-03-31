@@ -38,16 +38,8 @@ export class ReviewService {
       logger.warn("Discrepancia de clientId detectada", "REVIEW_SERVICE", {
         bookingClientId: booking.clientId,
         requestClientId: data.clientId,
-        nodeEnv: process.env.NODE_ENV
       });
-      
-      // EN DESARROLLO: Permitimos continuar para facilitar las pruebas del usuario
-      // ya que la base de datos de prueba puede tener datos inconsistentes.
-      if (process.env.NODE_ENV !== 'development') {
-        throw new AppError(403, "No tienes permiso para reseñar este booking");
-      }
-      
-      logger.info("BYPASS DESARROLLO: Permitiendo reseña a pesar de discrepancia de cliente", "REVIEW_SERVICE");
+      throw new AppError(403, "No tienes permiso para reseñar este booking");
     }
 
     // Verificar que no exista ya una reseña para este booking

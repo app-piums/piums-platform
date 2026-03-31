@@ -6,6 +6,7 @@ import { Loading } from '@/components/Loading';
 import { ArtistCard } from '@/components/ArtistCard';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { sdk } from '@piums/sdk';
 import type { Artist, Service } from '@piums/sdk';
 
 type TabType = 'all' | 'artists' | 'services';
@@ -21,9 +22,11 @@ const CATEGORIES = [
 ];
 const CITIES = [
   { value: '', label: 'Todas las ciudades' },
-  { value: '1', label: 'Ciudad de México' },
-  { value: '2', label: 'Guadalajara' },
-  { value: '3', label: 'Monterrey' },
+  { value: 'guatemala', label: 'Ciudad de Guatemala' },
+  { value: 'quetzaltenango', label: 'Quetzaltenango' },
+  { value: 'escuintla', label: 'Escuintla' },
+  { value: 'antigua', label: 'Antigua Guatemala' },
+  { value: 'mixco', label: 'Mixco' },
 ];
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'relevance',  label: 'Relevancia' },
@@ -42,54 +45,36 @@ function SearchContent() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>((searchParams.get('tab') as TabType) || 'all');
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'relevance');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
 
-  useEffect(() => {
-    if (query) performSearch();
-  }, [query, activeTab, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const performSearch = async () => {
+    if (!query && !selectedCategory && !selectedCity) return;
     try {
       setLoading(true);
-      // Mock data (replace with real SDK call later)
-      const mockArtists: Artist[] = Array.from({ length: 8 }, (_, i) => ({
-        id: `artist-${i + 1}`,
-        userId: `user-${i + 1}`,
-        nombre: `${query} - Artista ${i + 1}`,
-        slug: `artista-${i + 1}`,
-        bio: 'Profesional con experiencia en eventos de todo tipo. Calidad garantizada.',
-        category: CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1].label,
-        rating: 4 + Math.random(),
-        reviewsCount: Math.floor(Math.random() * 50) + 5,
-        bookingsCount: Math.floor(Math.random() * 100) + 10,
-        experienceYears: Math.floor(Math.random() * 10) + 2,
-        isVerified: Math.random() > 0.5,
-        isActive: true,
-        isPremium: Math.random() > 0.7,
-        createdAt: new Date().toISOString(),
-        cityId: 'Ciudad de México',
-      }));
-      const mockServices: Service[] = Array.from({ length: 6 }, (_, i) => ({
-        id: `service-${i + 1}`,
-        artistId: `artist-${i + 1}`,
-        name: `${query} - Servicio ${i + 1}`,
-        description: 'Descripción detallada del servicio ofrecido con todas las características incluidas.',
-        basePrice: 5000 + Math.floor(Math.random() * 15000),
-        duration: 240 + Math.floor(Math.random() * 240),
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      }));
-      setArtists(mockArtists);
-      setServices(mockServices);
+      setSearchError(null);
+      const results = await sdk.searchArtists({
+        query: query || undefined,
+        categoria: selectedCategory || undefined,
+        ciudad: selectedCity || undefined,
+      });
+      setArtists((results as any).artists ?? []);
+      setServices([]);
     } catch (err) {
       console.error('Error searching:', err);
+      setSearchError('Error al buscar. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    performSearch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, activeTab, sortBy, selectedCategory, selectedCity]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +83,7 @@ function SearchContent() {
     if (selectedCategory) params.set('category', selectedCategory);
     if (selectedCity) params.set('location', selectedCity);
     router.push(`/search${params.toString() ? `?${params}` : ''}`);
-    performSearch();
+    // Note: useEffect watches query/category/city changes and will trigger performSearch
   };
 
   const totalResults = artists.length + services.length;
@@ -175,6 +160,13 @@ function SearchContent() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Search error */}
+          {searchError && !loading && (
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-4 text-sm text-red-700 text-center">
+              {searchError}
             </div>
           )}
 

@@ -3,14 +3,16 @@ import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 import { authMiddleware } from "../middleware/auth";
 import { healthRouter } from "./health";
 import { logger } from "../utils/logger";
+import { authRateLimiter } from "../middleware/rateLimiter";
 
 // Middleware para transformar cookie en header Authorization
 const cookieToAuthHeader = (req: Request, res: Response, next: NextFunction) => {
   if (!req.headers.authorization && req.headers.cookie) {
     const cookies = req.headers.cookie.split(';').reduce((acc: any, cookie) => {
-      const parts = cookie.trim().split('=');
-      if (parts.length >= 2) {
-        acc[parts[0]] = parts[1];
+      const [name, ...rest] = cookie.trim().split('=');
+      if (name && rest.length > 0) {
+        // Use rest.join('=') to preserve '=' padding characters in base64/JWT values
+        acc[name] = rest.join('=');
       }
       return acc;
     }, {});
@@ -61,6 +63,7 @@ export const setupRoutes = (app: Express) => {
   
   app.use(
     "/api/auth",
+    authRateLimiter,
     createProxyMiddleware({
       target: process.env.AUTH_SERVICE_URL || "http://localhost:4001",
       changeOrigin: true,

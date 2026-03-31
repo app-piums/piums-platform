@@ -44,7 +44,18 @@ export const updateMyProfile = async (
     }
 
     const artist = await artistsService.getArtistByAuthId(authId);
-    const updatedArtist = await artistsService.updateArtist(artist.id, req.body);
+
+    // Allowlist: only permit safe fields to prevent mass-assignment
+    const ALLOWED_FIELDS = [
+      'bio', 'displayName', 'nombre', 'phone', 'location', 'cityId',
+      'category', 'socialLinks', 'imageUrl', 'basePrice', 'experienceYears',
+      'availability', 'languages', 'tags', 'portfolioItems',
+    ];
+    const safeBody = Object.fromEntries(
+      Object.entries(req.body).filter(([k]) => ALLOWED_FIELDS.includes(k))
+    );
+
+    const updatedArtist = await artistsService.updateArtist(artist.id, safeBody);
 
     logger.info("Perfil actualizado desde dashboard", "ARTIST_DASHBOARD", { artistId: artist.id });
     res.json({ artist: updatedArtist, message: "Perfil actualizado exitosamente" });

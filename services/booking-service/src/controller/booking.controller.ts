@@ -133,9 +133,16 @@ export class BookingController {
           ? undefined
           : userId;
 
+      // Prevent artists from querying other artists' bookings: force artistId to own userId
+      const artistId = isArtist
+        ? userId
+        : isAdmin
+          ? (req.query.artistId as string | undefined)
+          : undefined;
+
       const query = {
         clientId,
-        artistId: req.query.artistId as string | undefined,
+        artistId,
         serviceId: req.query.serviceId as string | undefined,
         status: req.query.status as any,
         paymentStatus: req.query.paymentStatus as any,
@@ -230,7 +237,12 @@ export class BookingController {
   async markPayment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      
+
+      // Only admins or internal service calls may mark a booking as paid
+      if (req.user?.role !== 'admin') {
+        return next(new AppError(403, 'Solo administradores pueden marcar pagos manualmente'));
+      }
+
       const { amount, paymentMethod, paymentIntentId, paymentType } = markPaymentSchema.parse(req.body);
 
       const booking = await bookingService.markPayment(
