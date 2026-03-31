@@ -37,7 +37,7 @@ function StepsHeader({ current }: { current: number }) {
     <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/dashboard">
-          <Image src="/logo.png" alt="PIUMS" width={90} height={30} className="h-7 w-auto" />
+          <Image src="/logo.png" alt="PIUMS" width={28} height={28} className="h-7 w-auto" />
         </Link>
 
         {/* Steps */}

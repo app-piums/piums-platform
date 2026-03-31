@@ -13,8 +13,8 @@ export const Footer: React.FC = () => {
               <Image 
                 src="/logo-white.png" 
                 alt="Piúms" 
-                width={100} 
-                height={35}
+                width={36} 
+                height={36}
                 className="h-9 w-auto"
               />
             </div>

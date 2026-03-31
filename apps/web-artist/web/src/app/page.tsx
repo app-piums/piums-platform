@@ -13,8 +13,8 @@ export default function Home() {
           <Image
             src="/logo.png"
             alt="Piums for Artists"
-            width={120}
-            height={40}
+            width={36}
+            height={36}
             className="h-9 w-auto"
             priority
           />

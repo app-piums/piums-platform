@@ -117,7 +117,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between w-full p-12">
           {/* Logo */}
           <div>
-            <Image src="/logo-white.png" alt="PIUMS" width={110} height={36} className="h-9 w-auto" priority />
+            <Image src="/logo-white.png" alt="PIUMS" width={56} height={56} className="h-14 w-auto" priority />
           </div>
 
           {/* Tagline central */}
@@ -162,7 +162,7 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">
-            <Image src="/logo.png" alt="PIUMS" width={90} height={30} className="h-8 w-auto" priority />
+            <Image src="/logo.png" alt="PIUMS" width={40} height={40} className="h-10 w-auto" priority />
           </div>
 
           {/* Heading */}

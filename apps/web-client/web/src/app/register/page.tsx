@@ -318,8 +318,8 @@ export default function RegisterPage() {
               <Image 
                 src="/logo.png" 
                 alt="Piúms" 
-                width={150} 
-                height={50}
+                width={48} 
+                height={48}
                 priority
                 className="h-12 w-auto"
               />
