@@ -115,7 +115,6 @@ export default function LoginPage() {
 
         {/* Contenido brand */}
         <div className="relative z-10 flex flex-col justify-between w-full p-12">
-          <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
           {/* Logo */}
           <div>
             <Image src="/logo-white.png" alt="PIUMS" width={56} height={56} className="h-14 w-auto" priority />
