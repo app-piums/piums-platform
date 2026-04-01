@@ -215,19 +215,24 @@ export const getArtists = async (req: Request, res: Response, next: NextFunction
 export const verifyArtist = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { isVerified } = req.body;
+    const { isVerified, rejectionReason, adminNotes } = req.body;
+
+    const updateData: any = { isVerified };
+    if (!isVerified && rejectionReason) updateData.rejectionReason = rejectionReason;
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
 
     const artist = await prisma.user.update({
       where: { id, role: 'artista' },
-      data: { isVerified }
+      data: updateData,
     });
 
-    logger.info(`Artist ${isVerified ? 'verified' : 'unverified'}`, 'ADMIN_CONTROLLER', {
+    logger.info(`Artist ${isVerified ? 'verified' : 'rejected'}`, 'ADMIN_CONTROLLER', {
       adminId: (req as any).user?.id,
-      artistId: id
+      artistId: id,
+      rejectionReason: isVerified ? undefined : rejectionReason,
     });
 
-    res.json({ message: `Artist ${isVerified ? 'verified' : 'unverified'} successfully`, artist });
+    res.json({ message: `Artist ${isVerified ? 'verified' : 'rejected'} successfully`, artist });
   } catch (error: any) {
     logger.error(`Error verifying artist: ${error.message}`, 'ADMIN_CONTROLLER');
     next(error);
@@ -250,15 +255,22 @@ export const getArtistDetail = async (req: Request, res: Response, next: NextFun
         role: true,
         isVerified: true,
         isBlocked: true,
+        emailVerified: true,
         ciudad: true,
+        provider: true,
+        googleId: true,
+        facebookId: true,
+        tiktokId: true,
         documentType: true,
         documentNumber: true,
         documentFrontUrl: true,
         documentBackUrl: true,
         documentSelfieUrl: true,
+        rejectionReason: true,
+        adminNotes: true,
+        status: true,
         createdAt: true,
         lastLoginAt: true,
-        provider: true,
       }
     });
 
@@ -281,12 +293,20 @@ export const getArtistDetail = async (req: Request, res: Response, next: NextFun
       categoria: 'General',
       isVerified: artist.isVerified ?? false,
       isActive: !artist.isBlocked,
+      emailVerified: artist.emailVerified,
       ciudad: artist.ciudad,
+      provider: artist.provider ?? 'email',
+      hasGoogleId: !!artist.googleId,
+      hasFacebookId: !!artist.facebookId,
+      hasTiktokId: !!artist.tiktokId,
       documentType: artist.documentType,
       documentNumber: artist.documentNumber,
       documentFrontUrl: artist.documentFrontUrl,
       documentBackUrl: artist.documentBackUrl,
       documentSelfieUrl: artist.documentSelfieUrl,
+      rejectionReason: artist.rejectionReason,
+      adminNotes: artist.adminNotes,
+      accountStatus: artist.status,
       createdAt: artist.createdAt,
       lastLoginAt: artist.lastLoginAt,
       totalBookings: bookingStats.total,

@@ -157,6 +157,23 @@ export interface AdminArtistDetail extends AdminArtistRow {
   location?: string;
   isBlocked?: boolean;
   reviewsCount?: number;
+  // Identity & OAuth
+  emailVerified?: boolean;
+  provider?: string;           // 'email' | 'google' | 'facebook' | 'tiktok'
+  hasGoogleId?: boolean;
+  hasFacebookId?: boolean;
+  hasTiktokId?: boolean;
+  // Admin review
+  rejectionReason?: string;
+  adminNotes?: string;
+  accountStatus?: string;
+  lastLoginAt?: string;
+  // Document verification
+  documentType?: string;
+  documentNumber?: string;
+  documentFrontUrl?: string;
+  documentBackUrl?: string;
+  documentSelfieUrl?: string;
 }
 
 export interface PaginatedArtists {
@@ -178,10 +195,14 @@ export const artistsApi = {
 
   detail: (id: string) => request<AdminArtistDetail>(`/admin/artists/${id}`),
 
-  verify: (id: string, approved: boolean) =>
+  verify: (id: string, approved: boolean, opts?: { rejectionReason?: string; adminNotes?: string }) =>
     request<{ message: string; isVerified: boolean }>(`/admin/artists/${id}/verify`, {
       method: "PATCH",
-      body: JSON.stringify({ isVerified: approved }),
+      body: JSON.stringify({
+        isVerified: approved,
+        ...(opts?.rejectionReason ? { rejectionReason: opts.rejectionReason } : {}),
+        ...(opts?.adminNotes !== undefined ? { adminNotes: opts.adminNotes } : {}),
+      }),
     }),
 };
 

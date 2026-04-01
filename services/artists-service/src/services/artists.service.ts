@@ -206,7 +206,16 @@ export class ArtistsService {
       deletedAt: null,
     };
 
-    if (q) where.nombre = { contains: q, mode: "insensitive" };
+    if (q) {
+      // Normalize the query (strip accents) to handle "musica" matching "música"
+      const normalizedQ = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      where.OR = [
+        { nombre:     { contains: normalizedQ, mode: 'insensitive' } },
+        { artistName: { contains: normalizedQ, mode: 'insensitive' } },
+        { bio:        { contains: normalizedQ, mode: 'insensitive' } },
+        { city:       { contains: normalizedQ, mode: 'insensitive' } },
+      ];
+    }
     if (category) where.category = category;
     if (city) where.city = { contains: city, mode: "insensitive" };
     if (country) where.country = { contains: country, mode: "insensitive" };

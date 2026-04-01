@@ -37,29 +37,61 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
   );
 }
 
+// ─── Provider badge ────────────────────────────────────────────────────────────
+function ProviderBadge({ provider, emailVerified }: { provider?: string; emailVerified?: boolean }) {
+  const p = (provider ?? 'email').toLowerCase();
+  const providerInfo: Record<string, { label: string; bg: string; text: string; icon: string }> = {
+    google:   { label: 'Google',   bg: 'bg-red-50',    text: 'text-red-600',   icon: 'G' },
+    facebook: { label: 'Facebook', bg: 'bg-blue-50',   text: 'text-blue-600',  icon: 'f' },
+    tiktok:   { label: 'TikTok',   bg: 'bg-zinc-900',  text: 'text-white',     icon: '♪' },
+    email:    { label: 'Email',    bg: 'bg-zinc-100',  text: 'text-zinc-600',  icon: '✉' },
+  };
+  const info = providerInfo[p] ?? providerInfo.email;
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${info.bg} ${info.text}`}>
+        <span className="text-[10px] font-bold">{info.icon}</span>
+        Registrado con {info.label}
+      </span>
+      {(p !== 'email' || emailVerified) && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Email verificado
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Artist Detail Drawer ──────────────────────────────────────────────────────
 function ArtistDetailDrawer({
   artistId,
   onClose,
   onVerify,
+  onReject,
 }: {
   artistId: string;
   onClose: () => void;
-  onVerify: (id: string, approved: boolean) => void;
+  onVerify: (id: string, approved: boolean, reason?: string, notes?: string) => void;
+  onReject: (id: string) => void;
 }) {
   const { data, isLoading } = useQuery<AdminArtistDetail>({
     queryKey: ["admin-artist-detail", artistId],
     queryFn: () => artistsApi.detail(artistId),
   });
 
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [adminNotes, setAdminNotes] = useState(() => (data as any)?.adminNotes ?? "");
+
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl dark:bg-zinc-900">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-zinc-900">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
@@ -83,137 +115,176 @@ function ArtistDetailDrawer({
             </div>
           ) : data ? (
             <div className="p-6 space-y-6">
-              {/* Avatar + name */}
+
+              {/* Avatar + name + badges */}
               <div className="flex items-center gap-4">
                 {data.avatarUrl ? (
-                  <img
-                    src={data.avatarUrl}
-                    alt={data.nombreArtistico}
-                    className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700"
-                  />
+                  <img src={data.avatarUrl} alt={data.nombreArtistico}
+                    className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700" />
                 ) : (
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FF6A00]/10 text-2xl font-bold text-[#FF6A00]">
                     {data.nombreArtistico.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div>
-                  <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                    {data.nombreArtistico}
-                  </p>
+                <div className="space-y-1.5">
+                  <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{data.nombreArtistico}</p>
                   <p className="text-sm text-zinc-400">{data.email}</p>
-                  <div className="mt-1">
-                    <VerifiedBadge verified={data.isVerified} />
-                  </div>
+                  <VerifiedBadge verified={data.isVerified} />
                 </div>
               </div>
+
+              {/* Registration source (OAuth flow) */}
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Origen del registro</p>
+                <ProviderBadge provider={data.provider} emailVerified={data.emailVerified} />
+                {data.provider && data.provider !== 'email' && (
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Al registrarse con {data.provider.charAt(0).toUpperCase() + data.provider.slice(1)}, el correo electrónico fue verificado por el proveedor externo.
+                    Esto confirma que el artista controla esa cuenta.
+                  </p>
+                )}
+              </div>
+
+              {/* Rejection reason (if rejected) */}
+              {!data.isVerified && data.rejectionReason && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-red-500 mb-1">Razón de rechazo</p>
+                  <p className="text-sm text-red-700 dark:text-red-400">{data.rejectionReason}</p>
+                </div>
+              )}
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: "Reservas", value: data.totalBookings ?? 0 },
-                  { label: "Reseñas", value: (data as any).reviewsCount ?? 0 },
-                  {
-                    label: "Rating",
-                    value: data.rating != null ? data.rating.toFixed(1) : "—",
-                  },
+                  { label: "Reseñas", value: data.reviewsCount ?? 0 },
+                  { label: "Rating", value: data.rating != null ? data.rating.toFixed(1) : "—" },
                 ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50"
-                  >
-                    <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                      {s.value}
-                    </p>
+                  <div key={s.label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50">
+                    <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{s.value}</p>
                     <p className="text-xs text-zinc-400">{s.label}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Info */}
+              {/* Info rows */}
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                  Información
-                </h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Información</h3>
                 {[
                   { label: "Categoría", value: data.categoria },
-                  { label: "Ciudad", value: (data as any).ciudad ?? "—" },
+                  { label: "Ciudad", value: data.ciudad ?? "—" },
+                  { label: "Estado cuenta", value: data.isActive ? "Activa" : "Bloqueada" },
                   {
                     label: "Miembro desde",
-                    value: new Date(data.createdAt).toLocaleDateString("es", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    }),
+                    value: new Date(data.createdAt).toLocaleDateString("es", { year: "numeric", month: "long", day: "numeric" }),
                   },
                   {
                     label: "Último acceso",
-                    value: (data as any).lastLoginAt
-                      ? new Date((data as any).lastLoginAt).toLocaleDateString("es")
-                      : "—",
-                  },
-                  {
-                    label: "Estado",
-                    value: data.isActive ? "Activo" : "Bloqueado",
+                    value: data.lastLoginAt ? new Date(data.lastLoginAt).toLocaleDateString("es") : "—",
                   },
                 ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-start justify-between gap-4 text-sm"
-                  >
+                  <div key={row.label} className="flex items-start justify-between gap-4 text-sm">
                     <span className="text-zinc-400 shrink-0">{row.label}</span>
-                    <span className="text-right font-medium text-zinc-800 dark:text-zinc-200">
-                      {row.value}
-                    </span>
+                    <span className="text-right font-medium text-zinc-800 dark:text-zinc-200">{row.value}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Verification documents */}
-              {((data as any).documentType || (data as any).documentFrontUrl || (data as any).documentBackUrl || (data as any).documentSelfieUrl) && (
+              {/* Documents */}
+              {(data.documentType || data.documentFrontUrl || data.documentBackUrl || data.documentSelfieUrl) && (
                 <div className="space-y-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                    Documentos de identidad
-                  </h3>
-                  {(data as any).documentType && (
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Documentos de identidad</h3>
+                  {data.documentType && (
                     <div className="flex items-start justify-between gap-4 text-sm">
                       <span className="text-zinc-400">Tipo</span>
                       <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                        {(data as any).documentType}
-                        {(data as any).documentNumber ? ` · ${(data as any).documentNumber}` : ""}
+                        {data.documentType}{data.documentNumber ? ` · ${data.documentNumber}` : ""}
                       </span>
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-3">
-                    {(data as any).documentFrontUrl && (
+                    {data.documentFrontUrl && (
                       <div>
-                        <p className="mb-1 text-xs text-zinc-400">Frente</p>
-                        <img
-                          src={(data as any).documentFrontUrl}
-                          alt="Documento frente"
-                          className="w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
-                        />
+                        <p className="mb-1 text-xs text-zinc-400">Frente del documento</p>
+                        <a href={data.documentFrontUrl} target="_blank" rel="noreferrer">
+                          <img src={data.documentFrontUrl} alt="Documento frente"
+                            className="w-full rounded-lg border border-zinc-200 object-cover hover:opacity-90 transition dark:border-zinc-700" />
+                        </a>
                       </div>
                     )}
-                    {(data as any).documentBackUrl && (
+                    {data.documentBackUrl && (
                       <div>
-                        <p className="mb-1 text-xs text-zinc-400">Reverso</p>
-                        <img
-                          src={(data as any).documentBackUrl}
-                          alt="Documento reverso"
-                          className="w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
-                        />
+                        <p className="mb-1 text-xs text-zinc-400">Reverso del documento</p>
+                        <a href={data.documentBackUrl} target="_blank" rel="noreferrer">
+                          <img src={data.documentBackUrl} alt="Documento reverso"
+                            className="w-full rounded-lg border border-zinc-200 object-cover hover:opacity-90 transition dark:border-zinc-700" />
+                        </a>
                       </div>
                     )}
-                    {(data as any).documentSelfieUrl && (
+                    {data.documentSelfieUrl && (
                       <div>
                         <p className="mb-1 text-xs text-zinc-400">Selfie con documento</p>
-                        <img
-                          src={(data as any).documentSelfieUrl}
-                          alt="Selfie con documento"
-                          className="w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
-                        />
+                        <a href={data.documentSelfieUrl} target="_blank" rel="noreferrer">
+                          <img src={data.documentSelfieUrl} alt="Selfie con documento"
+                            className="w-full rounded-lg border border-zinc-200 object-cover hover:opacity-90 transition dark:border-zinc-700" />
+                        </a>
                       </div>
                     )}
+                  </div>
+                  {/* Quick checklist for reviewer */}
+                  {(data.documentFrontUrl || data.documentSelfieUrl) && (
+                    <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300 space-y-1">
+                      <p className="font-semibold mb-1.5">Lista de verificación:</p>
+                      {["El nombre en el documento coincide con el perfil", "El documento no está vencido", "La selfie muestra claramente el rostro y el documento", "Los datos son legibles"].map(item => (
+                        <label key={item} className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" className="rounded accent-amber-600" />
+                          {item}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Admin notes */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Notas internas (solo admins)</h3>
+                <textarea
+                  rows={3}
+                  value={adminNotes}
+                  onChange={e => setAdminNotes(e.target.value)}
+                  placeholder="Agrega notas de revisión aquí..."
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 placeholder-zinc-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                />
+              </div>
+
+              {/* Rejection reason form */}
+              {showRejectForm && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3 dark:border-red-900 dark:bg-red-950/30">
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-400">Razón de rechazo</p>
+                  <textarea
+                    rows={3}
+                    value={rejectionReason}
+                    onChange={e => setRejectionReason(e.target.value)}
+                    placeholder="Explica por qué se rechaza la verificación (se enviará al artista)..."
+                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-900 placeholder-red-300 focus:border-red-400 focus:outline-none dark:border-red-800 dark:bg-zinc-900 dark:text-red-100"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        onVerify(data.id, false, rejectionReason || undefined, adminNotes || undefined);
+                        setShowRejectForm(false);
+                      }}
+                      className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                    >
+                      Confirmar rechazo
+                    </button>
+                    <button
+                      onClick={() => setShowRejectForm(false)}
+                      className="rounded-lg px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </div>
               )}
@@ -224,21 +295,29 @@ function ArtistDetailDrawer({
         </div>
 
         {/* Footer actions */}
-        {data && (
-          <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
+        {data && !showRejectForm && (
+          <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800 space-y-2">
             {!data.isVerified ? (
-              <button
-                onClick={() => onVerify(data.id, true)}
-                className="w-full rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 active:bg-green-800"
-              >
-                <svg className="mr-2 inline h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Verificar artista
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onVerify(data.id, true, undefined, adminNotes || undefined)}
+                  className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 active:bg-green-800"
+                >
+                  <svg className="mr-2 inline h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Verificar artista
+                </button>
+                <button
+                  onClick={() => setShowRejectForm(true)}
+                  className="rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30"
+                >
+                  Rechazar
+                </button>
+              </div>
             ) : (
               <button
-                onClick={() => onVerify(data.id, false)}
+                onClick={() => onVerify(data.id, false, undefined, adminNotes || undefined)}
                 className="w-full rounded-xl bg-zinc-100 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
                 Revocar verificación
@@ -259,6 +338,8 @@ function ArtistsContent() {
   const [confirmAction, setConfirmAction] = useState<{
     artist: AdminArtistRow;
     approve: boolean;
+    rejectionReason?: string;
+    adminNotes?: string;
   } | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -267,8 +348,8 @@ function ArtistsContent() {
   });
 
   const verifyMutation = useMutation({
-    mutationFn: ({ id, approved }: { id: string; approved: boolean }) =>
-      artistsApi.verify(id, approved),
+    mutationFn: ({ id, approved, rejectionReason, adminNotes }: { id: string; approved: boolean; rejectionReason?: string; adminNotes?: string }) =>
+      artistsApi.verify(id, approved, { rejectionReason, adminNotes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-artists"] });
       queryClient.invalidateQueries({ queryKey: ["admin-artist-detail"] });
@@ -278,15 +359,16 @@ function ArtistsContent() {
     },
   });
 
-  const handleDrawerVerify = (id: string, approved: boolean) => {
+  const handleDrawerVerify = (id: string, approved: boolean, rejectionReason?: string, adminNotes?: string) => {
     const artist = data?.artists.find((a) => a.id === id);
     if (artist) {
-      setConfirmAction({ artist, approve: approved });
+      setConfirmAction({ artist, approve: approved, rejectionReason, adminNotes });
     } else {
-      // Artist not in current list page — verify directly after confirmation
       setConfirmAction({
         artist: { id, nombreArtistico: "este artista", isVerified: !approved } as any,
         approve: approved,
+        rejectionReason,
+        adminNotes,
       });
     }
   };
@@ -498,6 +580,10 @@ function ArtistsContent() {
           artistId={selectedArtistId}
           onClose={() => setSelectedArtistId(null)}
           onVerify={handleDrawerVerify}
+          onReject={(id) => {
+            const artist = data?.artists.find((a) => a.id === id);
+            if (artist) setConfirmAction({ artist, approve: false });
+          }}
         />
       )}
 
@@ -536,6 +622,8 @@ function ArtistsContent() {
                   verifyMutation.mutate({
                     id: confirmAction.artist.id,
                     approved: confirmAction.approve,
+                    rejectionReason: confirmAction.rejectionReason,
+                    adminNotes: confirmAction.adminNotes,
                   })
                 }
                 disabled={verifyMutation.isPending}

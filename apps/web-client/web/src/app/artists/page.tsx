@@ -221,17 +221,20 @@ function ArtistsPageContent() {
 
           {/* Filters */}
           <form onSubmit={handleSearch} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+            {/* Main search bar — full-width and prominent */}
+            <div className="relative mb-3">
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Nombre, ciudad, estilo... (ej: músico, DJ, fotografía)"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 text-base border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300"
+              />
+            </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar artista, categoría..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition"
-                />
-              </div>
+              {/* hidden placeholder to keep structure intact */}
+              <div className="hidden" />
               <select
                 value={selectedCategory}
                 onChange={e => { setSelectedCategory(e.target.value); updateURL({ category: e.target.value }); }}
@@ -257,7 +260,7 @@ function ArtistsPageContent() {
 
           {/* Count badge */}
           {!isLoading && totalArtists > 0 && (
-            <p className="text-sm text-gray-500 font-medium mb-4">
+            <p className="text-xs text-gray-400 mb-4">
               {totalArtists} {totalArtists === 1 ? 'artista encontrado' : 'artistas encontrados'}
             </p>
           )}
