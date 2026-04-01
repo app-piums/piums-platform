@@ -1,7 +1,7 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
 **Fecha de última actualización**: 1 de abril de 2026
-**Último commit**: `dave` branch — feat: TikTok OAuth 2.0 Login Kit integration (`5f124ef`)
+**Último commit**: `dave` branch — fix: resize search bar and shrink count text in buscar-artistas (`f623985`)
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
 **Credenciales de prueba**: `artista@piums.com` / `Test1234!`
@@ -318,15 +318,18 @@ El artista puede configurar en Settings > Cobertura:
 
 ## 9. Onboarding
 
-### Artista (`/artist/onboarding`) — 4 pasos:
+### Artista (`/artist/onboarding`) — 4 pasos (email) / 5 pasos (OAuth):
 1. **Bienvenida** — presentación de PIUMS, botón "Crear Mi Perfil"
 2. **Disciplina creativa** — selección de especialidad (10 opciones: músico, fotógrafo, etc.)
-3. **Portfolio & Perfil** — foto de perfil, bio, URLs de redes/portfolio
-4. **Configurar Servicio** — primer servicio: nombre, categoría, precio, disponibilidad
+3. **Identidad** *(solo OAuth: Google/Facebook/TikTok)* — tipo doc, número, upload frente/reverso/selfie, PATCH a `/api/auth/profile`
+4. **Portfolio & Perfil** — foto de perfil, bio, URLs de redes/portfolio
+5. **Configurar Servicio** — primer servicio: nombre, categoría, precio, disponibilidad
+
+Detección OAuth: `sessionStorage.getItem('auth_provider')` ∈ `['google','facebook','tiktok']`.
 
 Al completar/omitir: cookie `onboarding_completed=true; max-age=31536000` → redirect a `/artist/dashboard`.
 
-Botón **"Omitir"** disponible en header (pasos 1-3) y debajo del botón "Finalizar" (paso 4).
+Botón **"Omitir"** disponible en header (pasos 1-3) y debajo del botón "Finalizar" (último paso).
 
 ### Cliente (`/onboarding`) — 3 pasos:
 1. **Bienvenida** — hero con CTA "Comenzar" y "Omitir"
@@ -494,9 +497,45 @@ Cada servicio tiene su propio conjunto de docs:
 
 ---
 
-### 🆕 Completado (1 abril 2026) — commits `c4c881b`, `5f124ef`
+### 🆕 Completado (1 abril 2026) — commits `f1363d2`, refactor, `2c26348`, `f623985`
 
-#### Admin: Verificación de artistas con vista de datos completa
+#### Búsqueda de artistas — `buscar-artistas/page.tsx`
+- Search bar agrandado: `py-1.5 text-xs w-48` → `py-2.5 text-sm w-80`, ícono lupa `h-3.5→h-4`, `rounded-lg→rounded-xl`
+- Contador reducido: `<h2 font-semibold text-gray-900>` → `<p text-xs font-medium text-gray-500>`
+- Subtexto de ubicación: `text-xs` → `text-[10px]`
+- Firebase API key con fallback hardcoded en `src/lib/firebase.ts` para evitar error en build Docker
+
+#### Búsqueda de artistas — normalización y OR search
+- `useInfiniteArtists.ts` en `web-client`: función `stripAccents()`, mapa `CATEGORY_ALIASES`, función `resolveFilters()` para normalizar búsquedas con acento/alias
+- `artists-service`: búsqueda OR en 4 campos (`nombre`, `artistName`, `bio`, `city`) con normalización de acentos en backend
+
+#### Admin: Verificación de artistas — rediseño completo del drawer
+- Drawer convertido a **modal centrado** (`fixed inset-0 z-50 flex items-center justify-center p-4`, inner `max-w-lg max-h-[90vh]`)
+- Layout de **3 pestañas**: Perfil | Documentos | Decisión
+  - **Perfil**: strip de identidad, tarjeta de proveedor con SVG inline (Google/Facebook/TikTok/Email), banner de rechazo anterior, grid de stats, filas de info
+  - **Documentos**: tipo/número de documento, imágenes clickables, checklist interactivo 4 ítems con contador `x/4`, banner verde cuando todo OK
+  - **Decisión**: banner de estado, notas de admin, cards toggle (Verificar/Rechazar), campo de razón de rechazo (solo si Rechazar)
+- Componente `CheckItem` añadido
+- Footer context-aware: acciones rápidas desde Perfil/Docs, botones Ejecutar desde Decisión
+
+#### Columnas DB añadidas a `piums_auth.users`
+- `rejectionReason String?` y `adminNotes String?` agregados via SQL directo + schema Prisma actualizado
+- `admin.controller.ts`: `getArtistDetail` devuelve campos extendidos; `verifyArtist` acepta `{ isVerified, rejectionReason?, adminNotes? }`
+- `AdminArtistDetail` interface y `artistsApi.verify()` actualizados en `web-admin/src/lib/api.ts`
+
+#### Onboarding artista — paso de identidad para OAuth
+- Paso 3 extra insertado **solo para usuarios OAuth** (Google/Facebook/TikTok)
+- Detección: `sessionStorage.getItem('auth_provider')` seteado por `/auth/callback/page.tsx`
+- `totalSteps` dinámico: `isOAuthUser ? 5 : 4`
+- Step 3 UI: select tipo doc (CC/CE/Pasaporte/NIT/TI), número, 3 zonas de upload (frente=required, reverso=optional, selfie=required) con preview base64 + `capture="environment"` para móvil
+- `handleFinish`: si OAuth, hace `PATCH /api/auth/profile` con `documentType/Number/FrontUrl/BackUrl/SelfieUrl` antes de crear perfil artista
+- Navegación actualizada: paso 4=Portfolio, paso 5=Servicio
+
+#### Datos de prueba — Maria López (`maria.onboarding@piums.com`)
+- `piums_auth.users`: nombre, ciudad=Medellín, emailVerified=true, provider=email, status=ACTIVE
+- `documentType`=Cédula, `documentNumber`=1098234567, URLs de frente/reverso/selfie con fotos Unsplash
+
+#### Admin: Verificación de artistas con vista de datos completa (commits `c4c881b`, `5f124ef`)
 - **Bug corregido**: `artistsApi.verify()` enviaba `{ approved }` pero backend lee `{ isVerified }` — verificación rota; ya corregido
 - **Nuevo endpoint** `GET /admin/artists/:id` (`getArtistDetail` en `admin.controller.ts`): devuelve perfil completo (avatar, ciudad, documentos de identidad, último acceso, stats de reservas y reseñas)
 - **`AdminArtistDetail`** interface + `artistsApi.detail(id)` en `api.ts`
