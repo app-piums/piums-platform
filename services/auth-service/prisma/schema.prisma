@@ -18,6 +18,7 @@ model User {
   provider            String?
   googleId            String?             @unique
   facebookId          String?             @unique
+  tiktokId            String?             @unique
   role                String              @default("user")
   isBlocked           Boolean             @default(false)
   isVerified          Boolean             @default(false)

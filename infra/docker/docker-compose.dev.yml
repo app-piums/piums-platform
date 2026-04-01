@@ -105,6 +105,9 @@ services:
       ARTISTS_SERVICE_URL: http://artists-service:4003
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003
       FIREBASE_API_KEY: AIzaSyChoNjHVlq3iW3lWfoa9iObrQmFOLgRvPo
+      TIKTOK_CLIENT_KEY: awux3plhoxtgp6o0
+      TIKTOK_CLIENT_SECRET: yfegVNVBisOrTAuRMUoZ3J2aKi1qmDen
+      TIKTOK_CALLBACK_URL: http://localhost:4001/auth/tiktok/callback
     depends_on:
       postgres:
         condition: service_healthy
