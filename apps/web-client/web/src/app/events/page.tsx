@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ClientSidebar from '@/components/ClientSidebar';
@@ -257,6 +258,7 @@ export default function EventsPage() {
     return (
       <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
         <ClientSidebar userName={userName} />
+        <PageHelpButton tourId="eventsTour" />
         <div className="flex-1 min-w-0 flex items-center justify-center">
           <Loading />
         </div>

@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, Service, ServiceCategory } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 
 type PricingType = 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
 
@@ -87,7 +88,10 @@ export default function ArtistServicesPage() {
       const message = getErrorMessage(err);
       console.error('Error loading services:', message);
       setError(message || 'Error al cargar los servicios');
-      if (isUnauthorizedError(err)) {
+      if (isArtistNotFoundError(err)) {
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        router.push('/artist/onboarding');
+      } else if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/services');
       }
     } finally {
@@ -98,6 +102,14 @@ export default function ArtistServicesPage() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  // Auto-open create modal when coming from dashboard with ?create=1
+  useEffect(() => {
+    if (!isLoading && new URLSearchParams(window.location.search).get('create') === '1') {
+      openCreate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
   const openCreate = () => {
     setEditingService(null);
@@ -202,6 +214,7 @@ export default function ArtistServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistServicesTour" />
 
       <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
         <div className="max-w-7xl mx-auto">

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { StatsCards } from '@/components/artist/StatsCards';
 import { sdk, Booking } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
 
 type ArtistStats = Awaited<ReturnType<typeof sdk.getArtistStats>>;
@@ -60,7 +61,10 @@ export default function ArtistDashboardPage() {
       console.error('Error loading dashboard:', message);
       setError(message || 'Error al cargar el dashboard');
 
-      if (isUnauthorizedError(err)) {
+      if (isArtistNotFoundError(err)) {
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        router.push('/artist/onboarding');
+      } else if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard');
       }
     } finally {
@@ -92,6 +96,7 @@ export default function ArtistDashboardPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <DashboardSidebar />
+        <PageHelpButton tourId="artistTour" />
         <main className="flex-1 p-4 pt-20 sm:p-8 lg:pt-8">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
@@ -162,19 +167,19 @@ export default function ArtistDashboardPage() {
                 </svg>
               </div>
               <button
-                onClick={() => router.push('/artist/dashboard/services')}
+                onClick={() => router.push('/artist/dashboard/services?create=1')}
                 className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all text-sm font-medium">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span>Crear oferta</span>
+                <span>Crear servicio</span>
               </button>
             </div>
           </div>
 
           {/* Stats Cards */}
           {stats && (
-            <div className="mb-6">
+            <div id="artist-dashboard-stats" className="mb-6">
               <StatsCards
                 bookingsThisMonth={stats.bookings.thisMonth}
                 totalRevenue={stats.revenue.total}
@@ -192,7 +197,7 @@ export default function ArtistDashboardPage() {
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Due Soon Card */}
-            <div className="lg:col-span-2">
+            <div id="artist-dashboard-upcoming" className="lg:col-span-2">
               {upcomingBookings.length > 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between mb-4">
@@ -264,7 +269,7 @@ export default function ArtistDashboardPage() {
             </div>
 
             {/* Profile Strength Card */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
+            <div id="artist-dashboard-profile-strength" className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
               <h3 className="text-lg font-bold mb-4">Fortaleza del Perfil</h3>
               {(() => {
                 const checks = [
@@ -316,7 +321,7 @@ export default function ArtistDashboardPage() {
           </div>
 
           {/* Revenue Overview Chart */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+          <div id="artist-dashboard-revenue" className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900">Resumen de Ingresos</h3>
               <select className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
@@ -377,7 +382,7 @@ export default function ArtistDashboardPage() {
           </div>
 
           {/* Upcoming Gigs Calendar */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div id="artist-dashboard-gigs" className="bg-white rounded-2xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900">Próximas Presentaciones</h3>
               <button 

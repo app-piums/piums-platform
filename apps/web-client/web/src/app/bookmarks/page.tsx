@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Link from 'next/link';
 import Image from 'next/image';
 import ClientSidebar from '@/components/ClientSidebar';
@@ -34,6 +35,7 @@ export default function BookmarksPage() {
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+        <PageHelpButton tourId="bookmarksTour" />
 
       <div className="flex-1 min-w-0 overflow-y-auto">
         {/* Header */}

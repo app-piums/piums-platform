@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -170,7 +171,10 @@ export default function ArtistSettingsPage() {
       console.error('Error loading profile:', message);
       setError(message || 'Error al cargar el perfil');
       
-      if (isUnauthorizedError(err)) {
+      if (isArtistNotFoundError(err)) {
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        router.push('/artist/onboarding');
+      } else if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/settings');
       }
     } finally {
@@ -382,6 +386,7 @@ export default function ArtistSettingsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <DashboardSidebar />
+        <PageHelpButton tourId="artistSettingsTour" />
         <main className="flex-1 p-4 pt-20 sm:p-8 lg:pt-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">

@@ -618,3 +618,119 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────
+// POST /auth/firebase  — exchange Firebase ID token for a PIUMS JWT
+// ─────────────────────────────────────────────────────────────────────────
+export const firebaseLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { idToken, role = 'artista' } = req.body;
+
+    if (!idToken || typeof idToken !== 'string') {
+      throw new AppError(400, 'Firebase ID token requerido');
+    }
+
+    // Verify the Firebase ID token using the Identity Toolkit REST API
+    const firebaseApiKey = process.env.FIREBASE_API_KEY;
+    if (!firebaseApiKey) {
+      throw new AppError(500, 'Firebase API key no configurada en el servidor');
+    }
+
+    const tokenInfoRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+
+    if (!tokenInfoRes.ok) {
+      throw new AppError(401, 'Token de Google inválido o expirado');
+    }
+
+    const tokenData = await tokenInfoRes.json() as {
+      users?: Array<{
+        localId: string;
+        email: string;
+        displayName?: string;
+        photoUrl?: string;
+        emailVerified?: boolean;
+      }>;
+    };
+
+    const firebaseUser = tokenData.users?.[0];
+    if (!firebaseUser) {
+      throw new AppError(401, 'Token de Google inválido o expirado');
+    }
+
+    const { localId: googleId, email, displayName: name, photoUrl: picture } = firebaseUser;
+
+    if (!email) {
+      throw new AppError(400, 'No se pudo obtener el email desde Google');
+    }
+
+    // Find existing user by googleId or email
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ googleId }, { email }] },
+    });
+
+    if (user) {
+      // Update googleId if not set, and avatar if we have one
+      if (!user.googleId || (picture && !user.avatar)) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: user.googleId ?? googleId,
+            provider: user.provider ?? 'google',
+            avatar: user.avatar ?? picture ?? undefined,
+          },
+        });
+      }
+
+      // Check account status
+      if (user.status === 'BANNED') {
+        throw new AppError(403, 'Esta cuenta ha sido suspendida permanentemente');
+      }
+      if (user.status === 'SUSPENDED') {
+        throw new AppError(403, 'Esta cuenta está suspendida temporalmente');
+      }
+    } else {
+      // Create new artist account automatically via Google
+      user = await prisma.user.create({
+        data: {
+          nombre: name ?? email.split('@')[0],
+          email,
+          googleId,
+          provider: 'google',
+          avatar: picture ?? undefined,
+          role,
+          emailVerified: true,
+          status: 'ACTIVE',
+          passwordHash: null,
+        },
+      });
+      logger.info('New user via Firebase Google', 'AUTH_CONTROLLER', { userId: user.id, email });
+    }
+
+    // Issue PIUMS tokens
+    const jti = crypto.randomUUID();
+    const token = tokenService.signAccessToken({ id: user.id, email: user.email, role: user.role, jti });
+    const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
+
+    await tokenService.createRefreshToken(user.id, refreshToken, req.ip, req.get('user-agent'));
+    await prisma.session.create({
+      data: { jti, userId: user.id, ipAddress: req.ip, userAgent: req.get('user-agent'), expiresAt: new Date(Date.now() + 3600 * 1000) },
+    });
+
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), lastLoginIp: req.ip } });
+
+    const { passwordHash: _, ...userResponse } = user;
+
+    logger.info('Firebase Google login success', 'AUTH_CONTROLLER', { userId: user.id });
+
+    return res.json({ user: userResponse, token, refreshToken, isNewUser: !user.lastLoginAt || user.lastLoginAt.getTime() === user.createdAt.getTime() });
+  } catch (error: any) {
+    next(error);
+  }
+};

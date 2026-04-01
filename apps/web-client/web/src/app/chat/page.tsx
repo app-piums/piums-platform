@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, Suspense } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Conversation, Message } from '@/types/chat';
@@ -212,6 +213,7 @@ function ChatPageInner() {
   return (
     <div className="flex bg-gray-50 overflow-hidden" style={{ height: '100dvh' }}>
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+        <PageHelpButton tourId="chatTour" />
 
       {/* Main Chat Layout */}
       <div className="flex flex-1 overflow-hidden relative pt-14 lg:pt-0">

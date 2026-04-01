@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
 import { Loading } from '@/components/Loading';
@@ -190,6 +191,7 @@ function ArtistsPageContent() {
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+        <PageHelpButton tourId="artistsTour" />
       <LocationPermissionPrompt onCountryDetected={handleCountryDetected} />
 
       <div className="flex-1 min-w-0 flex flex-col">

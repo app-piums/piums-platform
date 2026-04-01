@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -478,6 +479,7 @@ export default function BookingsPage() {
   return (
     <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
       <ClientSidebar userName={userName} />
+        <PageHelpButton tourId="bookingsTour" />
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top bar */}
         <header className="bg-white border-b border-gray-100 px-4 lg:px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 mt-14 lg:mt-0">

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { ReportModal } from '@/components/ReportModal';
 import { toast } from '@/lib/toast';
 
@@ -46,7 +47,10 @@ export default function ArtistReviewsPage() {
       console.error('Error loading reviews:', message);
       setError(message || 'Error al cargar las reviews');
 
-      if (isUnauthorizedError(err)) {
+      if (isArtistNotFoundError(err)) {
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        router.push('/artist/onboarding');
+      } else if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/reviews');
       }
     } finally {
@@ -111,6 +115,7 @@ export default function ArtistReviewsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistReviewsTour" />
       
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">

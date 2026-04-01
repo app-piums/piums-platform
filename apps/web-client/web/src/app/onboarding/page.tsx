@@ -5,22 +5,22 @@ import React, { useState } from 'react';
 
 /* ─── Categorías de interés ─────────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: 'photography',     label: 'Fotografía',         subtitle: 'Retratos, eventos, editorial',    icon: CameraIcon   },
-  { id: 'graphic-design',  label: 'Diseño Gráfico',     subtitle: 'Branding, editorial, UI',          icon: PenIcon      },
-  { id: 'music-production',label: 'Producción Musical', subtitle: 'Beats, mezcla, masterización',     icon: MusicIcon    },
-  { id: 'performance',     label: 'Performance',        subtitle: 'Música en vivo, DJs, shows',       icon: MicIcon      },
-  { id: 'digital-art',     label: 'Arte Digital',       subtitle: 'Ilustración, 3D, animación',       icon: PaletteIcon  },
-  { id: 'video',           label: 'Video',              subtitle: 'Cinematografía, edición',          icon: VideoIcon    },
+  { id: 'live-music',      label: 'Música en Vivo',     subtitle: 'Bandas, solistas, acústico',       icon: MicIcon      },
+  { id: 'dj',              label: 'DJs & Electrónica',  subtitle: 'Fiestas, clubs, bodas',            icon: SoundwaveIcon},
+  { id: 'photography',     label: 'Fotografía',         subtitle: 'Eventos, retratos, bodas',         icon: CameraIcon   },
+  { id: 'video',           label: 'Video & Contenido',  subtitle: 'Clips, documentales, redes',       icon: VideoIcon    },
+  { id: 'graphic-design',  label: 'Diseño & Branding',  subtitle: 'Flyers, logos, portadas',          icon: PenIcon      },
+  { id: 'music-production',label: 'Producción Musical', subtitle: 'Beats, mezcla, grabación',         icon: MusicIcon    },
 ];
 
 /* ─── Sub-etiquetas por categoría ────────────────────────────────────────── */
 const SUBCATEGORIES: Record<string, { sectionLabel: string; tags: string[] }> = {
-  'photography':      { sectionLabel: 'Estilos de Fotografía', tags: ['Retratos', 'Editorial', 'Eventos', 'Urbana', 'Film', 'Producto'] },
-  'graphic-design':   { sectionLabel: 'Diseño Visual',         tags: ['Branding & Identidad', 'Animación 3D', 'Tipografía', 'Ilustración', 'UX Design', 'Motion'] },
-  'music-production': { sectionLabel: 'Géneros Musicales',     tags: ['Jazz', 'Rock & Roll', 'Hip-Hop', 'Techno', 'Clásica', 'Indie Pop'] },
-  'performance':      { sectionLabel: 'Tipos de Performance',  tags: ['Banda en Vivo', 'Set DJ', 'Artista Solo', 'Comedia', 'Teatro', 'Danza'] },
-  'digital-art':      { sectionLabel: 'Estilos de Arte Digital',tags: ['Arte Conceptual', 'Diseño de Personajes', 'Modelado 3D', 'Motion Graphics', 'Pixel Art'] },
-  'video':            { sectionLabel: 'Estilos de Video',      tags: ['Cinematográfico', 'Documental', 'Comercial', 'Video Musical', 'Bodas', 'Cortometraje'] },
+  'live-music':       { sectionLabel: 'Estilo Musical',        tags: ['Banda de Rock', 'Jazz & Blues', 'Pop Acústico', 'Cantautor', 'Clásica', 'Folklore & Regional'] },
+  'dj':               { sectionLabel: 'Géneros & Ocasiones',   tags: ['House & Tech', 'Reggaeton & Urban', 'Pop & Comercial', 'Hip-Hop & Trap', 'DJ para Bodas', 'Festival & Club'] },
+  'photography':      { sectionLabel: 'Estilos de Fotografía', tags: ['Eventos', 'Retratos', 'Editorial', 'Bodas', 'Producto', 'Urbana & Street'] },
+  'video':            { sectionLabel: 'Tipos de Video',        tags: ['Clips Musicales', 'Bodas & Celebraciones', 'Redes Sociales', 'Documental', 'Comercial', 'Cortometraje'] },
+  'graphic-design':   { sectionLabel: 'Servicios de Diseño',   tags: ['Logo & Identidad', 'Flyers & Carteles', 'Portadas de Álbum', 'Redes Sociales', 'Merch & Textil', 'Cartelería de Evento'] },
+  'music-production': { sectionLabel: 'Servicios de Estudio',  tags: ['Beat Making', 'Mezcla & Mastering', 'Grabación en Estudio', 'Composición', 'Arreglos', 'Jingle & Publicidad'] },
 };
 
 /* ─── Componente principal ───────────────────────────────────────────────── */
@@ -130,7 +130,10 @@ function StepWelcome({ onStart }: { onStart: () => void }) {
                 <ArrowRightIcon className="h-4 w-4" />
               </button>
               <button
-                onClick={() => { window.location.href = '/dashboard'; }}
+                onClick={() => {
+                  document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+                  window.location.href = '/dashboard';
+                }}
                 className="text-gray-500 hover:text-gray-800 font-medium transition-colors"
               >
                 Omitir
@@ -276,7 +279,10 @@ function StepInterests({
         Continuar →
       </button>
       <button
-        onClick={() => { window.location.href = '/dashboard'; }}
+        onClick={() => {
+          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+          window.location.href = '/dashboard';
+        }}
         className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
       >
         Omitir por ahora
@@ -335,21 +341,34 @@ function StepRefine({
       </p>
 
       {/* Sections */}
-      <div className="space-y-6 mb-10 overflow-y-auto max-h-[420px] pr-1">
+      <div className="space-y-4 mb-10 overflow-y-auto max-h-[440px] pr-1">
         {toShow.map(catId => {
           const sub = SUBCATEGORIES[catId];
           if (!sub) return null;
           const catInfo = CATEGORIES.find(c => c.id === catId);
           const Icon = catInfo?.icon ?? MusicIcon;
           const activeTags = selectedTags[catId] ?? new Set();
+          const activeCount = activeTags.size;
           return (
-            <div key={catId}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-5 w-5 rounded text-[#FF6A00]">
-                  <Icon className="h-5 w-5" />
+            <div key={catId} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+              {/* Category header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-xl bg-[#FF6A00]/10 flex items-center justify-center text-[#FF6A00]">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 leading-none mb-0.5">{catInfo?.label}</p>
+                    <p className="text-sm font-semibold text-gray-800 leading-none">{sub.sectionLabel}</p>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-800">{sub.sectionLabel}</span>
+                {activeCount > 0 && (
+                  <span className="text-xs font-semibold bg-[#FF6A00] text-white rounded-full px-2 py-0.5">
+                    {activeCount}
+                  </span>
+                )}
               </div>
+              {/* Tags */}
               <div className="flex flex-wrap gap-2">
                 {sub.tags.map(tag => {
                   const active = activeTags.has(tag);
@@ -357,10 +376,10 @@ function StepRefine({
                     <button
                       key={tag}
                       onClick={() => onToggleTag(catId, tag)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
                         active
-                          ? 'bg-[#FF6A00] border-[#FF6A00] text-white'
-                          : 'border-gray-200 text-gray-600 hover:border-[#FF6A00] hover:text-[#FF6A00]'
+                          ? 'bg-[#FF6A00] border-[#FF6A00] text-white shadow-sm shadow-orange-200/60'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-[#FF6A00] hover:text-[#FF6A00]'
                       }`}
                     >
                       {tag}
@@ -381,7 +400,10 @@ function StepRefine({
         Ir a mi Dashboard →
       </button>
       <button
-        onClick={() => { window.location.href = '/dashboard'; }}
+        onClick={() => {
+          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+          window.location.href = '/dashboard';
+        }}
         className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
       >
         Omitir por ahora

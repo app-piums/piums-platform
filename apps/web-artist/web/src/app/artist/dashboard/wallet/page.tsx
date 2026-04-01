@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { DashboardSidebar } from "@/components/artist/DashboardSidebar";
 
 const MOCK_TRANSACTIONS = [
@@ -34,6 +35,7 @@ export default function WalletPage() {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistWalletTour" />
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8 max-w-4xl">
           {/* Header */}

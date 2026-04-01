@@ -6,6 +6,8 @@ import { FavoritesProvider } from "../contexts/FavoritesContext";
 import { QueryProvider } from "../providers/QueryProvider";
 import { PWAInitializer } from "../components/PWAInitializer";
 import { I18nProvider } from "../providers/I18nProvider";
+import { NextStepProvider } from "nextstepjs";
+import { NextStepWrapper } from "../components/NextStepWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,7 +60,11 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <FavoritesProvider>
-                {children}
+                <NextStepProvider>
+                  <NextStepWrapper>
+                    {children}
+                  </NextStepWrapper>
+                </NextStepProvider>
                 <PWAInitializer />
               </FavoritesProvider>
             </AuthProvider>

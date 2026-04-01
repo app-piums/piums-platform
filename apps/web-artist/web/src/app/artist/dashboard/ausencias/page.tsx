@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, TravelAbsence, CreateAbsencePayload } from '@piums/sdk';
@@ -135,6 +136,7 @@ export default function AusenciasPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistAusenciasTour" />
 
       <main className="flex-1 lg:ml-72 p-6 max-w-3xl mx-auto w-full">
         {/* Header */}

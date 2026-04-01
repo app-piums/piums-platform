@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 import ClientSidebar from '@/components/ClientSidebar';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { NotificationBell } from '@/components/NotificationBell';
 import { sdk, Artist, Booking } from '@piums/sdk';
 
@@ -21,8 +22,12 @@ const COLORS = [
 
 function MiniCalendar({ bookings }: { bookings: Booking[] }) {
   const now = new Date();
+  const calRouter = useRouter();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
+
+  const toDateStr = (y: number, m: number, d: number) =>
+    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
   const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const dayNames = ['L','M','M','J','V','S','D'];
@@ -92,13 +97,37 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
         {cells.map((day, i) => {
           if (!day) return <div key={i} />;
           const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
+          const isPast = new Date(year, month, day) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const event = bookedDays[day];
+          const dateStr = toDateStr(year, month, day);
+          const handleDayClick = () => {
+            if (isPast) return;
+            if (event) {
+              calRouter.push(`/bookings/${event.id}`);
+            } else {
+              calRouter.push(`/buscar-artistas?date=${dateStr}`);
+            }
+          };
           return (
             <div key={i} className="flex flex-col items-center">
-              <div className={`h-8 w-8 flex items-center justify-center rounded-full text-sm font-medium cursor-pointer transition-colors
-                ${isToday ? 'bg-[#FF6A00] text-white' : event ? 'bg-orange-100 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}>
+              <button
+                type="button"
+                onClick={handleDayClick}
+                disabled={isPast}
+                title={isPast ? undefined : event ? `Ver reserva: ${event.label}` : `Buscar artistas para ${dateStr}`}
+                className={[
+                  'h-8 w-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors',
+                  isPast
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : isToday
+                    ? 'bg-[#FF6A00] text-white cursor-pointer'
+                    : event
+                    ? 'bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200'
+                    : 'text-gray-700 hover:bg-orange-50 hover:text-[#FF6A00] cursor-pointer',
+                ].join(' ')}
+              >
                 {day}
-              </div>
+              </button>
               {event && (
                 <span className={`h-1.5 w-1.5 rounded-full mt-0.5 ${event.color}`} title={event.label} />
               )}
@@ -123,7 +152,7 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
         )}
       </div>
 
-      <Link href="/booking" className="mt-5 w-full py-2.5 rounded-xl bg-[#FF6A00] text-white text-sm font-semibold hover:bg-[#e05e00] transition-colors flex items-center justify-center">
+      <Link href="/artists" className="mt-5 w-full py-2.5 rounded-xl bg-[#FF6A00] text-white text-sm font-semibold hover:bg-[#e05e00] transition-colors flex items-center justify-center">
         + Agendar proyecto
       </Link>
     </div>
@@ -181,6 +210,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <ClientSidebar userName={displayName} />
+      <PageHelpButton tourId="clientTour" />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center justify-between">
@@ -221,7 +251,7 @@ export default function DashboardPage() {
 
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Left: Calendar with real bookings */}
-            <div className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div id="dashboard-calendar" className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold text-gray-900">Reservas del Mes</h2>
                 <Link href="/bookings" className="text-sm text-[#FF6A00] font-medium hover:underline">
@@ -237,38 +267,36 @@ export default function DashboardPage() {
 
             {/* Right column */}
             <div className="lg:w-72 shrink-0 space-y-4">
-              {/* Nearby Creatives */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <h2 className="font-semibold text-gray-900 mb-3">Creativos Cerca de Ti</h2>
-                <div className="h-36 rounded-xl bg-gradient-to-br from-teal-100 to-blue-100 relative overflow-hidden mb-3 flex items-center justify-center">
-                  <div className="absolute inset-0 opacity-20"
-                    style={{ backgroundImage: 'repeating-linear-gradient(0deg,#94a3b8 0,#94a3b8 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,#94a3b8 0,#94a3b8 1px,transparent 1px,transparent 40px)' }}
+              {/* Buscar por fecha — shortcut to new discovery page */}
+              <Link
+                id="dashboard-search-by-date"
+                href="/buscar-artistas"
+                className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 block hover:shadow-md hover:-translate-y-0.5 transition-all group"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <h2 className="font-semibold text-gray-900">Buscar por Fecha</h2>
+                  <svg className="h-4 w-4 text-gray-400 group-hover:text-[#FF6A00] transition-colors ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <div className="h-36 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 relative overflow-hidden mb-3 flex flex-col items-center justify-center gap-2">
+                  <div className="absolute inset-0 opacity-10"
+                    style={{ backgroundImage: 'repeating-linear-gradient(0deg,#f97316 0,#f97316 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,#f97316 0,#f97316 1px,transparent 1px,transparent 40px)' }}
                   />
-                  <div className="relative z-10 bg-[#FF6A00] text-white h-8 w-8 rounded-full flex items-center justify-center shadow-lg">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
+                  <div className="relative z-10 bg-[#FF6A00] text-white h-10 w-10 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
+                  <p className="relative z-10 text-xs text-orange-700 font-medium">Elige fecha + ubicación</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{recommendedArtists.length > 0 ? `${recommendedArtists.length} artistas registrados` : 'Explora artistas'}</p>
-                    <div className="flex -space-x-2 mt-1">
-                      {recommendedArtists.slice(0, 3).map((a, i) => (
-                        <div key={a.id} className={`h-6 w-6 rounded-full bg-gradient-to-br ${COLORS[i % COLORS.length]} border-2 border-white flex items-center justify-center text-white text-[8px] font-bold`}>
-                          {a.nombre?.charAt(0) ?? '?'}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <Link href="/artists" className="text-xs font-semibold text-[#FF6A00] border border-[#FF6A00]/30 rounded-lg px-3 py-1.5 hover:bg-[#FF6A00]/5 transition-colors">
-                    Ver galería
-                  </Link>
-                </div>
-              </div>
+                <p className="text-xs text-gray-500">
+                  Selecciona el día de tu evento y descubre artistas disponibles ordenados por cercanía.
+                </p>
+              </Link>
 
               {/* Next session — real data */}
-              <div className="bg-gray-900 rounded-2xl p-5 text-white">
+              <div id="dashboard-next-session" className="bg-gray-900 rounded-2xl p-5 text-white">
                 <p className="text-xs text-gray-400 mb-1">Próxima Sesión</p>
                 {nextBooking ? (
                   <>
@@ -297,7 +325,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Recommended Artists — real data */}
-          <div className="mt-6">
+          <div id="dashboard-recommended" className="mt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">Recomendados para Ti</h2>
               <Link href="/artists" className="text-sm text-[#FF6A00] font-medium hover:underline">Ver todos →</Link>

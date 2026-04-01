@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { headers } from "next/headers";
 
-const CLIENT_APP_URL = process.env.NEXT_PUBLIC_CLIENT_APP_URL || "http://localhost:3000";
-
-export default function Home() {
+export default async function Home() {
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3001';
+  const hostname = host.split(':')[0];
+  const CLIENT_APP_URL = `http://${hostname}:3000`;
   return (
     <>
       <div className="flex min-h-screen flex-col bg-zinc-950">

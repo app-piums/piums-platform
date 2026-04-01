@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { Loading } from '@/components/Loading';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,6 +86,7 @@ export default function ProfilePage() {
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <ClientSidebar userName={userName} onNavigateAttempt={handleGlobalNavigationAttempt} />
+        <PageHelpButton tourId="profileTour" />
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Desktop header */}

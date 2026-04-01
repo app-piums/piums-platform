@@ -119,7 +119,7 @@ export default function BookingConfirmationPage() {
     if (!bookingId) return;
     
     // Abrir PDF en nueva ventana para descarga
-    const pdfUrl = `http://localhost:3000/api/booking/bookings/${bookingId}/pdf`;
+    const pdfUrl = `/api/booking/bookings/${bookingId}/pdf`;
     window.open(pdfUrl, '_blank');
   };
 

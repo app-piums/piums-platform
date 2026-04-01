@@ -75,7 +75,16 @@ export default function ArtistOnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    // Create minimal profile if needed, then go to dashboard
+    try {
+      await fetch('/api/artist/create-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ category: 'OTRO', specialties: ['OTRO'] }),
+      });
+    } catch { /* ignore — profile may already exist */ }
     document.cookie = 'onboarding_completed=true; path=/; max-age=31536000';
     router.push('/artist/dashboard');
   };
@@ -112,11 +121,35 @@ export default function ArtistOnboardingPage() {
   const handleFinish = async () => {
     setIsLoading(true);
     try {
-      // TODO: Enviar datos del onboarding al backend
-      // await sdk.completeOnboarding({...datos})
-      
-      // Simular delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Map discipline id to category value expected by artists-service
+      const disciplineCategoryMap: Record<string, string> = {
+        musician: 'MUSICO', dj: 'DJ', photographer: 'FOTOGRAFO',
+        filmmaker: 'OTRO', 'graphic-designer': 'OTRO',
+        illustrator: 'PINTOR', dancer: 'OTRO', mc: 'OTRO',
+        writer: 'OTRO', other: 'OTRO',
+      };
+      const category = disciplineCategoryMap[selectedDiscipline || ''] || 'OTRO';
+
+      const res = await fetch('/api/artist/create-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          category,
+          specialties: [category],
+          bio: shortBio || undefined,
+          instagram: instagramHandle || undefined,
+          website: portfolioUrl || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        // If artist profile already exists (409), just proceed
+        if (res.status !== 409) {
+          throw new Error(data.message || 'Error al crear perfil');
+        }
+      }
 
       // Marcar onboarding como completado (cookie)
       document.cookie = 'onboarding_completed=true; path=/; max-age=31536000'; // 1 año

@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { QueryProvider } from "../providers/QueryProvider";
 import { PWAInitializer } from "../components/PWAInitializer";
+import { NextStepProvider } from "nextstepjs";
+import { NextStepWrapper } from "../components/NextStepWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,7 +70,11 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            {children}
+            <NextStepProvider>
+              <NextStepWrapper>
+                {children}
+              </NextStepWrapper>
+            </NextStepProvider>
             <PWAInitializer />
           </AuthProvider>
         </QueryProvider>

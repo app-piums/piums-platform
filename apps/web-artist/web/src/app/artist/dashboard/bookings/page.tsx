@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
@@ -215,6 +216,7 @@ export default function ArtistBookingsPage() {
   return (
     <div className="flex min-h-screen bg-[#FAFAFA] overflow-x-hidden">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistGigsTour" />
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top bar */}

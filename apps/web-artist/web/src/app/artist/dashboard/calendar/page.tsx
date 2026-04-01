@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, BlockedSlot, Booking } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 
 type DayStatus = 'available' | 'blocked' | 'occupied' | 'partial';
 
@@ -66,7 +67,10 @@ export default function ArtistCalendarPage() {
         return loadMonthData(profile.id, currentMonth);
       })
       .catch((err) => {
-        if (isUnauthorizedError(err)) router.push('/login');
+        if (isArtistNotFoundError(err)) {
+          document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+          router.push('/artist/onboarding');
+        } else if (isUnauthorizedError(err)) router.push('/login');
       })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -206,6 +210,7 @@ export default function ArtistCalendarPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <DashboardSidebar />
+        <PageHelpButton tourId="artistCalendarTour" />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-gray-500">Cargando calendario...</div>
         </main>

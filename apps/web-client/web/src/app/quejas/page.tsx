@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ClientSidebar from '@/components/ClientSidebar';
@@ -78,6 +79,7 @@ export default function QuejasPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <ClientSidebar userName={userName} />
+        <PageHelpButton tourId="quejasTour" />
 
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
         {/* Mobile header */}
