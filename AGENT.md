@@ -1,7 +1,7 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
-**Fecha de última actualización**: 30 de marzo de 2026
-**Último commit**: `dave` branch — fix(web): ReportModal z-index, toast system, rating sync, GTQ currency
+**Fecha de última actualización**: 1 de abril de 2026
+**Último commit**: `dave` branch — feat: TikTok OAuth 2.0 Login Kit integration (`5f124ef`)
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
 **Credenciales de prueba**: `artista@piums.com` / `Test1234!`
@@ -41,7 +41,7 @@ Opera bajo la **moneda GTQ (Quetzal guatemalteco)**. Locale: `es-GT`. Símbolo: 
 - **Base de datos**: PostgreSQL 16 (una DB por servicio, prefijo `piums_*`)
 - **Cache/Queues**: Redis 7
 - **Frontend**: Next.js 14 (App Router) + Tailwind CSS
-- **Auth**: JWT + cookies HTTP-only + Passport.js (Google, Facebook OAuth) + TikTok OAuth (planificado)
+- **Auth**: JWT + cookies HTTP-only + Passport.js (Google, Facebook OAuth) + TikTok OAuth 2.0 PKCE (implementado)
 - **Pagos**: Stripe (PaymentIntents + Connect para payouts a artistas)
 - **Monorepo**: pnpm workspaces
 - **Infra**: Docker Compose (dev) + Kubernetes (staging/prod) + Nginx + Terraform
@@ -441,7 +441,7 @@ Cada servicio tiene su propio conjunto de docs:
 ### ✅ Completado (actualizado)
 - Arquitectura de microservicios completa (9 servicios)
 - API Gateway con proxy, auth middleware, rate limiting
-- Auth completo: JWT, refresh tokens, OAuth (Google/Facebook), 2FA preparado
+- Auth completo: JWT, refresh tokens, OAuth (Google/Facebook/TikTok), 2FA preparado
 - Schemas Prisma de todos los servicios sincronizados
 - Sistema de booking con códigos PIU-YYYY-NNNNNN y quote snapshots
 - Sistema de payouts a artistas (Stripe Connect, fee 15%)
@@ -458,7 +458,7 @@ Cada servicio tiene su propio conjunto de docs:
 - **Sistema de Eventos multi-artista** (commit `874e704`): CRUD de eventos en booking-service, páginas `/events` y `/events/[id]`, AddToEventModal en `/bookings`, asociación de evento en paso 3 del wizard de booking
 - **Filtros de artistas corregidos** (commit `6bd4c77`): categorías, ciudades (regiones reales), búsqueda por texto `q`
 - **Regiones dinámicas**: `CITIES_BY_COUNTRY` con GT (22 depto), MX, HN, SV, CR, CO
-- **web-admin**: Panel de administración con Moderación (Reportes + Quejas fusionados en una sola página con tabs y badge de conteo)
+- **web-admin**: Panel de administración con Moderación (Reportes + Quejas fusionados en una sola página con tabs y badge de conteo). Verificación de artistas con drawer de detalle completo (avatar, stats, documentos de identidad, botón Verificar/Revocar)
 - Migración completa de moneda: MXN → **GTQ** en codebase entero (schemas, servicios, frontend, mocks)
 - `Intl.NumberFormat('es-GT', { currency: 'GTQ' })` en todos los componentes de precio
 - docker-compose.dev.yml con stack completo
@@ -494,73 +494,48 @@ Cada servicio tiene su propio conjunto de docs:
 
 ---
 
-### 🆕 Planificado / En diseño: Login Social Extendido
+### 🆕 Completado (1 abril 2026) — commits `c4c881b`, `5f124ef`
 
-#### Estado Actual del OAuth
-- ✅ **Google OAuth** — implementado con Passport.js (`passport-google-oauth20`)
-  - Ruta: `GET /api/auth/google` → callback `GET /api/auth/google/callback`
-  - Scope: `profile email`
-  - Variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
-- ✅ **Facebook OAuth** — implementado con Passport.js (`passport-facebook`)
-  - Ruta: `GET /api/auth/facebook` → callback `GET /api/auth/facebook/callback`
-  - Scope: `email`
-  - Variables: `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_CALLBACK_URL`
-- 🔄 **TikTok OAuth** — planificado (ver detalles abajo)
+#### Admin: Verificación de artistas con vista de datos completa
+- **Bug corregido**: `artistsApi.verify()` enviaba `{ approved }` pero backend lee `{ isVerified }` — verificación rota; ya corregido
+- **Nuevo endpoint** `GET /admin/artists/:id` (`getArtistDetail` en `admin.controller.ts`): devuelve perfil completo (avatar, ciudad, documentos de identidad, último acceso, stats de reservas y reseñas)
+- **`AdminArtistDetail`** interface + `artistsApi.detail(id)` en `api.ts`
+- **Drawer de detalle** en la página admin de artistas: click en cualquier fila (desktop) o tarjeta (mobile) → panel lateral deslizante con perfil completo, estadísticas, fotos de documentos de identidad (frente/reverso/selfie) y botón Verificar/Revocar directo
 
-#### TikTok OAuth — Plan de Implementación
+#### OAuth: Estado actual
+- ✅ **Google OAuth** — Passport.js (`passport-google-oauth20`). Ruta: `GET /auth/google` → `/auth/google/callback`. Scope: `profile email`. Vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
+- ✅ **Facebook OAuth** — Passport.js (`passport-facebook`). Ruta: `GET /auth/facebook` → `/auth/facebook/callback`. Scope: `email`. Vars: `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_CALLBACK_URL`
+- ✅ **TikTok OAuth** — implementado (Login Kit v2 + PKCE S256)
 
-TikTok usa OAuth 2.0 con PKCE a través del **TikTok Login Kit** (API v2).
+#### TikTok OAuth — Implementación Completada
 
-**Flujo:**
-```
-Usuario pulsa "Continuar con TikTok"
-      ↓
-GET /api/auth/tiktok
-  → Genera code_verifier + code_challenge (PKCE SHA-256)
-  → Guarda code_verifier en sesión
-  → Redirige a: https://www.tiktok.com/v2/auth/authorize?
-        client_key=CLIENT_KEY
-        &response_type=code
-        &scope=user.info.basic,user.info.email
-        &redirect_uri=CALLBACK_URL
-        &code_challenge=...
-        &code_challenge_method=S256
-      ↓
-TikTok redirige a: GET /api/auth/tiktok/callback?code=...
-  → POST https://open.tiktokapis.com/v2/oauth/token/
-        con { client_key, client_secret, code, grant_type: "authorization_code", redirect_uri, code_verifier }
-  → Recibe { access_token, open_id, ... }
-  → GET https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,email
-  → Upsert User en piums_auth DB
-  → Emite JWT + Sets cookie
-  → Redirige a /artist/dashboard o /dashboard
-```
+Flujo OAuth 2.0 PKCE a través del **TikTok Login Kit v2**. No usa Passport.js (no hay librería oficial para v2).
 
-**Variables de entorno a agregar:**
-```env
-TIKTOK_CLIENT_KEY=...         # "Client Key" del TikTok Developer Portal
-TIKTOK_CLIENT_SECRET=...      # "Client Secret" del TikTok Developer Portal
-TIKTOK_CALLBACK_URL=https://api.piums.com/api/auth/tiktok/callback
-```
-
-**Archivos a crear/modificar en auth-service:**
-| Archivo | Acción |
+**Archivos creados/modificados:**
+| Archivo | Cambio |
 |---|---|
-| `src/strategies/tiktok.strategy.ts` | Nueva estrategia custom (no hay `passport-tiktok` v2 oficial) |
-| `src/routes/auth.routes.ts` | Agregar rutas `GET /tiktok` y `GET /tiktok/callback` |
-| `src/controller/auth.controller.ts` | Handlers `tiktokAuth()` y `tiktokCallback()` |
+| `services/auth-service/src/strategies/tiktok.strategy.ts` | Strategy custom: PKCE, token exchange, user fetch, upsert |
+| `services/auth-service/src/routes/oauth.routes.ts` | Rutas `GET /auth/tiktok` y `GET /auth/tiktok/callback` |
+| `services/auth-service/prisma/schema.prisma` | Campo `tiktokId String? @unique` en modelo User |
+| `infra/docker/docker-compose.dev.yml` | Variables `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_CALLBACK_URL` |
 
-**Pantallas de login (frontend) a actualizar:**
-- `apps/web-client/web/src/app/login/page.tsx` — agregar botón TikTok
-- `apps/web-artist/web/src/app/login/page.tsx` — agregar botón TikTok
-- Ícono: SVG de TikTok, fondo negro (`#000000`)
+**Detalles de implementación:**
+- `buildTikTokAuthUrl()` genera `code_verifier` (32 bytes base64url) + `code_challenge` (SHA-256), guarda en sesión Express
+- `exchangeTikTokCode()` hace POST a `https://open.tiktokapis.com/v2/oauth/token/` con `code_verifier`
+- `getTikTokUser()` hace GET a `https://open.tiktokapis.com/v2/user/info/` con `fields=open_id,union_id,avatar_url,display_name`
+- TikTok no provee email → se usa email sintético `tiktok.{openId}@piums.tiktok`
+- Validación CSRF del `state` antes de intercambiar el code
+- Al callback exitoso: emite JWT y redirige a `{FRONTEND_URL}/auth/callback?token=...&provider=tiktok`
+- Botones TikTok ya presentes en login pages de web-client y web-artist (`/api/auth/tiktok`)
 
-**Notas importantes TikTok:**
-- TikTok requiere registro en [developers.tiktok.com](https://developers.tiktok.com) y revisión del app
-- Scope `user.info.email` requiere aprobación especial de TikTok (puede no estar disponible en sandbox)
-- En sandbox, solo cuentas de prueba registradas en el portal pueden autenticarse
-- PKCE es **obligatorio** en TikTok Login Kit v2 (a diferencia de Google/Facebook que lo tienen opcional)
-- No hay librería Passport.js oficial mantenida para TikTok v2 — implementar strategy custom con `fetch`
+**Variables de entorno (ya configuradas en docker-compose.dev.yml):**
+```env
+TIKTOK_CLIENT_KEY=awux3plhoxtgp6o0
+TIKTOK_CLIENT_SECRET=yfegVNVBisOrTAuRMUoZ3J2aKi1qmDen
+TIKTOK_CALLBACK_URL=http://localhost:4001/auth/tiktok/callback
+```
+
+**Pendiente para producción**: registrar `https://api.piums.com/auth/tiktok/callback` como Redirect URI en el portal TikTok Developer. En sandbox solo pueden autenticarse cuentas de prueba registradas en el portal.
 
 ---
 
@@ -588,8 +563,15 @@ TIKTOK_CALLBACK_URL=https://api.piums.com/api/auth/tiktok/callback
   - UI: label cambia a "Viáticos" / "Costo de traslado" según escenario; ícono avión en `PricingBreakdown`
   - `calculatePriceQuote` callback ahora pasa `effectiveDurationMinutes` a la API
 
+### 🆕 Completado (31 marzo 2026) — commit `62402ab`
+
+#### Tours guiados + PageHelpButton
+- Íconos SVG (Heroicons) reemplazaron emojis en todos los tours de web-client y web-artist
+- `PageHelpButton.tsx` — botón flotante `?` (esquina inferior derecha) en todas las páginas principales de ambas apps
+- Mini-tours específicos por página (2-3 pasos) añadidos a `tours.ts` de ambas apps
+- Fix: botones "Omitir" en onboarding ahora setean cookie `onboarding_completed` antes de redirigir
+
 ### ⚠️ Pendiente / Incompleto
-- **TikTok OAuth**: estrategia custom a implementar en auth-service + botones en login pages
 - Stripe Connect: configuración de cuenta bancaria en Settings > Pagos (placeholder)
 - Unit/integration tests
 - Seed data completo (`scripts/seed.sh`) ✅ implementado — ejecutar cuando los servicios estén corriendo
