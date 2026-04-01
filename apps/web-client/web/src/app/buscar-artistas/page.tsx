@@ -616,13 +616,13 @@ function BuscarArtistasContent() {
                   {/* Results header + filters */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
                     <div>
-                      <h2 className="font-semibold text-gray-900">
+                      <p className="text-xs font-medium text-gray-500">
                         {loadingArtists
                           ? 'Buscando artistas…'
                           : `${displayed.length} artista${displayed.length !== 1 ? 's' : ''} encontrado${displayed.length !== 1 ? 's' : ''}`}
-                      </h2>
+                      </p>
                       {!location && !loadingArtists && (
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-[10px] text-gray-400 mt-0">
                           Agrega tu ubicación para ordenar por distancia
                         </p>
                       )}
@@ -631,7 +631,7 @@ function BuscarArtistasContent() {
                     <div className="sm:ml-auto flex items-center gap-2 flex-wrap">
                       {/* Search input */}
                       <div className="relative">
-                        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input
@@ -639,16 +639,16 @@ function BuscarArtistasContent() {
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                           placeholder="Nombre, ciudad, estilo…"
-                          className="pl-8 pr-8 py-1.5 text-xs border border-gray-200 rounded-lg bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] w-48"
+                          className="pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] w-80"
                         />
                         {searchQuery && (
                           <button
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
                             aria-label="Limpiar búsqueda"
                           >
-                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
