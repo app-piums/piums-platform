@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import Image from "next/image";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { ApiError } from "@/lib/api";
 
 interface FieldError {
   email?: string;
@@ -59,7 +60,23 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err: unknown) {
-      setGeneralError(err instanceof Error ? err.message : "Error al iniciar sesión");
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setGeneralError("Correo o contraseña incorrectos");
+        } else if (err.status === 403) {
+          setGeneralError("Tu cuenta no tiene permisos de administrador");
+        } else if (err.status === 423) {
+          setGeneralError("Cuenta bloqueada temporalmente. Contacta al equipo de soporte");
+        } else if (err.status === 429) {
+          setGeneralError("Demasiados intentos fallidos. Espera unos minutos antes de volver a intentarlo");
+        } else if (err.status >= 500) {
+          setGeneralError("Error del servidor. Por favor intenta de nuevo en unos momentos");
+        } else {
+          setGeneralError(err.message || "Error al iniciar sesión");
+        }
+      } else {
+        setGeneralError(err instanceof Error ? err.message : "Error al iniciar sesión");
+      }
     } finally {
       setIsLoading(false);
     }

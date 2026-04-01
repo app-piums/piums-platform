@@ -5,6 +5,17 @@
 
 const API_BASE = "/api";
 
+/** Typed API error that includes the HTTP status code for precise error UI. */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return sessionStorage.getItem("admin_token");
@@ -29,7 +40,7 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.message ?? `HTTP ${res.status}`);
+    throw new ApiError(res.status, body?.message ?? `HTTP ${res.status}`);
   }
 
   return res.json() as Promise<T>;
