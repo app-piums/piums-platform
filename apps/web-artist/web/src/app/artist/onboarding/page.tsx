@@ -61,8 +61,20 @@ export default function ArtistOnboardingPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Step 3 (OAuth only): Identity verification
+  const [isOAuthUser, setIsOAuthUser] = useState(false);
+  const [docType, setDocType] = useState('');
+  const [docNumber, setDocNumber] = useState('');
+  const [docFrontPreview, setDocFrontPreview] = useState<string | null>(null);
+  const [docBackPreview, setDocBackPreview] = useState<string | null>(null);
+  const [docSelfiePreview, setDocSelfiePreview] = useState<string | null>(null);
+
   // Si el artista ya tiene perfil en BD, redirigir al dashboard automáticamente
   useEffect(() => {
+    // Detect OAuth provider from session storage (set by auth/callback page)
+    const provider = sessionStorage.getItem('auth_provider');
+    setIsOAuthUser(['google', 'facebook', 'tiktok'].includes(provider ?? ''));
+
     fetch('/api/artist/profile-check', { credentials: 'include' })
       .then(res => {
         if (res.ok) {
@@ -73,7 +85,7 @@ export default function ArtistOnboardingPage() {
       })
       .catch(() => { /* sin perfil → mostrar onboarding */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [];
 
   const handleSkip = async () => {
     // Create minimal profile if needed, then go to dashboard
@@ -112,6 +124,19 @@ export default function ArtistOnboardingPage() {
     setExtraLinks([...extraLinks, '']);
   };
 
+  const handleDocFileChange = (field: 'front' | 'back' | 'selfie') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      if (field === 'front') setDocFrontPreview(dataUrl);
+      else if (field === 'back') setDocBackPreview(dataUrl);
+      else setDocSelfiePreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleExtraLinkChange = (index: number, value: string) => {
     const newLinks = [...extraLinks];
     newLinks[index] = value;
@@ -121,6 +146,22 @@ export default function ArtistOnboardingPage() {
   const handleFinish = async () => {
     setIsLoading(true);
     try {
+      // If OAuth user uploaded identity documents, save them to auth profile first
+      if (isOAuthUser && (docFrontPreview || docSelfiePreview || docType || docNumber)) {
+        await fetch('/api/auth/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            documentType: docType || undefined,
+            documentNumber: docNumber || undefined,
+            documentFrontUrl: docFrontPreview || undefined,
+            documentBackUrl: docBackPreview || undefined,
+            documentSelfieUrl: docSelfiePreview || undefined,
+          }),
+        }).catch(() => { /* non-blocking — docs can be uploaded later */ });
+      }
+
       // Map discipline id to category value expected by artists-service
       const disciplineCategoryMap: Record<string, string> = {
         musician: 'MUSICO', dj: 'DJ', photographer: 'FOTOGRAFO',
@@ -198,9 +239,10 @@ export default function ArtistOnboardingPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">
-                {currentStep === 2 && 'PASO 2 DE 4'}
-                {currentStep === 3 && 'Portafolio y Perfil · Paso 3 de 4'}
-                {currentStep === 4 && 'PASO 4 DE 4: CONFIGURAR SERVICIO'}
+              {currentStep === 2 && `PASO 2 DE ${totalSteps}`}
+              {currentStep === 3 && 'Verificación de Identidad · Paso 3 de 5'}
+              {currentStep === 4 && `Portafolio y Perfil · Paso ${isOAuthUser ? 4 : 3} de ${totalSteps}`}
+              {currentStep === 5 && `PASO ${totalSteps} DE ${totalSteps}: CONFIGURAR SERVICIO`}
               </span>
               <span className="text-sm font-semibold text-orange-600">
                 {Math.round(progressPercentage)}% Completado
@@ -368,7 +410,7 @@ export default function ArtistOnboardingPage() {
                 Atrás
               </button>
               <button
-                onClick={() => canContinueStep2 && setCurrentStep(3)}
+                onClick={() => canContinueStep2 && setCurrentStep(isOAuthUser ? 3 : 4)}
                 disabled={!canContinueStep2}
                 className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -381,8 +423,145 @@ export default function ArtistOnboardingPage() {
           </div>
         )}
 
-        {/* Step 3: Portfolio & Profile */}
+        {/* Step 3: Identity Verification (OAuth users only) */}
         {currentStep === 3 && (
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
+                <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Verificación de identidad</h2>
+                <p className="text-sm text-orange-600 font-medium">Requerido para cuentas creadas con Google, Facebook o TikTok</p>
+              </div>
+            </div>
+            <p className="text-gray-500 mb-8 text-sm leading-relaxed">
+              Para proteger a artistas y clientes, necesitamos confirmar tu identidad.
+              Sube una foto de tu documento oficial y una selfie sosteniéndolo.
+              Esta información es revisada por nuestro equipo y nunca se comparte públicamente.
+            </p>
+
+            <div className="space-y-6">
+              {/* Document type + number */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Tipo de documento</label>
+                  <select
+                    value={docType}
+                    onChange={e => setDocType(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none bg-white"
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                    <option value="Cédula de Extranjería">Cédula de Extranjería</option>
+                    <option value="Pasaporte">Pasaporte</option>
+                    <option value="NIT">NIT</option>
+                    <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Número de documento</label>
+                  <input
+                    type="text"
+                    placeholder="ej: 1098234567"
+                    value={docNumber}
+                    onChange={e => setDocNumber(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Document images */}
+              {[
+                { field: 'front' as const, label: 'Frente del documento', hint: 'Foto clara donde se vea tu nombre, número y fecha de expedición', preview: docFrontPreview, required: true },
+                { field: 'back' as const,  label: 'Reverso del documento', hint: 'Opcional pero recomendado para algunos tipos de documento', preview: docBackPreview, required: false },
+                { field: 'selfie' as const, label: 'Selfie con documento', hint: 'Sostén el documento junto a tu rostro. La foto debe ser nítida y bien iluminada', preview: docSelfiePreview, required: true },
+              ].map(({ field, label, hint, preview, required }) => (
+                <div key={field}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <label className="text-sm font-semibold text-gray-900">{label}</label>
+                    {required
+                      ? <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Requerido</span>
+                      : <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Opcional</span>
+                    }
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">{hint}</p>
+                  <label htmlFor={`doc-${field}`} className="block cursor-pointer">
+                    {preview ? (
+                      <div className="relative rounded-xl overflow-hidden border-2 border-orange-400">
+                        <img src={preview} alt={label} className="w-full h-44 object-cover" />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-sm font-semibold bg-black/50 px-3 py-1.5 rounded-full">Cambiar foto</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-44 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:border-orange-400 hover:bg-orange-50/40 transition-colors">
+                        <svg className="h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <p className="text-sm font-medium text-gray-500">Toca para subir</p>
+                        <p className="text-xs text-gray-400 mt-1">JPG, PNG — máx. 10 MB</p>
+                      </div>
+                    )}
+                    <input
+                      id={`doc-${field}`}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleDocFileChange(field)}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              ))}
+
+              {/* Security note */}
+              <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <svg className="h-5 w-5 shrink-0 text-blue-500 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Tu información está cifrada y protegida. Solo el equipo de PIUMS tiene acceso para el proceso de verificación. Nunca compartimos tus documentos con terceros.
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-8 border-t border-gray-200 mt-8">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Atrás
+              </button>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  onClick={() => setCurrentStep(4)}
+                  className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-2"
+                >
+                  Continuar
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setCurrentStep(4)}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Saltar por ahora (puedes subir los documentos más tarde)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Portfolio & Profile */}
+        {currentStep === 4 && (
           <div className="max-w-2xl mx-auto">
             <h2 className="text-4xl font-bold text-gray-900 mb-3">Muestra tu mejor trabajo</h2>
             <p className="text-gray-600 mb-8">
@@ -559,7 +738,7 @@ export default function ArtistOnboardingPage() {
             {/* Navigation */}
             <div className="flex items-center justify-between pt-6">
               <button
-                onClick={() => setCurrentStep(2)}
+                onClick={() => setCurrentStep(isOAuthUser ? 3 : 2)}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -568,7 +747,7 @@ export default function ArtistOnboardingPage() {
                 Atrás
               </button>
               <button
-                onClick={() => canContinueStep3 && setCurrentStep(4)}
+                onClick={() => canContinueStep3 && setCurrentStep(5)}
                 disabled={!canContinueStep3}
                 className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-full hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -581,8 +760,8 @@ export default function ArtistOnboardingPage() {
           </div>
         )}
 
-        {/* Step 4: Service Setup */}
-        {currentStep === 4 && (
+        {/* Step 5: Service Setup */}
+        {currentStep === 5 && (
           <div className="grid md:grid-cols-2 gap-12">
             {/* Left side: Instructions */}
             <div>
@@ -777,7 +956,7 @@ export default function ArtistOnboardingPage() {
               {/* Action buttons */}
               <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
                 <button
-                  onClick={() => setCurrentStep(3)}
+                onClick={() => setCurrentStep(4)}
                   className="text-gray-600 hover:text-gray-900 font-medium"
                 >
                   Atrás
