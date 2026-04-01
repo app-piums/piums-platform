@@ -5,6 +5,7 @@ import {
   getUsers,
   toggleBlockUser,
   getArtists,
+  getArtistDetail,
   verifyArtist,
   getBookings,
   getReports,
@@ -27,6 +28,7 @@ router.patch('/users/:id/block', toggleBlockUser);
 
 // Artists management
 router.get('/artists', getArtists);
+router.get('/artists/:id', getArtistDetail);
 router.patch('/artists/:id/verify', verifyArtist);
 
 // Bookings overview

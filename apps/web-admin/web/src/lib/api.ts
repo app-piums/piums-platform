@@ -138,6 +138,16 @@ export interface AdminArtistRow {
   totalBookings?: number;
 }
 
+export interface AdminArtistDetail extends AdminArtistRow {
+  telefono?: string;
+  avatarUrl?: string;
+  bio?: string;
+  pais?: string;
+  location?: string;
+  isBlocked?: boolean;
+  reviewsCount?: number;
+}
+
 export interface PaginatedArtists {
   artists: AdminArtistRow[];
   total: number;
@@ -155,10 +165,12 @@ export const artistsApi = {
     return request<PaginatedArtists>(`/admin/artists${qs ? `?${qs}` : ""}`);
   },
 
+  detail: (id: string) => request<AdminArtistDetail>(`/admin/artists/${id}`),
+
   verify: (id: string, approved: boolean) =>
     request<{ message: string; isVerified: boolean }>(`/admin/artists/${id}/verify`, {
       method: "PATCH",
-      body: JSON.stringify({ approved }),
+      body: JSON.stringify({ isVerified: approved }),
     }),
 };
 

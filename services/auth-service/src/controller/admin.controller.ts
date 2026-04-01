@@ -234,6 +234,78 @@ export const verifyArtist = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+// GET /api/admin/artists/:id - Detalle de artista
+export const getArtistDetail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const artist = await prisma.user.findUnique({
+      where: { id, role: 'artista' },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        name: true,
+        avatar: true,
+        role: true,
+        isVerified: true,
+        isBlocked: true,
+        ciudad: true,
+        documentType: true,
+        documentNumber: true,
+        documentFrontUrl: true,
+        documentBackUrl: true,
+        documentSelfieUrl: true,
+        createdAt: true,
+        lastLoginAt: true,
+        provider: true,
+      }
+    });
+
+    if (!artist) {
+      return res.status(404).json({ message: 'Artist not found' });
+    }
+
+    const [bookingStats, reviewStats] = await Promise.all([
+      bookingClient.getUserStats(id),
+      reviewsClient.getUserStats(id)
+    ]);
+
+    const detail = {
+      id: artist.id,
+      userId: artist.id,
+      nombre: artist.name ?? artist.nombre ?? artist.email.split('@')[0],
+      nombreArtistico: artist.name ?? artist.nombre ?? artist.email.split('@')[0],
+      email: artist.email,
+      avatarUrl: artist.avatar,
+      categoria: 'General',
+      isVerified: artist.isVerified ?? false,
+      isActive: !artist.isBlocked,
+      ciudad: artist.ciudad,
+      documentType: artist.documentType,
+      documentNumber: artist.documentNumber,
+      documentFrontUrl: artist.documentFrontUrl,
+      documentBackUrl: artist.documentBackUrl,
+      documentSelfieUrl: artist.documentSelfieUrl,
+      createdAt: artist.createdAt,
+      lastLoginAt: artist.lastLoginAt,
+      totalBookings: bookingStats.total,
+      reviewsCount: reviewStats.totalReviews,
+      rating: reviewStats.rating,
+    };
+
+    logger.info('Admin retrieved artist detail', 'ADMIN_CONTROLLER', {
+      adminId: (req as any).user?.id,
+      artistId: id
+    });
+
+    res.json(detail);
+  } catch (error: any) {
+    logger.error(`Error getting artist detail: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
 // GET /api/admin/bookings - Lista todas las reservas
 export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
