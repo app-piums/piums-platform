@@ -84,7 +84,9 @@ export default function LoginPage() {
         const artistUrl = process.env.NEXT_PUBLIC_ARTIST_URL || 'http://localhost:3001';
         window.location.href = `${artistUrl}/artist/dashboard`;
       } else {
-        // cliente o desconocido → dashboard cliente
+        // Para clientes: resetear onboarding_completed para que el middleware
+        // redirija al onboarding si es primer ingreso
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
         const redirect = new URLSearchParams(window.location.search).get('redirect');
         window.location.href = redirect || '/dashboard';
       }

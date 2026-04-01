@@ -63,6 +63,8 @@ export default function ClientOnboardingPage() {
         Object.entries(selectedTags).map(([k, v]) => [k, [...v]])
       ),
     }));
+    // Marcar onboarding como completado en cookie para el middleware
+    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
     window.location.href = '/dashboard';
   };
 
