@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Image from "next/image";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 interface FieldError {
@@ -81,10 +82,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FF6A00] shadow-lg shadow-[#FF6A00]/30">
-                <span className="text-base font-bold text-white">P</span>
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">Piums</span>
+              <Image src="/logo-white.png" alt="PIUMS" width={64} height={64} className="h-14 w-auto" unoptimized priority />
             </div>
           </div>
 
@@ -122,11 +120,9 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
 
           {/* Mobile logo */}
-          <div className="mb-8 lg:hidden flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FF6A00]">
-              <span className="text-base font-bold text-white">P</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Piums Admin</span>
+          <div className="mb-8 lg:hidden flex items-center gap-2">
+            <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-10 w-auto" unoptimized priority />
+            <span className="text-sm font-medium text-zinc-400">Admin</span>
           </div>
 
           {/* Heading */}

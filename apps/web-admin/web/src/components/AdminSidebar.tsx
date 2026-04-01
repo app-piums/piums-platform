@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
@@ -64,15 +65,10 @@ export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
   const sidebarContent = (
     <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       {/* Logo */}
-      <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FF6A00]">
-            <span className="text-sm font-bold text-white">P</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Piums Admin</p>
-            <p className="text-xs text-zinc-400">Panel de control</p>
-          </div>
+      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-800">
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-12 w-auto" unoptimized priority />
+          <span className="text-xs font-medium text-zinc-400">Admin</span>
         </div>
         {onClose && (
           <button
@@ -96,10 +92,10 @@ export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onClose}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-r-lg px-3 py-2.5 text-sm font-medium transition-colors border-l-2 ${
                 active
-                  ? "bg-[#FF6A00]/10 text-[#FF6A00]"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                  ? "border-[#FF6A00] bg-[#FF6A00]/10 text-[#FF6A00]"
+                  : "border-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
               }`}
             >
               {item.icon}

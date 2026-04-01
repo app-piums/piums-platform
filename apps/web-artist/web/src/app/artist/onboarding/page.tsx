@@ -1,35 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from '@/lib/toast';
 
 // Disciplinas creativas disponibles
 const creativeDisciplines = [
-  { id: 'musician',        name: 'Músico',            subtitle: 'Compositor, Intérprete',    icon: '🎵' },
-  { id: 'graphic-designer',name: 'Diseñador Gráfico', subtitle: 'Marca, Editorial',          icon: '🎨' },
-  { id: 'filmmaker',       name: 'Cineasta',           subtitle: 'Director, Editor',          icon: '🎦' },
-  { id: 'photographer',    name: 'Fotógrafo',         subtitle: 'Retrato, Producto',         icon: '📷' },
-  { id: 'illustrator',     name: 'Ilustrador',         subtitle: 'Digital, Tradicional',      icon: '✏️' },
-  { id: 'fashion-designer',name: 'Diseñador de Moda', subtitle: 'Ropa, Textil',             icon: '👗' },
-  { id: 'architect',       name: 'Arquitecto',         subtitle: 'Urbano, Interior',          icon: '🏛️' },
-  { id: 'writer',          name: 'Escritor',           subtitle: 'Copywriter, Guionista',    icon: '📝' },
-  { id: 'developer',       name: 'Desarrollador',      subtitle: 'Web, Móvil',               icon: '💻' },
-  { id: 'other',           name: 'Otro',               subtitle: '',                          icon: '⚡' },
+  { id: 'musician',        name: 'Músico',              subtitle: 'Cantante, Compositor, Banda',    icon: '🎵' },
+  { id: 'dj',              name: 'DJ / Productor',      subtitle: 'Electrónica, Beat Maker',        icon: '🎧' },
+  { id: 'photographer',    name: 'Fotógrafo',           subtitle: 'Eventos, Retratos, Producto',    icon: '📷' },
+  { id: 'filmmaker',       name: 'Videógrafo',          subtitle: 'Clips, Eventos, Comerciales',    icon: '🎬' },
+  { id: 'graphic-designer',name: 'Diseñador Gráfico',  subtitle: 'Marca, Flyers, Portadas',        icon: '🎨' },
+  { id: 'illustrator',     name: 'Ilustrador',          subtitle: 'Arte digital, Portadas',         icon: '✏️' },
+  { id: 'dancer',          name: 'Bailarín / Coreógrafo', subtitle: 'Urbano, Clásico, Show',       icon: '💃' },
+  { id: 'mc',              name: 'Animador / MC',       subtitle: 'Bodas, Eventos, Conciertos',     icon: '🎤' },
+  { id: 'writer',          name: 'Escritor / Letrista', subtitle: 'Letras, Guiones, Contenidos',   icon: '📝' },
+  { id: 'other',           name: 'Otro',                subtitle: 'Otro talento creativo',          icon: '⚡' },
 ];
 
 // Opciones de categorías para servicios
 const serviceCategories = [
-  'Fotografía',
-  'Videografía',
-  'Producción Musical',
-  'Diseño Gráfico',
-  'Desarrollo Web',
-  'Redacción de Contenidos',
-  'Diseño de Moda',
-  'Arquitectura',
-  'Ilustración',
+  'Música en vivo',
+  'DJ para eventos',
+  'Fotografía de eventos',
+  'Fotografía de retrato',
+  'Videografía y edición',
+  'Contenido para redes sociales',
+  'Diseño gráfico y branding',
+  'Ilustración digital',
+  'Escritura y guiones',
+  'Baile y coreografía',
+  'Animación de eventos',
   'Otro',
 ];
 
@@ -58,6 +60,20 @@ export default function ArtistOnboardingPage() {
   const [availabilityType, setAvailabilityType] = useState<'immediate' | 'quote'>('immediate');
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Si el artista ya tiene perfil en BD, redirigir al dashboard automáticamente
+  useEffect(() => {
+    fetch('/api/artist/profile-check', { credentials: 'include' })
+      .then(res => {
+        if (res.ok) {
+          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000';
+          router.replace('/artist/dashboard');
+        }
+        // Si 404 o error → mostrar el onboarding normalmente
+      })
+      .catch(() => { /* sin perfil → mostrar onboarding */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSkip = () => {
     document.cookie = 'onboarding_completed=true; path=/; max-age=31536000';
@@ -124,16 +140,8 @@ export default function ArtistOnboardingPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-gray-900">PIUMS</span>
+          <div className="flex items-center">
+            <Image src="/logo.png" alt="PIUMS" width={96} height={96} className="h-10 w-auto" unoptimized priority />
           </div>
           {currentStep < 4 && (
             <div className="flex items-center gap-4">

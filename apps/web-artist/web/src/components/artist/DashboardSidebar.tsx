@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
@@ -80,12 +81,9 @@ interface NavContentProps {
 const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate, user, onLogout }) => (
   <>
     {/* Logo */}
-    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+    <div className="px-6 py-2 border-b border-gray-100 flex items-center justify-between">
       <Link href="/artist/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
-        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-xl">P</span>
-        </div>
-        <span className="text-xl font-bold text-gray-900">PIUMS</span>
+        <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
       </Link>
       {/* Close button — mobile only */}
       <button
@@ -242,10 +240,7 @@ export const DashboardSidebar: React.FC = () => {
       {/* ── Mobile: top bar with hamburger ── */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <Link href="/artist/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">P</span>
-          </div>
-          <span className="text-lg font-bold text-gray-900">PIUMS</span>
+          <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
         </Link>
         <button
           onClick={() => setIsOpen(true)}

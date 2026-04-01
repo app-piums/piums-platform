@@ -67,6 +67,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Para artistas: siempre resetear onboarding_completed a false al hacer login.
+    // La página de onboarding verificará si ya tienen perfil y redirigirá al dashboard.
+    if (data.user?.role === 'artista') {
+      responseWithCookies.cookies.set('onboarding_completed', 'false', {
+        httpOnly: false,
+        secure: process.env.HTTPS_ENABLED === 'true',
+        sameSite: 'strict',
+        maxAge: 86400,
+        path: '/',
+      });
+    }
+
     return responseWithCookies;
   } catch (error) {
     console.error("Error en login:", error);

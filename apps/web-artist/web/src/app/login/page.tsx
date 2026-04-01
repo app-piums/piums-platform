@@ -91,6 +91,11 @@ export default function LoginPage() {
         const clientUrl = process.env.NEXT_PUBLIC_CLIENT_APP_URL || 'http://localhost:3002';
         window.location.href = `${clientUrl}/dashboard`;
       } else {
+        // Para artistas: resetear onboarding_completed para que el middleware
+        // evalúe si tienen perfil y redirija al onboarding si es necesario.
+        if (role === 'artista') {
+          document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        }
         const redirect = new URLSearchParams(window.location.search).get('redirect');
         router.push(redirect || '/artist/dashboard');
       }

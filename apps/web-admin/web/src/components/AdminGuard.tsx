@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { AdminSidebar } from "@/components/AdminSidebar";
@@ -43,10 +44,8 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#FF6A00]">
-              <span className="text-xs font-bold text-white">P</span>
-            </div>
-            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Piums Admin</span>
+            <Image src="/logo.png" alt="PIUMS" width={48} height={48} className="h-8 w-auto" unoptimized />
+            <span className="text-sm font-semibold text-zinc-400">Admin</span>
           </div>
         </header>
 
