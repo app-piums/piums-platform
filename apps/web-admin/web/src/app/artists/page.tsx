@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { artistsApi, type AdminArtistRow } from "@/lib/api";
+import { artistsApi, type AdminArtistRow, type AdminArtistDetail } from "@/lib/api";
 import { AdminGuard } from "@/components/AdminGuard";
 
 const FILTER_OPTIONS = [
@@ -37,10 +37,225 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
   );
 }
 
+function ArtistDetailDrawer({
+  artistId,
+  onClose,
+  onVerify,
+}: {
+  artistId: string;
+  onClose: () => void;
+  onVerify: (id: string, approved: boolean) => void;
+}) {
+  const { data, isLoading } = useQuery<AdminArtistDetail>({
+    queryKey: ["admin-artist-detail", artistId],
+    queryFn: () => artistsApi.detail(artistId),
+  });
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Drawer */}
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl dark:bg-zinc-900">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+            Perfil del artista
+          </h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center">
+              <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#FF6A00] border-t-transparent" />
+            </div>
+          ) : data ? (
+            <div className="p-6 space-y-6">
+              {/* Avatar + name */}
+              <div className="flex items-center gap-4">
+                {data.avatarUrl ? (
+                  <img
+                    src={data.avatarUrl}
+                    alt={data.nombreArtistico}
+                    className="h-16 w-16 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FF6A00]/10 text-2xl font-bold text-[#FF6A00]">
+                    {data.nombreArtistico.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                    {data.nombreArtistico}
+                  </p>
+                  <p className="text-sm text-zinc-400">{data.email}</p>
+                  <div className="mt-1">
+                    <VerifiedBadge verified={data.isVerified} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Reservas", value: data.totalBookings ?? 0 },
+                  { label: "Reseñas", value: (data as any).reviewsCount ?? 0 },
+                  {
+                    label: "Rating",
+                    value: data.rating != null ? data.rating.toFixed(1) : "—",
+                  },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-center dark:border-zinc-800 dark:bg-zinc-800/50"
+                  >
+                    <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                      {s.value}
+                    </p>
+                    <p className="text-xs text-zinc-400">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Info */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  Información
+                </h3>
+                {[
+                  { label: "Categoría", value: data.categoria },
+                  { label: "Ciudad", value: (data as any).ciudad ?? "—" },
+                  {
+                    label: "Miembro desde",
+                    value: new Date(data.createdAt).toLocaleDateString("es", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }),
+                  },
+                  {
+                    label: "Último acceso",
+                    value: (data as any).lastLoginAt
+                      ? new Date((data as any).lastLoginAt).toLocaleDateString("es")
+                      : "—",
+                  },
+                  {
+                    label: "Estado",
+                    value: data.isActive ? "Activo" : "Bloqueado",
+                  },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-start justify-between gap-4 text-sm"
+                  >
+                    <span className="text-zinc-400 shrink-0">{row.label}</span>
+                    <span className="text-right font-medium text-zinc-800 dark:text-zinc-200">
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Verification documents */}
+              {((data as any).documentType || (data as any).documentFrontUrl || (data as any).documentBackUrl || (data as any).documentSelfieUrl) && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Documentos de identidad
+                  </h3>
+                  {(data as any).documentType && (
+                    <div className="flex items-start justify-between gap-4 text-sm">
+                      <span className="text-zinc-400">Tipo</span>
+                      <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                        {(data as any).documentType}
+                        {(data as any).documentNumber ? ` · ${(data as any).documentNumber}` : ""}
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 gap-3">
+                    {(data as any).documentFrontUrl && (
+                      <div>
+                        <p className="mb-1 text-xs text-zinc-400">Frente</p>
+                        <img
+                          src={(data as any).documentFrontUrl}
+                          alt="Documento frente"
+                          className="w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
+                        />
+                      </div>
+                    )}
+                    {(data as any).documentBackUrl && (
+                      <div>
+                        <p className="mb-1 text-xs text-zinc-400">Reverso</p>
+                        <img
+                          src={(data as any).documentBackUrl}
+                          alt="Documento reverso"
+                          className="w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
+                        />
+                      </div>
+                    )}
+                    {(data as any).documentSelfieUrl && (
+                      <div>
+                        <p className="mb-1 text-xs text-zinc-400">Selfie con documento</p>
+                        <img
+                          src={(data as any).documentSelfieUrl}
+                          alt="Selfie con documento"
+                          className="w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="p-6 text-sm text-zinc-400">No se pudo cargar el perfil.</p>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        {data && (
+          <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
+            {!data.isVerified ? (
+              <button
+                onClick={() => onVerify(data.id, true)}
+                className="w-full rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 active:bg-green-800"
+              >
+                <svg className="mr-2 inline h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Verificar artista
+              </button>
+            ) : (
+              <button
+                onClick={() => onVerify(data.id, false)}
+                className="w-full rounded-xl bg-zinc-100 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                Revocar verificación
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 function ArtistsContent() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [verified, setVerified] = useState("");
+  const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     artist: AdminArtistRow;
     approve: boolean;
@@ -56,10 +271,25 @@ function ArtistsContent() {
       artistsApi.verify(id, approved),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-artists"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-artist-detail"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       setConfirmAction(null);
+      setSelectedArtistId(null);
     },
   });
+
+  const handleDrawerVerify = (id: string, approved: boolean) => {
+    const artist = data?.artists.find((a) => a.id === id);
+    if (artist) {
+      setConfirmAction({ artist, approve: approved });
+    } else {
+      // Artist not in current list page — verify directly after confirmation
+      setConfirmAction({
+        artist: { id, nombreArtistico: "este artista", isVerified: !approved } as any,
+        approve: approved,
+      });
+    }
+  };
 
   return (
     <div className="p-4 sm:p-8">
@@ -96,7 +326,11 @@ function ArtistsContent() {
         ) : (
           <div className="space-y-3">
             {data?.artists.map((a) => (
-              <div key={a.id} className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <div
+                key={a.id}
+                className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 cursor-pointer active:opacity-80"
+                onClick={() => setSelectedArtistId(a.id)}
+              >
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{a.nombreArtistico}</p>
@@ -116,14 +350,7 @@ function ArtistsContent() {
                   )}
                   <span>{a.totalBookings ?? 0} reservas</span>
                 </div>
-                {!a.isVerified ? (
-                  <div className="flex gap-2">
-                    <button onClick={() => setConfirmAction({ artist: a, approve: true })} className="flex-1 rounded-lg bg-green-50 py-2 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-400">Aprobar</button>
-                    <button onClick={() => setConfirmAction({ artist: a, approve: false })} className="flex-1 rounded-lg bg-red-50 py-2 text-xs font-medium text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-400">Rechazar</button>
-                  </div>
-                ) : (
-                  <button onClick={() => setConfirmAction({ artist: a, approve: false })} className="w-full rounded-lg bg-zinc-100 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400">Revocar verificación</button>
-                )}
+                <p className="text-xs text-[#FF6A00]">Toca para ver perfil completo →</p>
               </div>
             ))}
             {data?.artists.length === 0 && (
@@ -165,7 +392,11 @@ function ArtistsContent() {
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {data?.artists.map((a) => (
-                <tr key={a.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                <tr
+                  key={a.id}
+                  className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  onClick={() => setSelectedArtistId(a.id)}
+                >
                   <td className="px-5 py-3.5">
                     <div>
                       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
@@ -197,7 +428,7 @@ function ArtistsContent() {
                   <td className="px-5 py-3.5">
                     <VerifiedBadge verified={a.isVerified} />
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
                     {!a.isVerified ? (
                       <div className="flex gap-2">
                         <button
@@ -261,9 +492,18 @@ function ArtistsContent() {
         </div>
       )}
 
+      {/* Artist detail drawer */}
+      {selectedArtistId && (
+        <ArtistDetailDrawer
+          artistId={selectedArtistId}
+          onClose={() => setSelectedArtistId(null)}
+          onVerify={handleDrawerVerify}
+        />
+      )}
+
       {/* Confirm modal */}
       {confirmAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
             <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
               {confirmAction.approve
@@ -326,3 +566,4 @@ export default function ArtistsPage() {
     </AdminGuard>
   );
 }
+
