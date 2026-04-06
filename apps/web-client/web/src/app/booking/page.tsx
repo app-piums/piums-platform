@@ -428,7 +428,10 @@ function BookingContent() {
           });
           setDisabledDates(blocked);
         })
-        .catch(() => {});
+        .catch(() => {
+          console.warn('calendar load failed — blocked dates unavailable');
+          toast.warning('No se pudieron cargar las fechas bloqueadas. Verifica disponibilidad con el artista.');
+        });
 
       if (serviceId) {
         const serviceMatch = servicesData.find((s) => s.id === serviceId) || preselectedService;
