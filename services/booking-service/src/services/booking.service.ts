@@ -1511,6 +1511,29 @@ export class BookingService {
       return acc;
     }, {});
   }
+
+  /**
+   * Devuelve los IDs de artistas que tienen reservas PENDIENTES o CONFIRMADAS
+   * en una fecha concreta (día completo, zona UTC).
+   */
+  async getArtistsBusyOnDate(date: Date): Promise<string[]> {
+    const start = new Date(date);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setUTCHours(23, 59, 59, 999);
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        scheduledDate: { gte: start, lte: end },
+        status: { in: ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'] },
+        deletedAt: null,
+      },
+      select: { artistId: true },
+    });
+
+    // IDs únicos de artistas ocupados
+    return [...new Set(bookings.map((b) => b.artistId))];
+  }
 }
 
 export const bookingService = new BookingService();
