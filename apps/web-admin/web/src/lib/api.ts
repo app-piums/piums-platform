@@ -154,6 +154,7 @@ export interface AdminArtistDetail extends AdminArtistRow {
   avatarUrl?: string;
   bio?: string;
   pais?: string;
+  ciudad?: string;
   location?: string;
   isBlocked?: boolean;
   reviewsCount?: number;
@@ -257,7 +258,7 @@ export const bookingsApi = {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k === "estado" ? "status" : k, String(v)])
     ).toString();
     return request<PaginatedBookings>(`/admin/bookings${qs ? `?${qs}` : ""}`);
   },
