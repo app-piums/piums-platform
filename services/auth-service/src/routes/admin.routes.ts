@@ -8,6 +8,7 @@ import {
   getArtistDetail,
   verifyArtist,
   getBookings,
+  getBookingDetail,
   getReports,
   resolveReport,
   getUserDetail
@@ -33,6 +34,7 @@ router.patch('/artists/:id/verify', verifyArtist);
 
 // Bookings overview
 router.get('/bookings', getBookings);
+router.get('/bookings/:id', getBookingDetail);
 
 // Reports management
 router.get('/reports', getReports);
