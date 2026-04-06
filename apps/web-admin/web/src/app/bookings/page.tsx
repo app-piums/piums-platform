@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { bookingsApi } from "@/lib/api";
 import { AdminGuard } from "@/components/AdminGuard";
 
@@ -61,6 +62,7 @@ function Highlight({ text, query }: { text?: string; query: string }) {
 }
 
 function BookingsContent() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [estado, setEstado] = useState("");
   const [search, setSearch] = useState("");
@@ -176,7 +178,7 @@ function BookingsContent() {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <div key={b.id} className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <div key={b.id} onClick={() => router.push(`/bookings/${b.id}`)} className="cursor-pointer rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 hover:border-[#FF6A00]/40 hover:shadow-sm transition-shadow">
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{b.clienteNombre}</p>
@@ -248,7 +250,7 @@ function BookingsContent() {
                 </tr>
               ) : (
                 bookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                  <tr key={b.id} onClick={() => router.push(`/bookings/${b.id}`)} className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                     <td className="px-5 py-3.5">
                       {b.code ? (
                         <span className="font-mono text-xs font-semibold text-[#FF6A00]">

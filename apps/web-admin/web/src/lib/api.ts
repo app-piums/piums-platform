@@ -221,6 +221,30 @@ export interface AdminBookingRow {
   createdAt: string;
 }
 
+export interface BookingStatusHistory {
+  id: string;
+  status: string;
+  changedAt: string;
+  notes?: string;
+}
+
+export interface AdminBookingDetail extends AdminBookingRow {
+  clientePhone: string | null;
+  artistaEmail: string;
+  estadoLabel: string;
+  montoDecimal: number | null;
+  serviceId: string;
+  scheduledDate: string;
+  scheduledTime: string | null;
+  duration: number | null;
+  notes: string | null;
+  location: string | null;
+  paymentStatus: string | null;
+  totalPrice: number | null;
+  status: string;
+  statusHistory: BookingStatusHistory[];
+}
+
 export interface PaginatedBookings {
   bookings: AdminBookingRow[];
   total: number;
@@ -237,6 +261,7 @@ export const bookingsApi = {
     ).toString();
     return request<PaginatedBookings>(`/admin/bookings${qs ? `?${qs}` : ""}`);
   },
+  getById: (id: string) => request<AdminBookingDetail>(`/admin/bookings/${id}`),
 };
 
 // ─── Reports ─────────────────────────────────────────────────────────────────

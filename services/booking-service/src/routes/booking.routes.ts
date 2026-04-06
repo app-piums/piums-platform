@@ -250,6 +250,15 @@ router.get(
 );
 
 /**
+ * GET /api/admin/bookings/:id
+ * Obtener detalle de una reserva (llamada interna desde auth-service)
+ */
+router.get(
+  "/admin/bookings/:id",
+  bookingController.adminGetBookingById.bind(bookingController)
+);
+
+/**
  * GET /api/bookings/admin/search
  * Buscar en TODAS las reservas (admin)
  */

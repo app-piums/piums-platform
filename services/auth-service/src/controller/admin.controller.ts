@@ -331,6 +331,53 @@ export const getArtistDetail = async (req: Request, res: Response, next: NextFun
   }
 };
 
+// GET /api/admin/bookings/:id - Detalle de una reserva
+export const getBookingDetail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const booking = await bookingClient.getBookingDetail(id);
+
+    // Enrich with user names
+    const userIds = new Set<string>();
+    if (booking.clientId) userIds.add(booking.clientId);
+    if (booking.artistId) userIds.add(booking.artistId);
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: Array.from(userIds) } },
+      select: { id: true, name: true, email: true, nombre: true, phone: true },
+    });
+    const userMap = users.reduce((acc: any, u: any) => { acc[u.id] = u; return acc; }, {});
+
+    const STATUS_ES: Record<string, string> = {
+      PENDING: 'Pendiente', CONFIRMED: 'Confirmado', PAYMENT_PENDING: 'Pago pendiente',
+      PAYMENT_COMPLETED: 'Pagado', IN_PROGRESS: 'En progreso', COMPLETED: 'Completado',
+      RESCHEDULED: 'Reprogramado', CANCELLED_CLIENT: 'Cancelado (cliente)',
+      CANCELLED_ARTIST: 'Cancelado (artista)', REJECTED: 'Rechazado', NO_SHOW: 'No se presentó',
+    };
+
+    const client = userMap[booking.clientId];
+    const artist = userMap[booking.artistId];
+
+    res.json({
+      ...booking,
+      clienteNombre: client?.name || client?.nombre || client?.email?.split('@')[0] || 'Desconocido',
+      clienteEmail: client?.email || '—',
+      clientePhone: client?.phone || null,
+      artistaNombre: artist?.name || artist?.nombre || artist?.email?.split('@')[0] || 'Desconocido',
+      artistaEmail: artist?.email || '—',
+      estadoLabel: STATUS_ES[booking.status] || booking.status,
+      montoDecimal: booking.totalPrice != null ? booking.totalPrice / 100 : null,
+    });
+  } catch (error: any) {
+    if (error?.response?.status === 404 || error?.status === 404) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+    logger.error(`Error getting booking detail: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
 // GET /api/admin/bookings - Lista todas las reservas
 export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {

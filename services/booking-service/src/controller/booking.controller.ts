@@ -99,6 +99,16 @@ export class BookingController {
     }
   }
 
+  async adminGetBookingById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const booking = await bookingService.getBookingById(id);
+      res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getBookingByCode(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const code = req.params.code as string;

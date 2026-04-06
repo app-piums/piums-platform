@@ -56,6 +56,21 @@ export class BookingClient {
   }
 
   /**
+   * Obtiene el detalle completo de una reserva por ID (uso admin, sin verificación de permisos)
+   */
+  async getBookingDetail(bookingId: string) {
+    try {
+      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/admin/bookings/${bookingId}`, {
+        timeout: 5000,
+      });
+      return response.data;
+    } catch (error: any) {
+      logger.error('Error fetching booking detail', 'BOOKING_CLIENT', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Obtiene estadísticas de un usuario específico
    */
   async getUserStats(userId: string) {
