@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNextStep } from 'nextstepjs';
 
 interface PageHelpButtonProps {
@@ -9,12 +10,19 @@ interface PageHelpButtonProps {
 
 export function PageHelpButton({ tourId }: PageHelpButtonProps) {
   const { startNextStep } = useNextStep();
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <button
       onClick={() => startNextStep(tourId)}
       aria-label="Ver ayuda de esta página"
-      className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#FF6A00] text-white shadow-lg hover:bg-[#e55e00] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+      className="fixed bottom-6 right-6 z-[9999] w-12 h-12 rounded-full bg-[#FF6A00] text-white shadow-lg hover:bg-[#e55e00] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -33,6 +41,7 @@ export function PageHelpButton({ tourId }: PageHelpButtonProps) {
       <span className="pointer-events-none absolute right-14 bg-gray-900 text-white text-xs font-medium rounded-lg px-2.5 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg">
         Ayuda de esta página
       </span>
-    </button>
+    </button>,
+    document.body
   );
 }
