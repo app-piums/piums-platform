@@ -56,6 +56,10 @@ export default function ArtistDashboardPage() {
           });
         setUpcomingBookings(upcoming);
       }
+
+      // Si todos fallaron, lanzar error para mostrar UI de error al usuario
+      const allFailed = [statsData, bookingsData, profileData].every(r => r.status === 'rejected');
+      if (allFailed) throw new Error('No se pudo conectar con el servidor. Intenta de nuevo.');
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       console.error('Error loading dashboard:', message);

@@ -78,14 +78,14 @@ export default function ArtistOnboardingPage() {
     fetch('/api/artist/profile-check', { credentials: 'include' })
       .then(res => {
         if (res.ok) {
-          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000';
+          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
           router.replace('/artist/dashboard');
         }
         // Si 404 o error → mostrar el onboarding normalmente
       })
       .catch(() => { /* sin perfil → mostrar onboarding */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [];
+  }, []);
 
   const handleSkip = async () => {
     // Create minimal profile if needed, then go to dashboard
@@ -97,7 +97,7 @@ export default function ArtistOnboardingPage() {
         body: JSON.stringify({ category: 'OTRO', specialties: ['OTRO'] }),
       });
     } catch { /* ignore — profile may already exist */ }
-    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000';
+    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
     router.push('/artist/dashboard');
   };
 
@@ -159,7 +159,9 @@ export default function ArtistOnboardingPage() {
             documentBackUrl: docBackPreview || undefined,
             documentSelfieUrl: docSelfiePreview || undefined,
           }),
-        }).catch(() => { /* non-blocking — docs can be uploaded later */ });
+        }).then(async (res) => {
+          if (!res.ok) toast.warning('No se pudieron guardar los documentos. Podrás subirlos más tarde desde tu perfil.');
+        }).catch(() => { toast.warning('No se pudieron guardar los documentos. Podrás subirlos más tarde desde tu perfil.'); });
       }
 
       // Map discipline id to category value expected by artists-service
@@ -193,7 +195,7 @@ export default function ArtistOnboardingPage() {
       }
 
       // Marcar onboarding como completado (cookie)
-      document.cookie = 'onboarding_completed=true; path=/; max-age=31536000'; // 1 año
+      document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict'; // 1 año
 
       // Redirigir al dashboard
       router.push('/artist/dashboard');

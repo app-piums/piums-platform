@@ -217,8 +217,13 @@ export const verifyArtist = async (req: Request, res: Response, next: NextFuncti
     const { id } = req.params;
     const { isVerified, rejectionReason, adminNotes } = req.body;
 
+    if (isVerified === false && !rejectionReason?.trim()) {
+      return res.status(400).json({ message: 'Se requiere una razón de rechazo' });
+    }
+
     const updateData: any = { isVerified };
-    if (!isVerified && rejectionReason) updateData.rejectionReason = rejectionReason;
+    if (!isVerified && rejectionReason) updateData.rejectionReason = rejectionReason.trim();
+    if (isVerified) updateData.rejectionReason = null; // clear on approval
     if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
 
     const artist = await prisma.user.update({
