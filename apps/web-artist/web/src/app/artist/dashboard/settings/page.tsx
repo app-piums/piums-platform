@@ -43,14 +43,21 @@ function LegalAccordion({ section }: { section: { id: string; title: string; ico
 }
 
 const ARTIST_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'MUSICO', label: 'Músico' },
-  { value: 'TATUADOR', label: 'Tatuador' },
-  { value: 'FOTOGRAFO', label: 'Fotógrafo' },
-  { value: 'MAQUILLADOR', label: 'Maquillador' },
-  { value: 'DJ', label: 'DJ' },
-  { value: 'PINTOR', label: 'Pintor' },
-  { value: 'ESCULTOR', label: 'Escultor' },
-  { value: 'OTRO', label: 'Otro' },
+  { value: 'MUSICO',     label: 'Músico' },
+  { value: 'DJ',         label: 'DJ / Productor' },
+  { value: 'FOTOGRAFO',  label: 'Fotógrafo' },
+  { value: 'VIDEOGRAFO', label: 'Videógrafo / Filmmaker' },
+  { value: 'DISENADOR',  label: 'Diseñador Gráfico' },
+  { value: 'BAILARIN',   label: 'Bailarín / Coreógrafo' },
+  { value: 'ANIMADOR',   label: 'Animador / MC' },
+  { value: 'TATUADOR',   label: 'Tatuador' },
+  { value: 'MAQUILLADOR',label: 'Maquillador / FX' },
+  { value: 'PINTOR',     label: 'Pintor / Ilustrador' },
+  { value: 'ESCULTOR',   label: 'Escultor' },
+  { value: 'ESCRITOR',   label: 'Escritor / Letrista' },
+  { value: 'MAGO',       label: 'Mago / Ilusionista' },
+  { value: 'ACROBATA',   label: 'Acróbata / Circo' },
+  { value: 'OTRO',       label: 'Otro' },
 ];
 
 type ArtistFormData = {
