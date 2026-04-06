@@ -12,15 +12,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
 
 const CATEGORIES = [
-  { value: '',          label: 'Todas las categorías' },
-  { value: 'MUSICO',    label: 'Músico' },
-  { value: 'FOTOGRAFO', label: 'Fotógrafo' },
-  { value: 'DJ',        label: 'DJ' },
-  { value: 'TATUADOR',  label: 'Tatuador' },
-  { value: 'MAQUILLADOR', label: 'Maquillador' },
-  { value: 'PINTOR',    label: 'Pintor' },
-  { value: 'ESCULTOR',  label: 'Escultor' },
-  { value: 'OTRO',      label: 'Otro' },
+  { value: '',           label: 'Todas las categorías' },
+  { value: 'MUSICO',     label: 'Músico' },
+  { value: 'DJ',         label: 'DJ / Productor' },
+  { value: 'FOTOGRAFO',  label: 'Fotógrafo' },
+  { value: 'VIDEOGRAFO', label: 'Videógrafo' },
+  { value: 'DISENADOR',  label: 'Diseñador Gráfico' },
+  { value: 'BAILARIN',   label: 'Bailarín / Coreógrafo' },
+  { value: 'ANIMADOR',   label: 'Animador / MC' },
+  { value: 'TATUADOR',   label: 'Tatuador' },
+  { value: 'MAQUILLADOR',label: 'Maquillador / FX' },
+  { value: 'PINTOR',     label: 'Pintor / Ilustrador' },
+  { value: 'ESCULTOR',   label: 'Escultor' },
+  { value: 'ESCRITOR',   label: 'Escritor / Letrista' },
+  { value: 'MAGO',       label: 'Mago / Ilusionista' },
+  { value: 'ACROBATA',   label: 'Acróbata / Circo' },
+  { value: 'OTRO',       label: 'Otro' },
 ];
 
 const CITIES_BY_COUNTRY: Record<string, { label: string; regions: { value: string; label: string }[] }> = {

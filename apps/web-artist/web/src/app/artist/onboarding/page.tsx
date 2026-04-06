@@ -16,6 +16,12 @@ const creativeDisciplines = [
   { id: 'dancer',          name: 'Bailarín / Coreógrafo', subtitle: 'Urbano, Clásico, Show',       icon: '💃' },
   { id: 'mc',              name: 'Animador / MC',       subtitle: 'Bodas, Eventos, Conciertos',     icon: '🎤' },
   { id: 'writer',          name: 'Escritor / Letrista', subtitle: 'Letras, Guiones, Contenidos',   icon: '📝' },
+  { id: 'tattooist',       name: 'Tatuador',            subtitle: 'Tattoo, Body Art, Piercing',     icon: '🖋️' },
+  { id: 'makeup',          name: 'Maquillador',         subtitle: 'Bodas, Cine, FX, Pasarela',     icon: '💄' },
+  { id: 'painter',         name: 'Pintor / Artista',    subtitle: 'Lienzo, Mural, Acuarela',        icon: '🖌️' },
+  { id: 'sculptor',        name: 'Escultor',            subtitle: 'Cerámica, Madera, Metal',        icon: '🏺' },
+  { id: 'magician',        name: 'Mago / Ilusionista',  subtitle: 'Close-up, Shows, Escenario',     icon: '🪄' },
+  { id: 'acrobat',         name: 'Acróbata / Circo',    subtitle: 'Malabares, Aéreos, Fuego',       icon: '🎪' },
   { id: 'other',           name: 'Otro',                subtitle: 'Otro talento creativo',          icon: '⚡' },
 ];
 
@@ -166,10 +172,22 @@ export default function ArtistOnboardingPage() {
 
       // Map discipline id to category value expected by artists-service
       const disciplineCategoryMap: Record<string, string> = {
-        musician: 'MUSICO', dj: 'DJ', photographer: 'FOTOGRAFO',
-        filmmaker: 'OTRO', 'graphic-designer': 'OTRO',
-        illustrator: 'PINTOR', dancer: 'OTRO', mc: 'OTRO',
-        writer: 'OTRO', other: 'OTRO',
+        musician:          'MUSICO',
+        dj:                'DJ',
+        photographer:      'FOTOGRAFO',
+        filmmaker:         'VIDEOGRAFO',
+        'graphic-designer':'DISENADOR',
+        illustrator:       'PINTOR',
+        dancer:            'BAILARIN',
+        mc:                'ANIMADOR',
+        writer:            'ESCRITOR',
+        tattooist:         'TATUADOR',
+        makeup:            'MAQUILLADOR',
+        painter:           'PINTOR',
+        sculptor:          'ESCULTOR',
+        magician:          'MAGO',
+        acrobat:           'ACROBATA',
+        other:             'OTRO',
       };
       const category = disciplineCategoryMap[selectedDiscipline || ''] || 'OTRO';
 

@@ -5,22 +5,34 @@ import React, { useState } from 'react';
 
 /* ─── Categorías de interés ─────────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: 'live-music',      label: 'Música en Vivo',     subtitle: 'Bandas, solistas, acústico',       icon: MicIcon      },
-  { id: 'dj',              label: 'DJs & Electrónica',  subtitle: 'Fiestas, clubs, bodas',            icon: SoundwaveIcon},
-  { id: 'photography',     label: 'Fotografía',         subtitle: 'Eventos, retratos, bodas',         icon: CameraIcon   },
-  { id: 'video',           label: 'Video & Contenido',  subtitle: 'Clips, documentales, redes',       icon: VideoIcon    },
-  { id: 'graphic-design',  label: 'Diseño & Branding',  subtitle: 'Flyers, logos, portadas',          icon: PenIcon      },
-  { id: 'music-production',label: 'Producción Musical', subtitle: 'Beats, mezcla, grabación',         icon: MusicIcon    },
+  { id: 'live-music',      label: 'Música en Vivo',       subtitle: 'Bandas, solistas, acústico',           icon: MicIcon      },
+  { id: 'dj',              label: 'DJs & Electrónica',    subtitle: 'Fiestas, clubs, bodas',                icon: SoundwaveIcon},
+  { id: 'photography',     label: 'Fotografía',            subtitle: 'Eventos, retratos, bodas',             icon: CameraIcon   },
+  { id: 'video',           label: 'Video & Contenido',    subtitle: 'Clips, documentales, redes',           icon: VideoIcon    },
+  { id: 'graphic-design',  label: 'Diseño & Branding',    subtitle: 'Flyers, logos, portadas',              icon: PenIcon      },
+  { id: 'music-production',label: 'Producción Musical',   subtitle: 'Beats, mezcla, grabación',             icon: MusicIcon    },
+  { id: 'dance',           label: 'Danza & Performance',  subtitle: 'Urbano, clásico, shows',               icon: MicIcon      },
+  { id: 'tattoo',          label: 'Tatuaje & Body Art',   subtitle: 'Tattoo, piercing, body paint',         icon: PenIcon      },
+  { id: 'magic',           label: 'Magia & Entretenimiento', subtitle: 'Ilusionistas, malabaristas, circo',  icon: SoundwaveIcon},
+  { id: 'visual-art',      label: 'Arte Visual',          subtitle: 'Pintura, ilustración, escultura',     icon: PenIcon      },
+  { id: 'writing',         label: 'Escritura & Letras',   subtitle: 'Letristas, guionistas, contenidos',   icon: MusicIcon    },
+  { id: 'makeup',          label: 'Maquillaje & Estilismo', subtitle: 'Bodas, cine, teatro, pasarela',     icon: CameraIcon   },
 ];
 
 /* ─── Sub-etiquetas por categoría ────────────────────────────────────────── */
 const SUBCATEGORIES: Record<string, { sectionLabel: string; tags: string[] }> = {
-  'live-music':       { sectionLabel: 'Estilo Musical',        tags: ['Banda de Rock', 'Jazz & Blues', 'Pop Acústico', 'Cantautor', 'Clásica', 'Folklore & Regional'] },
-  'dj':               { sectionLabel: 'Géneros & Ocasiones',   tags: ['House & Tech', 'Reggaeton & Urban', 'Pop & Comercial', 'Hip-Hop & Trap', 'DJ para Bodas', 'Festival & Club'] },
-  'photography':      { sectionLabel: 'Estilos de Fotografía', tags: ['Eventos', 'Retratos', 'Editorial', 'Bodas', 'Producto', 'Urbana & Street'] },
-  'video':            { sectionLabel: 'Tipos de Video',        tags: ['Clips Musicales', 'Bodas & Celebraciones', 'Redes Sociales', 'Documental', 'Comercial', 'Cortometraje'] },
-  'graphic-design':   { sectionLabel: 'Servicios de Diseño',   tags: ['Logo & Identidad', 'Flyers & Carteles', 'Portadas de Álbum', 'Redes Sociales', 'Merch & Textil', 'Cartelería de Evento'] },
-  'music-production': { sectionLabel: 'Servicios de Estudio',  tags: ['Beat Making', 'Mezcla & Mastering', 'Grabación en Estudio', 'Composición', 'Arreglos', 'Jingle & Publicidad'] },
+  'live-music':       { sectionLabel: 'Estilo Musical',           tags: ['Banda de Rock', 'Jazz & Blues', 'Pop Acústico', 'Cantautor', 'Clásica', 'Folklore & Regional'] },
+  'dj':               { sectionLabel: 'Géneros & Ocasiones',      tags: ['House & Tech', 'Reggaeton & Urban', 'Pop & Comercial', 'Hip-Hop & Trap', 'DJ para Bodas', 'Festival & Club'] },
+  'photography':      { sectionLabel: 'Estilos de Fotografía',    tags: ['Eventos', 'Retratos', 'Editorial', 'Bodas', 'Producto', 'Urbana & Street'] },
+  'video':            { sectionLabel: 'Tipos de Video',           tags: ['Clips Musicales', 'Bodas & Celebraciones', 'Redes Sociales', 'Documental', 'Comercial', 'Cortometraje'] },
+  'graphic-design':   { sectionLabel: 'Servicios de Diseño',      tags: ['Logo & Identidad', 'Flyers & Carteles', 'Portadas de Álbum', 'Redes Sociales', 'Merch & Textil', 'Cartelería de Evento'] },
+  'music-production': { sectionLabel: 'Servicios de Estudio',     tags: ['Beat Making', 'Mezcla & Mastering', 'Grabación en Estudio', 'Composición', 'Arreglos', 'Jingle & Publicidad'] },
+  'dance':            { sectionLabel: 'Estilos de Danza',         tags: ['Urbano & Hip-Hop', 'Ballet Clásico', 'Contemporáneo', 'Latino & Salsa', 'Folklore', 'Show & Entretenimiento'] },
+  'tattoo':           { sectionLabel: 'Tipos de Tattoo & Art',    tags: ['Realismo', 'Geométrico', 'Minimalista', 'Neo-Tradicional', 'Line Art', 'Color & Acuarela'] },
+  'magic':            { sectionLabel: 'Tipos de Show',            tags: ['Magia de Cerca', 'Gran Ilusionismo', 'Malabares', 'Acrobacia', 'Circo', 'Fuego & Pirotecnia'] },
+  'visual-art':       { sectionLabel: 'Tipo de Arte',             tags: ['Pintura al Óleo', 'Acuarela', 'Ilustración Digital', 'Mural', 'Escultura', 'Arte Urbano'] },
+  'writing':          { sectionLabel: 'Tipo de Escritura',        tags: ['Letras de Canción', 'Guiones', 'Copywriting', 'Poesía', 'Contenidos Web', 'Libros & Narrativa'] },
+  'makeup':           { sectionLabel: 'Especialidad',             tags: ['Maquillaje de Bodas', 'Cine & Teatro', 'Efectos Especiales FX', 'Pasarela & Moda', 'Caracterización', 'Nail Art'] },
 };
 
 /* ─── Componente principal ───────────────────────────────────────────────── */
