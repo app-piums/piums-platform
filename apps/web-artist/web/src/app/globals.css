@@ -98,11 +98,11 @@ div[class*="rounded-2xl"][class*="border"][class*="bg-white"]:hover {
   to   { transform: translate(-50%, -50%) scale(4); opacity: 0; }
 }
 
-button[class*="bg-[#FF6A00]"] {
+button[class*="bg-[#FF6A00]"]:not([class*="fixed"]) {
   position: relative;
   overflow: hidden;
 }
-button[class*="bg-[#FF6A00]"]::after {
+button[class*="bg-[#FF6A00]"]:not([class*="fixed"])::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -115,6 +115,6 @@ button[class*="bg-[#FF6A00]"]::after {
   transform: translate(-50%, -50%) scale(0);
   opacity: 0;
 }
-button[class*="bg-[#FF6A00]"]:active::after {
+button[class*="bg-[#FF6A00]"]:not([class*="fixed"]):active::after {
   animation: piums-ripple 0.45s ease-out forwards;
 }
