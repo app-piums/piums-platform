@@ -159,6 +159,17 @@ router.get(
   bookingController.getAvailableSlots.bind(bookingController)
 );
 
+/**
+ * GET /api/availability/busy-artists?date=YYYY-MM-DD
+ * Devuelve los IDs de artistas con reservas en una fecha dada
+ * Público
+ */
+router.get(
+  "/availability/busy-artists",
+  availabilityLimiter,
+  bookingController.getArtistsBusyOnDate.bind(bookingController)
+);
+
 // ==================== SLOTS BLOQUEADOS ====================
 
 /**

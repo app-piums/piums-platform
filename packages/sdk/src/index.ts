@@ -1020,6 +1020,15 @@ class PiumsSDK {
   }
 
   /**
+   * Devuelve los IDs de artistas con reservas PENDIENTES o CONFIRMADAS en una fecha (YYYY-MM-DD)
+   */
+  async getArtistsBusyOnDate(date: string): Promise<{ busyArtistIds: string[]; date: string }> {
+    const response = await fetch(`${this.baseUrl}/availability/busy-artists?date=${encodeURIComponent(date)}`);
+    if (!response.ok) throw new Error(`Error al consultar disponibilidad: ${response.status}`);
+    return response.json();
+  }
+
+  /**
    * Bloquea un slot de tiempo en el calendario del artista
    */
   async blockSlot(payload: BlockSlotPayload): Promise<BlockedSlot> {

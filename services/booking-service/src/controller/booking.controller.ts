@@ -319,6 +319,23 @@ export class BookingController {
     }
   }
 
+  async getArtistsBusyOnDate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { date } = req.query;
+      if (!date || typeof date !== 'string') {
+        return res.status(400).json({ message: 'El parámetro date es requerido (YYYY-MM-DD)' });
+      }
+      const parsed = new Date(date);
+      if (isNaN(parsed.getTime())) {
+        return res.status(400).json({ message: 'Fecha inválida' });
+      }
+      const busyArtistIds = await bookingService.getArtistsBusyOnDate(parsed);
+      res.json({ busyArtistIds, date });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ==================== SLOTS BLOQUEADOS ====================
 
   async blockSlot(req: AuthRequest, res: Response, next: NextFunction) {

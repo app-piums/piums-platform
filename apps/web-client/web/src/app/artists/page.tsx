@@ -10,6 +10,7 @@ import { useInfiniteArtists, type ArtistsFilters } from '@/hooks/useInfiniteArti
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
+import { sdk } from '@piums/sdk';
 
 const CATEGORIES = [
   { value: '',           label: 'Todas las categorías' },
@@ -133,12 +134,31 @@ function ArtistsPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
 
+  // Params de contexto de evento
+  const eventId = searchParams.get('eventId') || '';
+  const eventDate = searchParams.get('date') || '';
+
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
   const [clientCountry, setClientCountry] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem('client_country') ?? '' : '')
   );
+
+  // IDs de artistas ocupados en la fecha del evento
+  const [busyArtistIds, setBusyArtistIds] = useState<Set<string>>(new Set());
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  useEffect(() => {
+    if (!eventDate) { setBusyArtistIds(new Set()); return; }
+    let mounted = true;
+    setLoadingAvailability(true);
+    sdk.getArtistsBusyOnDate(eventDate)
+      .then((res) => { if (mounted) setBusyArtistIds(new Set(res.busyArtistIds)); })
+      .catch(() => { /* si falla no bloqueamos */ })
+      .finally(() => { if (mounted) setLoadingAvailability(false); });
+    return () => { mounted = false; };
+  }, [eventDate]);
 
   const handleCountryDetected = useCallback((country: string) => {
     const upper = country.toUpperCase();
@@ -178,6 +198,9 @@ function ArtistsPageContent() {
     if (cat) urlParams.set('category', cat);
     if (loc) urlParams.set('location', loc);
     if (q)   urlParams.set('q', q);
+    // Preservar contexto de evento
+    if (eventId)   urlParams.set('eventId', eventId);
+    if (eventDate) urlParams.set('date', eventDate);
     const qs = urlParams.toString();
     router.push(`/artists${qs ? `?${qs}` : ''}`, { scroll: false });
   };
@@ -206,7 +229,13 @@ function ArtistsPageContent() {
         <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Explorar Artistas</h1>
-            <p className="text-sm text-gray-400">Descubre profesionales talentosos para tu evento</p>
+            {eventDate ? (
+              <p className="text-sm text-[#FF6A00] font-medium">
+                Disponibilidad para el {new Date(eventDate + 'T12:00:00').toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400">Descubre profesionales talentosos para tu evento</p>
+            )}
           </div>
           {hasActiveFilters && (
             <button
@@ -223,7 +252,13 @@ function ArtistsPageContent() {
           {/* Mobile title */}
           <div className="lg:hidden mb-4">
             <h1 className="text-xl font-bold text-gray-900">Explorar Artistas</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Encuentra el talento perfecto para tu evento</p>
+            {eventDate ? (
+              <p className="text-sm text-[#FF6A00] font-medium mt-0.5">
+                Disponibilidad: {new Date(eventDate + 'T12:00:00').toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400 mt-0.5">Encuentra el talento perfecto para tu evento</p>
+            )}
           </div>
 
           {/* Filters */}
@@ -267,9 +302,16 @@ function ArtistsPageContent() {
 
           {/* Count badge */}
           {!isLoading && totalArtists > 0 && (
-            <p className="text-xs text-gray-400 mb-4">
-              {totalArtists} {totalArtists === 1 ? 'artista encontrado' : 'artistas encontrados'}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs text-gray-400">
+                {totalArtists} {totalArtists === 1 ? 'artista encontrado' : 'artistas encontrados'}
+              </p>
+              {eventDate && !loadingAvailability && busyArtistIds.size > 0 && (
+                <p className="text-xs text-amber-600 font-medium">
+                  {busyArtistIds.size} {busyArtistIds.size === 1 ? 'artista ocupado' : 'artistas ocupados'} en esta fecha
+                </p>
+              )}
+            </div>
           )}
 
           {/* Results */}
@@ -308,7 +350,17 @@ function ArtistsPageContent() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
                 {allArtists.map(artist => (
-                  <ArtistCard key={artist.id} artist={artist} />
+                  <div key={artist.id} className="relative">
+                    {busyArtistIds.has(artist.id) && (
+                      <div className="absolute inset-0 z-10 rounded-2xl bg-gray-900/50 flex flex-col items-center justify-center gap-2 pointer-events-none">
+                        <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                          No disponible
+                        </span>
+                        <span className="text-white text-xs opacity-80">Ya tiene reserva este día</span>
+                      </div>
+                    )}
+                    <ArtistCard artist={artist} />
+                  </div>
                 ))}
               </div>
 
