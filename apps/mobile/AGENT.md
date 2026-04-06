@@ -321,21 +321,64 @@ extension Color {
 
 ---
 
+## Repositorio iOS
+
+**Todo el código de la app iOS vive en su propio repositorio, separado del monorepo principal:**
+
+```
+https://github.com/app-piums/piums-los.git
+```
+
+### Setup inicial
+
+```bash
+# Clonar el repositorio iOS
+git clone https://github.com/app-piums/piums-los.git
+cd piums-los
+
+# Rama principal de desarrollo
+git checkout -b feature/<nombre-feature>
+
+# Nunca hacer push directo a main — abrir Pull Request
+```
+
+### Flujo de ramas
+
+```
+main          ← producción (protegida)
+develop       ← integración/staging
+feature/*     ← nuevas funcionalidades
+fix/*         ← corrección de bugs
+release/*     ← preparación de release a App Store
+```
+
+### Convención de commits
+
+```
+feat: agregar pantalla de perfil de artista
+fix: corregir token refresh en interceptor
+chore: actualizar dependencias SPM
+style: aplicar colores de brand en HomeView
+test: agregar tests de BookingRepository
+```
+
+---
+
 ## Comandos útiles de desarrollo
 
 ```bash
-# Abrir el proyecto
-open apps/mobile/Piums.xcworkspace
+# Clonar y abrir el proyecto
+git clone https://github.com/app-piums/piums-los.git && open piums-los/Piums.xcworkspace
 
 # Correr tests desde CLI
-xcodebuild test -workspace apps/mobile/Piums.xcworkspace \
+xcodebuild test -workspace Piums.xcworkspace \
   -scheme Piums -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
 
 # Limpiar build
-xcodebuild clean -workspace apps/mobile/Piums.xcworkspace -scheme Piums
+xcodebuild clean -workspace Piums.xcworkspace -scheme Piums
 
-# Levantar el backend local para desarrollo
-cd infra/docker && docker compose -f docker-compose.dev.yml up -d
+# Levantar el backend local para desarrollo (desde piums-platform)
+cd ../piums-platform/infra/docker && docker compose -f docker-compose.dev.yml up -d
 
 # URL base del backend en desarrollo (configurar en .xcconfig)
 API_BASE_URL = http://localhost:3000
