@@ -56,13 +56,16 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── Create Event Modal ───────────────────────────────────────────────────────
 function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate: (event: any) => void }) {
-  const [form, setForm] = useState({ name: '', description: '', location: '', notes: '' });
+  const [form, setForm] = useState({ name: '', description: '', location: '', notes: '', eventDate: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const today = new Date().toISOString().split('T')[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return setError('El nombre es obligatorio');
+    if (!form.eventDate) return setError('La fecha del evento es obligatoria');
     setSaving(true);
     setError(null);
     try {
@@ -71,6 +74,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
         description: form.description.trim() || undefined,
         location: form.location.trim() || undefined,
         notes: form.notes.trim() || undefined,
+        eventDate: form.eventDate ? new Date(form.eventDate).toISOString() : undefined,
       });
       onCreate(event);
     } catch (err: any) {
@@ -100,6 +104,16 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
               placeholder="Ej: Boda García-López, Quince años Ana"
               maxLength={200}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha del evento *</label>
+            <input
+              type="date"
+              value={form.eventDate}
+              min={today}
+              onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
             />
           </div>
           <div>
@@ -160,6 +174,10 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
 // ─── Event card ───────────────────────────────────────────────────────────────
 function EventCard({ event }: { event: any }) {
   const bookingCount = (event.bookings ?? []).length;
+  const eventDate = event.eventDate ? new Date(event.eventDate) : null;
+  const formattedDate = eventDate
+    ? eventDate.toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
   return (
     <Link href={`/events/${event.id}`} className="block">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
@@ -170,6 +188,12 @@ function EventCard({ event }: { event: any }) {
           </div>
           <StatusBadge status={event.status} />
         </div>
+        {formattedDate && (
+          <div className="flex items-center gap-1.5 text-sm text-[#FF6A00] font-medium mb-2">
+            <CalendarIcon className="w-4 h-4 shrink-0" />
+            <span className="capitalize">{formattedDate}</span>
+          </div>
+        )}
         {event.location && (
           <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-2">
             <MapPinIcon className="w-4 h-4 shrink-0 text-gray-400" />

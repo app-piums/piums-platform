@@ -13,6 +13,7 @@ const createEventSchema = z.object({
   locationLat: z.number().min(-90).max(90).optional(),
   locationLng: z.number().min(-180).max(180).optional(),
   notes: z.string().max(2000).optional(),
+  eventDate: z.string().optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 const updateEventSchema = z.object({
@@ -22,6 +23,7 @@ const updateEventSchema = z.object({
   locationLat: z.number().min(-90).max(90).optional(),
   locationLng: z.number().min(-180).max(180).optional(),
   notes: z.string().max(2000).optional(),
+  eventDate: z.string().optional().transform((v) => (v ? new Date(v) : undefined)),
 });
 
 const cancelEventSchema = z.object({

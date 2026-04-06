@@ -23,6 +23,7 @@ export const eventService = {
     locationLat?: number;
     locationLng?: number;
     notes?: string;
+    eventDate?: Date;
   }) {
     const code = await generateEventCode();
     const event = await prisma.event.create({
@@ -35,6 +36,7 @@ export const eventService = {
         locationLat: payload.locationLat,
         locationLng: payload.locationLng,
         notes: payload.notes,
+        eventDate: payload.eventDate,
         status: EventStatus.DRAFT,
       },
     });
@@ -87,6 +89,7 @@ export const eventService = {
     locationLat?: number;
     locationLng?: number;
     notes?: string;
+    eventDate?: Date;
   }) {
     const event = await prisma.event.findFirst({ where: { id: eventId, clientId } });
     if (!event) throw new Error('EVENT_NOT_FOUND');

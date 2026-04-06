@@ -60,6 +60,7 @@ model Event {
   locationLat Float?
   locationLng Float?
   notes       String?     @db.Text
+  eventDate   DateTime?   // Fecha del evento
 
   status      EventStatus  @default(DRAFT)
 

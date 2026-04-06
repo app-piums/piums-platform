@@ -100,7 +100,14 @@ function EditEventModal({
   onClose: () => void;
   onSaved: (updated: any) => void;
 }) {
-  const [form, setForm] = useState({ name: event.name || '', description: event.description || '', location: event.location || '', notes: event.notes || '' });
+  const today = new Date().toISOString().split('T')[0];
+  const [form, setForm] = useState({
+    name: event.name || '',
+    description: event.description || '',
+    location: event.location || '',
+    notes: event.notes || '',
+    eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,6 +122,7 @@ function EditEventModal({
         description: form.description.trim() || undefined,
         location: form.location.trim() || undefined,
         notes: form.notes.trim() || undefined,
+        eventDate: form.eventDate ? new Date(form.eventDate).toISOString() : undefined,
       });
       onSaved(updated);
     } catch (err: any) {
@@ -142,6 +150,10 @@ function EditEventModal({
             <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] resize-none" rows={3} maxLength={2000} />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha del evento</label>
+            <input type="date" value={form.eventDate} min={today} onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]" />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Lugar</label>
             <input type="text" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]" maxLength={500} />
           </div>
@@ -162,10 +174,12 @@ function EditEventModal({
 // ─── Add Booking Modal ────────────────────────────────────────────────────────
 function AddBookingModal({
   eventId,
+  eventDate,
   onClose,
   onAdded,
 }: {
   eventId: string;
+  eventDate?: string;
   onClose: () => void;
   onAdded: (booking: any) => void;
 }) {
@@ -178,12 +192,17 @@ function AddBookingModal({
     let mounted = true;
     (async () => {
       try {
-        // Fetch the client's bookings and filter PENDING ones without an event
-        const result = await sdk.listBookings({ status: 'PENDING', limit: 100 });
-        const bookings = result?.bookings ?? [];
+        const dateFilter = eventDate ? { startDate: eventDate, endDate: eventDate } : {};
+        const [pendingResult, confirmedResult] = await Promise.all([
+          sdk.listBookings({ status: 'PENDING', ...dateFilter, limit: 100 }),
+          eventDate ? sdk.listBookings({ status: 'CONFIRMED', ...dateFilter, limit: 100 }) : Promise.resolve({ bookings: [] }),
+        ]);
+        const all = [
+          ...(pendingResult?.bookings ?? []),
+          ...(confirmedResult?.bookings ?? []),
+        ];
         if (mounted) {
-          // Exclude bookings already in an event
-          setPendingBookings(bookings.filter((b: any) => !b.eventId));
+          setPendingBookings(all.filter((b: any) => !b.eventId));
         }
       } catch (err: any) {
         if (mounted) setError(err.message || 'Error al cargar reservas');
@@ -192,7 +211,7 @@ function AddBookingModal({
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [eventDate]);
 
   const handleAdd = async (bookingId: string) => {
     setAdding(bookingId);
@@ -215,13 +234,27 @@ function AddBookingModal({
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="w-5 h-5" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
+          {eventDate && (
+            <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mb-4 text-sm text-orange-700">
+              <CalendarIcon className="w-4 h-4 shrink-0" />
+              <span>Mostrando reservas del <span className="font-semibold">{new Date(eventDate + 'T12:00:00').toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></span>
+            </div>
+          )}
           {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
           {loading ? (
             <div className="flex justify-center py-8"><Loading /></div>
           ) : pendingBookings.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-gray-500 text-sm mb-3">No tienes reservas PENDIENTES disponibles para agregar.</p>
-              <p className="text-xs text-gray-400">Solo se pueden agregar reservas en estado <span className="font-semibold text-yellow-700">PENDIENTE</span> que no pertenezcan a otro evento.</p>
+              <p className="text-gray-500 text-sm mb-3">
+                {eventDate
+                  ? 'No hay reservas disponibles para esta fecha.'
+                  : 'No tienes reservas PENDIENTES disponibles para agregar.'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {eventDate
+                  ? 'Solo se muestran reservas PENDIENTES o CONFIRMADAS programadas para la fecha del evento que no pertenezcan a otro evento.'
+                  : 'Solo se pueden agregar reservas en estado PENDIENTE que no pertenezcan a otro evento.'}
+              </p>
             </div>
           ) : (
             <ul className="space-y-3">
@@ -250,7 +283,7 @@ function AddBookingModal({
         </div>
         <div className="p-4 border-t border-gray-100 shrink-0 space-y-2">
           <Link
-            href={`/booking?eventId=${eventId}`}
+            href={`/booking?eventId=${eventId}${eventDate ? `&date=${eventDate}` : ''}`}
             className="flex items-center justify-center gap-2 w-full bg-[#FF6A00] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#e55a00] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -436,6 +469,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <StatusBadge status={event.status} map={STATUS_MAP} />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">{event.name}</h1>
+            {event.eventDate && (
+              <div className="flex items-center gap-1.5 text-sm text-[#FF6A00] font-medium mt-1.5">
+                <CalendarIcon className="w-4 h-4 shrink-0" />
+                <span className="capitalize">{new Date(event.eventDate).toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              </div>
+            )}
             {event.location && (
               <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-1.5">
                 <MapPinIcon className="w-4 h-4 shrink-0 text-gray-400" />
@@ -567,6 +606,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
             {/* Meta */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-sm text-gray-600 space-y-2">
+              {event.eventDate && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Fecha</span>
+                  <span className="text-[#FF6A00] font-medium">{new Date(event.eventDate).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-400">Creado</span>
                 <span>{new Date(event.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
@@ -598,6 +643,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       {showAddBooking && (
         <AddBookingModal
           eventId={id}
+          eventDate={event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : undefined}
           onClose={() => setShowAddBooking(false)}
           onAdded={handleBookingAdded}
         />

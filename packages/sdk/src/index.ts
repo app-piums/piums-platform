@@ -2497,7 +2497,7 @@ class PiumsSDK {
   // Events
   // ============================================================================
 
-  async createEvent(payload: { name: string; description?: string; location?: string; locationLat?: number; locationLng?: number; notes?: string }) {
+  async createEvent(payload: { name: string; description?: string; location?: string; locationLat?: number; locationLng?: number; notes?: string; eventDate?: string }) {
     const response = await fetch(`${this.baseUrl}/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2536,7 +2536,7 @@ class PiumsSDK {
     return data.data;
   }
 
-  async updateEvent(eventId: string, payload: { name?: string; description?: string; location?: string; notes?: string }): Promise<any> {
+  async updateEvent(eventId: string, payload: { name?: string; description?: string; location?: string; notes?: string; eventDate?: string }): Promise<any> {
     const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
