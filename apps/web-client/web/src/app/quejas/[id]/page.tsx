@@ -14,12 +14,12 @@ type DisputeType   = 'CANCELLATION' | 'QUALITY' | 'REFUND' | 'NO_SHOW' | 'ARTIST
 const MY_SENDER_TYPE = 'client' as const;
 
 const STATUS_CONFIG: Record<DisputeStatus, { label: string; className: string }> = {
-  OPEN:          { label: 'Abierta',        className: 'bg-red-100 text-red-700' },
+  OPEN:          { label: 'Abierta',        className: 'bg-yellow-100 text-yellow-700' },
   IN_REVIEW:     { label: 'En revisión',    className: 'bg-blue-100 text-blue-700' },
-  AWAITING_INFO: { label: 'Info solicitada',className: 'bg-amber-100 text-amber-700' },
-  ESCALATED:     { label: 'Escalada',       className: 'bg-purple-100 text-purple-700' },
+  AWAITING_INFO: { label: 'Info solicitada',className: 'bg-orange-100 text-orange-700' },
+  ESCALATED:     { label: 'Escalada',       className: 'bg-red-100 text-red-700' },
   RESOLVED:      { label: 'Resuelta',       className: 'bg-green-100 text-green-700' },
-  CLOSED:        { label: 'Cerrada',        className: 'bg-gray-100 text-gray-600' },
+  CLOSED:        { label: 'Cerrada',        className: 'bg-zinc-100 text-zinc-600' },
 };
 
 const TYPE_LABELS: Record<DisputeType, string> = {
@@ -109,15 +109,15 @@ export default function QuejasDetailPage() {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
+    <div className="h-screen bg-zinc-50 flex overflow-hidden">
       <ClientSidebar userName={userName} />
 
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
         {/* Header */}
-        <header className="shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
+        <header className="shrink-0 bg-white border-b border-zinc-200 px-4 py-3 flex items-center gap-3">
           <Link
             href="/quejas"
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -129,10 +129,10 @@ export default function QuejasDetailPage() {
                 <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${statusCfg.className}`}>
                   {statusCfg.label}
                 </span>
-                <p className="text-sm font-semibold text-gray-900 truncate">{dispute.subject}</p>
+                <p className="text-sm font-semibold text-zinc-900 truncate">{dispute.subject}</p>
               </div>
             ) : (
-              <p className="text-sm text-gray-400">{loading ? 'Cargando…' : 'Detalle de queja'}</p>
+              <p className="text-sm text-zinc-400">{loading ? 'Cargando…' : 'Detalle de queja'}</p>
             )}
           </div>
           {loading && (
@@ -142,7 +142,7 @@ export default function QuejasDetailPage() {
 
         {error ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-            <p className="text-gray-500">{error}</p>
+            <p className="text-zinc-500">{error}</p>
             <Link href="/quejas" className="text-sm text-[#FF6A00] hover:underline">← Volver a mis quejas</Link>
           </div>
         ) : loading ? (
@@ -157,7 +157,7 @@ export default function QuejasDetailPage() {
               <div className="max-w-3xl mx-auto px-4 py-6">
 
                 {/* Dispute summary card */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+                <div className="bg-white rounded-xl border border-zinc-200 p-5 mb-6">
                   <div className="flex items-start gap-4">
                     <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                       <svg className="w-6 h-6 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -171,13 +171,13 @@ export default function QuejasDetailPage() {
                             {statusCfg.label}
                           </span>
                         )}
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                        <span className="text-xs text-zinc-600 bg-zinc-100 px-2.5 py-0.5 rounded-full">
                           {TYPE_LABELS[dispute.disputeType as DisputeType] ?? dispute.disputeType}
                         </span>
                       </div>
-                      <p className="font-semibold text-gray-900 text-sm leading-snug mb-1">{dispute.subject}</p>
-                      <p className="text-xs text-gray-500 leading-relaxed mb-3">{dispute.description}</p>
-                      <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+                      <p className="font-semibold text-zinc-900 text-sm leading-snug mb-1">{dispute.subject}</p>
+                      <p className="text-xs text-zinc-500 leading-relaxed mb-3">{dispute.description}</p>
+                      <div className="flex items-center gap-3 text-xs text-zinc-400 flex-wrap">
                         <span className="font-mono">#{dispute.bookingId.slice(0, 8)}</span>
                         <span>·</span>
                         <span>
@@ -186,21 +186,21 @@ export default function QuejasDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-[11px] text-gray-300 mt-4 border-t border-gray-50 pt-3">
+                  <p className="text-[11px] text-zinc-400 mt-4 border-t border-zinc-100 pt-3">
                     El equipo de Piums revisará tu caso y se pondrá en contacto a través de este chat.
                   </p>
                 </div>
 
                 {visibleMessages.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-500">Sin mensajes aún</p>
-                      <p className="text-sm text-gray-400 mt-1">El equipo de Piums se pondrá en contacto pronto.</p>
+                      <p className="font-medium text-zinc-500">Sin mensajes aún</p>
+                      <p className="text-sm text-zinc-400 mt-1">El equipo de Piums se pondrá en contacto pronto.</p>
                     </div>
                   </div>
                 ) : (
@@ -208,11 +208,11 @@ export default function QuejasDetailPage() {
                     {grouped.map(group => (
                       <div key={group.date}>
                         <div className="flex items-center gap-3 my-6">
-                          <div className="flex-1 h-px bg-gray-100" />
-                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                          <div className="flex-1 h-px bg-zinc-200" />
+                          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                             {formatDateSeparator(group.messages[0].createdAt)}
                           </span>
-                          <div className="flex-1 h-px bg-gray-100" />
+                          <div className="flex-1 h-px bg-zinc-200" />
                         </div>
                         <div className="space-y-0.5">
                           {group.messages.map((m, i) => {
@@ -228,15 +228,15 @@ export default function QuejasDetailPage() {
                             const bubbleClass = isMine
                               ? 'bg-[#FF6A00] text-white rounded-2xl rounded-br-sm shadow-sm'
                               : isStaff
-                              ? 'bg-white border border-gray-200 text-gray-900 rounded-2xl rounded-bl-sm shadow-sm'
+                              ? 'bg-white border border-zinc-200 text-zinc-900 rounded-2xl rounded-bl-sm shadow-sm'
                               : 'bg-white border border-indigo-100 text-indigo-900 rounded-2xl rounded-bl-sm shadow-sm';
-                            const timeClass = isMine ? 'text-orange-100' : 'text-gray-400';
+                            const timeClass = isMine ? 'text-orange-100' : 'text-zinc-400';
 
                             return (
                               <div key={m.id ?? i} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3`}>
                                 <div className="flex flex-col">
                                   {showLabel && !isMine && (
-                                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1 px-1 text-gray-400">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1 px-1 text-zinc-400">
                                       {senderLabel}
                                     </p>
                                   )}
@@ -278,7 +278,7 @@ export default function QuejasDetailPage() {
 
             {/* Compose */}
             {isActive && (
-              <div className="shrink-0 border-t border-gray-200 bg-white">
+              <div className="shrink-0 border-t border-zinc-200 bg-white">
                 <div className="max-w-3xl mx-auto p-4">
                   <div className="flex items-end gap-2">
                     <textarea
@@ -288,14 +288,14 @@ export default function QuejasDetailPage() {
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                       placeholder="Escribe un mensaje..."
                       rows={1}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] transition-colors text-sm"
+                      className="flex-1 px-4 py-2 border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] transition-colors text-sm"
                       style={{ maxHeight: '120px' }}
                       autoFocus
                     />
                     <button
                       onClick={sendMessage}
                       disabled={sending || !newMsg.trim()}
-                      className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6A00] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shrink-0"
+                      className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6A00] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed shrink-0"
                     >
                       {sending ? (
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -307,7 +307,7 @@ export default function QuejasDetailPage() {
                       <span className="hidden sm:inline text-sm">Enviar</span>
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Presiona Enter para enviar, Shift + Enter para nueva línea</p>
+                  <p className="text-xs text-zinc-500 mt-2">Presiona Enter para enviar, Shift + Enter para nueva línea</p>
                 </div>
               </div>
             )}
