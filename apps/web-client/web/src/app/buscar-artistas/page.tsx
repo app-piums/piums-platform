@@ -37,6 +37,53 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   CATEGORY_OPTIONS.filter(o => o.value).map(o => [o.value, o.label])
 );
 
+// Synonym map: query terms → category enum values they should match
+const CATEGORY_SYNONYMS: Record<string, string[]> = {
+  'musica':    ['MUSICO'],
+  'música':    ['MUSICO'],
+  'musico':    ['MUSICO'],
+  'músico':    ['MUSICO'],
+  'banda':     ['MUSICO'],
+  'band':      ['MUSICO'],
+  'cantante':  ['MUSICO'],
+  'guitar':    ['MUSICO'],
+  'guitarra':  ['MUSICO'],
+  'piano':     ['MUSICO'],
+  'violín':    ['MUSICO'],
+  'violin':    ['MUSICO'],
+  'dj':        ['DJ'],
+  'disc':      ['DJ'],
+  'foto':      ['FOTOGRAFO', 'VIDEOGRAFO'],
+  'fotograf':  ['FOTOGRAFO'],
+  'fotografo': ['FOTOGRAFO'],
+  'fotógrafo': ['FOTOGRAFO'],
+  'video':     ['VIDEOGRAFO'],
+  'videograf': ['VIDEOGRAFO'],
+  'maquillaj': ['MAQUILLADOR'],
+  'maquilla':  ['MAQUILLADOR'],
+  'makeup':    ['MAQUILLADOR'],
+  'tatuaj':    ['TATUADOR'],
+  'tattoo':    ['TATUADOR'],
+  'tatuador':  ['TATUADOR'],
+  'bail':      ['BAILARIN'],
+  'dance':     ['BAILARIN'],
+  'baile':     ['BAILARIN'],
+  'bailar':    ['BAILARIN'],
+  'anima':     ['ANIMADOR'],
+  'mago':      ['MAGO'],
+  'magic':     ['MAGO'],
+  'magia':     ['MAGO'],
+  'acrobat':   ['ACROBATA'],
+  'acróbat':   ['ACROBATA'],
+  'pint':      ['PINTOR'],
+  'pintor':    ['PINTOR'],
+  'escult':    ['ESCULTOR'],
+  'diseñ':     ['DISENADOR'],
+  'diseño':    ['DISENADOR'],
+  'design':    ['DISENADOR'],
+  'escrit':    ['ESCRITOR'],
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -517,12 +564,27 @@ function BuscarArtistasContent() {
       if (cat !== categoryFilter.toUpperCase()) return false;
     }
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const name = a.nombre.toLowerCase();
-      const bio = (a.bio || a.descripcion || '').toLowerCase();
-      const city = ((a as any).city || a.ciudad || '').toLowerCase();
-      const cat = (a.category || a.categoria || '').toLowerCase();
-      if (!name.includes(q) && !bio.includes(q) && !city.includes(q) && !cat.includes(q)) return false;
+      const q = searchQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const name = a.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const bio = (a.bio || (a as any).descripcion || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const city = ((a as any).city || a.ciudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const catEnum = (a.category || a.categoria || '').toUpperCase();
+      const catLabel = (CATEGORY_LABEL[catEnum] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const specialties = ((a as any).specialties as string[] || []).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      // Synonym expansion: check if query matches any synonym → matches that category
+      const synonymMatched = Object.entries(CATEGORY_SYNONYMS).some(([term, cats]) =>
+        q.includes(term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) && cats.includes(catEnum)
+      );
+
+      if (
+        !name.includes(q) &&
+        !bio.includes(q) &&
+        !city.includes(q) &&
+        !catLabel.includes(q) &&
+        !specialties.includes(q) &&
+        !synonymMatched
+      ) return false;
     }
     return true;
   });
