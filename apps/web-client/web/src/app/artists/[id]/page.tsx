@@ -499,19 +499,26 @@ export default function ArtistProfilePage() {
                           <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
                             <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                            {/* What's included — always visible when items exist */}
+                            {/* What's included — revealed on hover with smooth animation */}
                             {(service.whatIsIncluded?.length ?? 0) > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Incluye</p>
-                                {service.whatIsIncluded!.map((item, i) => (
-                                  <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                                    {/* Sparkle bullet */}
-                                    <svg className="h-3.5 w-3.5 text-[#FF6A00] shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                      <path d="M12 2l1.8 5.4 5.7.4-4.4 3.3 1.6 5.5L12 13.5l-4.7 3.1 1.6-5.5L4.5 7.8l5.7-.4z" />
-                                    </svg>
-                                    <span>{item}</span>
+                              <div className={`grid transition-all duration-300 ease-in-out ${
+                                hoveredServiceId === service.id
+                                  ? 'grid-rows-[1fr] opacity-100 mt-3'
+                                  : 'grid-rows-[0fr] opacity-0 mt-0'
+                              }`}>
+                                <div className="overflow-hidden">
+                                  <div className="pt-3 border-t border-gray-100 space-y-1.5">
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Incluye</p>
+                                    {service.whatIsIncluded!.map((item, i) => (
+                                      <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                        <svg className="h-3.5 w-3.5 text-[#FF6A00] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M12 2l1.8 5.4 5.7.4-4.4 3.3 1.6 5.5L12 13.5l-4.7 3.1 1.6-5.5L4.5 7.8l5.7-.4z" />
+                                        </svg>
+                                        <span>{item}</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
+                                </div>
                               </div>
                             )}
                           </div>
