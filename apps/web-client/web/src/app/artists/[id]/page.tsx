@@ -44,7 +44,7 @@ export default function ArtistProfilePage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('services');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null);
@@ -67,10 +67,10 @@ export default function ArtistProfilePage() {
 
   const highlightedServiceName = useMemo(() => services[0]?.name ?? null, [services]);
   const tabItems: Array<{ key: typeof activeTab; label: string }> = [
-    { key: 'about', label: 'Acerca de' },
     { key: 'services', label: 'Servicios' },
     { key: 'portfolio', label: 'Portafolio' },
     { key: 'reviews', label: 'Reseñas' },
+    { key: 'about', label: 'Acerca de' },
   ];
 
   const loadArtistData = useCallback(async () => {

@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import type { Artist } from '@piums/sdk';
 
 interface ArtistCardProps {
@@ -14,6 +15,7 @@ interface ArtistCardProps {
 }
 
 export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
+  const { formatPrice } = useCurrency();
   return (
     <Link href={`/artists/${artist.slug || artist.id}`}>
       <Card hover padding="none" className="overflow-hidden h-full">
@@ -120,7 +122,7 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
                 {artist.matchedService?.name ?? artist.mainServiceName ?? 'Servicio principal'}
               </span>
               <span className="text-sm font-semibold text-[#FF6A00]">
-                Desde Q{(artist.matchedService?.price ?? artist.mainServicePrice!).toLocaleString()}
+                Desde {formatPrice(artist.matchedService?.price ?? artist.mainServicePrice!)}
               </span>
             </div>
           )}

@@ -6,6 +6,7 @@ import { Loading } from '@/components/Loading';
 import { ArtistCard } from '@/components/ArtistCard';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
 import { sdk } from '@piums/sdk';
 import type { Artist, Service } from '@piums/sdk';
 
@@ -40,10 +41,12 @@ function SearchContent() {
   const router = useRouter();
   const { user } = useAuth();
   const searchParams = useSearchParams();
+  const { formatPrice } = useCurrency();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [artists, setArtists] = useState<Artist[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>((searchParams.get('tab') as TabType) || 'all');
@@ -56,12 +59,24 @@ function SearchContent() {
     try {
       setLoading(true);
       setSearchError(null);
-      const results = await sdk.searchArtists({
-        query: query || undefined,
-        categoria: selectedCategory || undefined,
-        ciudad: selectedCity || undefined,
-      });
-      setArtists((results as any).artists ?? []);
+
+      if (query) {
+        // Smart search — returns matchedService with the specific service price that matched
+        const results = await sdk.smartSearch({
+          q: query,
+          city: selectedCity || undefined,
+        });
+        setArtists(results.artists ?? []);
+        setExpandedTerms(results.expandedTerms ?? []);
+      } else {
+        // Filter-only search (category/city without text query)
+        const results = await sdk.searchArtists({
+          categoria: selectedCategory || undefined,
+          ciudad: selectedCity || undefined,
+        });
+        setArtists((results as any).artists ?? []);
+        setExpandedTerms([]);
+      }
       setServices([]);
     } catch (err) {
       console.error('Error searching:', err);
@@ -101,12 +116,14 @@ function SearchContent() {
             <h1 className="text-xl font-bold text-gray-900">Buscar</h1>
             <p className="text-sm text-gray-400">Encuentra el profesional perfecto para tu evento</p>
           </div>
+          <CurrencyToggle />
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile title */}
-          <div className="lg:hidden mb-4">
+          <div className="lg:hidden mb-4 flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-900">Buscar</h1>
+            <CurrencyToggle />
           </div>
 
           {/* Search form */}
@@ -205,6 +222,16 @@ function SearchContent() {
                 <p className="text-sm text-gray-400">{totalResults} resultados</p>
               </div>
 
+              {/* Expanded terms hint (smart search) */}
+              {expandedTerms.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-gray-400">También buscamos:</span>
+                  {expandedTerms.map(term => (
+                    <span key={term} className="px-2 py-0.5 bg-orange-50 text-[#FF6A00] text-xs rounded-full border border-orange-100">{term}</span>
+                  ))}
+                </div>
+              )}
+
               {/* Artist results */}
               {visibleArtists.length > 0 && (
                 <div>
@@ -229,7 +256,7 @@ function SearchContent() {
                             <p className="text-xs text-gray-400 mt-2">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <p className="text-lg font-bold text-[#FF6A00]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-lg font-bold text-[#FF6A00]">{formatPrice(service.basePrice / 100)}</p>
                             <button
                               onClick={() => router.push(`/artists/${service.artistId}`)}
                               className="mt-2 text-xs font-medium text-[#FF6A00] border border-[#FF6A00]/30 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
