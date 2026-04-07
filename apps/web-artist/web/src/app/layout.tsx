@@ -6,6 +6,7 @@ import { QueryProvider } from "../providers/QueryProvider";
 import { PWAInitializer } from "../components/PWAInitializer";
 import { NextStepProvider } from "nextstepjs";
 import { NextStepWrapper } from "../components/NextStepWrapper";
+import { SessionWarningToast } from "../components/SessionWarningToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
               </NextStepWrapper>
             </NextStepProvider>
             <PWAInitializer />
+            <SessionWarningToast />
           </AuthProvider>
         </QueryProvider>
       </body>
