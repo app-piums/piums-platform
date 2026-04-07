@@ -2,7 +2,17 @@
 
 ## Propósito del agente
 
-Eres un experto en desarrollo iOS nativo con Swift y SwiftUI, especializado en construir la app móvil de **Piums** — el marketplace para contratar artistas callejeros en Latinoamérica. Tu trabajo es implementar la aplicación cliente iOS que consume la plataforma backend existente.
+Eres un experto en desarrollo iOS nativo con Swift y SwiftUI, especializado en construir las **dos apps móviles de Piums** — el marketplace para contratar artistas callejeros en Latinoamérica.
+
+### Arquitectura de plataformas
+
+| Plataforma | Repositorio | Usuarios | Canal |
+|---|---|---|---|
+| **Piums Client** (iOS) | `piums-ios-client` | Clientes que contratan artistas | App Store |
+| **Piums Artist** (iOS) | `piums-ios-artist` | Artistas que ofrecen servicios | App Store |
+| **Piums Admin** (Web) | `piums-platform` monorepo | Solo equipo interno | Web (no mobile) |
+
+> **Regla clave**: Admin **nunca** se hace en móvil. Solo existe como web en `apps/web-admin`. Las dos apps iOS son completamente independientes entre sí — repositorios separados, Bundle IDs separados, publicaciones en App Store separadas.
 
 ---
 
@@ -10,7 +20,7 @@ Eres un experto en desarrollo iOS nativo con Swift y SwiftUI, especializado en c
 
 ### ¿Qué es Piums?
 - Marketplace donde **clientes** descubren y contratan **artistas** (músicos, bailarines, fotógrafos, etc.)
-- Backend: microservicios Node.js/TypeScript con API REST központi
+- Backend: microservicios Node.js/TypeScript con API REST
 - Gateway central en `http://localhost:3000` (dev) / `https://piums.com` (prod)
 - Autenticación: JWT Bearer tokens + Firebase para OAuth
 
@@ -64,48 +74,98 @@ GET  /api/auth/verify            → Verificar token
 
 ---
 
-## Estructura de carpetas del proyecto Xcode
+## Estructura de carpetas — dos proyectos Xcode separados
 
+### App Cliente (`piums-ios-client`)
 ```
-apps/mobile/
-├── Piums.xcodeproj/
-├── Piums.xcworkspace/          ← usar siempre este (CocoaPods/SPM)
-├── Piums/
+piums-ios-client/
+├── PiumsClient.xcodeproj/
+├── PiumsClient.xcworkspace/    ← usar siempre este
+├── PiumsClient/
 │   ├── App/
-│   │   ├── PiumsApp.swift      ← @main entry point
+│   │   ├── PiumsClientApp.swift    ← @main entry point
 │   │   └── AppDelegate.swift
-│   ├── Core/
+│   ├── Core/                   ← igual en ambas apps (networking, auth, models)
 │   │   ├── Network/
-│   │   │   ├── APIClient.swift         ← URLSession wrapper
-│   │   │   ├── APIEndpoint.swift       ← enum de endpoints
+│   │   │   ├── APIClient.swift
+│   │   │   ├── APIEndpoint.swift
 │   │   │   ├── APIError.swift
-│   │   │   └── AuthInterceptor.swift   ← inyecta Bearer token
+│   │   │   └── AuthInterceptor.swift
 │   │   ├── Auth/
-│   │   │   ├── AuthManager.swift       ← @Observable singleton
-│   │   │   ├── TokenStorage.swift      ← Keychain wrapper
+│   │   │   ├── AuthManager.swift
+│   │   │   ├── TokenStorage.swift
 │   │   │   └── FirebaseAuthProvider.swift
-│   │   ├── Models/             ← Codable structs del dominio
+│   │   ├── Models/
 │   │   └── Extensions/
 │   ├── Features/
-│   │   ├── Auth/               ← Login, Register, ForgotPassword
-│   │   ├── Home/               ← Descubrimiento de artistas
-│   │   ├── Search/             ← Búsqueda con filtros
-│   │   ├── ArtistProfile/      ← Perfil del artista + servicios
-│   │   ├── Booking/            ← Flujo de reserva
+│   │   ├── Auth/               ← Login, Registro de cliente, ForgotPassword
+│   │   ├── Home/               ← Descubrimiento de artistas, categorías
+│   │   ├── Search/             ← Búsqueda con filtros (ciudad, precio, rating)
+│   │   ├── ArtistProfile/      ← Perfil del artista + servicios + reviews
+│   │   ├── Booking/            ← Flujo: servicio → fecha/hora → confirmación
 │   │   ├── Payments/           ← Checkout con Stripe
-│   │   ├── Profile/            ← Perfil del usuario
-│   │   ├── MyBookings/         ← Historial de reservas
-│   │   ├── Reviews/            ← Dejar reseñas
+│   │   ├── MyBookings/         ← Historial de reservas del cliente
+│   │   ├── Reviews/            ← Dejar reseñas post-servicio
+│   │   ├── Quejas/             ← Disputas/quejas del cliente
+│   │   ├── Profile/            ← Perfil del cliente, configuración
 │   │   └── Notifications/      ← Centro de notificaciones
-│   ├── Components/             ← Vistas reutilizables (buttons, cards, etc.)
+│   ├── Components/
 │   ├── Resources/
 │   │   ├── Assets.xcassets
-│   │   ├── Localizable.strings ← es / en
+│   │   ├── Localizable.strings
 │   │   └── Info.plist
 │   └── Supporting Files/
-├── PiumsTests/
-└── PiumsUITests/
+├── PiumsClientTests/
+└── PiumsClientUITests/
 ```
+
+**Bundle ID**: `com.piums.client`  
+**Display Name**: `Piums`
+
+---
+
+### App Artista (`piums-ios-artist`)
+```
+piums-ios-artist/
+├── PiumsArtist.xcodeproj/
+├── PiumsArtist.xcworkspace/    ← usar siempre este
+├── PiumsArtist/
+│   ├── App/
+│   │   ├── PiumsArtistApp.swift    ← @main entry point
+│   │   └── AppDelegate.swift
+│   ├── Core/                   ← mismo patrón que la app cliente
+│   │   ├── Network/
+│   │   ├── Auth/
+│   │   ├── Models/
+│   │   └── Extensions/
+│   ├── Features/
+│   │   ├── Auth/               ← Login, Registro de artista, ForgotPassword
+│   │   ├── Dashboard/          ← Resumen: reservas pendientes, ingresos, rating
+│   │   ├── MyServices/         ← CRUD de servicios del catálogo del artista
+│   │   ├── Bookings/           ← Solicitudes recibidas, aceptar/rechazar/gestionar
+│   │   ├── Calendar/           ← Vista de agenda con disponibilidad
+│   │   ├── Availability/       ← Configurar horarios disponibles y bloqueos
+│   │   ├── Earnings/           ← Ingresos, historial de pagos, retiros
+│   │   ├── Reviews/            ← Reviews recibidas de clientes
+│   │   ├── Quejas/             ← Disputas/quejas donde el artista es parte
+│   │   ├── Profile/            ← Perfil público del artista: bio, galería, redes
+│   │   └── Notifications/      ← Centro de notificaciones
+│   ├── Components/
+│   ├── Resources/
+│   │   ├── Assets.xcassets
+│   │   ├── Localizable.strings
+│   │   └── Info.plist
+│   └── Supporting Files/
+├── PiumsArtistTests/
+└── PiumsArtistUITests/
+```
+
+**Bundle ID**: `com.piums.artist`  
+**Display Name**: `Piums Artista`
+
+---
+
+> **Admin es solo web**: `apps/web-admin` en el monorepo. No existe app móvil de admin.
 
 ---
 
@@ -282,15 +342,30 @@ extension Color {
 
 ---
 
-## Flujos MVP prioritarios
+## Flujos MVP por app
 
-1. **Onboarding & Auth** — Splash, login, registro cliente/artista, Google Sign-In, Sign in with Apple
+### App Cliente — flujos prioritarios
+1. **Onboarding & Auth** — Splash, login, registro de cliente, Google Sign-In, Sign in with Apple
 2. **Home / Descubrimiento** — Lista de artistas por categoría, búsqueda con filtros (ciudad, precio, rating)
 3. **Perfil de artista** — Galería, servicios, reviews, botón "Contratar"
 4. **Flujo de reserva** — Selección de servicio → fecha/hora → confirmación → pago (Stripe)
-5. **Mis reservas** — Historial con estado, detalle, cancelación
-6. **Perfil de usuario** — Editar datos, cambiar contraseña, logout
-7. **Notificaciones** — Push APNs para cambios de estado de reserva
+5. **Mis reservas** — Historial con estado, detalle de reserva, cancelación
+6. **Reviews** — Dejar reseña post-servicio completado
+7. **Quejas** — Crear y seguir disputas con mensajería
+8. **Perfil** — Editar datos, cambiar contraseña, logout
+9. **Notificaciones** — Push APNs para cambios de estado de reserva y mensajes
+
+### App Artista — flujos prioritarios
+1. **Onboarding & Auth** — Splash, login, registro de artista, Google Sign-In, Sign in with Apple
+2. **Dashboard** — Resumen del día: reservas pendientes, ingresos del mes, rating promedio
+3. **Gestión de servicios** — Crear, editar y desactivar servicios del catálogo
+4. **Solicitudes de reserva** — Recibir solicitudes, aceptar / rechazar con motivo
+5. **Agenda / Calendario** — Vista mensual/semanal de reservas confirmadas
+6. **Disponibilidad** — Configurar horarios semanales y bloquear fechas
+7. **Ingresos** — Ver historial de pagos recibidos y pendientes
+8. **Perfil público** — Editar bio, galería de fotos, enlaces a redes sociales
+9. **Quejas** — Ver y responder disputas donde el artista es parte
+10. **Notificaciones** — Push APNs para nuevas solicitudes, pagos, reviews y mensajes
 
 ---
 
@@ -321,28 +396,30 @@ extension Color {
 
 ---
 
-## Repositorio iOS
+## Repositorios iOS
 
-**Todo el código de la app iOS vive en su propio repositorio, separado del monorepo principal:**
+Cada app vive en su propio repositorio GitHub, separado del monorepo principal:
 
-```
-https://github.com/app-piums/piums-los.git
-```
+| App | Repositorio |
+|---|---|
+| App Cliente | `https://github.com/app-piums/piums-ios-client.git` |
+| App Artista | `https://github.com/app-piums/piums-ios-artist.git` |
 
 ### Setup inicial
 
 ```bash
-# Clonar el repositorio iOS
-git clone https://github.com/app-piums/piums-los.git
-cd piums-los
+# App Cliente
+git clone https://github.com/app-piums/piums-ios-client.git
+cd piums-ios-client
+open PiumsClient.xcworkspace
 
-# Rama principal de desarrollo
-git checkout -b feature/<nombre-feature>
-
-# Nunca hacer push directo a main — abrir Pull Request
+# App Artista
+git clone https://github.com/app-piums/piums-ios-artist.git
+cd piums-ios-artist
+open PiumsArtist.xcworkspace
 ```
 
-### Flujo de ramas
+### Flujo de ramas (igual en ambos repos)
 
 ```
 main          ← producción (protegida)
@@ -355,7 +432,7 @@ release/*     ← preparación de release a App Store
 ### Convención de commits
 
 ```
-feat: agregar pantalla de perfil de artista
+feat: agregar pantalla de perfil del artista
 fix: corregir token refresh en interceptor
 chore: actualizar dependencias SPM
 style: aplicar colores de brand en HomeView
@@ -367,18 +444,16 @@ test: agregar tests de BookingRepository
 ## Comandos útiles de desarrollo
 
 ```bash
-# Clonar y abrir el proyecto
-git clone https://github.com/app-piums/piums-los.git && open piums-los/Piums.xcworkspace
+# App Cliente — correr tests
+xcodebuild test -workspace PiumsClient.xcworkspace \
+  -scheme PiumsClient -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
 
-# Correr tests desde CLI
-xcodebuild test -workspace Piums.xcworkspace \
-  -scheme Piums -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
-
-# Limpiar build
-xcodebuild clean -workspace Piums.xcworkspace -scheme Piums
+# App Artista — correr tests
+xcodebuild test -workspace PiumsArtist.xcworkspace \
+  -scheme PiumsArtist -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
 
 # Levantar el backend local para desarrollo (desde piums-platform)
-cd ../piums-platform/infra/docker && docker compose -f docker-compose.dev.yml up -d
+cd piums-platform/infra/docker && docker compose -f docker-compose.dev.yml up -d
 
 # URL base del backend en desarrollo (configurar en .xcconfig)
 API_BASE_URL = http://localhost:3000
@@ -388,8 +463,10 @@ API_BASE_URL = http://localhost:3000
 
 ## Variables de entorno (`.xcconfig`)
 
+Cada app tiene sus propios `.xcconfig` — nunca compartir el mismo archivo entre repos.
+
 ```
-// Debug.xcconfig
+// Debug.xcconfig  (mismo esquema en ambas apps)
 API_BASE_URL = http://localhost:3000
 FIREBASE_PROJECT_ID = piums-dev
 STRIPE_PUBLISHABLE_KEY = pk_test_...
@@ -1090,10 +1167,12 @@ final class MockBookingRepository: BookingRepositoryProtocol {
 
 ## Checklist antes de subir a App Store / TestFlight
 
+> Aplicar para **cada una de las dos apps** por separado.
+
 ```
-□ Bundle ID registrado en Apple Developer Portal
-□ App Store Connect — app creada con íconos y capturas
-□ Certificados de distribución y provisioning profile descargados
+□ Bundle ID registrado en Apple Developer Portal (com.piums.client / com.piums.artist)
+□ App Store Connect — app creada por separado con íconos y capturas propias
+□ Certificados de distribución y provisioning profile descargados para cada Bundle ID
 □ Release.xcconfig con claves de producción (nunca en git)
 □ .gitignore incluye *.xcconfig con secretos, GoogleService-Info.plist
 □ Versión (CFBundleShortVersionString) y build (CFBundleVersion) incrementados
@@ -1111,8 +1190,11 @@ final class MockBookingRepository: BookingRepositoryProtocol {
 
 ## Referencias
 
-- Backend API base: `http://localhost:3000/api` (dev)
+- Backend API base: `http://localhost:3000/api` (dev) / `https://piums.com/api` (prod)
 - Spec OpenAPI: `docs/api-contracts/openapi.yaml`
-- Tipos compartidos (ver para referencia de campos): `packages/shared-types/`
+- Tipos compartidos (para referencia de campos): `packages/shared-types/`
 - Colores y brand: ver sección Brand & design arriba
 - Arquitectura de microservicios: `docs/architecture/`
+- Web cliente (referencia de UX/flujos): `apps/web-client/`
+- Web artista (referencia de UX/flujos): `apps/web-artist/`
+- Admin (solo web, nunca mobile): `apps/web-admin/`
