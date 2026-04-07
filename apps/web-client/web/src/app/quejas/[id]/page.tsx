@@ -60,7 +60,6 @@ export default function QuejasDetailPage() {
   const [newMsg, setNewMsg] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const userName = user?.nombre ?? user?.email ?? 'Usuario';
 
@@ -151,45 +150,27 @@ export default function QuejasDetailPage() {
           </div>
         ) : dispute ? (
           <>
+            {/* Info strip */}
+            <div className="shrink-0 bg-white border-b border-zinc-200 px-5 py-3">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-xs text-zinc-600 bg-zinc-100 px-2.5 py-0.5 rounded-full">
+                  {TYPE_LABELS[dispute.disputeType as DisputeType] ?? dispute.disputeType}
+                </span>
+                <span className="text-xs font-mono text-zinc-400">#{dispute.bookingId.slice(0, 8)}</span>
+                <span className="text-xs text-zinc-300">·</span>
+                <span className="text-xs text-zinc-400">
+                  {new Date(dispute.createdAt).toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{dispute.description}</p>
+              <p className="text-[11px] text-zinc-400 mt-1.5">
+                El equipo de Piums revisará tu caso y se pondrá en contacto a través de este chat.
+              </p>
+            </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-3xl mx-auto px-4 py-6">
-
-                {/* Dispute summary card */}
-                <div className="bg-white rounded-xl border border-zinc-200 p-5 mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                      <svg className="w-6 h-6 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        {statusCfg && (
-                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${statusCfg.className}`}>
-                            {statusCfg.label}
-                          </span>
-                        )}
-                        <span className="text-xs text-zinc-600 bg-zinc-100 px-2.5 py-0.5 rounded-full">
-                          {TYPE_LABELS[dispute.disputeType as DisputeType] ?? dispute.disputeType}
-                        </span>
-                      </div>
-                      <p className="font-semibold text-zinc-900 text-sm leading-snug mb-1">{dispute.subject}</p>
-                      <p className="text-xs text-zinc-500 leading-relaxed mb-3">{dispute.description}</p>
-                      <div className="flex items-center gap-3 text-xs text-zinc-400 flex-wrap">
-                        <span className="font-mono">#{dispute.bookingId.slice(0, 8)}</span>
-                        <span>·</span>
-                        <span>
-                          {new Date(dispute.createdAt).toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 mt-4 border-t border-zinc-100 pt-3">
-                    El equipo de Piums revisará tu caso y se pondrá en contacto a través de este chat.
-                  </p>
-                </div>
+              <div className="max-w-3xl mx-auto px-5 py-6">
 
                 {visibleMessages.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
@@ -214,41 +195,44 @@ export default function QuejasDetailPage() {
                           </span>
                           <div className="flex-1 h-px bg-zinc-200" />
                         </div>
-                        <div className="space-y-0.5">
+                        <div className="space-y-1.5">
                           {group.messages.map((m, i) => {
                             const isMine = m.senderType === MY_SENDER_TYPE;
                             const isStaff = m.senderType === 'staff';
                             const prevMsg = group.messages[i - 1];
                             const showLabel = !prevMsg || prevMsg.senderType !== m.senderType;
+                            const nextMsg = group.messages[i + 1];
+                            const isLast = !nextMsg || nextMsg.senderType !== m.senderType;
 
                             const senderLabel = isMine ? 'Tú'
                               : isStaff ? 'Piums Support'
                               : m.senderType === 'client' ? 'Cliente'
                               : 'Artista';
+
                             const bubbleClass = isMine
-                              ? 'bg-[#FF6A00] text-white rounded-2xl rounded-br-sm shadow-sm'
+                              ? `bg-zinc-100 text-zinc-800 rounded-2xl ${isLast ? 'rounded-tl-sm' : ''}`
                               : isStaff
-                              ? 'bg-white border border-zinc-200 text-zinc-900 rounded-2xl rounded-bl-sm shadow-sm'
-                              : 'bg-white border border-indigo-100 text-indigo-900 rounded-2xl rounded-bl-sm shadow-sm';
-                            const timeClass = isMine ? 'text-orange-100' : 'text-zinc-400';
+                              ? `bg-[#FF6A00] text-white rounded-2xl ${isLast ? 'rounded-tr-sm' : ''}`
+                              : `bg-indigo-50 text-indigo-900 rounded-2xl ${isLast ? 'rounded-tl-sm' : ''}`;
+
+                            const timeClass = isMine ? 'text-zinc-400'
+                              : isStaff ? 'text-white/60'
+                              : 'text-indigo-400';
 
                             return (
-                              <div key={m.id ?? i} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3`}>
-                                <div className="flex flex-col">
-                                  {showLabel && !isMine && (
-                                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1 px-1 text-zinc-400">
-                                      {senderLabel}
+                              <div key={m.id ?? i} className={`flex flex-col ${isStaff ? 'items-end' : 'items-start'}`}>
+                                {showLabel && (
+                                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1 px-1 text-zinc-400">
+                                    {senderLabel}
+                                  </p>
+                                )}
+                                <div className={`max-w-[70%] px-4 py-2.5 text-sm ${bubbleClass}`}>
+                                  <p className="leading-relaxed break-words whitespace-pre-wrap">{m.message}</p>
+                                  {m.createdAt && (
+                                    <p className={`text-[10px] mt-1.5 ${timeClass}`}>
+                                      {formatMsgTime(m.createdAt)}
                                     </p>
                                   )}
-                                  <div className={`max-w-[72%] px-4 py-2.5 text-sm ${bubbleClass}`}>
-                                    <p className="whitespace-pre-wrap break-words leading-relaxed">{m.message}</p>
-                                    <div className={`flex items-center gap-1.5 mt-1 ${isMine ? 'justify-end' : 'justify-start'}`}>
-                                      <span className={`text-xs ${timeClass}`}>
-                                        {m.createdAt ? formatMsgTime(m.createdAt) : ''}
-                                      </span>
-                                      {isMine && <span className="text-xs text-orange-100">✓✓</span>}
-                                    </div>
-                                  </div>
                                 </div>
                               </div>
                             );
@@ -278,36 +262,31 @@ export default function QuejasDetailPage() {
 
             {/* Compose */}
             {isActive && (
-              <div className="shrink-0 border-t border-zinc-200 bg-white">
-                <div className="max-w-3xl mx-auto p-4">
-                  <div className="flex items-end gap-2">
-                    <textarea
-                      ref={textareaRef}
-                      value={newMsg}
-                      onChange={e => setNewMsg(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                      placeholder="Escribe un mensaje..."
-                      rows={1}
-                      className="flex-1 px-4 py-2 border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] transition-colors text-sm"
-                      style={{ maxHeight: '120px' }}
-                      autoFocus
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={sending || !newMsg.trim()}
-                      className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6A00] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed shrink-0"
-                    >
-                      {sending ? (
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                      )}
-                      <span className="hidden sm:inline text-sm">Enviar</span>
-                    </button>
-                  </div>
-                  <p className="text-xs text-zinc-500 mt-2">Presiona Enter para enviar, Shift + Enter para nueva línea</p>
+              <div className="shrink-0 border-t border-zinc-200 bg-white px-5 py-3">
+                <div className="max-w-3xl mx-auto flex gap-2">
+                  <input
+                    type="text"
+                    value={newMsg}
+                    onChange={e => setNewMsg(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } }}
+                    placeholder="Escribe un mensaje..."
+                    autoFocus
+                    className="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-colors"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={sending || !newMsg.trim()}
+                    className="px-4 py-2.5 bg-[#FF6A00] text-white rounded-xl text-sm font-medium hover:bg-[#E65F00] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {sending ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    )}
+                    Enviar
+                  </button>
                 </div>
               </div>
             )}
