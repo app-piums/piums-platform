@@ -47,6 +47,9 @@ export const createServiceSchema = z.object({
   termsAndConditions: z.string().optional(),
   
   tags: z.array(z.string()).optional(),
+
+  minGuests: z.number().int().min(1).optional(),
+  maxGuests: z.number().int().min(1).optional(),
 });
 
 // Schema para actualizar servicio
@@ -82,6 +85,9 @@ export const updateServiceSchema = z.object({
   termsAndConditions: z.string().optional(),
   
   tags: z.array(z.string()).optional(),
+
+  minGuests: z.number().int().min(1).optional(),
+  maxGuests: z.number().int().min(1).optional(),
 });
 
 // Schema para addon

@@ -291,6 +291,8 @@ export class CatalogService {
     cancellationPolicy?: string;
     termsAndConditions?: string;
     tags?: string[];
+    minGuests?: number;
+    maxGuests?: number;
   }) {
     // Verificar que la categoría exista
     await this.getCategoryById(data.categoryId);
@@ -334,6 +336,8 @@ export class CatalogService {
         cancellationPolicy: data.cancellationPolicy,
         termsAndConditions: data.termsAndConditions,
         tags: data.tags || [],
+        minGuests: data.minGuests,
+        maxGuests: data.maxGuests,
       },
       include: {
         category: true,

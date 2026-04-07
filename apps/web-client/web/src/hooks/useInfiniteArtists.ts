@@ -6,6 +6,7 @@ export interface ArtistsFilters {
   q?: string;
   category?: string;
   cityId?: string;
+  guests?: number;
 }
 
 interface ArtistsPageResponse {
@@ -103,6 +104,7 @@ const fetchArtistsPage = async (
         page,
         limit: ITEMS_PER_PAGE,
         ...(resolved.cityId && { city: resolved.cityId }),
+        ...(filters.guests != null && { minGuests: filters.guests }),
       };
       const result = await sdk.smartSearch(params);
       return {

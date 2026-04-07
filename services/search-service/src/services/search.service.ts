@@ -726,8 +726,9 @@ export class SearchService {
     country?: string;
     minPrice?: number;
     maxPrice?: number;
+    minGuests?: number;
   } = {}) {
-    const { page = 1, limit = 12, city, country, minPrice, maxPrice } = options;
+    const { page = 1, limit = 12, city, country, minPrice, maxPrice, minGuests } = options;
 
     const expandedTerms = expandQuery(query);
     logger.info(`smartSearch: "${query}" → [${expandedTerms.slice(0, 6).join(', ')}...]`);
@@ -748,6 +749,7 @@ export class SearchService {
       ...(country && { country }),
       ...(minPrice != null && { price: { gte: minPrice } }),
       ...(maxPrice != null && { price: { lte: maxPrice } }),
+      ...(minGuests != null && { capacity: { gte: minGuests } }),
     };
 
     try {

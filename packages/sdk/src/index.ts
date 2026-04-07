@@ -118,6 +118,8 @@ export interface Service {
   depositPercentage?: number;
   tags?: string[];
   viewCount?: number;
+  minGuests?: number;
+  maxGuests?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -134,6 +136,8 @@ export interface CreateServicePayload {
   durationMin?: number;
   durationMax?: number;
   whatIsIncluded?: string[];
+  minGuests?: number;
+  maxGuests?: number;
 }
 
 export interface UpdateServicePayload {
@@ -149,6 +153,8 @@ export interface UpdateServicePayload {
   durationMax?: number;
   status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
   whatIsIncluded?: string[];
+  minGuests?: number;
+  maxGuests?: number;
 }
 
 export interface ServiceCategory {
@@ -265,6 +271,7 @@ export interface SmartSearchParams {
   country?: string;
   minPrice?: number;
   maxPrice?: number;
+  minGuests?: number;
 }
 
 export interface SmartSearchResults {
@@ -295,6 +302,7 @@ export interface GetArtistsParams {
   category?: string;
   city?: string;
   q?: string;
+  minGuests?: number;
 }
 
 export interface CalendarData {

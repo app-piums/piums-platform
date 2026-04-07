@@ -79,6 +79,7 @@ export const smartSearchSchema = z.object({
   country: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
+  minGuests: z.coerce.number().min(1).optional(),
 });
 
 export type SmartSearchInput = z.infer<typeof smartSearchSchema>;

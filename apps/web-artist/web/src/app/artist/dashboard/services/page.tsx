@@ -17,6 +17,8 @@ interface ServiceForm {
   basePrice: string;
   durationMin: string;
   whatIsIncluded: string[];
+  minGuests: string;
+  maxGuests: string;
 }
 
 const PRICING_LABELS: Record<PricingType, string> = {
@@ -70,6 +72,8 @@ export default function ArtistServicesPage() {
     basePrice: '',
     durationMin: '',
     whatIsIncluded: [],
+    minGuests: '',
+    maxGuests: '',
   };
   const [form, setForm] = useState<ServiceForm>(emptyForm);
 
@@ -132,6 +136,8 @@ export default function ArtistServicesPage() {
       basePrice: String(service.basePrice),
       durationMin: String(service.durationMin || service.duration || ''),
       whatIsIncluded: service.whatIsIncluded || [],
+      minGuests: service.minGuests != null ? String(service.minGuests) : '',
+      maxGuests: service.maxGuests != null ? String(service.maxGuests) : '',
     });
     setFormError(null);
     setWhatIsIncludedInput('');
@@ -168,6 +174,8 @@ export default function ArtistServicesPage() {
           basePrice: price,
           durationMin: form.durationMin ? parseInt(form.durationMin, 10) : undefined,
           whatIsIncluded: form.whatIsIncluded,
+          minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
+          maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
@@ -182,6 +190,8 @@ export default function ArtistServicesPage() {
           basePrice: price,
           durationMin: form.durationMin ? parseInt(form.durationMin, 10) : undefined,
           whatIsIncluded: form.whatIsIncluded,
+          minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
+          maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
         });
         setServices((prev) => [created, ...prev]);
       }
@@ -488,6 +498,36 @@ export default function ArtistServicesPage() {
                   placeholder="Ej: 60"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
+              </div>
+
+              {/* Guest capacity */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mínimo de personas
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.minGuests}
+                    onChange={(e) => setForm({ ...form, minGuests: e.target.value })}
+                    placeholder="Ej: 10"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Máximo de personas
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.maxGuests}
+                    onChange={(e) => setForm({ ...form, maxGuests: e.target.value })}
+                    placeholder="Ej: 300"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  />
+                </div>
               </div>
 
               {/* What's included */}

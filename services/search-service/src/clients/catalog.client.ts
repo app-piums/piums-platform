@@ -45,6 +45,7 @@ export const catalogClient = {
         title: raw.title ?? raw.name,
         price: raw.price ?? (raw.basePrice != null ? raw.basePrice / 100 : undefined),
         isMainService: raw.isMainService ?? false,
+        capacity: raw.maxGuests ?? raw.capacity,
       } as ServiceData;
     } catch (error: any) {
       throw new AppError(`Error fetching service: ${error.message}`, 500);
@@ -67,6 +68,7 @@ export const catalogClient = {
           title: s.title ?? s.name,
           price: s.price ?? (s.basePrice != null ? s.basePrice / 100 : undefined),
           isMainService: s.isMainService ?? false,
+          capacity: s.maxGuests ?? s.capacity,
         })) as ServiceData[],
         pagination: data.pagination,
       };
@@ -91,6 +93,7 @@ export const catalogClient = {
         title: s.title ?? s.name,
         price: s.price ?? (s.basePrice != null ? s.basePrice / 100 : undefined),
         isMainService: s.isMainService ?? false,
+        capacity: s.maxGuests ?? s.capacity,
       })) as ServiceData[];
     } catch (error: any) {
       throw new AppError(`Error fetching artist services: ${error.message}`, 500);

@@ -141,6 +141,7 @@ function ArtistsPageContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
+  const [guests, setGuests] = useState(searchParams.get('guests') || '');
   const [clientCountry, setClientCountry] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem('client_country') ?? '' : '')
   );
@@ -173,6 +174,7 @@ function ArtistsPageContent() {
     q: searchQuery || undefined,
     category: selectedCategory || undefined,
     cityId: selectedCity || undefined,
+    guests: guests ? parseInt(guests, 10) : undefined,
   };
 
   const {
@@ -190,14 +192,16 @@ function ArtistsPageContent() {
     if (inView && hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const updateURL = (params: { category?: string; location?: string; q?: string }) => {
+  const updateURL = (params: { category?: string; location?: string; q?: string; guests?: string }) => {
     const urlParams = new URLSearchParams();
     const cat = params.category ?? selectedCategory;
     const loc = params.location ?? selectedCity;
     const q   = params.q ?? searchQuery;
+    const g   = params.guests ?? guests;
     if (cat) urlParams.set('category', cat);
     if (loc) urlParams.set('location', loc);
     if (q)   urlParams.set('q', q);
+    if (g)   urlParams.set('guests', g);
     // Preservar contexto de evento
     if (eventId)   urlParams.set('eventId', eventId);
     if (eventDate) urlParams.set('date', eventDate);
@@ -209,12 +213,13 @@ function ArtistsPageContent() {
     setSearchQuery('');
     setSelectedCategory('');
     setSelectedCity('');
+    setGuests('');
     router.push('/artists');
   };
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); updateURL({}); };
 
-  const hasActiveFilters = searchQuery || selectedCategory || selectedCity;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedCity || guests;
   const allArtists = data?.pages.flatMap(p => p.artists) ?? [];
   const totalArtists = data?.pages[0]?.total ?? 0;
 
@@ -291,6 +296,14 @@ function ArtistsPageContent() {
               >
               {cities.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
+              <input
+                type="number"
+                min={1}
+                value={guests}
+                onChange={e => setGuests(e.target.value)}
+                placeholder="# personas"
+                className="sm:w-32 px-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition text-gray-700"
+              />
               <button
                 type="submit"
                 className="px-5 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-xl hover:bg-[#e05e00] transition-colors"
