@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { FavoritesProvider } from "../contexts/FavoritesContext";
+import { CurrencyProvider } from "../contexts/CurrencyContext";
 import { QueryProvider } from "../providers/QueryProvider";
 import { PWAInitializer } from "../components/PWAInitializer";
 import { I18nProvider } from "../providers/I18nProvider";
@@ -59,6 +60,7 @@ export default function RootLayout({
       >
         <I18nProvider>
           <QueryProvider>
+            <CurrencyProvider>
             <AuthProvider>
               <FavoritesProvider>
                 <NextStepProvider>
@@ -70,6 +72,7 @@ export default function RootLayout({
               </FavoritesProvider>
               <SessionWarningToast />
             </AuthProvider>
+            </CurrencyProvider>
           </QueryProvider>
         </I18nProvider>
       </body>
