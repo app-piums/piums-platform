@@ -16,6 +16,7 @@ interface ServiceForm {
   pricingType: PricingType;
   basePrice: string;
   durationMin: string;
+  whatIsIncluded: string[];
 }
 
 const PRICING_LABELS: Record<PricingType, string> = {
@@ -59,6 +60,7 @@ export default function ArtistServicesPage() {
 
   // Toggling status
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [whatIsIncludedInput, setWhatIsIncludedInput] = useState('');
 
   const emptyForm: ServiceForm = {
     name: '',
@@ -67,6 +69,7 @@ export default function ArtistServicesPage() {
     pricingType: 'FIXED',
     basePrice: '',
     durationMin: '',
+    whatIsIncluded: [],
   };
   const [form, setForm] = useState<ServiceForm>(emptyForm);
 
@@ -115,6 +118,7 @@ export default function ArtistServicesPage() {
     setEditingService(null);
     setForm(emptyForm);
     setFormError(null);
+    setWhatIsIncludedInput('');
     setShowModal(true);
   };
 
@@ -127,8 +131,10 @@ export default function ArtistServicesPage() {
       pricingType: (service.pricingType as PricingType) || 'FIXED',
       basePrice: String(service.basePrice),
       durationMin: String(service.durationMin || service.duration || ''),
+      whatIsIncluded: service.whatIsIncluded || [],
     });
     setFormError(null);
+    setWhatIsIncludedInput('');
     setShowModal(true);
   };
 
@@ -138,6 +144,7 @@ export default function ArtistServicesPage() {
     setEditingService(null);
     setForm(emptyForm);
     setFormError(null);
+    setWhatIsIncludedInput('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,6 +167,7 @@ export default function ArtistServicesPage() {
           pricingType: form.pricingType,
           basePrice: price,
           durationMin: form.durationMin ? parseInt(form.durationMin, 10) : undefined,
+          whatIsIncluded: form.whatIsIncluded,
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
@@ -173,6 +181,7 @@ export default function ArtistServicesPage() {
           pricingType: form.pricingType,
           basePrice: price,
           durationMin: form.durationMin ? parseInt(form.durationMin, 10) : undefined,
+          whatIsIncluded: form.whatIsIncluded,
         });
         setServices((prev) => [created, ...prev]);
       }
@@ -479,6 +488,58 @@ export default function ArtistServicesPage() {
                   placeholder="Ej: 60"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
+              </div>
+
+              {/* What's included */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué incluye este servicio?</label>
+                <p className="text-xs text-gray-400 mb-2">Presiona Enter o haz clic en Agregar para añadir ítems</p>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={whatIsIncludedInput}
+                    onChange={(e) => setWhatIsIncludedInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = whatIsIncludedInput.trim();
+                        if (val && !form.whatIsIncluded.includes(val)) {
+                          setForm({ ...form, whatIsIncluded: [...form.whatIsIncluded, val] });
+                        }
+                        setWhatIsIncludedInput('');
+                      }
+                    }}
+                    placeholder="Ej: Sistema de sonido propio"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = whatIsIncludedInput.trim();
+                      if (val && !form.whatIsIncluded.includes(val)) {
+                        setForm({ ...form, whatIsIncluded: [...form.whatIsIncluded, val] });
+                      }
+                      setWhatIsIncludedInput('');
+                    }}
+                    className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm font-medium transition-colors"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                {form.whatIsIncluded.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.whatIsIncluded.map((item, i) => (
+                      <span key={i} className="flex items-center gap-1 bg-purple-50 border border-purple-200 text-purple-700 text-xs px-2.5 py-1 rounded-full">
+                        {item}
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, whatIsIncluded: form.whatIsIncluded.filter((_, idx) => idx !== i) })}
+                          className="hover:text-red-500 ml-0.5 leading-none"
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">

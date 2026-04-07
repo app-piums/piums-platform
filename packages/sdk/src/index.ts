@@ -123,6 +123,7 @@ export interface CreateServicePayload {
   currency?: string;
   durationMin?: number;
   durationMax?: number;
+  whatIsIncluded?: string[];
 }
 
 export interface UpdateServicePayload {
@@ -137,6 +138,7 @@ export interface UpdateServicePayload {
   durationMin?: number;
   durationMax?: number;
   status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  whatIsIncluded?: string[];
 }
 
 export interface ServiceCategory {

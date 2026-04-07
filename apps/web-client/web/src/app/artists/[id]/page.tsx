@@ -47,6 +47,7 @@ export default function ArtistProfilePage() {
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null);
   const startingPrice = useMemo(() => {
     if (services.length > 0) {
       const validPrices = services
@@ -487,14 +488,33 @@ export default function ArtistProfilePage() {
                   </Card>
                 ) : (
                   services.map((service) => (
-                    <Card key={service.id}>
+                    <div
+                      key={service.id}
+                      onMouseEnter={() => setHoveredServiceId(service.id)}
+                      onMouseLeave={() => setHoveredServiceId(null)}
+                    >
+                    <Card>
                       <CardContent>
                         <div className="flex justify-between items-start mb-3">
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
                             <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                            {/* Accordion: what's included */}
+                            {hoveredServiceId === service.id && (service.whatIsIncluded?.length ?? 0) > 0 && (
+                              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Incluye</p>
+                                {service.whatIsIncluded!.map((item, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                    <svg className="h-3.5 w-3.5 text-[#FF6A00] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>{item}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-right">
+                          <div className="text-right ml-4 shrink-0">
                             <p className="text-2xl font-bold text-[#FF6A00]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                             <p className="text-sm text-gray-500">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
@@ -504,6 +524,7 @@ export default function ArtistProfilePage() {
                         </Button>
                       </CardContent>
                     </Card>
+                    </div>
                   ))
                 )}
               </div>

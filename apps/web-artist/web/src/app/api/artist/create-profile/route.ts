@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       bio: body.bio || undefined,
       instagram: body.instagram || undefined,
       website: body.website || undefined,
+      equipment: body.equipment || [],
     };
 
     const res = await fetch(`${ARTISTS_SERVICE_URL}/artists`, {

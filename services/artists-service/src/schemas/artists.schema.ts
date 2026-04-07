@@ -63,6 +63,9 @@ export const createArtistSchema = z.object({
   requiresDeposit: z.boolean().optional(),
   depositPercentage: z.number().int().min(0).max(100).optional(),
   
+  // Equipo propio del artista
+  equipment: z.array(z.string()).optional(),
+
   // Redes sociales
   website: z.string().url("URL inválida").optional(),
   instagram: z.string().optional(),
@@ -101,6 +104,8 @@ export const updateArtistSchema = z.object({
   requiresDeposit: z.boolean().optional(),
   depositPercentage: z.number().int().min(0).max(100).optional(),
   
+  equipment: z.array(z.string()).optional(),
+
   website: z.string().url().optional(),
   instagram: z.string().optional(),
   facebook: z.string().optional(),

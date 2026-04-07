@@ -64,6 +64,9 @@ model Artist {
   categoryId    String?   // Referencia a ServiceCategory (catalog-service)
   specialties   String[]  // Array de especialidades específicas
   yearsExperience Int     @default(0)
+
+  // Equipo y recursos propios del artista
+  equipment     String[]  // ej: ["Sistema de sonido (PA) propio", "Drone", "Gimbal"]
   
   // Ubicación y cobertura
   country       String
