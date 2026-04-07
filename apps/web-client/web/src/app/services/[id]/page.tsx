@@ -682,8 +682,10 @@ export default function ServiceDetailPage() {
               <ul className="space-y-2.5">
                 {service.includes.map((item, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
-                    <span className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <CheckIcon className="h-3 w-3 text-green-600" />
+                    <span className="h-5 w-5 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="h-4 w-4 text-[#FF6A00]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l1.8 5.4 5.7.4-4.4 3.3 1.6 5.5L12 13.5l-4.7 3.1 1.6-5.5L4.5 7.8l5.7-.4z" />
+                      </svg>
                     </span>
                     {item}
                   </li>
