@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { Artist, GetArtistsParams } from '@piums/sdk';
+import type { Artist, GetArtistsParams, SmartSearchParams } from '@piums/sdk';
 import { MOCK_ARTISTS } from '@/lib/mockData';
 
 export interface ArtistsFilters {
@@ -94,6 +94,26 @@ const fetchArtistsPage = async (
   try {
     const { sdk } = await import('@piums/sdk');
     const resolved = resolveFilters(filters);
+
+    // When a free-text query is present (and no explicit category override),
+    // use the smart semantic search endpoint for synonym expansion + scoring.
+    if (resolved.q && !resolved.category) {
+      const params: SmartSearchParams = {
+        q: resolved.q,
+        page,
+        limit: ITEMS_PER_PAGE,
+        ...(resolved.cityId && { city: resolved.cityId }),
+      };
+      const result = await sdk.smartSearch(params);
+      return {
+        artists: result.artists,
+        total: result.pagination.total,
+        page: result.pagination.page,
+        totalPages: result.pagination.totalPages,
+        hasNextPage: result.pagination.page < result.pagination.totalPages,
+      };
+    }
+
     const params: ArtistsQueryParams = { page, limit: ITEMS_PER_PAGE };
     if (resolved.category) params.category = resolved.category;
     if (resolved.cityId) params.city = resolved.cityId;

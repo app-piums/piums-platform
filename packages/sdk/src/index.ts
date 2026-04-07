@@ -24,6 +24,14 @@ export interface Artist {
   coverageRadius?: number;
   mainServicePrice?: number;
   mainServiceName?: string;
+  matchedService?: {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    pricingType: string;
+    isExactMatch: boolean;
+  };
 }
 
 export interface PortfolioItem {
@@ -247,6 +255,27 @@ export interface SearchResults {
   total: number;
   page: number;
   totalPages: number;
+}
+
+export interface SmartSearchParams {
+  q: string;
+  page?: number;
+  limit?: number;
+  city?: string;
+  country?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+export interface SmartSearchResults {
+  artists: Artist[];
+  expandedTerms: string[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface SearchParams {
@@ -767,6 +796,40 @@ class PiumsSDK {
     }
   }
   
+  async smartSearch(params: SmartSearchParams): Promise<SmartSearchResults> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('q', params.q);
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.city) queryParams.append('city', params.city);
+      if (params.country) queryParams.append('country', params.country);
+      if (params.minPrice != null) queryParams.append('minPrice', params.minPrice.toString());
+      if (params.maxPrice != null) queryParams.append('maxPrice', params.maxPrice.toString());
+
+      const response = await fetch(`${this.baseUrl}/search/smart?${queryParams.toString()}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      const artists = (data.artists ?? []).map((a: any) => ({
+        ...a,
+        nombre: a.nombre ?? a.name,
+        rating: a.rating ?? a.averageRating,
+        reviewsCount: a.reviewsCount ?? a.totalReviews,
+        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        cityId: a.cityId ?? a.city,
+      }));
+      return {
+        artists,
+        expandedTerms: data.expandedTerms ?? [],
+        pagination: data.pagination ?? { page: 1, limit: 12, total: 0, totalPages: 0 },
+      };
+    } catch (error) {
+      console.error('Error in smartSearch:', error);
+      return { artists: [], expandedTerms: [], pagination: { page: 1, limit: 12, total: 0, totalPages: 0 } };
+    }
+  }
+
   async getArtist(id: string): Promise<ArtistProfile | null> {
     try {
       const response = await fetch(`${this.baseUrl}/artists/${id}`);

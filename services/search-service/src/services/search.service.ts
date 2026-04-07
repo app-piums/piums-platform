@@ -5,6 +5,7 @@ import { reviewsClient } from '../clients/reviews.client';
 import { bookingClient } from '../clients/booking.client';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
+import { expandQuery } from '../utils/synonyms';
 import type {
   SearchArtistsInput,
   SearchServicesInput,
@@ -464,7 +465,9 @@ export class SearchService {
           artistName: artist.name,
           title: service.title,
           description: service.description,
-          category: service.category,
+          category: (typeof service.category === 'object' && service.category !== null)
+            ? ((service.category as any).name ?? String(service.category))
+            : (service.category as unknown as string) || '',
           tags: service.tags || [],
           price: service.price,
           currency: service.currency,
@@ -703,6 +706,141 @@ export class SearchService {
     } catch (error: any) {
       logger.error('Error getting popular searches', error);
       throw new AppError('Error al obtener búsquedas populares', 500);
+    }
+  }
+
+  /**
+   * Búsqueda inteligente: expande la query con sinónimos y busca en ServiceIndex.
+   * Retorna un artista por cada resultado, con el servicio que mejor matchea.
+   *
+   * Lógica de scoring:
+   *   exactMatch (title/description ILIKE term) → +3
+   *   categoryMatch (category ILIKE term)       → +2
+   *   artistRating × 0.3
+   *   log(artistBookings + 1) × 0.2
+   */
+  async smartSearch(query: string, options: {
+    page?: number;
+    limit?: number;
+    city?: string;
+    country?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  } = {}) {
+    const { page = 1, limit = 12, city, country, minPrice, maxPrice } = options;
+
+    const expandedTerms = expandQuery(query);
+    logger.info(`smartSearch: "${query}" → [${expandedTerms.slice(0, 6).join(', ')}...]`);
+
+    // Search in ServiceIndex: find services matching any expanded term
+    const whereConditions: any[] = expandedTerms.flatMap(term => [
+      { title: { contains: term, mode: 'insensitive' } },
+      { description: { contains: term, mode: 'insensitive' } },
+      { category: { contains: term, mode: 'insensitive' } },
+      { tags: { hasSome: [term] } },
+    ]);
+
+    const whereClause: any = {
+      isActive: true,
+      isAvailable: true,
+      OR: whereConditions,
+      ...(city && { city: { contains: city, mode: 'insensitive' } }),
+      ...(country && { country }),
+      ...(minPrice != null && { price: { gte: minPrice } }),
+      ...(maxPrice != null && { price: { lte: maxPrice } }),
+    };
+
+    try {
+      const services = await prisma.serviceIndex.findMany({
+        where: whereClause,
+        orderBy: [
+          { artistRating: 'desc' },
+          { totalBookings: 'desc' },
+        ],
+        take: limit * 5, // fetch more to deduplicate by artist
+      });
+
+      // Deduplicate: best-scored service per artist
+      const artistBestMatch = new Map<string, {
+        service: typeof services[0];
+        score: number;
+        isExactMatch: boolean;
+      }>();
+
+      const queryLower = query.toLowerCase();
+      const exactTerms = expandedTerms.map(t => t.toLowerCase());
+
+      for (const svc of services) {
+        const titleLower = svc.title.toLowerCase();
+        const descLower = svc.description.toLowerCase();
+        const catLower = svc.category.toLowerCase();
+
+        const isExactTitle = exactTerms.some(t => titleLower.includes(t));
+        const isExactDesc = exactTerms.some(t => descLower.includes(t));
+        const isCatMatch = exactTerms.some(t => catLower.includes(t));
+
+        const score =
+          (isExactTitle ? 3 : 0) +
+          (isExactDesc ? 1 : 0) +
+          (isCatMatch ? 2 : 0) +
+          svc.artistRating * 0.3 +
+          Math.log((svc.artistBookings || 0) + 1) * 0.2;
+
+        const isExactMatch = isExactTitle || isExactDesc;
+
+        const existing = artistBestMatch.get(svc.artistId);
+        if (!existing || score > existing.score) {
+          artistBestMatch.set(svc.artistId, { service: svc, score, isExactMatch });
+        }
+      }
+
+      // Fetch artist index data for the matched artists
+      const artistIds = Array.from(artistBestMatch.keys());
+      const artists = await prisma.artistIndex.findMany({
+        where: { id: { in: artistIds }, isActive: true },
+      });
+
+      // Build SmartResult array, sorted by score
+      const sorted = Array.from(artistBestMatch.entries())
+        .sort((a, b) => b[1].score - a[1].score)
+        .slice((page - 1) * limit, page * limit);
+
+      const results = sorted.map(([artistId, { service, score, isExactMatch }]) => {
+        const artist = artists.find(a => a.id === artistId);
+        return {
+          ...artist,
+          matchedService: {
+            id: service.id,
+            name: service.title,
+            price: service.price,
+            currency: service.currency,
+            pricingType: service.pricingType,
+            isExactMatch,
+          },
+          score,
+        };
+      }).filter(r => r.id); // filter out if artist no longer in index
+
+      await this.logSearchQuery({
+        query,
+        queryType: 'MIXED',
+        filters: options as any,
+        resultsCount: artistBestMatch.size,
+      });
+
+      return {
+        artists: results,
+        expandedTerms: expandedTerms.slice(0, 8),
+        pagination: {
+          page,
+          limit,
+          total: artistBestMatch.size,
+          totalPages: Math.ceil(artistBestMatch.size / limit),
+        },
+      };
+    } catch (error: any) {
+      logger.error('Error in smartSearch', error);
+      throw new AppError('Error en búsqueda inteligente', 500);
     }
   }
 }

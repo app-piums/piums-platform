@@ -69,3 +69,16 @@ export const bulkIndexSchema = z.object({
 });
 
 export type BulkIndexInput = z.infer<typeof bulkIndexSchema>;
+
+// Smart Search Schema
+export const smartSearchSchema = z.object({
+  q: z.string().min(1),
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(50).optional().default(12),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  minPrice: z.coerce.number().min(0).optional(),
+  maxPrice: z.coerce.number().min(0).optional(),
+});
+
+export type SmartSearchInput = z.infer<typeof smartSearchSchema>;
