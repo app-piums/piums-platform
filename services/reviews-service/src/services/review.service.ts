@@ -724,9 +724,10 @@ export class ReviewService {
     // Sync rating and reviewCount to artists-service
     try {
       const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET || '';
       await fetch(`${artistsUrl}/artists/internal/${artistId}/rating`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret },
         body: JSON.stringify({ rating: averageRating, reviewCount: totalReviews }),
       });
     } catch (syncErr) {

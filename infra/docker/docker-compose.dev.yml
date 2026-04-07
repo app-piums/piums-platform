@@ -148,6 +148,7 @@ services:
       PORT: 4003
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_artists
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       BOOKING_SERVICE_URL: http://booking-service:4008
       PAYMENTS_SERVICE_URL: http://payments-service:4005
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003
@@ -212,6 +213,7 @@ services:
       PORT: 4006
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_reviews
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       BOOKING_SERVICE_URL: http://booking-service:4008
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       ARTISTS_SERVICE_URL: http://artists-service:4003
