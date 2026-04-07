@@ -354,6 +354,16 @@ function BookingContent() {
     return () => { mounted = false; };
   }, [step]);
 
+  // Pre-populate clientCoords from the selected event's saved location
+  useEffect(() => {
+    if (!selectedEventId || clientEvents.length === 0) return;
+    const ev = clientEvents.find((e: any) => e.id === selectedEventId);
+    if (ev?.locationLat != null && ev?.locationLng != null) {
+      setClientCoords({ lat: ev.locationLat, lng: ev.locationLng });
+      if (ev.location) setLocation(ev.location);
+    }
+  }, [selectedEventId, clientEvents]);
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(`/login?redirect=${encodeURIComponent(bookingRedirectTarget)}`);
@@ -1061,6 +1071,11 @@ function BookingContent() {
                           ) : (
                             <p className="text-xs text-gray-500 mt-2">
                               Comparte la dirección del evento para calcular el costo de traslado.
+                            </p>
+                          )}
+                          {!artistBaseCoords && (
+                            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded mt-2 px-2 py-1">
+                              Este artista aún no ha registrado su ubicación base. No podemos calcular el costo de traslado automáticamente — contáctale para confirmar condiciones.
                             </p>
                           )}
                         </div>

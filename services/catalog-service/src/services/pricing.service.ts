@@ -39,9 +39,7 @@ export interface PriceCalculationInput {
   serviceId: string;
   durationMinutes?: number; // Para servicios con pricing por tiempo
   selectedAddonIds?: string[]; // IDs de los addons seleccionados
-  distanceKm?: number; // Distancia para calcular costos de viaje
-  locationLat?: number; // Coordenadas para calcular distancia automáticamente
-  locationLng?: number;
+  distanceKm?: number; // Distancia en km (pre-calculada por el caller)
   discountCode?: string; // Código de descuento (futuro)
 }
 
