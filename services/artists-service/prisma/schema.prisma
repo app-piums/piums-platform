@@ -66,7 +66,7 @@ model Artist {
   yearsExperience Int     @default(0)
 
   // Equipo y recursos propios del artista
-  equipment     String[]  // ej: ["Sistema de sonido (PA) propio", "Drone", "Gimbal"]
+  equipment     String[]  @default([])  // ej: ["Sistema de sonido (PA) propio", "Drone", "Gimbal"]
   
   // Ubicación y cobertura
   country       String
