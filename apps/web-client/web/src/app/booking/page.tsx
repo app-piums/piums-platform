@@ -17,6 +17,7 @@ import { sdk } from '@piums/sdk';
 import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload } from '@piums/sdk';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
+import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
 type DayAvailability = {
@@ -576,7 +577,7 @@ function BookingContent() {
   }, [selectedService, selectedAddons, clientCoords, travelDistanceKm, calculatePriceQuote]);
 
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
-  const currency = 'USD';
+  const { currency, formatPrice } = useCurrency();
   const pricingItems = useMemo(() => {
     // Viáticos se activa cuando: multi-día (>1 día) Y fuera del radio de cobertura.
     // Sin ubicación aún mostramos el label "Viáticos" como indicativo si es multi-día,
@@ -810,7 +811,10 @@ function BookingContent() {
         />
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Nueva Reserva</h1>
-        <p className="text-gray-600 mb-8">Completa los siguientes pasos para confirmar tu reserva</p>
+        <div className="flex items-center justify-between mb-8">
+          <p className="text-gray-600">Completa los siguientes pasos para confirmar tu reserva</p>
+          <CurrencyToggle />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}

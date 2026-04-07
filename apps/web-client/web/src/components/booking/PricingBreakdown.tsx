@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface PriceItem {
   id: string;
@@ -19,18 +20,12 @@ interface PricingBreakdownProps {
 
 export const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   items,
-  currency = 'USD',
+  currency,
   showDetails = true,
   className = '',
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const { formatPrice } = useCurrency();
+  const formatCurrency = (amount: number) => formatPrice(amount);
 
   const getTypeIcon = (type?: string) => {
     switch (type) {

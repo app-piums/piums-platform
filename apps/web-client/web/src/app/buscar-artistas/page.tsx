@@ -54,6 +54,51 @@ const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 const DAY_NAMES = ['L','M','M','J','V','S','D'];
 const DEFAULT_CENTER: [number, number] = [14.6349, -90.5069]; // Guatemala City
 
+// Approximate center coordinates for common Guatemalan cities (used when artist has no exact coords)
+const CITY_COORDS: Record<string, [number, number]> = {
+  'ciudad de guatemala':  [14.6349, -90.5069],
+  'guatemala':            [14.6349, -90.5069],
+  'ciudad guatemala':     [14.6349, -90.5069],
+  'zona 1':               [14.6408, -90.5133],
+  'zona 10':              [14.6043, -90.5070],
+  'zona 14':              [14.5830, -90.5041],
+  'antigua guatemala':    [14.5586, -90.7295],
+  'antigua':              [14.5586, -90.7295],
+  'quetzaltenango':       [14.8444, -91.5155],
+  'xela':                 [14.8444, -91.5155],
+  'escuintla':            [14.3009, -90.7860],
+  'mixco':                [14.6307, -90.5966],
+  'villa nueva':          [14.5269, -90.5880],
+  'san jose pinula':      [14.5432, -90.4113],
+  'chinautla':            [14.7226, -90.4839],
+  'san pedro ayampuc':    [14.7948, -90.4386],
+  'amatitlan':            [14.4779, -90.6218],
+  'chimaltenango':        [14.6583, -90.8194],
+  'huehuetenango':        [15.3197, -91.4728],
+  'san marcos':           [14.9643, -91.7964],
+  'retalhuleu':           [14.5353, -91.6861],
+  'coban':                [15.4659, -90.3791],
+  'alta verapaz':         [15.4659, -90.3791],
+  'peten':                [16.9144, -89.8873],
+  'flores':               [16.9144, -89.8873],
+  'jalapa':               [14.6297, -89.9897],
+  'chiquimula':           [14.7992, -89.5453],
+  'zacapa':               [14.9714, -89.5256],
+  'izabal':               [15.7411, -89.1512],
+  'puerto barrios':       [15.7291, -88.5910],
+  'livingston':           [15.8280, -88.7462],
+};
+
+function getCityCoords(cityName?: string | null): [number, number] | null {
+  if (!cityName) return null;
+  const key = cityName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const [city, coords] of Object.entries(CITY_COORDS)) {
+    const normCity = city.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (key.includes(normCity) || normCity.includes(key)) return coords;
+  }
+  return null;
+}
+
 function toDateString(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
@@ -381,10 +426,14 @@ function BuscarArtistasContent() {
           available = !occupiedDates.includes(dateStr) && !blockedDates.includes(dateStr);
         }
 
-        // Distance
+        // Distance — use exact coords if available, fall back to city-center coords
         let distance: number | null = null;
-        if (loc && artistLat !== null && artistLng !== null) {
-          distance = haversineKm(loc.lat, loc.lng, artistLat, artistLng);
+        if (loc) {
+          const latToUse = artistLat ?? (getCityCoords((a as any).city || a.ciudad)?.[0] ?? null);
+          const lngToUse = artistLng ?? (getCityCoords((a as any).city || a.ciudad)?.[1] ?? null);
+          if (latToUse !== null && lngToUse !== null) {
+            distance = haversineKm(loc.lat, loc.lng, latToUse, lngToUse);
+          }
         }
 
         return {
@@ -422,13 +471,19 @@ function BuscarArtistasContent() {
   useEffect(() => {
     if (!location || artists.length === 0) return;
     setArtists(prev => {
-      const updated = prev.map(a => ({
-        ...a,
-        distance:
-          a.baseLocationLat !== undefined && a.baseLocationLng !== undefined
-            ? haversineKm(location.lat, location.lng, a.baseLocationLat, a.baseLocationLng)
-            : null,
-      }));
+      const updated = prev.map(a => {
+        const exactLat = a.baseLocationLat;
+        const exactLng = a.baseLocationLng;
+        const latToUse = exactLat !== undefined ? exactLat : (getCityCoords((a as any).city || a.ciudad)?.[0] ?? null);
+        const lngToUse = exactLng !== undefined ? exactLng : (getCityCoords((a as any).city || a.ciudad)?.[1] ?? null);
+        return {
+          ...a,
+          distance:
+            latToUse !== null && lngToUse !== null
+              ? haversineKm(location.lat, location.lng, latToUse as number, lngToUse as number)
+              : null,
+        };
+      });
       updated.sort((a, b) => {
         if (a.available !== b.available) return a.available ? -1 : 1;
         if (a.distance !== null && b.distance !== null) return a.distance - b.distance;
