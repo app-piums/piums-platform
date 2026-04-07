@@ -13,6 +13,31 @@ import { sdk } from '@piums/sdk';
 import type { Artist } from '@piums/sdk';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Categories
+// ─────────────────────────────────────────────────────────────────────────────
+const CATEGORY_OPTIONS = [
+  { value: '',          label: 'Todas las categorías' },
+  { value: 'MUSICO',    label: 'Músico' },
+  { value: 'DJ',        label: 'DJ' },
+  { value: 'FOTOGRAFO', label: 'Fotógrafo' },
+  { value: 'VIDEOGRAFO',label: 'Videógrafo' },
+  { value: 'MAQUILLADOR',label: 'Maquillador' },
+  { value: 'TATUADOR',  label: 'Tatuador' },
+  { value: 'BAILARIN',  label: 'Bailarín' },
+  { value: 'ANIMADOR',  label: 'Animador' },
+  { value: 'MAGO',      label: 'Mago' },
+  { value: 'PINTOR',    label: 'Pintor' },
+  { value: 'ESCULTOR',  label: 'Escultor' },
+  { value: 'DISENADOR', label: 'Diseñador' },
+  { value: 'ESCRITOR',  label: 'Escritor' },
+  { value: 'ACROBATA',  label: 'Acróbata' },
+  { value: 'OTRO',      label: 'Otro' },
+];
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  CATEGORY_OPTIONS.filter(o => o.value).map(o => [o.value, o.label])
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 interface ArtistWithMeta extends Artist {
@@ -225,7 +250,7 @@ function ArtistResultCard({
             <Link href={href} className="font-semibold text-gray-900 text-sm hover:text-[#FF6A00] transition-colors truncate block">
               {artist.nombre}
             </Link>
-            <p className="text-xs text-gray-500 truncate">{artist.category || artist.categoria || 'Artista'}</p>
+            <p className="text-xs text-gray-500 truncate">{CATEGORY_LABEL[artist.category ?? ''] || CATEGORY_LABEL[artist.categoria ?? ''] || 'Artista'}</p>
           </div>
         </div>
 
@@ -247,8 +272,8 @@ function ArtistResultCard({
             </svg>
             {formatDistance(artist.distance)}
           </span>
-          {artist.ciudad && (
-            <span className="truncate">{artist.ciudad}</span>
+          {((artist as any).city || artist.ciudad) && (
+            <span className="truncate">{(artist as any).city || artist.ciudad}</span>
           )}
         </div>
 
@@ -335,7 +360,7 @@ function BuscarArtistasContent() {
       const year = parseInt(yearStr, 10);
       const month = parseInt(monthStr, 10); // 1–12
 
-      const res = await sdk.getArtists({ limit: 40 });
+      const res = await sdk.searchArtists({ limit: 40 });
       const rawArtists = res.artists ?? [];
 
       // Batch-check calendars
@@ -433,23 +458,19 @@ function BuscarArtistasContent() {
   const displayed = artists.filter(a => {
     if (showOnlyAvailable && !a.available) return false;
     if (categoryFilter) {
-      const cat = (a.category || a.categoria || '').toLowerCase();
-      if (!cat.includes(categoryFilter.toLowerCase())) return false;
+      const cat = (a.category || a.categoria || '').toUpperCase();
+      if (cat !== categoryFilter.toUpperCase()) return false;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const name = a.nombre.toLowerCase();
       const bio = (a.bio || a.descripcion || '').toLowerCase();
-      const city = (a.ciudad || a.city || '').toLowerCase();
+      const city = ((a as any).city || a.ciudad || '').toLowerCase();
       const cat = (a.category || a.categoria || '').toLowerCase();
       if (!name.includes(q) && !bio.includes(q) && !city.includes(q) && !cat.includes(q)) return false;
     }
     return true;
   });
-
-  const categories = Array.from(new Set(
-    artists.map(a => a.category || a.categoria || '').filter(Boolean)
-  )).sort();
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
@@ -661,9 +682,8 @@ function BuscarArtistasContent() {
                         onChange={e => setCategoryFilter(e.target.value)}
                         className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30"
                       >
-                        <option value="">Todas las categorías</option>
-                        {categories.map(c => (
-                          <option key={c} value={c}>{c}</option>
+                        {CATEGORY_OPTIONS.map(c => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
                         ))}
                       </select>
 
