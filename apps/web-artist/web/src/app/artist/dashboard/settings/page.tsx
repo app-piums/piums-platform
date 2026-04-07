@@ -792,9 +792,13 @@ export default function ArtistSettingsPage() {
                       </p>
                     </div>
 
-                    {hasBaseLocation && (
+                    {hasBaseLocation ? (
                       <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
                         Guardaremos estas coordenadas para calcular automáticamente los costos de traslado.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        Sin coordenadas, no podemos calcular el costo de traslado para tus clientes. Detecta tu ubicación o escribe las coordenadas manualmente.
                       </p>
                     )}
                   </div>
@@ -1142,6 +1146,16 @@ export default function ArtistSettingsPage() {
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                   <strong>💡 Consejo:</strong> Los artistas con foto de perfil y portada reciben hasta 3x más visitas en su perfil. ¡Complétalo!
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#e05e00] transition-colors text-sm font-semibold disabled:opacity-60"
+                  >
+                    {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
                 </div>
               </div>
             )}
