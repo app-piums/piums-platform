@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 import ClientSidebar from '@/components/ClientSidebar';
 import { NotificationBell } from '@/components/NotificationBell';
+import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
 import { sdk } from '@piums/sdk';
 import type { Artist } from '@piums/sdk';
 
@@ -283,6 +284,7 @@ function ArtistResultCard({
   artist: ArtistWithMeta;
   selectedDate: string;
 }) {
+  const { formatPrice } = useCurrency();
   const href = `/artists/${artist.slug || artist.id}`;
   const bookHref = `/booking?artistId=${artist.id}&date=${selectedDate}`;
 
@@ -372,7 +374,7 @@ function ArtistResultCard({
         {/* Price */}
         {artist.precioDesde !== undefined && (
           <p className="text-xs text-gray-400">
-            Desde <span className="font-semibold text-gray-700">Q{(artist.precioDesde / 100).toFixed(0)}</span>
+            Desde <span className="font-semibold text-gray-700">{formatPrice(artist.precioDesde / 100)}</span>
           </p>
         )}
 
@@ -608,14 +610,20 @@ function BuscarArtistasContent() {
             <h1 className="text-xl font-bold text-gray-900">Buscar Artistas</h1>
             <p className="text-sm text-gray-400">Selecciona fecha y ubicación para encontrar artistas disponibles</p>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-3">
+            <CurrencyToggle />
+            <NotificationBell />
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile title */}
-          <div className="lg:hidden mb-5">
-            <h1 className="text-xl font-bold text-gray-900">Buscar Artistas</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Selecciona fecha y ubicación</p>
+          <div className="lg:hidden mb-5 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Buscar Artistas</h1>
+              <p className="text-sm text-gray-400 mt-0.5">Selecciona fecha y ubicación</p>
+            </div>
+            <CurrencyToggle />
           </div>
 
           <div className="flex flex-col xl:flex-row gap-6 max-w-7xl mx-auto">
