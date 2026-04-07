@@ -382,6 +382,14 @@ export class SearchService {
         servicesCount: services.length,
         serviceIds: services.map(s => s.id),
         serviceTitles: services.map(s => s.title),
+        mainServicePrice: (() => {
+          const main = services.find((s: ServiceData) => s.isMainService) || services[0] || null;
+          return main ? main.price : null;
+        })(),
+        mainServiceName: (() => {
+          const main = services.find((s: ServiceData) => s.isMainService) || services[0] || null;
+          return main ? main.title : null;
+        })(),
         lastSyncedAt: new Date(),
         // Absence tracking: manual blackout takes priority; fall back to GPS-detected country
         ...((() => {
@@ -471,6 +479,7 @@ export class SearchService {
           artistBookings: stats?.total || 0,
           isActive: service.isActive,
           isAvailable: service.isAvailable,
+          isMainService: service.isMainService || false,
           totalBookings: stats?.completed || 0,
         lastSyncedAt: new Date()
       };

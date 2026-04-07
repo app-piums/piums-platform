@@ -22,6 +22,7 @@ export interface ServiceData {
   };
   isActive: boolean;
   isAvailable: boolean;
+  isMainService?: boolean;
   createdAt: string;
 }
 
@@ -38,7 +39,13 @@ export const catalogClient = {
         throw new Error(`Catalog service error: ${response.statusText}`);
       }
 
-      return (await response.json()) as ServiceData;
+      const raw = await response.json() as any;
+      return {
+        ...raw,
+        title: raw.title ?? raw.name,
+        price: raw.price ?? (raw.basePrice != null ? raw.basePrice / 100 : undefined),
+        isMainService: raw.isMainService ?? false,
+      } as ServiceData;
     } catch (error: any) {
       throw new AppError(`Error fetching service: ${error.message}`, 500);
     }
@@ -52,7 +59,17 @@ export const catalogClient = {
         throw new Error(`Catalog service error: ${response.statusText}`);
       }
 
-      return (await response.json()) as { services: ServiceData[], pagination: any };
+      const data = await response.json() as any;
+      const raw: any[] = data.services || [];
+      return {
+        services: raw.map((s: any) => ({
+          ...s,
+          title: s.title ?? s.name,
+          price: s.price ?? (s.basePrice != null ? s.basePrice / 100 : undefined),
+          isMainService: s.isMainService ?? false,
+        })) as ServiceData[],
+        pagination: data.pagination,
+      };
     } catch (error: any) {
       throw new AppError(`Error fetching services: ${error.message}`, 500);
     }
@@ -66,8 +83,15 @@ export const catalogClient = {
         throw new Error(`Catalog service error: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as { services: ServiceData[] };
-      return data.services || [];
+      const data = await response.json() as any;
+      const raw: any[] = data.services || [];
+      // Map catalog field names (name/basePrice) to ServiceData shape (title/price)
+      return raw.map((s: any) => ({
+        ...s,
+        title: s.title ?? s.name,
+        price: s.price ?? (s.basePrice != null ? s.basePrice / 100 : undefined),
+        isMainService: s.isMainService ?? false,
+      })) as ServiceData[];
     } catch (error: any) {
       throw new AppError(`Error fetching artist services: ${error.message}`, 500);
     }

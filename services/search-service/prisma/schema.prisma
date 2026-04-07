@@ -39,6 +39,10 @@ model ArtistIndex {
   // Pricing
   hourlyRateMin     Float?
   hourlyRateMax     Float?
+
+  // Servicio principal (para mostrar precio en listado)
+  mainServicePrice  Float?
+  mainServiceName   String?
   
   // Status
   isVerified        Boolean @default(false)
@@ -106,6 +110,9 @@ model ServiceIndex {
   artistReviews     Int      @default(0)
   artistBookings    Int      @default(0)
   
+  // Servicio principal
+  isMainService     Boolean  @default(false)
+
   // Status
   isActive          Boolean  @default(true)
   isAvailable       Boolean  @default(true)

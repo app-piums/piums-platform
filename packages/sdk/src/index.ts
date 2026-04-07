@@ -22,6 +22,8 @@ export interface Artist {
   experienceYears?: number;
   cityId?: string;
   coverageRadius?: number;
+  mainServicePrice?: number;
+  mainServiceName?: string;
 }
 
 export interface PortfolioItem {
@@ -726,26 +728,34 @@ class PiumsSDK {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.category) queryParams.append('category', params.category);
       if (params?.city) queryParams.append('city', params.city);
-      if (params?.q) queryParams.append('q', params.q);
+      if (params?.q) queryParams.append('query', params.q);
 
-      const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
+      const response = await fetch(`${this.baseUrl}/search/artists?${queryParams.toString()}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      // Normalise: API returns { artists, pagination: { total, page, totalPages } }
-      // but SearchResults expects flat { artists, total, page, totalPages }
+      // Search service returns { artists: ArtistIndex[], pagination: {...} }
+      // Map search index fields to Artist shape
+      const artists = (data.artists ?? []).map((a: any) => ({
+        ...a,
+        nombre: a.nombre ?? a.name,
+        rating: a.rating ?? a.averageRating,
+        reviewsCount: a.reviewsCount ?? a.totalReviews,
+        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        cityId: a.cityId ?? a.city,
+      }));
       if (data.pagination) {
         return {
-          artists: data.artists ?? [],
+          artists,
           total: data.pagination.total ?? 0,
           page: data.pagination.page ?? 1,
           totalPages: data.pagination.totalPages ?? 1,
         };
       }
-      return data;
+      return { ...data, artists };
     } catch (error) {
       console.error('Error fetching artists:', error);
       return {

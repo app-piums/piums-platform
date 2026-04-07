@@ -300,6 +300,8 @@ services:
       CATALOG_SERVICE_URL: http://catalog-service:4004
       BOOKING_SERVICE_URL: http://booking-service:4008
       REVIEWS_SERVICE_URL: http://reviews-service:4006
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003
     depends_on:
       postgres:
