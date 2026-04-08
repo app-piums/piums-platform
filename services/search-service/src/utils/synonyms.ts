@@ -7,10 +7,13 @@
  */
 export const SYNONYM_MAP: Record<string, string[]> = {
   // ── Fotografía ──────────────────────────────────────────────────────────
-  foto:         ['fotografía', 'foto', 'fotos', 'fotografo', 'sesión fotográfica'],
-  fotos:        ['fotografía', 'foto', 'fotos', 'fotografo', 'sesión fotográfica'],
-  fotografía:   ['fotografía', 'foto', 'fotos', 'fotografo', 'fotógrafo'],
-  fotógrafo:    ['fotógrafo', 'fotografo', 'fotografía'],
+  // NOTE: Category in ServiceIndex = "Fotografia" (no accent). 'foto' matches it via ILIKE.
+  foto:         ['fotografía', 'foto', 'fotos', 'fotografo', 'fotografi', 'sesión fotográfica'],
+  fotos:        ['fotografía', 'foto', 'fotos', 'fotografo', 'fotografi', 'sesión fotográfica'],
+  fotografía:   ['fotografía', 'foto', 'fotos', 'fotografo', 'fotografi', 'fotógrafo'],
+  fotógrafo:    ['fotógrafo', 'fotografo', 'fotografía', 'foto', 'fotografi'],
+  fotografo:    ['fotografo', 'fotógrafo', 'fotografía', 'foto', 'fotografi'],
+  fotografia:   ['fotografia', 'fotografía', 'foto', 'fotografi'],
   'foto boda':  ['fotografía de boda', 'foto boda', 'fotógrafo boda'],
   'foto exterior': ['fotografía al aire libre', 'foto exterior', 'sesión outdoor', 'fotografía exterior', 'outdoor', 'exteriores'],
   exterior:     ['exterior', 'aire libre', 'outdoor', 'exteriores', 'al aire libre'],
@@ -20,22 +23,22 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   lifestyle:    ['lifestyle', 'sesión lifestyle', 'fotografía lifestyle', 'foto exterior'],
 
   // ── Música ─────────────────────────────────────────────────────────────
-  música:       ['música', 'musica', 'musical', 'banda', 'cantante', 'artista musical'],
-  musica:       ['música', 'musica', 'musical', 'banda', 'cantante'],
-  banda:        ['banda', 'grupo musical', 'conjunto musical', 'orquesta'],
-  cantante:     ['cantante', 'vocalista', 'solista', 'intérprete'],
-  mariachi:     ['mariachi', 'trío', 'trio', 'música mexicana', 'música ranchera'],
-  marimba:      ['marimba', 'marimba guatemalteca', 'música guatemalteca', 'marimba orquesta'],
+  // NOTE: Category in ServiceIndex = "Musica". Including 'musica' in all music-related
+  // expansions ensures they match the category via ILIKE '%musica%'.
+  música:       ['música', 'musica', 'musical', 'banda', 'cantante', 'artista musical', 'concierto', 'en vivo'],
+  musica:       ['música', 'musica', 'musical', 'banda', 'cantante', 'concierto', 'en vivo'],
+  musico:       ['musico', 'músico', 'musica', 'música', 'musical', 'artista musical'],
+  músico:       ['músico', 'musico', 'musica', 'música', 'musical'],
+  banda:        ['banda', 'grupo musical', 'conjunto musical', 'orquesta', 'musica', 'música', 'concierto', 'en vivo'],
   sonido:       ['sonido', 'audio', 'sistema de sonido', 'equipo de sonido', 'DJ', 'dj'],
   audio:        ['audio', 'sonido', 'sistema de sonido', 'equipo de sonido'],
-  bolo:         ['bolo', 'mariachi', 'música en vivo', 'serenata', 'combo musical'],  // GT slang
-  serenata:     ['serenata', 'bolo', 'mariachi', 'serenar'],
-  'música en vivo': ['música en vivo', 'banda en vivo', 'show musical', 'concierto'],
-  concierto:    ['concierto', 'show musical', 'música en vivo', 'presentación musical'],
-  violín:       ['violín', 'violin', 'cuerdas', 'cuarteto de cuerdas'],
-  violin:       ['violín', 'violin', 'cuerdas'],
-  guitarra:     ['guitarra', 'guitarrista', 'música acústica'],
-  piano:        ['piano', 'pianista', 'teclado', 'teclista'],
+  'musica en vivo': ['música en vivo', 'banda en vivo', 'show musical', 'concierto', 'musica'],
+  concierto:    ['concierto', 'show musical', 'música en vivo', 'presentación musical', 'musica'],
+  violín:       ['violín', 'violin', 'violinista', 'cuerdas', 'cuarteto de cuerdas', 'musica', 'música'],
+  violin:       ['violín', 'violin', 'violinista', 'cuerdas', 'musica', 'música'],
+  violinista:   ['violinista', 'violín', 'violin', 'cuerdas', 'musica', 'música'],
+  guitarra:     ['guitarra', 'guitarrista', 'música acústica', 'musica', 'música'],
+  piano:        ['piano', 'pianista', 'teclado', 'teclista', 'musica', 'música'],
 
   // ── DJ ──────────────────────────────────────────────────────────────────
   dj:           ['DJ', 'dj', 'djing', 'disc jockey', 'animador', 'animación musical'],
@@ -132,13 +135,16 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   asistentes:   ['asistentes', 'invitados', 'personas'],
 
   // ── Música expandida ────────────────────────────────────────────────────
-  cantante:     ['cantante', 'vocalista', 'solista', 'intérprete vocal', 'cantante solista'],
-  solista:      ['solista', 'cantante', 'artista solista', 'solista musical'],
-  saxofon:      ['saxofón', 'saxo', 'saxofonista', 'saxofón alto', 'saxofón tenor'],
-  saxofonista:  ['saxofonista', 'saxofón', 'saxo', 'jazz'],
-  baterista:    ['baterista', 'batería', 'drummer', 'percusionista'],
-  bateria:      ['batería', 'baterista', 'drummer', 'percusión', 'ritmo'],
-  marimba:      ['marimba', 'marimba guatemalteca', 'música guatemalteca', 'marimba orquesta', 'marimba típica'],
+  cantante:     ['cantante', 'vocalista', 'solista', 'intérprete vocal', 'cantante solista', 'musica', 'música'],
+  solista:      ['solista', 'cantante', 'artista solista', 'solista musical', 'musica'],
+  saxofon:      ['saxón', 'saxo', 'saxofonista', 'saxón alto', 'saxón tenor', 'musica'],
+  saxofonista:  ['saxofonista', 'saxón', 'saxo', 'jazz', 'musica'],
+  baterista:    ['baterista', 'batería', 'drummer', 'percusionista', 'musica'],
+  bateria:      ['batería', 'baterista', 'drummer', 'percusión', 'ritmo', 'musica'],
+  marimba:      ['marimba', 'marimba guatemalteca', 'música guatemalteca', 'marimba orquesta', 'marimba típica', 'musica'],
+  mariachi:     ['mariachi', 'trío', 'trio', 'música mexicana', 'música ranchera', 'musica', 'serenata'],
+  bolo:         ['bolo', 'mariachi', 'música en vivo', 'serenata', 'combo musical', 'musica'],  // GT slang
+  serenata:     ['serenata', 'bolo', 'mariachi', 'serenar', 'musica', 'música'],
   'marimba orquesta': ['marimba orquesta', 'marimba', 'orquesta marimba', 'conjunto de marimba'],
   beatmaker:    ['beatmaker', 'beat', 'productor de beats', 'trap', 'hip hop beat', 'producer'],
   productor:    ['productor musical', 'producción musical', 'beatmaker', 'estudio', 'grabación'],
@@ -156,7 +162,6 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'dj bodas':   ['dj bodas', 'dj para bodas', 'animación musical boda', 'música bodas'],
   'dj corporativo': ['dj corporativo', 'dj empresarial', 'dj eventos corporativos'],
   'dj electronica': ['dj electrónica', 'dj club', 'house', 'techno', 'electronic music'],
-  'disc jockey': ['disc jockey', 'DJ', 'dj'],
 
   // ── Fotografía expandida ────────────────────────────────────────────────
   'fotografo eventos':  ['fotógrafo de eventos', 'fotografía de eventos', 'foto eventos', 'event photographer'],
@@ -238,7 +243,6 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   bartender:    ['bartender', 'mixología', 'coctelería', 'mixólogo', 'bartending show'],
   mixologia:    ['mixología', 'bartender', 'cocteles', 'bebidas artesanales'],
   decorador:    ['decorador de eventos', 'decoración', 'ambientación', 'floral design'],
-  'wedding planner': ['wedding planner', 'coordinadora de bodas', 'planificadora de bodas', 'organizadora'],
   'banda boda': ['banda para bodas', 'música en vivo para bodas', 'orquesta bodas'],
   'experiencia tematica': ['experiencia temática', 'evento inmersivo', 'actividad temática'],
 };
