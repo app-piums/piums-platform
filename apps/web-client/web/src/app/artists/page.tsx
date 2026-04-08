@@ -142,12 +142,19 @@ function ArtistsPageContent() {
   const eventDate = searchParams.get('date') || '';
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
   const [guests, setGuests] = useState(searchParams.get('guests') || '');
   const [clientCountry, setClientCountry] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem('client_country') ?? '' : '')
   );
+
+  // Debounce: wait 400ms after the user stops typing before firing the search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // IDs de artistas ocupados en la fecha del evento
   const [busyArtistIds, setBusyArtistIds] = useState<Set<string>>(new Set());
@@ -174,7 +181,7 @@ function ArtistsPageContent() {
   const cities = useMemo(() => getCitiesForCountry(clientCountry || DEFAULT_COUNTRY), [clientCountry]);
 
   const filters: ArtistsFilters = {
-    q: searchQuery || undefined,
+    q: debouncedQuery || undefined,
     category: selectedCategory || undefined,
     cityId: selectedCity || undefined,
     guests: guests ? parseInt(guests, 10) : undefined,

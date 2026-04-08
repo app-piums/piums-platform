@@ -281,9 +281,11 @@ function CalendarSelector({ selectedDate, onSelectDate }: CalendarSelectorProps)
 function ArtistResultCard({
   artist,
   selectedDate,
+  matchedServicePrice,
 }: {
   artist: ArtistWithMeta;
   selectedDate: string;
+  matchedServicePrice?: { name: string; price: number; currency: string };
 }) {
   const { formatPrice } = useCurrency();
   const href = `/artists/${artist.slug || artist.id}`;
@@ -372,12 +374,25 @@ function ArtistResultCard({
           )}
         </div>
 
-        {/* Price */}
-        {artist.precioDesde !== undefined && (
-          <p className="text-xs text-gray-400">
-            Desde <span className="font-semibold text-gray-700">{formatPrice(artist.precioDesde / 100)}</span>
-          </p>
-        )}
+        {/* Price — matched service (smart search) > main service (fetched) > precioDesde */}
+        {(() => {
+          const price = matchedServicePrice ?? (
+            (artist.mainServicePrice != null && artist.mainServicePrice > 0)
+              ? { name: (artist.mainServiceName as string | undefined) ?? 'Servicio principal', price: artist.mainServicePrice, currency: 'GTQ' }
+              : (artist.precioDesde != null && artist.precioDesde > 0)
+              ? { name: 'Servicio principal', price: artist.precioDesde, currency: 'GTQ' }
+              : null
+          );
+          if (!price) return null;
+          return (
+            <div className="flex items-center justify-between gap-2 bg-orange-50 rounded-lg px-2.5 py-1.5">
+              <span className="text-xs text-gray-500 truncate">{price.name}</span>
+              <span className="text-xs font-bold text-[#FF6A00] shrink-0">
+                {formatPrice(price.price)}
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Bio snippet */}
         {artist.bio && (
@@ -441,11 +456,37 @@ function BuscarArtistasContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
+  const [smartPriceMap, setSmartPriceMap] = useState<Record<string, { name: string; price: number; currency: string }>>({});
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push('/login');
   }, [isLoading, isAuthenticated, router]);
+
+  // ── Debounced smart-search for matched service prices ────────────────────
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSmartPriceMap({});
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const results = await sdk.smartSearch({ q: searchQuery });
+        const map: Record<string, { name: string; price: number; currency: string }> = {};
+        for (const a of results.artists) {
+          if (a.matchedService && a.id) {
+            map[a.id] = {
+              name: a.matchedService.name,
+              price: a.matchedService.price,
+              currency: a.matchedService.currency,
+            };
+          }
+        }
+        setSmartPriceMap(map);
+      } catch { /* ignore */ }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // ── Load available artists when date changes ──────────────────────────────
   const loadArtists = useCallback(async (dateStr: string, loc: { lat: number; lng: number } | null) => {
@@ -458,10 +499,11 @@ function BuscarArtistasContent() {
       const res = await sdk.searchArtists({ limit: 40 });
       const rawArtists = res.artists ?? [];
 
-      // Batch-check calendars
-      const calendarResults = await Promise.allSettled(
-        rawArtists.map(a => sdk.getCalendar(a.id, year, month))
-      );
+      // Batch-check calendars + services in parallel
+      const [calendarResults, serviceResults] = await Promise.all([
+        Promise.allSettled(rawArtists.map(a => sdk.getCalendar(a.id, year, month))),
+        Promise.allSettled(rawArtists.map(a => sdk.getArtistServices(a.id))),
+      ]);
 
       const enriched: ArtistWithMeta[] = rawArtists.map((a, idx) => {
         const artistAny = a as Artist & { baseLocationLat?: number; baseLocationLng?: number };
@@ -474,6 +516,16 @@ function BuscarArtistasContent() {
         if (calRes.status === 'fulfilled') {
           const { occupiedDates, blockedDates } = calRes.value;
           available = !occupiedDates.includes(dateStr) && !blockedDates.includes(dateStr);
+        }
+
+        // Main service price
+        let mainServicePrice: number | undefined;
+        let mainServiceName: string | undefined;
+        const svcRes = serviceResults[idx];
+        if (svcRes.status === 'fulfilled' && svcRes.value.length > 0) {
+          const main = svcRes.value.find(s => (s as any).isMainService) ?? svcRes.value[0];
+          mainServicePrice = main.basePrice / 100; // convert cents → display units (GTQ)
+          mainServiceName = main.name;
         }
 
         // Distance — use exact coords if available, fall back to city-center coords
@@ -492,6 +544,8 @@ function BuscarArtistasContent() {
           baseLocationLng: artistLng ?? undefined,
           available,
           distance,
+          mainServicePrice: mainServicePrice ?? a.mainServicePrice,
+          mainServiceName: mainServiceName ?? a.mainServiceName,
         };
       });
 
@@ -880,6 +934,7 @@ function BuscarArtistasContent() {
                           key={artist.id}
                           artist={artist}
                           selectedDate={selectedDate}
+                          matchedServicePrice={smartPriceMap[artist.id]}
                         />
                       ))}
                     </div>
