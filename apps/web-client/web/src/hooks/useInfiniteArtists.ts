@@ -27,34 +27,13 @@ function stripAccents(str: string): string {
 }
 
 /**
- * Maps common user-typed words (with/without accents) to their
- * canonical artist-category enum value.
- */
-const CATEGORY_ALIASES: Record<string, string> = {
-  musica: 'MUSICO', musico: 'MUSICO', musician: 'MUSICO',
-  banda: 'MUSICO', cantante: 'MUSICO', guitarra: 'MUSICO',
-  piano: 'MUSICO', violin: 'MUSICO', trompeta: 'MUSICO', orquesta: 'MUSICO',
-  foto: 'FOTOGRAFO', fotografo: 'FOTOGRAFO', fotografia: 'FOTOGRAFO',
-  camara: 'FOTOGRAFO', camera: 'FOTOGRAFO', fotografico: 'FOTOGRAFO',
-  dj: 'DJ', discjockey: 'DJ', mezcla: 'DJ',
-  tattoo: 'TATUADOR', tatuaje: 'TATUADOR', tatuador: 'TATUADOR', ink: 'TATUADOR',
-  maquillaje: 'MAQUILLADOR', maquillador: 'MAQUILLADOR', makeup: 'MAQUILLADOR',
-  pintura: 'PINTOR', pintor: 'PINTOR', arte: 'PINTOR', acuarela: 'PINTOR',
-  escultura: 'ESCULTOR', escultor: 'ESCULTOR',
-};
-
-/**
- * Resolves the free-text query against the alias map.
- * Typing "musica" filters by MUSICO category when no category is already set.
- * Always sends the accent-stripped query to the API.
+ * Normalizes the free-text query (strip accents, lowercase).
+ * Free-text always goes through smartSearch — no category alias conversion.
+ * The category dropdown still works as an explicit filter.
  */
 function resolveFilters(filters: ArtistsFilters): ArtistsFilters {
   if (!filters.q) return filters;
   const norm = stripAccents(filters.q).toLowerCase().trim();
-  const aliasCategory = CATEGORY_ALIASES[norm];
-  if (aliasCategory && !filters.category) {
-    return { ...filters, q: undefined, category: aliasCategory };
-  }
   return { ...filters, q: norm };
 }
 
