@@ -457,22 +457,27 @@ function BuscarArtistasContent() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
   const [smartPriceMap, setSmartPriceMap] = useState<Record<string, { name: string; price: number; currency: string }>>({});
+  const [smartArtists, setSmartArtists] = useState<ArtistWithMeta[]>([]);
+  const [smartSearchLoading, setSmartSearchLoading] = useState(false);
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push('/login');
   }, [isLoading, isAuthenticated, router]);
 
-  // ── Debounced smart-search for matched service prices ────────────────────
+  // ── Debounced smart-search: builds price map AND ordered artist list ────────
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSmartPriceMap({});
+      setSmartArtists([]);
       return;
     }
+    setSmartSearchLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const results = await sdk.smartSearch({ q: searchQuery });
+        const results = await sdk.smartSearch({ q: searchQuery, limit: 40 });
         const map: Record<string, { name: string; price: number; currency: string }> = {};
+        const smartList: ArtistWithMeta[] = [];
         for (const a of results.artists) {
           if (a.matchedService && a.id) {
             map[a.id] = {
@@ -481,9 +486,21 @@ function BuscarArtistasContent() {
               currency: a.matchedService.currency,
             };
           }
+          smartList.push({
+            ...a,
+            distance: null,
+            available: (a as any).isAvailable ?? (a as any).available ?? true,
+          } as ArtistWithMeta);
         }
+        // Enrich with calendar/distance data already loaded for the selected date
+        setArtists(prev => {
+          const byId = new Map(prev.map(p => [p.id, p]));
+          setSmartArtists(smartList.map(sa => byId.get(sa.id) ?? sa));
+          return prev;
+        });
         setSmartPriceMap(map);
       } catch { /* ignore */ }
+      finally { setSmartSearchLoading(false); }
     }, 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -614,37 +631,35 @@ function BuscarArtistasContent() {
   };
 
   // ── Filtered artists ──────────────────────────────────────────────────────
-  const displayed = artists.filter(a => {
-    if (showOnlyAvailable && !a.available) return false;
-    if (categoryFilter) {
-      const cat = (a.category || a.categoria || '').toUpperCase();
-      if (cat !== categoryFilter.toUpperCase()) return false;
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const name = a.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const bio = (a.bio || (a as any).descripcion || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const city = ((a as any).city || a.ciudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const catEnum = (a.category || a.categoria || '').toUpperCase();
-      const catLabel = (CATEGORY_LABEL[catEnum] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const specialties = ((a as any).specialties as string[] || []).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // When search is active, use smartSearch results (correct service matching).
+  // Fall back to client-side filter only while smartSearch is still loading.
+  const displayed = (() => {
+    const useSmartResults = searchQuery.trim() && smartArtists.length > 0;
+    const base = useSmartResults ? smartArtists : artists;
 
-      // Synonym expansion: check if query matches any synonym → matches that category
-      const synonymMatched = Object.entries(CATEGORY_SYNONYMS).some(([term, cats]) =>
-        q.includes(term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) && cats.includes(catEnum)
-      );
-
-      if (
-        !name.includes(q) &&
-        !bio.includes(q) &&
-        !city.includes(q) &&
-        !catLabel.includes(q) &&
-        !specialties.includes(q) &&
-        !synonymMatched
-      ) return false;
-    }
-    return true;
-  });
+    return base.filter(a => {
+      if (showOnlyAvailable && !a.available) return false;
+      if (categoryFilter) {
+        const cat = (a.category || a.categoria || '').toUpperCase();
+        if (cat !== categoryFilter.toUpperCase()) return false;
+      }
+      // Client-side text filter only as fallback while smartSearch hasn't returned yet
+      if (searchQuery.trim() && !useSmartResults) {
+        const q = searchQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const name = a.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const bio = (a.bio || (a as any).descripcion || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const city = ((a as any).city || a.ciudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const catEnum = (a.category || a.categoria || '').toUpperCase();
+        const catLabel = (CATEGORY_LABEL[catEnum] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const specialties = ((a as any).specialties as string[] || []).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const synonymMatched = Object.entries(CATEGORY_SYNONYMS).some(([term, cats]) =>
+          q.includes(term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) && cats.includes(catEnum)
+        );
+        if (!name.includes(q) && !bio.includes(q) && !city.includes(q) && !catLabel.includes(q) && !specialties.includes(q) && !synonymMatched) return false;
+      }
+      return true;
+    });
+  })();
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
@@ -886,7 +901,7 @@ function BuscarArtistasContent() {
                   </div>
 
                   {/* Loading skeleton */}
-                  {loadingArtists && (
+                  {(loadingArtists || smartSearchLoading) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
