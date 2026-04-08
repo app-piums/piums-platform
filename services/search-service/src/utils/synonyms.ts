@@ -130,6 +130,117 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   personas:     ['personas', 'invitados', 'asistentes', 'capacidad'],
   invitados:    ['invitados', 'personas', 'asistentes'],
   asistentes:   ['asistentes', 'invitados', 'personas'],
+
+  // ── Música expandida ────────────────────────────────────────────────────
+  cantante:     ['cantante', 'vocalista', 'solista', 'intérprete vocal', 'cantante solista'],
+  solista:      ['solista', 'cantante', 'artista solista', 'solista musical'],
+  saxofon:      ['saxofón', 'saxo', 'saxofonista', 'saxofón alto', 'saxofón tenor'],
+  saxofonista:  ['saxofonista', 'saxofón', 'saxo', 'jazz'],
+  baterista:    ['baterista', 'batería', 'drummer', 'percusionista'],
+  bateria:      ['batería', 'baterista', 'drummer', 'percusión', 'ritmo'],
+  marimba:      ['marimba', 'marimba guatemalteca', 'música guatemalteca', 'marimba orquesta', 'marimba típica'],
+  'marimba orquesta': ['marimba orquesta', 'marimba', 'orquesta marimba', 'conjunto de marimba'],
+  beatmaker:    ['beatmaker', 'beat', 'productor de beats', 'trap', 'hip hop beat', 'producer'],
+  productor:    ['productor musical', 'producción musical', 'beatmaker', 'estudio', 'grabación'],
+  rapero:       ['rapero', 'rap', 'rapper', 'freestyle', 'hip hop', 'urbano'],
+  freestyle:    ['freestyle', 'rap', 'rapero', 'improvisación rap'],
+  locutor:      ['locutor', 'locución', 'presentador', 'voice over', 'narrador', 'comunicador'],
+  'voice over': ['voice over', 'locutor', 'narrador', 'doblaje', 'voz en off'],
+  doblaje:      ['doblaje', 'voice over', 'locutor', 'voz'],
+  'grupo acustico': ['grupo acústico', 'acústico', 'unplugged', 'música acústica'],
+  trio:         ['trío', 'trio', 'mariachi', 'cuarteto', 'conjunto pequeño'],
+  cuarteto:     ['cuarteto', 'trío', 'ensemble de cuerdas'],
+  'ingeniero de sonido': ['ingeniero de sonido', 'técnico de sonido', 'audiovisual', 'audio live'],
+
+  // ── DJ expandido ────────────────────────────────────────────────────────
+  'dj bodas':   ['dj bodas', 'dj para bodas', 'animación musical boda', 'música bodas'],
+  'dj corporativo': ['dj corporativo', 'dj empresarial', 'dj eventos corporativos'],
+  'dj electronica': ['dj electrónica', 'dj club', 'house', 'techno', 'electronic music'],
+  'disc jockey': ['disc jockey', 'DJ', 'dj'],
+
+  // ── Fotografía expandida ────────────────────────────────────────────────
+  'fotografo eventos':  ['fotógrafo de eventos', 'fotografía de eventos', 'foto eventos', 'event photographer'],
+  'fotografo boda':     ['fotógrafo de bodas', 'fotografía nupcial', 'wedding photographer', 'foto boda'],
+  'fotografo producto': ['fotografía de producto', 'foto producto', 'ecommerce foto', 'product photography'],
+  drone:        ['drone', 'dron', 'drone operator', 'fotografía aérea', 'video aéreo', 'aerial'],
+  'drone operator': ['drone operator', 'piloto dron', 'aerofotografía', 'video aéreo'],
+
+  // ── Video expandido ─────────────────────────────────────────────────────
+  videografo:   ['videógrafo', 'videomaker', 'filmación', 'video de eventos'],
+  editor:       ['editor de video', 'edición', 'post producción', 'montaje'],
+  'editor de video': ['editor de video', 'edición de video', 'post producción', 'colorista'],
+  colorista:    ['colorista', 'color grading', 'corrección de color', 'etalonaje'],
+  streaming:    ['streaming', 'live stream', 'transmisión en vivo', 'eventos en vivo', 'stream'],
+  'live stream': ['live stream', 'streaming', 'transmisión en vivo', 'broadcast'],
+
+  // ── Diseño expandido ────────────────────────────────────────────────────
+  branding:     ['branding', 'identidad visual', 'brand design', 'diseño de marca', 'logo'],
+  logo:         ['logo', 'logotipo', 'branding', 'diseño de logo', 'identidad visual'],
+  'diseno uxui':['diseño ux/ui', 'ux design', 'ui design', 'diseño de app', 'diseño web', 'prototipo'],
+  ilustracion:  ['ilustración', 'ilustrador', 'dibujo digital', 'arte digital', 'illustration'],
+  'motion graphics': ['motion graphics', 'animación gráfica', 'motion design', 'after effects'],
+  animacion:    ['animación', 'animador', 'animación 2d', 'animación 3d', 'motion graphics'],
+  'arte ia':    ['arte con ia', 'midjourney', 'stable diffusion', 'ai art', 'generative art'],
+  lettering:    ['lettering', 'caligrafía', 'tipografía creativa', 'hand lettering'],
+  caligrafo:    ['calígrafo', 'caligrafía', 'lettering', 'escritura artística'],
+  ceramista:    ['ceramista', 'cerámica', 'alfarería', 'torno', 'arcilla'],
+  artesano:     ['artesano', 'artesanía', 'manualidades', 'handcraft', 'craft'],
+
+  // ── Artes escénicas expandidas ──────────────────────────────────────────
+  coreografo:   ['coreógrafo', 'coreografía', 'director de baile', 'show de baile'],
+  'baile urbano': ['baile urbano', 'hip hop dance', 'breakdance', 'street dance', 'urban dance'],
+  'baile clasico': ['ballet', 'danza clásica', 'danza contemporánea', 'classical dance'],
+  actor:        ['actor', 'actriz', 'actuación', 'teatro', 'dramatización'],
+  teatro:       ['teatro', 'obra teatral', 'actuación', 'improvisación teatral'],
+  mimo:         ['mimo', 'performance artístico', 'arte callejero', 'artista de calle'],
+  'danza indigena': ['danza indígena', 'danza maya', 'baile ceremonial', 'danza guatemalteca'],
+  'danza folklorica': ['danza folklórica', 'folclore', 'baile típico', 'danza guatemalteca', 'danza regional'],
+
+  // ── Entretenimiento expandido ────────────────────────────────────────────
+  'stand up':   ['stand up', 'stand-up comedy', 'comediante', 'comedia', 'humor en vivo'],
+  comediante:   ['comediante', 'stand up', 'humorista', 'humor', 'monólogo cómico'],
+  'show infantil': ['show infantil', 'animación niños', 'payaso', 'mago infantil', 'fiesta niños'],
+  payaso:       ['payaso', 'show infantil', 'animación infantil', 'circo'],
+  personajes:   ['personajes temáticos', 'cosplay', 'disfraz', 'show temático', 'mascota'],
+  'show fuego': ['show de fuego', 'malabares de fuego', 'fuego', 'fire performer'],
+  malabarismo:  ['malabarismo', 'malabares', 'circo', 'acróbata', 'juggling'],
+  acrobata:     ['acróbata', 'circo', 'aéreo', 'telas aéreas', 'acrobacia'],
+
+  // ── Belleza & Estilo ─────────────────────────────────────────────────────
+  'maquillaje novia':  ['maquillaje nupcial', 'maquillaje de novia', 'makeup boda', 'bridal makeup'],
+  'body paint':  ['body paint', 'body art', 'pintura corporal', 'cuerpo pintado'],
+  estilista:    ['estilista', 'peinado', 'hair stylist', 'salón de belleza', 'peluquero'],
+  manicura:     ['manicure', 'nail art', 'uñas acrílicas', 'nail artist', 'manicura'],
+  'barbero pro': ['barbero profesional', 'barbería', 'barber shop', 'fade', 'corte caballero'],
+  'tattoo realista': ['tattoo realista', 'realismo tatuaje', 'realistic tattoo', 'retrato en piel'],
+  'tattoo minimalista': ['tattoo minimalista', 'fine line tattoo', 'tatuaje pequeño', 'delicado'],
+  piercing:     ['piercing', 'perforación corporal', 'pircing', 'joyería corporal'],
+
+  // ── Educación Creativa ───────────────────────────────────────────────────
+  'clases de musica': ['clases de música', 'lecciones musicales', 'escuela de música', 'aprende a tocar'],
+  'clases de canto':  ['clases de canto', 'vocal coach', 'técnica vocal', 'lecciones de canto'],
+  'coaching vocal':   ['coaching vocal', 'vocal coach', 'clases de canto', 'formación vocal'],
+  taller:       ['taller', 'workshop', 'curso', 'capacitación creativa', 'actividad grupal'],
+  mentor:       ['mentor', 'mentoring', 'asesoría', 'coaching artístico'],
+
+  // ── Contenido Digital ────────────────────────────────────────────────────
+  'creador de contenido': ['content creator', 'creador de contenido', 'ugc', 'influencer creativo'],
+  tiktok:       ['tiktok', 'tiktoker', 'reels', 'video corto', 'short video'],
+  tiktoker:     ['tiktoker', 'tiktok', 'reels creator', 'influencer'],
+  youtuber:     ['youtuber', 'youtube', 'vlog', 'canal de youtube'],
+  guionista:    ['guionista', 'guión', 'scriptwriter', 'screen writer', 'screenplay'],
+  copywriting:  ['copywriting', 'redacción', 'copy creativo', 'content writing'],
+  storytelling: ['storytelling', 'narrativa', 'storyteller', 'historia de marca'],
+
+  // ── Experiencias Creativas ───────────────────────────────────────────────
+  chef:         ['chef', 'cocinero', 'gastronomía', 'catering', 'cocina creativa'],
+  catering:     ['catering', 'servicio de catering', 'banquetes', 'comida para eventos'],
+  bartender:    ['bartender', 'mixología', 'coctelería', 'mixólogo', 'bartending show'],
+  mixologia:    ['mixología', 'bartender', 'cocteles', 'bebidas artesanales'],
+  decorador:    ['decorador de eventos', 'decoración', 'ambientación', 'floral design'],
+  'wedding planner': ['wedding planner', 'coordinadora de bodas', 'planificadora de bodas', 'organizadora'],
+  'banda boda': ['banda para bodas', 'música en vivo para bodas', 'orquesta bodas'],
+  'experiencia tematica': ['experiencia temática', 'evento inmersivo', 'actividad temática'],
 };
 
 /**

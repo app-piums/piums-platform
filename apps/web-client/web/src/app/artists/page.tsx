@@ -9,6 +9,9 @@ import { ArtistCard } from '@/components/ArtistCard';
 import { useInfiniteArtists, type ArtistsFilters } from '@/hooks/useInfiniteArtists';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { CurrencyToggle } from '@/contexts/CurrencyContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
+import { NotificationBell } from '@/components/NotificationBell';
 import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
 import { sdk } from '@piums/sdk';
 
@@ -242,28 +245,40 @@ function ArtistsPageContent() {
               <p className="text-sm text-gray-400">Descubre profesionales talentosos para tu evento</p>
             )}
           </div>
-          {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-            >
-              <XIcon className="h-4 w-4" />
-              Limpiar filtros
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <CurrencyToggle />
+            <NotificationBell />
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                <XIcon className="h-4 w-4" />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile title */}
-          <div className="lg:hidden mb-4">
-            <h1 className="text-xl font-bold text-gray-900">Explorar Artistas</h1>
-            {eventDate ? (
-              <p className="text-sm text-[#FF6A00] font-medium mt-0.5">
-                Disponibilidad: {new Date(eventDate + 'T12:00:00').toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-400 mt-0.5">Encuentra el talento perfecto para tu evento</p>
-            )}
+          <div className="lg:hidden mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Explorar Artistas</h1>
+              {eventDate ? (
+                <p className="text-sm text-[#FF6A00] font-medium mt-0.5">
+                  Disponibilidad: {new Date(eventDate + 'T12:00:00').toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 mt-0.5">Encuentra el talento perfecto para tu evento</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <CurrencyToggle />
+              <NotificationBell />
+            </div>
           </div>
 
           {/* Filters */}

@@ -18,6 +18,7 @@ import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePric
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
 type DayAvailability = {
@@ -813,7 +814,10 @@ function BookingContent() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Nueva Reserva</h1>
         <div className="flex items-center justify-between mb-8">
           <p className="text-gray-600">Completa los siguientes pasos para confirmar tu reserva</p>
-          <CurrencyToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <CurrencyToggle />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -35,4 +35,3 @@
   - Artista: http://localhost:3001
   - Admin:   http://localhost:3003
 
-- Si necesitas credenciales para otros roles o servicios, avísame.

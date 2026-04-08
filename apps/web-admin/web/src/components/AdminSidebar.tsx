@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { ThemeToggle } from "@/contexts/ThemeContext";
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -119,6 +120,7 @@ export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
             </p>
             <p className="truncate text-xs text-zinc-400">{user?.email}</p>
           </div>
+          <ThemeToggle />
         </div>
         <button
           onClick={logout}

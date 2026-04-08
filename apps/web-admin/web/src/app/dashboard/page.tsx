@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { statsApi, type AdminStats } from "@/lib/api";
 import { AdminGuard } from "@/components/AdminGuard";
+import { ThemeToggle } from "@/contexts/ThemeContext";
 
 function StatCard({
   label,
@@ -85,9 +86,12 @@ function DashboardContent() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Dashboard</h1>
-        <p className="mt-1 text-sm text-zinc-500">Resumen general de la plataforma</p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Dashboard</h1>
+          <p className="mt-1 text-sm text-zinc-500">Resumen general de la plataforma</p>
+        </div>
+        <ThemeToggle />
       </div>
 
       {/* Stat cards */}

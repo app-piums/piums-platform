@@ -8,6 +8,7 @@ import { Loading } from '@/components/Loading';
 import ClientSidebar from '@/components/ClientSidebar';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import { NotificationBell } from '@/components/NotificationBell';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk, Artist, Booking } from '@piums/sdk';
 
 // Colors for artist avatar placeholders
@@ -229,6 +230,7 @@ export default function DashboardPage() {
                 className="pl-9 pr-4 py-2 w-72 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00]"
               />
             </form>
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>

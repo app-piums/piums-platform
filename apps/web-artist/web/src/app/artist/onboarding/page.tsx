@@ -247,6 +247,24 @@ export default function ArtistOnboardingPage() {
   const [basePrice, setBasePrice] = useState('');
   const [availabilityType, setAvailabilityType] = useState<'immediate' | 'quote'>('immediate');
 
+  // Step 7: Tarifa Base
+  const [hourlyRateMin, setHourlyRateMin] = useState<number>(0);
+  const [hourlyRateMax, setHourlyRateMax] = useState<number>(0);
+  const [currency, setCurrency] = useState<'GTQ' | 'USD' | 'MXN'>('GTQ');
+  const [requiresDeposit, setRequiresDeposit] = useState(false);
+  const [depositPercentage, setDepositPercentage] = useState(30);
+
+  // Step 8: Disponibilidad Semanal
+  const [weeklyAvailability, setWeeklyAvailability] = useState([
+    { day: 'Lunes',     active: false, startTime: '09:00', endTime: '18:00' },
+    { day: 'Martes',    active: false, startTime: '09:00', endTime: '18:00' },
+    { day: 'Miércoles', active: false, startTime: '09:00', endTime: '18:00' },
+    { day: 'Jueves',    active: false, startTime: '09:00', endTime: '18:00' },
+    { day: 'Viernes',   active: false, startTime: '09:00', endTime: '18:00' },
+    { day: 'Sábado',    active: false, startTime: '10:00', endTime: '16:00' },
+    { day: 'Domingo',   active: false, startTime: '10:00', endTime: '16:00' },
+  ]);
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Identity verification (OAuth only — still step 4 for OAuth, between equipment and portfolio)
@@ -265,7 +283,7 @@ export default function ArtistOnboardingPage() {
   // 5 = Portfolio & Profile
   // 6 = Service Setup
   // totalSteps: OAuth → 6, non-OAuth → 5
-  const totalSteps = isOAuthUser ? 6 : 5;
+  const totalSteps = isOAuthUser ? 8 : 7;
 
   useEffect(() => {
     const provider = sessionStorage.getItem('auth_provider');
@@ -392,12 +410,36 @@ export default function ArtistOnboardingPage() {
           bio: shortBio || undefined,
           instagram: instagramHandle || undefined,
           website: portfolioUrl || undefined,
+          hourlyRateMin: hourlyRateMin > 0 ? hourlyRateMin : undefined,
+          hourlyRateMax: hourlyRateMax > 0 ? hourlyRateMax : undefined,
+          currency,
+          requiresDeposit,
+          depositPercentage: requiresDeposit ? depositPercentage : undefined,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
         if (res.status !== 409) throw new Error(data.message || 'Error al crear perfil');
+      }
+
+      // Save availability if any days were selected
+      const activeDays = weeklyAvailability.filter(d => d.active);
+      if (activeDays.length > 0) {
+        await fetch('/api/artist/availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            availability: activeDays.map(d => ({
+              dayOfWeek: d.day,
+              startTime: d.startTime,
+              endTime: d.endTime,
+            })),
+          }),
+        }).catch(() => {
+          toast.warning('No se pudo guardar la disponibilidad. Podrás configurarla desde tu perfil.');
+        });
       }
 
       document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
@@ -422,7 +464,7 @@ export default function ArtistOnboardingPage() {
           <div className="flex items-center">
             <Image src="/logo.png" alt="PIUMS" width={96} height={96} className="h-10 w-auto" unoptimized priority />
           </div>
-          {currentStep < 6 && (
+          {currentStep < 8 && (
             <div className="flex items-center gap-4">
               <button
                 onClick={handleSkip}
@@ -448,7 +490,9 @@ export default function ArtistOnboardingPage() {
                 {currentStep === 3 && `Paso 3 de ${totalSteps}: Tu equipo`}
                 {currentStep === 4 && isOAuthUser && `Paso 4 de ${totalSteps}: Verificación de identidad`}
                 {currentStep === 5 && `Paso ${isOAuthUser ? 5 : 4} de ${totalSteps}: Portafolio y perfil`}
-                {currentStep === 6 && `Paso ${totalSteps} de ${totalSteps}: Tu primer servicio`}
+                {currentStep === 6 && `Paso ${isOAuthUser ? 6 : 5} de ${totalSteps}: Tu primer servicio`}
+                {currentStep === 7 && `Paso ${isOAuthUser ? 7 : 6} de ${totalSteps}: Tu tarifa base`}
+                {currentStep === 8 && `Paso ${totalSteps} de ${totalSteps}: Tu disponibilidad`}
               </span>
               <span className="text-sm font-semibold text-orange-600">
                 {Math.round(progressPercentage)}% Completado
@@ -1099,27 +1143,260 @@ export default function ArtistOnboardingPage() {
                 <div className="flex items-center justify-between">
                   <button onClick={() => setCurrentStep(5)} className="text-gray-600 hover:text-gray-900 font-medium">Atrás</button>
                   <button
-                    onClick={handleFinish}
-                    disabled={!canContinueStep6 || isLoading}
+                    onClick={() => canContinueStep6 && setCurrentStep(7)}
+                    disabled={!canContinueStep6}
                     className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isLoading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Procesando...
-                      </>
-                    ) : (
-                      <>
-                        Finalizar e Ir al Dashboard
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </>
-                    )}
+                    Continuar
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
                   </button>
                 </div>
                 <button onClick={handleSkip} className="text-sm text-gray-400 hover:text-gray-600 transition-colors text-center">
                   Omitir configuración de servicio
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 7: Tu Tarifa Base ─────────────────────────────── */}
+        {currentStep === 7 && (
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
+                <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Tu Tarifa Base</h2>
+                <p className="text-sm text-orange-600 font-medium">Define el rango de precios que manejas</p>
+              </div>
+            </div>
+            <p className="text-gray-500 mb-8 text-sm leading-relaxed">
+              Establece tu rango de tarifas para que los clientes sepan qué esperar. Podrás ajustar los precios por servicio desde tu dashboard.
+            </p>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-6">
+              {/* Currency */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">Moneda</label>
+                <div className="flex gap-3">
+                  {(['GTQ', 'USD', 'MXN'] as const).map(cur => (
+                    <button
+                      key={cur}
+                      type="button"
+                      onClick={() => setCurrency(cur)}
+                      className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
+                        currency === cur
+                          ? 'border-orange-500 bg-orange-50 text-orange-700'
+                          : 'border-gray-200 text-gray-600 hover:border-orange-200'
+                      }`}
+                    >
+                      {cur === 'GTQ' ? '🇬🇹 GTQ' : cur === 'USD' ? '🇺🇸 USD' : '🇲🇽 MXN'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Min / Max rate */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Tarifa mínima (por hora)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">{currency}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      placeholder="0"
+                      value={hourlyRateMin || ''}
+                      onChange={e => setHourlyRateMin(Number(e.target.value))}
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Tarifa máxima (por hora)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">{currency}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      placeholder="0"
+                      value={hourlyRateMax || ''}
+                      onChange={e => setHourlyRateMax(Number(e.target.value))}
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Deposit toggle */}
+              <div className="border border-gray-100 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Requerir anticipo</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Solicita un porcentaje del total al reservar</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRequiresDeposit(v => !v)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${requiresDeposit ? 'bg-orange-500' : 'bg-gray-200'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${requiresDeposit ? 'translate-x-5' : ''}`} />
+                  </button>
+                </div>
+                {requiresDeposit && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">Porcentaje de anticipo: <span className="text-orange-600 font-bold">{depositPercentage}%</span></label>
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      step={5}
+                      value={depositPercentage}
+                      onChange={e => setDepositPercentage(Number(e.target.value))}
+                      className="w-full accent-orange-500"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>10%</span><span>50%</span><span>100%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-6">
+              <button onClick={() => setCurrentStep(6)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Atrás
+              </button>
+              <div className="flex flex-col items-end gap-1.5">
+                <button
+                  onClick={() => setCurrentStep(8)}
+                  className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-2"
+                >
+                  Continuar
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+                <button onClick={() => setCurrentStep(8)} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                  Configurar después
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 8: Disponibilidad Semanal ────────────────────── */}
+        {currentStep === 8 && (
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
+                <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Tu Disponibilidad Semanal</h2>
+                <p className="text-sm text-orange-600 font-medium">¿Qué días y horarios estás disponible?</p>
+              </div>
+            </div>
+            <p className="text-gray-500 mb-8 text-sm leading-relaxed">
+              Activa los días en que generalmente estás disponible. Los clientes verán tu disponibilidad al reservarte.
+              Podrás ajustar excepciones y días bloqueados desde tu dashboard.
+            </p>
+
+            <div className="space-y-3 mb-8">
+              {weeklyAvailability.map((item, idx) => (
+                <div
+                  key={item.day}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                    item.active ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-white'
+                  }`}
+                >
+                  {/* Day toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setWeeklyAvailability(prev => prev.map((d, i) => i === idx ? { ...d, active: !d.active } : d))}
+                    className="flex items-center gap-3 min-w-[110px]"
+                  >
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${item.active ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                      {item.active && (
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`text-sm font-semibold ${item.active ? 'text-orange-800' : 'text-gray-500'}`}>{item.day}</span>
+                  </button>
+
+                  {/* Time selects */}
+                  {item.active ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <select
+                        value={item.startTime}
+                        onChange={e => setWeeklyAvailability(prev => prev.map((d, i) => i === idx ? { ...d, startTime: e.target.value } : d))}
+                        className="flex-1 px-2 py-1.5 text-sm border border-orange-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-orange-400"
+                      >
+                        {['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      <span className="text-gray-400 text-xs">a</span>
+                      <select
+                        value={item.endTime}
+                        onChange={e => setWeeklyAvailability(prev => prev.map((d, i) => i === idx ? { ...d, endTime: e.target.value } : d))}
+                        className="flex-1 px-2 py-1.5 text-sm border border-orange-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-orange-400"
+                      >
+                        {['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400 flex-1">No disponible</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+              <button onClick={() => setCurrentStep(7)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Atrás
+              </button>
+              <div className="flex flex-col items-end gap-1.5">
+                <button
+                  onClick={handleFinish}
+                  disabled={isLoading}
+                  className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      Finalizar e Ir al Dashboard
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+                <button onClick={handleFinish} disabled={isLoading} className="text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50">
+                  Configurar disponibilidad después
                 </button>
               </div>
             </div>

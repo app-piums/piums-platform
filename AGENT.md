@@ -1,6 +1,6 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
-**Fecha de última actualización**: 1 de abril de 2026
+**Fecha de última actualización**: 8 de abril de 2026
 **Último commit**: `dave` branch — fix: resize search bar and shrink count text in buscar-artistas (`f623985`)
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
@@ -44,7 +44,7 @@ Opera bajo la **moneda GTQ (Quetzal guatemalteco)**. Locale: `es-GT`. Símbolo: 
 - **Auth**: JWT + cookies HTTP-only + Passport.js (Google, Facebook OAuth) + TikTok OAuth 2.0 PKCE (implementado)
 - **Pagos**: Stripe (PaymentIntents + Connect para payouts a artistas)
 - **Monorepo**: pnpm workspaces
-- **Infra**: Docker Compose (dev) + Kubernetes (staging/prod) + Nginx + Terraform
+- **Infra**: Docker Compose (dev) + VPS con Docker Compose (prod backend) + Vercel (prod frontend) + Nginx + Terraform
 
 ---
 
@@ -360,25 +360,127 @@ Todos los schemas tienen `@default("GTQ")` para el campo `currency`.
 
 ## 11. Infraestructura
 
-### docker-compose.dev.yml (`/infra/docker/docker-compose.dev.yml`)
-Stack completo en Docker para desarrollo local. Incluye:
+### Estrategia de Despliegue
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FRONTEND  →  Vercel                                            │
+│  ├─ web-client  →  piums.com          (Next.js)                 │
+│  ├─ web-artist  →  artist.piums.com   (Next.js)                 │
+│  └─ web-admin   →  admin.piums.com    (Next.js)                 │
+├─────────────────────────────────────────────────────────────────┤
+│  BACKEND   →  VPS (Ubuntu 22.04, Docker Compose + Nginx)        │
+│  ├─ API Gateway       :3000  →  api.piums.com                   │
+│  ├─ auth-service      :4001                                     │
+│  ├─ users-service     :4002                                     │
+│  ├─ artists-service   :4003                                     │
+│  ├─ catalog-service   :4004                                     │
+│  ├─ payments-service  :4005                                     │
+│  ├─ reviews-service   :4006                                     │
+│  ├─ notifications     :4007                                     │
+│  ├─ booking-service   :4008                                     │
+│  ├─ search-service    :4009                                     │
+│  ├─ PostgreSQL 16     :5432                                     │
+│  └─ Redis 7           :6379                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Frontend — Vercel
+
+Los 3 frontends son apps Next.js desplegadas en Vercel desde el monorepo:
+
+| Proyecto | Dominio | Root Directory |
+|---|---|---|
+| web-client | `piums.com` | `apps/web-client/web` |
+| web-artist | `artist.piums.com` | `apps/web-artist/web` |
+| web-admin | `admin.piums.com` | `apps/web-admin/web` |
+
+**Variables de entorno en Vercel** (configurar por proyecto en el dashboard de Vercel):
+```env
+NEXT_PUBLIC_API_URL=https://api.piums.com/api
+NEXT_PUBLIC_APP_URL=https://piums.com        # o artist / admin según aplique
+NEXT_PUBLIC_CLIENT_URL=https://piums.com
+NEXT_PUBLIC_ARTIST_URL=https://artist.piums.com
+NEXT_PUBLIC_ADMIN_URL=https://admin.piums.com
+# Variables server-side (sin NEXT_PUBLIC_) para las API Routes BFF:
+AUTH_SERVICE_URL=https://api.piums.com
+ARTISTS_SERVICE_URL=https://api.piums.com
+```
+
+**Deploy automático**: push a `main` → Vercel despliega. PRs generan Preview URLs.
+
+> ⚠️ Las apps usan **API Routes** (`/app/api/...`) como proxy BFF hacia el backend. Las variables `*_SERVICE_URL` son **server-side** (sin `NEXT_PUBLIC_`) y apuntan a `https://api.piums.com` en producción.
+
+### Backend — VPS
+
+Todo el backend corre en un VPS Ubuntu 22.04 con `docker-compose.prod.yml` y Nginx como reverse proxy.
+
+**Archivo de referencia**: `infra/docker/docker-compose.prod.yml`  
+**Nginx**: `infra/nginx/nginx.conf` — enruta `api.piums.com` → `gateway:3000` con SSL/TLS.
+
+**Setup inicial del VPS (una sola vez):**
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+sudo apt install -y nginx certbot python3-certbot-nginx
+sudo certbot --nginx -d api.piums.com
+sudo mkdir -p /opt/piums && cd /opt/piums
+cp infra/docker/docker-compose.prod.yml ./docker-compose.yml
+# Crear /opt/piums/.env con las variables de producción
+```
+
+**Variables de entorno** en `/opt/piums/.env`:
+```env
+NODE_ENV=production
+POSTGRES_USER=piums_prod
+POSTGRES_PASSWORD=<password_seguro>
+REDIS_PASSWORD=<redis_password>
+JWT_SECRET=<64_bytes_hex>
+REFRESH_SECRET=<64_bytes_hex>
+ALLOWED_ORIGINS=https://piums.com,https://artist.piums.com,https://admin.piums.com
+API_URL=https://api.piums.com
+DOCKER_REGISTRY=ghcr.io/app-piums
+IMAGE_TAG=latest
+STRIPE_SECRET_KEY=sk_live_...
+CLOUDINARY_CLOUD_NAME=...
+SMTP_HOST=...
+```
+
+**Deploy del backend:**
+```bash
+cd /opt/piums
+docker compose pull                                      # bajar nuevas imágenes
+docker compose run --rm auth-service npx prisma migrate deploy  # migraciones
+docker compose up -d                                     # reiniciar servicios
+curl https://api.piums.com/health                        # verificar
+```
+
+**CI/CD** (GitHub Actions):
+- Push a `develop` → deploy automático a staging (`.github/workflows/deploy-staging.yml`)
+- Publicar GitHub Release `vX.Y.Z` → deploy a producción con aprobación manual (`.github/workflows/deploy-prod.yml`)
+
+### Desarrollo Local
+
+Stack completo en Docker para desarrollo local (`infra/docker/docker-compose.dev.yml`):
 - PostgreSQL 16 + script `init-databases.sql` que crea las 9 bases de datos
 - Redis 7
-- API Gateway
-- 9 microservicios (4001–4009)
-- web-client + web-artist
+- API Gateway + 9 microservicios (4001–4009)
+- web-client + web-artist (Next.js en modo dev)
 
-> ⚠️ **Nota**: Solo `gateway` y `auth-service` tienen Dockerfile propio. Los demás servicios necesitan sus Dockerfiles para poder levantar con `docker-compose up`.
+```bash
+docker compose -f infra/docker/docker-compose.dev.yml up -d
+```
+
+> ⚠️ Solo `gateway` y `auth-service` tienen Dockerfile propio. Los demás servicios necesitan sus Dockerfiles para poder levantar con `docker-compose up`.
 
 ### Kubernetes (`/infra/k8s/`)
-- `base/` — manifiestos base
-- `overlays/staging/` y `overlays/production/` — overlays por ambiente (Kustomize)
+Manifiestos Kustomize (base + overlays staging/production) — disponibles pero el deploy activo usa Docker Compose en VPS.
 
 ### Nginx (`/infra/nginx/`)
-- Reverse proxy y load balancer para producción
+Configuración de reverse proxy para producción. Maneja SSL/TLS, headers de seguridad y enruta subdominios.
 
 ### Terraform (`/infra/terraform/`)
-- Infraestructura como código (cloud provider no especificado)
+Infraestructura como código para el cloud provider del VPS.
 
 ### Scripts (`/scripts/`)
 - `dev.sh` — script maestro: `setup`, `start`, `start-local`, `stop`, `restart`, `status`, `health`, `logs`, `clean`

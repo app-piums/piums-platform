@@ -8,6 +8,7 @@ import { StatsCards } from '@/components/artist/StatsCards';
 import { sdk, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 type ArtistStats = Awaited<ReturnType<typeof sdk.getArtistStats>>;
 type AugmentedArtistStats = ArtistStats & {
@@ -160,6 +161,7 @@ export default function ArtistDashboardPage() {
             </div>
             
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <div className="relative hidden sm:block">
                 <input
                   type="text"

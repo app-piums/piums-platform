@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 import ClientSidebar from '@/components/ClientSidebar';
 import { NotificationBell } from '@/components/NotificationBell';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 const QUICK_STEPS: { icon: React.ReactNode; label: string }[] = [
   {
@@ -66,7 +67,10 @@ export default function TutorialPage() {
             <h1 className="text-xl font-bold text-gray-900">Tutorial</h1>
             <p className="text-sm text-gray-400">Tour guiado interactivo de la plataforma</p>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <NotificationBell />
+          </div>
         </header>
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8 flex items-center justify-center">
           <div className="max-w-lg w-full text-center">

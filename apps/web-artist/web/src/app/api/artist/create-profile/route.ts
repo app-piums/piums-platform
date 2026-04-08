@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
       instagram: body.instagram || undefined,
       website: body.website || undefined,
       equipment: body.equipment || [],
+      hourlyRateMin: body.hourlyRateMin ?? undefined,
+      hourlyRateMax: body.hourlyRateMax ?? undefined,
+      currency: body.currency || 'GTQ',
+      requiresDeposit: body.requiresDeposit ?? false,
+      depositPercentage: body.depositPercentage ?? undefined,
     };
 
     const res = await fetch(`${ARTISTS_SERVICE_URL}/artists`, {

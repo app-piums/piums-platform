@@ -7,8 +7,10 @@ import { ArtistCard } from '@/components/ArtistCard';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk } from '@piums/sdk';
 import type { Artist, Service } from '@piums/sdk';
+import { TalentPicker } from '@/components/TalentPicker';
 
 type TabType = 'all' | 'artists' | 'services';
 type SortOption = 'relevance' | 'rating' | 'price_asc' | 'price_desc';
@@ -53,6 +55,7 @@ function SearchContent() {
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'relevance');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
+  const [selectedTalentId, setSelectedTalentId] = useState<string | undefined>(undefined);
 
   const performSearch = async () => {
     if (!query && !selectedCategory && !selectedCity) return;
@@ -116,14 +119,20 @@ function SearchContent() {
             <h1 className="text-xl font-bold text-gray-900">Buscar</h1>
             <p className="text-sm text-gray-400">Encuentra el profesional perfecto para tu evento</p>
           </div>
-          <CurrencyToggle />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <CurrencyToggle />
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile title */}
           <div className="lg:hidden mb-4 flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-900">Buscar</h1>
-            <CurrencyToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <CurrencyToggle />
+            </div>
           </div>
 
           {/* Search form */}
@@ -159,24 +168,26 @@ function SearchContent() {
             </div>
           </form>
 
-          {/* No query state */}
-          {!query && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-              <div className="h-16 w-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
-                <SearchIcon className="h-8 w-8 text-[#FF6A00]" />
+          {/* No query state — talent picker */}
+          {!query && !loading && (
+            <div>
+              <div className="mb-5">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-[#F1F5F9] mb-1">¿Cuál es tu superpoder creativo?</h3>
+                <p className="text-sm text-gray-400 dark:text-[#94A3B8]">Elige un talento para encontrar al profesional perfecto</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Busca artistas y servicios</h3>
-              <p className="text-gray-500 text-sm mb-6">Ingresa un término de búsqueda o elige una categoría popular</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {POPULAR.map(term => (
-                  <button key={term}
-                    onClick={() => { setQuery(term); router.push(`/search?q=${encodeURIComponent(term)}`); }}
-                    className="px-4 py-2 bg-orange-50 hover:bg-orange-100 text-[#FF6A00] text-sm font-medium rounded-xl transition-colors"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
+              <TalentPicker
+                selectedTalentId={selectedTalentId}
+                onSelect={(id, label, category) => {
+                  setSelectedTalentId(id);
+                  setQuery(label);
+                  setSelectedCategory(category.toLowerCase());
+                }}
+                onClear={() => {
+                  setSelectedTalentId(undefined);
+                  setQuery('');
+                  setSelectedCategory('');
+                }}
+              />
             </div>
           )}
 

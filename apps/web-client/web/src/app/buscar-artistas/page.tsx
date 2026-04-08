@@ -10,6 +10,7 @@ import { Loading } from '@/components/Loading';
 import ClientSidebar from '@/components/ClientSidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk } from '@piums/sdk';
 import type { Artist } from '@piums/sdk';
 
@@ -611,6 +612,7 @@ function BuscarArtistasContent() {
             <p className="text-sm text-gray-400">Selecciona fecha y ubicación para encontrar artistas disponibles</p>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <CurrencyToggle />
             <NotificationBell />
           </div>
@@ -623,7 +625,10 @@ function BuscarArtistasContent() {
               <h1 className="text-xl font-bold text-gray-900">Buscar Artistas</h1>
               <p className="text-sm text-gray-400 mt-0.5">Selecciona fecha y ubicación</p>
             </div>
-            <CurrencyToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <CurrencyToggle />
+            </div>
           </div>
 
           <div className="flex flex-col xl:flex-row gap-6 max-w-7xl mx-auto">

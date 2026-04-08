@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -21,15 +23,99 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0F172A;
+    --foreground: #F1F5F9;
   }
+}
+
+/* ─── Dark Soft Mode (Piums) ─────────────────────────────────────── */
+.dark {
+  --background: #0F172A;
+  --foreground: #F1F5F9;
+  color-scheme: dark;
+}
+
+html.dark,
+.dark body {
+  background-color: #0F172A !important;
+  color: #F1F5F9 !important;
+}
+
+/* ── Surfaces ── */
+.dark [class*="bg-white"]    { background-color: #1E293B !important; }
+.dark [class*="bg-gray-50"]  { background-color: #0F172A !important; }
+.dark [class*="bg-gray-100"] { background-color: #1E293B !important; }
+.dark [class*="bg-gray-200"] { background-color: #243044 !important; }
+.dark [class*="bg-gray-300"] { background-color: #334155 !important; }
+.dark [class*="bg-gray-800"] { background-color: #0F172A !important; }
+.dark [class*="bg-gray-900"] { background-color: #060D1A !important; }
+
+/* ── Typography ── */
+.dark [class*="text-gray-900"] { color: #F1F5F9 !important; }
+.dark [class*="text-gray-800"] { color: #E2E8F0 !important; }
+.dark [class*="text-gray-700"] { color: #CBD5E1 !important; }
+.dark [class*="text-gray-600"] { color: #94A3B8 !important; }
+.dark [class*="text-gray-500"] { color: #64748B !important; }
+.dark [class*="text-gray-400"] { color: #475569 !important; }
+.dark [class*="text-black"]    { color: #F1F5F9 !important; }
+
+/* ── Borders ── */
+.dark [class*="border-gray-100"] { border-color: #1E293B !important; }
+.dark [class*="border-gray-200"] { border-color: #334155 !important; }
+.dark [class*="border-gray-300"] { border-color: #475569 !important; }
+
+/* ── Zinc surfaces ── */
+.dark [class*="bg-zinc-50"]  { background-color: #0F172A !important; }
+.dark [class*="bg-zinc-100"] { background-color: #1E293B !important; }
+.dark [class*="bg-zinc-200"] { background-color: #243044 !important; }
+.dark [class*="bg-zinc-800"] { background-color: #0F172A !important; }
+.dark [class*="bg-zinc-900"] { background-color: #060D1A !important; }
+
+/* ── Zinc typography ── */
+.dark [class*="text-zinc-900"] { color: #F1F5F9 !important; }
+.dark [class*="text-zinc-800"] { color: #E2E8F0 !important; }
+.dark [class*="text-zinc-700"] { color: #CBD5E1 !important; }
+.dark [class*="text-zinc-600"] { color: #94A3B8 !important; }
+.dark [class*="text-zinc-500"] { color: #64748B !important; }
+.dark [class*="text-zinc-400"] { color: #94A3B8 !important; }
+.dark [class*="text-zinc-300"] { color: #CBD5E1 !important; }
+
+/* ── Zinc borders ── */
+.dark [class*="border-zinc-100"] { border-color: #1E293B !important; }
+.dark [class*="border-zinc-200"] { border-color: #334155 !important; }
+.dark [class*="border-zinc-300"] { border-color: #475569 !important; }
+
+/* ── Custom hardcoded bg colors ── */
+.dark [class*="bg-[#FAFAFA]"] { background-color: #0F172A !important; }
+.dark [class*="bg-[#F9FAFB]"] { background-color: #0F172A !important; }
+.dark [class*="bg-[#F3F4F6]"] { background-color: #1E293B !important; }
+
+/* ── Inputs & Forms ── */
+.dark input:not([type="submit"]):not([type="button"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+  border-color: #334155 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748B !important; }
+
+/* ── Card hover glow in dark mode ── */
+.dark a[class*="rounded-2xl"][class*="border"]:hover,
+.dark a[class*="rounded-xl"][class*="border"]:hover,
+.dark div[class*="rounded-xl"][class*="border"]:hover,
+.dark div[class*="rounded-2xl"][class*="border"]:hover {
+  box-shadow: 0 0 0 1px #334155, 0 0 0 3px rgba(255,106,0,0.18), 0 8px 24px rgba(0,0,0,0.45) !important;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Microinteracciones Piums ────────────────────────────────────── */

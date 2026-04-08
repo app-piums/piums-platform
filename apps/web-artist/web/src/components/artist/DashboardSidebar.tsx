@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 interface DashboardTab {
   id: string;
@@ -227,6 +228,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate,
           <p className="text-sm font-semibold text-gray-900 truncate">{user?.nombre || 'Artista'}</p>
           <p className="text-xs text-gray-500 truncate">{user?.role === 'artista' ? 'Artista Pro' : 'Cliente'}</p>
         </div>
+        <ThemeToggle />
       </div>
     </div>
   </>
