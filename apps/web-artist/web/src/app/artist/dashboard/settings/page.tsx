@@ -120,6 +120,9 @@ export default function ArtistSettingsPage() {
     depositPercentage: 30,
   });
   const [isSavingCoverage, setIsSavingCoverage] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [localAvatar, setLocalAvatar] = useState<string | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -376,6 +379,52 @@ export default function ArtistSettingsPage() {
   };
 
   const needsVerification = !authUser?.ciudad || !authUser?.birthDate || !authUser?.documentFrontUrl;
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLocalAvatar(URL.createObjectURL(file));
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const res = await fetch('/api/users/avatar', { method: 'POST', body: fd, credentials: 'include' });
+      if (!res.ok) throw new Error();
+      toast.success('Foto actualizada');
+      await loadProfile();
+    } catch {
+      toast.error('Error al subir la foto');
+      setLocalAvatar(null);
+    } finally { setAvatarUploading(false); }
+  };
+
+  const handleDeleteAvatar = async () => {
+    setAvatarUploading(true);
+    try {
+      await fetch('/api/users/avatar', { method: 'DELETE', credentials: 'include' });
+      setLocalAvatar(null);
+      toast.success('Foto eliminada');
+      await loadProfile();
+    } catch {
+      toast.error('Error al eliminar la foto');
+    } finally { setAvatarUploading(false); }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('cover', file);
+      const res = await fetch('/api/users/cover', { method: 'POST', body: fd, credentials: 'include' });
+      if (!res.ok) throw new Error();
+      toast.success('Portada actualizada');
+      await loadProfile();
+    } catch {
+      toast.error('Error al subir la portada');
+    } finally { setCoverUploading(false); }
+  };
 
   const tabs = [
     { id: 'personal',      label: 'Datos Personales',    icon: <ArtistUserIcon className="h-4 w-4" /> },
@@ -1059,18 +1108,25 @@ export default function ArtistSettingsPage() {
                 <div className="border border-gray-200 rounded-xl p-6 space-y-4">
                   <h3 className="font-semibold text-gray-900">Foto de perfil</h3>
                   <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center text-white text-3xl font-bold shrink-0">
-                      {(artist?.nombre || 'A').charAt(0).toUpperCase()}
+                    <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
+                      {(localAvatar || artist?.avatar) ? (
+                        <Image src={localAvatar || artist!.avatar!} alt="Avatar" width={80} height={80} className="object-cover w-full h-full" unoptimized />
+                      ) : (
+                        <span className="text-white text-3xl font-bold">{(artist?.nombre || 'A').charAt(0).toUpperCase()}</span>
+                      )}
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 mb-3">Sube una foto profesional. Recomendamos mínimo 400×400px.</p>
                       <div className="flex gap-3">
-                        <button className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium">
-                          📁 Subir foto
-                        </button>
-                        <button className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-                          Eliminar
-                        </button>
+                        <label className={`px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium cursor-pointer ${avatarUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                          {avatarUploading ? 'Subiendo...' : 'Subir foto'}
+                          <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+                        </label>
+                        {(localAvatar || artist?.avatar) && (
+                          <button onClick={handleDeleteAvatar} disabled={avatarUploading} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm disabled:opacity-60">
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1079,24 +1135,27 @@ export default function ArtistSettingsPage() {
                 {/* Cover photo */}
                 <div className="border border-gray-200 rounded-xl p-6 space-y-4">
                   <h3 className="font-semibold text-gray-900">Foto de portada</h3>
-                  {artist?.coverPhoto ? (
-                    <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
-                      <Image
-                        src={artist.coverPhoto}
-                        alt="Foto de portada"
-                        fill
-                        sizes="(max-width: 768px) 100vw, 600px"
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-32 bg-gradient-to-r from-orange-200 to-purple-200 rounded-lg flex items-center justify-center text-gray-500 text-sm border-2 border-dashed border-gray-300 cursor-pointer hover:border-purple-400 transition-colors">
-                      <span>Haz clic para subir foto de portada (1200×400px recomendado)</span>
-                    </div>
-                  )}
-                  <button className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium">
-                    📁 Cambiar portada
-                  </button>
+                  <label className={`block cursor-pointer ${coverUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                    {artist?.coverPhoto ? (
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
+                        <Image
+                          src={artist.coverPhoto}
+                          alt="Foto de portada"
+                          fill
+                          sizes="600px"
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <span className="text-white text-sm font-semibold">Cambiar portada</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full h-32 bg-gradient-to-r from-orange-200 to-purple-200 rounded-lg flex items-center justify-center text-gray-500 text-sm border-2 border-dashed border-gray-300 hover:border-purple-400 transition-colors">
+                        {coverUploading ? 'Subiendo...' : 'Haz clic para subir foto de portada (1200×400px recomendado)'}
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={coverUploading} />
+                  </label>
                 </div>
 
                 {/* Category & specialties */}

@@ -234,6 +234,7 @@ export default function ArtistOnboardingPage() {
 
   // Step 4: Portfolio & Profile (was step 4)
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [shortBio, setShortBio] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
@@ -334,6 +335,7 @@ export default function ArtistOnboardingPage() {
   const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setProfilePhotoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => setProfilePhotoPreview(reader.result as string);
       reader.readAsDataURL(file);
@@ -440,6 +442,13 @@ export default function ArtistOnboardingPage() {
         }).catch(() => {
           toast.warning('No se pudo guardar la disponibilidad. Podrás configurarla desde tu perfil.');
         });
+      }
+
+      // Upload avatar if selected
+      if (profilePhotoFile) {
+        const fd = new FormData();
+        fd.append('avatar', profilePhotoFile);
+        await fetch('/api/users/avatar', { method: 'POST', body: fd, credentials: 'include' }).catch(() => {});
       }
 
       document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
