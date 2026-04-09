@@ -20,15 +20,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          EXISTING=$(gh pr list --head ${{ github.ref_name }} --base main --json number --jq '.[0].number')
+          EXISTING=$(gh pr list --head ${{ github.ref_name }} --base main --state open | awk 'NR==1{print $1}')
 
           if [ -z "$EXISTING" ]; then
-            PR_NUMBER=$(gh pr create \
+            PR_URL=$(gh pr create \
               --title "feat: ${{ github.ref_name }} → main" \
               --body "Auto PR desde \`${{ github.ref_name }}\`. Merge automático si CI pasa ✅" \
               --base main \
-              --head ${{ github.ref_name }} \
-              --json number --jq '.number')
+              --head ${{ github.ref_name }})
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
           else
             PR_NUMBER=$EXISTING
           fi
