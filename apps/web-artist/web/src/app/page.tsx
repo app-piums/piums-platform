@@ -157,7 +157,7 @@ export default async function Home() {
               Únete a los artistas guatemaltecos que ya gestionan su negocio con PIUMS.
             </p>
             <Link
-              href="/register/artista"
+              href="/register/artist"
               className="rounded-full bg-[#FF6A00] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6A00]/30"
             >
               Unirme a la comunidad
