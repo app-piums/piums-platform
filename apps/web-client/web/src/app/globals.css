@@ -191,3 +191,13 @@ button[class*="bg-[#FF6A00]"]:not([class*="fixed"])::after {
 button[class*="bg-[#FF6A00]"]:not([class*="fixed"]):active::after {
   animation: piums-ripple 0.45s ease-out forwards;
 }
+
+/* 4. Step fade-in: used on onboarding steps when navigating */
+@keyframes piums-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.piums-fade-in {
+  animation: piums-fade-in 0.25s ease-out forwards;
+}
