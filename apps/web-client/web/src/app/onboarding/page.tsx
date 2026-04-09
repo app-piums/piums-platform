@@ -67,7 +67,7 @@ export default function ClientOnboardingPage() {
     });
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // Guardar preferencias en localStorage para uso futuro
     localStorage.setItem('piums_onboarding_done', '1');
     localStorage.setItem('piums_interests', JSON.stringify({
@@ -78,18 +78,35 @@ export default function ClientOnboardingPage() {
     }));
     // Marcar onboarding como completado en cookie para el middleware
     document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+    // Persistir fecha de onboarding en la base de datos
+    try {
+      await fetch('/api/auth/complete-onboarding', { method: 'PATCH', credentials: 'include' });
+    } catch {
+      // No bloquear la navegación si falla el registro
+    }
+    window.location.href = '/dashboard';
+  };
+
+  const handleSkip = async () => {
+    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+    try {
+      await fetch('/api/auth/complete-onboarding', { method: 'PATCH', credentials: 'include' });
+    } catch {
+      // No bloquear la navegación si falla el registro
+    }
     window.location.href = '/dashboard';
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {step === 1 && <StepWelcome onStart={() => setStep(2)} />}
+      {step === 1 && <StepWelcome onStart={() => setStep(2)} onSkip={handleSkip} />}
       {step === 2 && (
         <StepInterests
           selected={selectedCategories}
           onToggle={toggleCategory}
           onContinue={() => setStep(3)}
           onBack={() => setStep(1)}
+          onSkip={handleSkip}
         />
       )}
       {step === 3 && (
@@ -99,6 +116,7 @@ export default function ClientOnboardingPage() {
           onToggleTag={toggleTag}
           onFinish={handleFinish}
           onBack={() => setStep(2)}
+          onSkip={handleSkip}
         />
       )}
     </div>
@@ -108,7 +126,7 @@ export default function ClientOnboardingPage() {
 /* ════════════════════════════════════════════════════════════════════════════
    STEP 1 — Welcome
    ════════════════════════════════════════════════════════════════════════════ */
-function StepWelcome({ onStart }: { onStart: () => void }) {
+function StepWelcome({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
   return (
     <div className="flex-1 flex flex-col min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-orange-50/30 to-white dark:from-[#0F172A] dark:via-[#1E293B]/40 dark:to-[#0F172A] piums-fade-in">
       {/* Top bar */}
@@ -143,10 +161,7 @@ function StepWelcome({ onStart }: { onStart: () => void }) {
                 <ArrowRightIcon className="h-4 w-4" />
               </button>
               <button
-                onClick={() => {
-                  document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
-                  window.location.href = '/dashboard';
-                }}
+                onClick={onSkip}
                 className="text-gray-500 hover:text-gray-800 font-medium transition-colors"
               >
                 Omitir
@@ -225,11 +240,13 @@ function StepInterests({
   onToggle,
   onContinue,
   onBack,
+  onSkip,
 }: {
   selected: Set<string>;
   onToggle: (id: string) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }) {
   return (
     <div className="flex-1 flex flex-col px-6 py-8 max-w-2xl mx-auto w-full piums-fade-in">
@@ -292,10 +309,7 @@ function StepInterests({
         Continuar →
       </button>
       <button
-        onClick={() => {
-          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
-          window.location.href = '/dashboard';
-        }}
+        onClick={onSkip}
         className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
       >
         Omitir por ahora
@@ -320,12 +334,14 @@ function StepRefine({
   onToggleTag,
   onFinish,
   onBack,
+  onSkip,
 }: {
   categories: string[];
   selectedTags: Record<string, Set<string>>;
   onToggleTag: (catId: string, tag: string) => void;
   onFinish: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }) {
   // Si no seleccionó categorías, mostrar todas
   const toShow = categories.length > 0 ? categories : CATEGORIES.map(c => c.id);
@@ -413,10 +429,7 @@ function StepRefine({
         Ir a mi Dashboard →
       </button>
       <button
-        onClick={() => {
-          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
-          window.location.href = '/dashboard';
-        }}
+        onClick={onSkip}
         className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
       >
         Omitir por ahora
