@@ -168,7 +168,7 @@ export default async function Home() {
         {/* Footer para clientes */}
         <div className="border-t border-zinc-800 bg-zinc-900 px-8 py-6">
           <div className="mx-auto max-w-3xl flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
-            <span>¿Buscas artistas para tu próximo evento?</span>
+            <span>¿Buscas talento para tu próximo evento o proyecto?</span>
             <a
               href={CLIENT_APP_URL}
               className="inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800 px-5 py-2 font-medium text-zinc-300 hover:border-zinc-600 hover:bg-zinc-700 transition-colors"
