@@ -33,4 +33,4 @@ jobs:
             PR_NUMBER=$EXISTING
           fi
 
-          gh pr merge $PR_NUMBER --auto --squash
+          gh pr merge $PR_NUMBER --auto --squash || echo "Auto-merge no disponible (configura status checks requeridos en branch protection de main)"
