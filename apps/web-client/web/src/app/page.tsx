@@ -2,8 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 
-// Bug intencional: variable de entorno incorrecta (debería ser NEXT_PUBLIC_ARTIST_URL)
-const ARTIST_APP_URL = process.env.NEXT_PUBLIC_ARTIST_APP_URL || "http://127.0.0.1:3001";
+const ARTIST_APP_URL = process.env.NEXT_PUBLIC_ARTIST_URL || "http://127.0.0.1:3001";
 
 const CATEGORIES = [
   {
