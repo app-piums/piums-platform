@@ -9,7 +9,7 @@ export function proxy(request: NextRequest) {
   if (token && userRole === 'artista') {
     const host = request.headers.get('host') || 'localhost:3000';
     const hostname = host.split(':')[0];
-    const artistUrl = `${request.nextUrl.protocol}//${hostname}:3001`;
+    const artistUrl = process.env.NEXT_PUBLIC_ARTIST_URL || `${request.nextUrl.protocol}//${hostname}:3001`;
     return NextResponse.redirect(new URL(request.nextUrl.pathname, artistUrl));
   }
 

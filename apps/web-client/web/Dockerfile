@@ -12,6 +12,7 @@ RUN pnpm install --force
 
 # Construir la aplicación
 ENV NODE_ENV=production
+ENV DOCKER_BUILD=1
 ENV GATEWAY_INTERNAL_URL=http://gateway:3000
 ENV NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_APP_URL=http://localhost:3000
