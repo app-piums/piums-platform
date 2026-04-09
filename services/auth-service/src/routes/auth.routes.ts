@@ -15,6 +15,7 @@ import {
   getMe,
   updateProfile,
   firebaseLogin,
+  completeOnboarding,
 } from "../controller/auth.controller";
 import { isAdmin } from "../middleware/isAdmin";
 import { authenticate } from "../middleware/authenticate";
@@ -51,6 +52,7 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
 // Get current authenticated user (any authenticated user)
 router.get("/me", authenticate, getMe);
 router.patch("/profile", authenticate, updateProfile);
+router.patch("/complete-onboarding", authenticate, completeOnboarding);
 
 export default router;
 

@@ -734,3 +734,24 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────
+// PATCH /auth/complete-onboarding  — marca el onboarding como completado
+// ─────────────────────────────────────────────────────────────────────────
+export const completeOnboarding = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = (req as any).user;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { onboardingCompletedAt: new Date() },
+      select: { id: true, onboardingCompletedAt: true },
+    });
+
+    logger.info('Onboarding completed', 'AUTH_CONTROLLER', { userId: id });
+    res.json({ user });
+  } catch (error: any) {
+    next(error);
+  }
+};
+};
