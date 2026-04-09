@@ -68,6 +68,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Email login = usuario existente (el registro siempre va directo a /onboarding).
+    // Setear onboarding como completado server-side para que el proxy no redirija.
+    nextResponse.cookies.set("onboarding_completed", "true", {
+      httpOnly: false, // debe ser legible por JS del cliente también
+      secure: process.env.HTTPS_ENABLED === 'true',
+      sameSite: "strict" as const,
+      maxAge: 31536000, // 1 año
+      path: "/",
+    });
+
     return nextResponse;
   } catch (error) {
     console.error("Error en login:", error);

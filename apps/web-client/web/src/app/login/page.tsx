@@ -117,9 +117,7 @@ export default function LoginPage() {
         const artistUrl = `${window.location.protocol}//${window.location.hostname}:3001`;
         window.location.href = `${artistUrl}/artist/dashboard`;
       } else {
-        // Para clientes: resetear onboarding_completed para que el middleware
-        // redirija al onboarding si es primer ingreso
-        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        // onboarding_completed ya viene seteado server-side desde /api/auth/login
         const redirect = new URLSearchParams(window.location.search).get('redirect');
         window.location.href = redirect || '/dashboard';
       }

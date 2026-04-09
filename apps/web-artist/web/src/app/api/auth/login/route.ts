@@ -67,14 +67,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Para artistas: siempre resetear onboarding_completed a false al hacer login.
-    // La página de onboarding verificará si ya tienen perfil y redirigirá al dashboard.
+    // Para artistas: verificar si ya tienen perfil para no forzarles al onboarding en cada login.
     if (data.user?.role === 'artista') {
-      responseWithCookies.cookies.set('onboarding_completed', 'false', {
+      const ARTISTS_SERVICE_URL = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      let hasProfile = false;
+      try {
+        const profileRes = await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        hasProfile = profileRes.ok;
+      } catch { /* si falla el check, forzar onboarding por seguridad */ }
+
+      responseWithCookies.cookies.set('onboarding_completed', hasProfile ? 'true' : 'false', {
         httpOnly: false,
         secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
-        maxAge: 86400,
+        maxAge: hasProfile ? 31536000 : 86400,
         path: '/',
       });
     }
