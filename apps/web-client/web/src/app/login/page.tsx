@@ -156,34 +156,44 @@ export default function LoginPage() {
           {/* Tagline central */}
           <div>
             <h2 className="text-4xl font-bold text-white leading-tight mb-4">
-              Conecta con el<br />
-              <span className="text-[#FF6A00]">talento creativo</span><br />
-              que necesitas.
+              Haz realidad<br />
+              <span className="text-[#FF6A00]">tu próximo proyecto</span><br />
+              con artistas locales.
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              Fotógrafos, músicos, diseñadores y más — todos en un solo lugar para hacer realidad tu próximo proyecto.
+              Músicos, fotógrafos, DJs, diseñadores y más — en Guatemala, al alcance de un clic.
             </p>
 
             {/* Stats */}
             <div className="mt-8 flex gap-8">
-              {[['+2,000', 'Artistas'], ['98%', 'Satisfacción'], ['5★', 'Valoración']].map(([val, label]) => (
+              {[['500+', 'Artistas GT'], ['Q 1,200', 'Precio típico'], ['4.9★', 'Valoración']].map(([val, label]) => (
                 <div key={label}>
                   <p className="text-2xl font-bold text-white">{val}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{label}</p>
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Avatar stack */}
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2.5">
-              {['from-rose-400 to-pink-500','from-violet-400 to-purple-500','from-teal-400 to-cyan-500','from-amber-400 to-orange-500'].map((g, i) => (
-                <div key={i} className={`h-9 w-9 rounded-full bg-gradient-to-br ${g} border-2 border-gray-800 ring-0`} />
+            {/* Discipline pills */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              {['Fotografía', 'Música', 'DJ', 'Diseño', 'Video', 'Arte'].map((d) => (
+                <span key={d} className="rounded-full border border-gray-700 bg-gray-800/60 px-3 py-1 text-xs text-gray-400">
+                  {d}
+                </span>
               ))}
             </div>
-            <p className="text-xs text-gray-400">
-              Únete a miles de clientes<br />que ya confían en PIUMS
+          </div>
+
+          {/* Trust badge */}
+          <div className="flex items-center gap-3 rounded-xl border border-gray-700/50 bg-gray-800/40 px-4 py-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF6A00]/20">
+              <svg className="h-4 w-4 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Pagos seguros en Quetzales.<br />
+              <span className="text-gray-300">Artistas verificados por PIUMS.</span>
             </p>
           </div>
         </div>
