@@ -6,9 +6,12 @@ export async function POST() {
     { status: 200 }
   );
 
-  // Limpiar cookies de autenticación
-  response.cookies.delete('token');
+  // Limpiar todas las cookies de autenticación
+  response.cookies.delete('auth_token');
+  response.cookies.delete('user_role');
   response.cookies.delete('refreshToken');
+  response.cookies.delete('token'); // por compatibilidad
+  // Nota: NO borramos onboarding_completed para que persista entre sesiones
 
   return response;
 }

@@ -162,7 +162,7 @@ export const BookingStatusTimeline: React.FC<BookingStatusTimelineProps> = ({
                 </span>
                 {step.date && (
                   <span className="mt-1 text-xs text-gray-500 text-center">
-                    {new Date(step.date).toLocaleDateString('es-MX', {
+                    {new Date(step.date).toLocaleDateString('es-GT', {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',

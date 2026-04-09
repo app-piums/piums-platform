@@ -17,8 +17,31 @@ import {
 } from "../controller/artists.controller";
 import { authenticateToken, authorizeArtistOwner } from "../middleware/auth.middleware";
 import { createArtistLimiter, updateLimiter, searchLimiter } from "../middleware/rateLimiter";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const router = Router();
+
+// ─── Internal service-to-service route (internal network only) ──────────────
+// Validates a shared internal secret header to prevent abuse if accidentally exposed.
+router.patch("/internal/:id/rating", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const providedSecret = req.headers['x-internal-secret'];
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { id } = req.params;
+    const { rating, reviewCount } = req.body as { rating: number; reviewCount: number };
+    await prisma.artist.update({
+      where: { id },
+      data: { rating, reviewCount, updatedAt: new Date() },
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Búsqueda pública (con rate limit)
 router.get("/search", searchLimiter as any, searchArtists);

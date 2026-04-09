@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface PriceItem {
   id: string;
@@ -19,18 +20,12 @@ interface PricingBreakdownProps {
 
 export const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   items,
-  currency = 'GTQ',
+  currency,
   showDetails = true,
   className = '',
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const { formatPrice } = useCurrency();
+  const formatCurrency = (amount: number) => formatPrice(amount);
 
   const getTypeIcon = (type?: string) => {
     switch (type) {
@@ -55,7 +50,7 @@ export const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
       case 'fee':
         return (
           <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
         );
       case 'tax':

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Establecer cookie de autenticación
     responseWithCookies.cookies.set('auth_token', data.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.HTTPS_ENABLED === 'true',
       sameSite: 'strict',
       maxAge: 3600, // 1 hora
       path: '/',
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (data.user?.role) {
       responseWithCookies.cookies.set('user_role', data.user.role, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
         maxAge: 3600, // 1 hora
         path: '/',
@@ -60,9 +60,29 @@ export async function POST(request: NextRequest) {
     if (data.refreshToken) {
       responseWithCookies.cookies.set('refreshToken', data.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
         maxAge: 604800, // 7 días
+        path: '/',
+      });
+    }
+
+    // Para artistas: verificar si ya tienen perfil para no forzarles al onboarding en cada login.
+    if (data.user?.role === 'artista') {
+      const ARTISTS_SERVICE_URL = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      let hasProfile = false;
+      try {
+        const profileRes = await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        hasProfile = profileRes.ok;
+      } catch { /* si falla el check, forzar onboarding por seguridad */ }
+
+      responseWithCookies.cookies.set('onboarding_completed', hasProfile ? 'true' : 'false', {
+        httpOnly: false,
+        secure: process.env.HTTPS_ENABLED === 'true',
+        sameSite: 'strict',
+        maxAge: hasProfile ? 31536000 : 86400,
         path: '/',
       });
     }

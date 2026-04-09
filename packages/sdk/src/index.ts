@@ -7,6 +7,7 @@ export interface Artist {
   email?: string;
   categoria?: string;
   ciudad?: string;
+  city?: string;
   rating?: number;
   precioDesde?: number;
   imagenPerfil?: string;
@@ -20,6 +21,17 @@ export interface Artist {
   bookingsCount?: number;
   experienceYears?: number;
   cityId?: string;
+  coverageRadius?: number;
+  mainServicePrice?: number;
+  mainServiceName?: string;
+  matchedService?: {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    pricingType: string;
+    isExactMatch: boolean;
+  };
 }
 
 export interface PortfolioItem {
@@ -48,6 +60,7 @@ export interface ArtistProfile extends Artist {
   avatar?: string;
   coverPhoto?: string;
   category?: string;
+  specialties?: string[];
   cityId?: string;
   experienceYears?: number;
   reviewsCount?: number;
@@ -56,6 +69,9 @@ export interface ArtistProfile extends Artist {
   isActive?: boolean;
   isPremium?: boolean;
   createdAt?: string;
+  baseLocationLabel?: string;
+  baseLocationLat?: number;
+  baseLocationLng?: number;
   coverageRadius?: number;     // km incluidos sin costo de traslado
   hourlyRateMin?: number;      // precio mínimo por hora en centavos
   hourlyRateMax?: number;      // precio máximo por hora en centavos
@@ -63,6 +79,18 @@ export interface ArtistProfile extends Artist {
   depositPercentage?: number;
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
+}
+
+export interface ServiceAddon {
+  id: string;
+  serviceId: string;
+  name: string;
+  description?: string;
+  price: number;
+  isRequired?: boolean;
+  isOptional?: boolean;
+  isDefault?: boolean;
+  order?: number;
 }
 
 export interface Service {
@@ -83,6 +111,15 @@ export interface Service {
   isAvailable?: boolean;
   thumbnail?: string;
   images?: string[];
+  addons?: ServiceAddon[];
+  whatIsIncluded?: string[];
+  requiresDeposit?: boolean;
+  depositAmount?: number;
+  depositPercentage?: number;
+  tags?: string[];
+  viewCount?: number;
+  minGuests?: number;
+  maxGuests?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -98,6 +135,9 @@ export interface CreateServicePayload {
   currency?: string;
   durationMin?: number;
   durationMax?: number;
+  whatIsIncluded?: string[];
+  minGuests?: number;
+  maxGuests?: number;
 }
 
 export interface UpdateServicePayload {
@@ -112,6 +152,9 @@ export interface UpdateServicePayload {
   durationMin?: number;
   durationMax?: number;
   status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  whatIsIncluded?: string[];
+  minGuests?: number;
+  maxGuests?: number;
 }
 
 export interface ServiceCategory {
@@ -138,6 +181,8 @@ export interface Booking {
   artistId: string;
   serviceId: string;
   scheduledDate: string; // ISO string
+  startAt?: string;      // extended field from backend response
+  endAt?: string;
   durationMinutes: number;
   location?: string;
   locationLat?: number;
@@ -154,6 +199,11 @@ export interface Booking {
   selectedAddons?: string[];
   clientNotes?: string;
   artistNotes?: string;
+  cancellationReason?: string;
+  cancelReason?: string;
+  reviewId?: string | null;
+  serviceName?: string;   // name of the booked service
+  artistName?: string;    // name of the artist
   createdAt: string;
   updatedAt: string;
 }
@@ -169,6 +219,41 @@ export interface CreateBookingPayload {
   locationLng?: number;
   selectedAddons?: string[];
   clientNotes?: string;
+  eventId?: string;
+}
+
+export interface PriceItem {
+  type: 'BASE' | 'ADDON' | 'TRAVEL' | 'DISCOUNT';
+  name: string;
+  qty: number;
+  unitPriceCents: number;
+  totalPriceCents: number;
+  metadata?: Record<string, any>;
+}
+
+export interface PriceQuote {
+  serviceId: string;
+  currency: string;
+  items: PriceItem[];
+  subtotalCents: number;
+  totalCents: number;
+  depositRequiredCents?: number;
+  breakdown: {
+    baseCents: number;
+    addonsCents: number;
+    travelCents: number;
+    discountsCents: number;
+  };
+}
+
+export interface CalculateServicePricePayload {
+  serviceId: string;
+  durationMinutes?: number;
+  selectedAddonIds?: string[];
+  distanceKm?: number;
+  locationLat?: number;
+  locationLng?: number;
+  discountCode?: string;
 }
 
 export interface SearchResults {
@@ -176,6 +261,28 @@ export interface SearchResults {
   total: number;
   page: number;
   totalPages: number;
+}
+
+export interface SmartSearchParams {
+  q: string;
+  page?: number;
+  limit?: number;
+  city?: string;
+  country?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minGuests?: number;
+}
+
+export interface SmartSearchResults {
+  artists: Artist[];
+  expandedTerms: string[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface SearchParams {
@@ -192,8 +299,10 @@ export interface SearchParams {
 export interface GetArtistsParams {
   page?: number;
   limit?: number;
-  categoria?: string;
-  ciudad?: string;
+  category?: string;
+  city?: string;
+  q?: string;
+  minGuests?: number;
 }
 
 export interface CalendarData {
@@ -220,6 +329,56 @@ export interface TimeSlotsData {
 export interface AvailabilityCheckResult {
   hasReservation: boolean;
   bookingId?: string;
+}
+
+export interface BlockedSlot {
+  id: string;
+  artistId: string;
+  startTime: string; // ISO string
+  endTime: string;   // ISO string
+  reason?: string;
+  isRecurring: boolean;
+  createdAt: string;
+}
+
+export interface ArtistAvailabilityConfig {
+  id: string;
+  artistId: string;
+  minAdvanceHours: number;
+  maxAdvanceDays: number;
+  bufferMinutes: number;
+  autoConfirm: boolean;
+  requiresDeposit: boolean;
+  cancellationHours: number;
+  cancellationFee: number;
+  workingHours?: Record<string, { start: string; end: string; enabled: boolean }>;
+}
+
+export interface BlockSlotPayload {
+  artistId: string;
+  startTime: string; // ISO string
+  endTime: string;   // ISO string
+  reason?: string;
+  isRecurring?: boolean;
+}
+
+export interface TravelAbsence {
+  id: string;
+  artistId: string;
+  startAt: string;   // ISO string
+  endAt: string;     // ISO string
+  type: 'VACATION' | 'WORKING_ABROAD';
+  destinationCountry?: string | null; // ISO country code, e.g. 'MX'
+  reason?: string | null;
+  createdAt: string;
+}
+
+export interface CreateAbsencePayload {
+  startAt: string;   // ISO string
+  endAt: string;     // ISO string
+  type: 'VACATION' | 'WORKING_ABROAD';
+  destinationCountry?: string; // Required when type = WORKING_ABROAD
+  reason?: string;
 }
 
 // ==================== PAYMENT TYPES ====================
@@ -501,9 +660,66 @@ export interface AdminReportsResponse {
 
 class PiumsSDK {
   private baseUrl: string;
+  private authToken: string | null = null;
 
   constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || '/api') {
     this.baseUrl = baseUrl;
+  }
+
+  setAuthToken(token: string | null) {
+    this.authToken = token;
+  }
+
+  private getAuthToken(): string | null {
+    if (this.authToken) {
+      return this.authToken;
+    }
+
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      const stored = window.localStorage.getItem('token');
+      if (stored) {
+        this.authToken = stored;
+        return stored;
+      }
+    } catch (error) {
+      console.warn('Unable to access localStorage for auth token:', error);
+    }
+
+    if (typeof document !== 'undefined') {
+      const match = document.cookie?.match(/(?:^|;\s*)(auth_token|token)=([^;]+)/);
+      if (match) {
+        const cookieToken = decodeURIComponent(match[2]);
+        this.authToken = cookieToken;
+        return cookieToken;
+      }
+    }
+
+    return null;
+  }
+
+  private withAuth(options?: RequestInit): RequestInit {
+    const token = this.getAuthToken();
+    if (!token) {
+      return {
+        ...(options || {}),
+        credentials: 'include'
+      };
+    }
+
+    const headers = new Headers(options?.headers || {});
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return {
+      ...options,
+      headers,
+      credentials: 'include',
+    };
   }
 
   async searchArtists(params?: SearchParams): Promise<SearchResults> {
@@ -547,27 +763,36 @@ class PiumsSDK {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
-      if (params?.categoria) queryParams.append('categoria', params.categoria);
-      if (params?.ciudad) queryParams.append('ciudad', params.ciudad);
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.city) queryParams.append('city', params.city);
+      if (params?.q) queryParams.append('query', params.q);
 
-      const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
-      
+      const response = await fetch(`${this.baseUrl}/search/artists?${queryParams.toString()}`);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      // Normalise: API returns { artists, pagination: { total, page, totalPages } }
-      // but SearchResults expects flat { artists, total, page, totalPages }
+      // Search service returns { artists: ArtistIndex[], pagination: {...} }
+      // Map search index fields to Artist shape
+      const artists = (data.artists ?? []).map((a: any) => ({
+        ...a,
+        nombre: a.nombre ?? a.name,
+        rating: a.rating ?? a.averageRating,
+        reviewsCount: a.reviewsCount ?? a.totalReviews,
+        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        cityId: a.cityId ?? a.city,
+      }));
       if (data.pagination) {
         return {
-          artists: data.artists ?? [],
+          artists,
           total: data.pagination.total ?? 0,
           page: data.pagination.page ?? 1,
           totalPages: data.pagination.totalPages ?? 1,
         };
       }
-      return data;
+      return { ...data, artists };
     } catch (error) {
       console.error('Error fetching artists:', error);
       return {
@@ -579,6 +804,40 @@ class PiumsSDK {
     }
   }
   
+  async smartSearch(params: SmartSearchParams): Promise<SmartSearchResults> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('q', params.q);
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.city) queryParams.append('city', params.city);
+      if (params.country) queryParams.append('country', params.country);
+      if (params.minPrice != null) queryParams.append('minPrice', params.minPrice.toString());
+      if (params.maxPrice != null) queryParams.append('maxPrice', params.maxPrice.toString());
+
+      const response = await fetch(`${this.baseUrl}/search/smart?${queryParams.toString()}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      const artists = (data.artists ?? []).map((a: any) => ({
+        ...a,
+        nombre: a.nombre ?? a.name,
+        rating: a.rating ?? a.averageRating,
+        reviewsCount: a.reviewsCount ?? a.totalReviews,
+        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        cityId: a.cityId ?? a.city,
+      }));
+      return {
+        artists,
+        expandedTerms: data.expandedTerms ?? [],
+        pagination: data.pagination ?? { page: 1, limit: 12, total: 0, totalPages: 0 },
+      };
+    } catch (error) {
+      console.error('Error in smartSearch:', error);
+      return { artists: [], expandedTerms: [], pagination: { page: 1, limit: 12, total: 0, totalPages: 0 } };
+    }
+  }
+
   async getArtist(id: string): Promise<ArtistProfile | null> {
     try {
       const response = await fetch(`${this.baseUrl}/artists/${id}`);
@@ -590,7 +849,11 @@ class PiumsSDK {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return await response.json();
+      const result = await response.json();
+      if (result && typeof result === 'object' && 'artist' in result) {
+        return (result as { artist: ArtistProfile }).artist;
+      }
+      return result;
     } catch (error) {
       console.error('Error fetching artist:', error);
       return null;
@@ -613,6 +876,24 @@ class PiumsSDK {
     }
   }
 
+  async getService(id: string): Promise<Service | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/catalog/services/${id}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      return null;
+    }
+  }
+
   async getServiceCategories(): Promise<ServiceCategory[]> {
     try {
       const response = await fetch(`${this.baseUrl}/catalog/categories`);
@@ -626,38 +907,49 @@ class PiumsSDK {
   }
 
   async createService(payload: CreateServicePayload): Promise<Service> {
-    const response = await fetch(`${this.baseUrl}/catalog/services`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      `${this.baseUrl}/catalog/services`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+    );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
     }
     return response.json();
   }
 
   async updateService(id: string, payload: UpdateServicePayload): Promise<Service> {
-    const response = await fetch(`${this.baseUrl}/catalog/services/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      `${this.baseUrl}/catalog/services/${id}`,
+      this.withAuth({
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+    );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
     }
     return response.json();
   }
 
   async deleteService(id: string, artistId: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/catalog/services/${id}?artistId=${encodeURIComponent(artistId)}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${this.baseUrl}/catalog/services/${id}?artistId=${encodeURIComponent(artistId)}`,
+      this.withAuth({
+        method: 'DELETE',
+        credentials: 'include',
+      })
+    );
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
@@ -665,37 +957,63 @@ class PiumsSDK {
   }
 
   async toggleServiceStatus(id: string, artistId: string): Promise<Service> {
-    const response = await fetch(`${this.baseUrl}/catalog/services/${id}/toggle-status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ artistId }),
-    });
+    const response = await fetch(
+      `${this.baseUrl}/catalog/services/${id}/toggle-status`,
+      this.withAuth({
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ artistId }),
+      })
+    );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
     }
     return response.json();
   }
 
   async getArtistReviews(artistId: string, page: number = 1, limit: number = 10): Promise<{ reviews: Review[]; total: number; page: number; totalPages: number }> {
     try {
-      const response = await fetch(`${this.baseUrl}/reviews/reviews?artistId=${artistId}&page=${page}&limit=${limit}&sortBy=createdAt&sortOrder=desc`);
+      const response = await fetch(`${this.baseUrl}/reviews/reviews?artistId=${artistId}&page=${page}&limit=${limit}&sortBy=recent`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
+      const pagination = result.pagination || {};
       return {
         reviews: result.data || result.reviews || [],
-        total: result.total || 0,
-        page: result.page || page,
-        totalPages: result.totalPages || 1
+        total: pagination.total ?? result.total ?? 0,
+        page: pagination.page ?? result.page ?? page,
+        totalPages: pagination.totalPages ?? result.totalPages ?? 1
       };
     } catch (error) {
       console.error('Error fetching artist reviews:', error);
       return { reviews: [], total: 0, page: 1, totalPages: 0 };
+    }
+  }
+
+  async calculateServicePrice(payload: CalculateServicePricePayload): Promise<PriceQuote | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/catalog/pricing/calculate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.json();
+    } catch (_error) {
+      return null;
     }
   }
 
@@ -707,7 +1025,7 @@ class PiumsSDK {
    */
   async getCalendar(artistId: string, year: number, month: number): Promise<CalendarData> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/availability/calendar?artistId=${artistId}&year=${year}&month=${month}`);
+      const response = await fetch(`${this.baseUrl}/availability/calendar?artistId=${artistId}&year=${year}&month=${month}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -733,15 +1051,26 @@ class PiumsSDK {
    */
   async getTimeSlots(artistId: string, date: string): Promise<TimeSlotsData> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/availability/time-slots?artistId=${artistId}&date=${date}`);
+      const response = await fetch(`${this.baseUrl}/availability/time-slots?artistId=${artistId}&date=${date}`);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          return { artistId, date, slots: [] };
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.info('Time slots API returned non-OK status, using fallback.', {
+            status: response.status,
+          });
+        }
+        return { artistId, date, slots: [] };
       }
       
       return await response.json();
     } catch (error) {
-      console.error('Error fetching time slots:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.info('Error fetching time slots, using fallback.', error);
+      }
       return {
         artistId,
         date,
@@ -758,7 +1087,7 @@ class PiumsSDK {
    */
   async checkAvailability(artistId: string, startAt: string, endAt: string): Promise<AvailabilityCheckResult> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/availability/check-reservation?artistId=${artistId}&startAt=${startAt}&endAt=${endAt}`);
+      const response = await fetch(`${this.baseUrl}/availability/check-reservation?artistId=${artistId}&startAt=${startAt}&endAt=${endAt}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -774,23 +1103,202 @@ class PiumsSDK {
   }
 
   /**
+   * Devuelve los IDs de artistas con reservas PENDIENTES o CONFIRMADAS en una fecha (YYYY-MM-DD)
+   */
+  async getArtistsBusyOnDate(date: string): Promise<{ busyArtistIds: string[]; date: string }> {
+    const response = await fetch(`${this.baseUrl}/availability/busy-artists?date=${encodeURIComponent(date)}`);
+    if (!response.ok) throw new Error(`Error al consultar disponibilidad: ${response.status}`);
+    return response.json();
+  }
+
+  /**
+   * Bloquea un slot de tiempo en el calendario del artista
+   */
+  async blockSlot(payload: BlockSlotPayload): Promise<BlockedSlot> {
+    const response = await fetch(
+      `${this.baseUrl}/blocked-slots`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Obtiene los slots bloqueados de un artista
+   */
+  async getBlockedSlots(
+    artistId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<BlockedSlot[]> {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.set('startDate', startDate);
+      if (endDate) params.set('endDate', endDate);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const response = await fetch(
+        `${this.baseUrl}/artists/${artistId}/blocked-slots${qs}`,
+        this.withAuth({ credentials: 'include' })
+      );
+      if (!response.ok) return [];
+      return response.json();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Desbloquea un slot previamente bloqueado
+   */
+  async unblockSlot(slotId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/blocked-slots/${slotId}`,
+      this.withAuth({ method: 'DELETE', credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  /**
+   * Obtiene la configuración de disponibilidad del artista
+   */
+  async getArtistAvailabilityConfig(artistId: string): Promise<ArtistAvailabilityConfig> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/${artistId}/config`,
+      this.withAuth({ credentials: 'include' })
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Actualiza la configuración de disponibilidad del artista
+   */
+  async updateArtistAvailabilityConfig(
+    artistId: string,
+    data: Partial<Omit<ArtistAvailabilityConfig, 'id' | 'artistId'>>
+  ): Promise<ArtistAvailabilityConfig> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/${artistId}/config`,
+      this.withAuth({
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ artistId, ...data }),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Obtiene las ausencias/viajes del artista autenticado
+   */
+  async getAbsences(): Promise<TravelAbsence[]> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/absences`,
+      this.withAuth({ credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.absences;
+  }
+
+  /**
+   * Registra una nueva ausencia / viaje
+   */
+  async createAbsence(payload: CreateAbsencePayload): Promise<TravelAbsence> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/absences`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.absence;
+  }
+
+  /**
+   * Elimina una ausencia por ID
+   */
+  async deleteAbsence(absenceId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/absences/${absenceId}`,
+      this.withAuth({ method: 'DELETE', credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  /**
+   * Actualiza el país detectado por GPS del artista.
+   * Pasar null cuando el artista está de vuelta en su país de origen.
+   */
+  async updateGeoCountry(country: string | null): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/geo-country`,
+      this.withAuth({
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ country }),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  /**
    * Crea una nueva reserva
    * @param payload Datos de la reserva
    */
   async createBooking(payload: CreateBookingPayload): Promise<Booking> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/bookings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Incluir cookies de autenticación
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/bookings`,
+        this.withAuth({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Incluir cookies y token de autenticación
+          body: JSON.stringify(payload),
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -806,9 +1314,12 @@ class PiumsSDK {
    */
   async getBooking(bookingId: string): Promise<Booking | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}`, {
-        credentials: 'include', // Incluir cookies de autenticación
-      });
+      const response = await fetch(
+        `${this.baseUrl}/bookings/${bookingId}`,
+        this.withAuth({
+          credentials: 'include',
+        })
+      );
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -846,11 +1357,14 @@ class PiumsSDK {
       if (filters?.limit) params.append('limit', filters.limit.toString());
 
       const queryString = params.toString();
-      const url = `${this.baseUrl}/booking/my-bookings${queryString ? `?${queryString}` : ''}`;
+      const url = `${this.baseUrl}/bookings${queryString ? `?${queryString}` : ''}`;
 
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      const response = await fetch(
+        url,
+        this.withAuth({
+          credentials: 'include',
+        })
+      );
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -870,18 +1384,22 @@ class PiumsSDK {
    */
   async cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}/cancel`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ reason }),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/bookings/${bookingId}/cancel`,
+        this.withAuth({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ reason }),
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -901,18 +1419,22 @@ class PiumsSDK {
     scheduledDate: string
   ): Promise<Booking> {
     try {
-      const response = await fetch(`${this.baseUrl}/booking/bookings/${bookingId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ scheduledDate }),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/bookings/${bookingId}`,
+        this.withAuth({
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ scheduledDate }),
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -940,8 +1462,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -967,8 +1490,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1018,8 +1542,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1061,18 +1586,29 @@ class PiumsSDK {
    */
   async createReview(payload: CreateReviewPayload): Promise<ReviewDetailed> {
     try {
-      const response = await fetch(`${this.baseUrl}/reviews/reviews`, {
+      const response = await fetch(`${this.baseUrl}/reviews/reviews`, this.withAuth({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(payload),
-      });
+      }));
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const error = await response.json();
+          // Prefer field-level Zod error messages over the generic message
+          if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
+            errorMessage = error.errors[0].message || error.message || errorMessage;
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        } catch {
+          const text = await response.text().catch(() => '');
+          if (text) errorMessage = text;
+        }
+        throw new Error(errorMessage);
       }
       
       return await response.json();
@@ -1152,8 +1688,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1175,8 +1712,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1203,8 +1741,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1231,8 +1770,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1259,8 +1799,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1299,13 +1840,17 @@ class PiumsSDK {
    */
   async getArtistProfile(): Promise<ArtistProfile> {
     try {
-      const response = await fetch(`${this.baseUrl}/artists/dashboard/me`, {
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me`,
+        this.withAuth({
+          credentials: 'include',
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       const result = await response.json();
@@ -1322,18 +1867,22 @@ class PiumsSDK {
    */
   async updateArtistProfile(data: Partial<ArtistProfile>): Promise<ArtistProfile> {
     try {
-      const response = await fetch(`${this.baseUrl}/artists/dashboard/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me`,
+        this.withAuth({
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       const result = await response.json();
@@ -1355,13 +1904,17 @@ class PiumsSDK {
     upcomingBookings: Booking[];
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/stats`, {
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/stats`,
+        this.withAuth({
+          credentials: 'include',
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       const result = await response.json();
@@ -1390,13 +1943,12 @@ class PiumsSDK {
       const queryString = params.toString();
       const url = `${this.baseUrl}/artists/dashboard/me/bookings${queryString ? `?${queryString}` : ''}`;
 
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      const response = await fetch(url, this.withAuth({ credentials: 'include' }));
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1412,14 +1964,18 @@ class PiumsSDK {
    */
   async acceptBooking(bookingId: string): Promise<{ message: string; bookingId: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/accept`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/accept`,
+        this.withAuth({
+          method: 'PATCH',
+          credentials: 'include',
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1436,23 +1992,79 @@ class PiumsSDK {
    */
   async declineBooking(bookingId: string, reason?: string): Promise<{ message: string; bookingId: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/decline`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ reason }),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/decline`,
+        this.withAuth({
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ reason }),
+        })
+      );
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
     } catch (error) {
       console.error('Error declining booking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una reserva como completada (solo artistas)
+   * @param bookingId ID de la reserva
+   */
+  async completeBooking(bookingId: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/complete`,
+        this.withAuth({
+          method: 'PATCH',
+          credentials: 'include',
+        })
+      );
+
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error completing booking:', error);
+      throw error;
+    }
+  }
+
+  async artistCancelBooking(bookingId: string, reason: string): Promise<{ message: string; bookingId: string }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/cancel`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ reason }),
+        })
+      );
+
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
       throw error;
     }
   }
@@ -1480,8 +2092,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1502,8 +2115,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1529,8 +2143,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1562,8 +2177,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1589,8 +2205,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1612,8 +2229,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1635,8 +2253,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1656,8 +2275,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1680,8 +2300,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1708,8 +2329,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1730,8 +2352,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1755,8 +2378,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1783,8 +2407,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1808,8 +2433,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1835,8 +2461,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1844,6 +2471,64 @@ class PiumsSDK {
       console.error('Error fetching admin bookings:', error);
       throw error;
     }
+  }
+
+  // ─── Disputes ────────────────────────────────────────────────────────────────
+
+  async createDispute(payload: {
+    bookingId: string;
+    disputeType: string;
+    subject: string;
+    description: string;
+    reportedAgainst?: string;
+  }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/disputes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getMyDisputes(): Promise<{ asReporter: any[]; asReported: any[]; total: number }> {
+    const response = await fetch(`${this.baseUrl}/disputes/me`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getDisputeById(id: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/disputes/${id}`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async addDisputeMessage(disputeId: string, message: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/disputes/${disputeId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ message }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
   }
 
   /**
@@ -1862,8 +2547,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1887,8 +2573,9 @@ class PiumsSDK {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
       }
       
       return await response.json();
@@ -1896,6 +2583,117 @@ class PiumsSDK {
       console.error('Error resolving report:', error);
       throw error;
     }
+  }
+
+  // ============================================================================
+  // Events
+  // ============================================================================
+
+  async createEvent(payload: { name: string; description?: string; location?: string; locationLat?: number; locationLng?: number; notes?: string; eventDate?: string }) {
+    const response = await fetch(`${this.baseUrl}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getClientEvents(): Promise<any[]> {
+    const response = await fetch(`${this.baseUrl}/events`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getEvent(eventId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async updateEvent(eventId: string, payload: { name?: string; description?: string; location?: string; notes?: string; eventDate?: string }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async cancelEvent(eventId: string, cancelBookings: boolean): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ cancelBookings }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async addBookingToEvent(eventId: string, bookingId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}/bookings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ bookingId }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
+  }
+
+  async removeBookingFromEvent(eventId: string, bookingId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}/bookings/${bookingId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+  }
+
+  async getEventBreakdown(eventId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/events/${eventId}/breakdown`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data;
   }
 }
 

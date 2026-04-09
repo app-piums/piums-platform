@@ -58,7 +58,7 @@ const getErrorMessage = (error: unknown): string =>
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: process.env.HTTPS_ENABLED === 'true',
   sameSite: "strict" as const,
   path: "/",
 };

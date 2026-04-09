@@ -192,6 +192,47 @@ export async function sendBookingConfirmedEmail(data: BookingEmailData) {
 }
 
 /**
+ * Envía email al artista cuando confirma una reserva
+ */
+export async function sendBookingConfirmedArtistEmail(data: BookingEmailData) {
+  try {
+    const startDate = new Date(data.scheduledDate);
+
+    const variables = {
+      bookingCode: data.bookingCode,
+      artistName: data.artistName,
+      clientName: data.clientName,
+      clientInitial: getInitial(data.clientName),
+      serviceName: data.serviceName,
+      bookingDate: formatDate(startDate),
+      bookingTime: formatTime(startDate),
+      duration: formatDuration(data.durationMinutes),
+      location: data.location,
+      totalPrice: formatPrice(data.totalPrice, data.currency),
+      dashboardUrl: `${BASE_URL}/artist/dashboard`,
+      bookingsUrl: `${BASE_URL}/artist/dashboard/bookings`,
+      helpUrl: `${BASE_URL}/help`,
+    };
+
+    const html = getRenderedTemplate('booking-confirmed-artist', variables);
+
+    await emailProvider.sendEmail({
+      to: data.artistEmail,
+      subject: `Reserva Confirmada - ${data.serviceName} con ${data.clientName}`,
+      html,
+    });
+
+    logger.info('Booking confirmed email sent to artist', 'BOOKING_EMAIL', {
+      bookingId: data.bookingId,
+      artistEmail: data.artistEmail,
+    });
+  } catch (error) {
+    logger.error('Failed to send booking confirmed email to artist', 'BOOKING_EMAIL', error);
+    throw error;
+  }
+}
+
+/**
  * Envía recordatorio 24 horas antes de la cita
  */
 export async function sendBookingReminder24hEmail(data: BookingEmailData) {

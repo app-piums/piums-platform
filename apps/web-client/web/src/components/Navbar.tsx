@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useTranslation } from 'next-i18next';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -27,12 +27,13 @@ export const Navbar: React.FC = () => {
           <div className="flex">
             <Link href="/dashboard" className="flex items-center">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.png" 
                 alt="Piúms" 
-                width={120} 
-                height={40}
+                width={56} 
+                height={56}
                 priority
-                className="h-10 w-auto"
+                className="h-14 w-auto"
+                unoptimized
               />
             </Link>
             
@@ -66,6 +67,16 @@ export const Navbar: React.FC = () => {
                 }`}
               >
                 {t('bookings')}
+              </Link>
+              <Link
+                href="/events"
+                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                  pathname?.startsWith('/events')
+                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Eventos
               </Link>
             </div>
           </div>
@@ -104,6 +115,13 @@ export const Navbar: React.FC = () => {
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         {t('bookings')}
+                      </Link>
+                      <Link
+                        href="/events"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Eventos
                       </Link>
                       <hr className="my-1" />
                       <button

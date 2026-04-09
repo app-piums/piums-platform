@@ -37,7 +37,7 @@ function StepsHeader({ current }: { current: number }) {
     <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/dashboard">
-          <Image src="/logo.jpg" alt="PIUMS" width={90} height={30} className="h-7 w-auto" />
+          <Image src="/logo.png" alt="PIUMS" width={28} height={28} className="h-7 w-auto" />
         </Link>
 
         {/* Steps */}
@@ -139,19 +139,19 @@ function BookingSummary() {
         <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>Servicio Artístico (x2 hrs)</span>
-            <span className="font-medium">${b.priceBase.toFixed(2)}</span>
+            <span className="font-medium">${b.priceBase.toLocaleString('en-US')}</span>
           </div>
           <div className="flex justify-between text-gray-600">
             <span>Tarifa de servicio Piums</span>
-            <span className="font-medium">${b.piumsFee.toFixed(2)}</span>
+            <span className="font-medium">${b.piumsFee.toLocaleString('en-US')}</span>
           </div>
           <div className="flex justify-between text-green-600">
             <span>{b.discountLabel}</span>
-            <span className="font-medium">${b.discount.toFixed(2)}</span>
+            <span className="font-medium">${b.discount.toLocaleString('en-US')}</span>
           </div>
           <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
             <span>Total a pagar</span>
-            <span>${b.total.toFixed(2)}</span>
+            <span>${b.total.toLocaleString('en-US')}</span>
           </div>
         </div>
 
@@ -168,7 +168,7 @@ function BookingSummary() {
 // ─── Right: notes + payment form ─────────────────────────────────────────────
 function PaymentForm() {
   const router = useRouter();
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'card' | 'paypal'>('transfer');
   const [cardNumber, setCardNumber]   = useState('');
   const [expiry, setExpiry]           = useState('');
   const [cvc, setCvc]                 = useState('');
@@ -194,8 +194,14 @@ function PaymentForm() {
     router.push('/booking/confirmation');
   };
 
-  const canSubmit = paymentMethod === 'wallet'
+  const canSubmit = paymentMethod === 'transfer' || paymentMethod === 'paypal'
     || (cardNumber.replace(/\s/g, '').length === 16 && expiry.length === 5 && cvc.length >= 3 && cardName.trim().length > 2);
+
+  const methods = [
+    { id: 'transfer' as const, label: 'Transferencia', icon: <BankIcon className="h-4 w-4" /> },
+    { id: 'card'     as const, label: 'Tarjeta',       icon: <CreditCardIcon className="h-4 w-4" /> },
+    { id: 'paypal'   as const, label: 'PayPal',        icon: <PayPalIcon className="h-4 w-4" /> },
+  ];
 
   return (
     <div className="space-y-5">
@@ -223,31 +229,52 @@ function PaymentForm() {
           </div>
         </div>
 
-        {/* Toggle */}
+        {/* 3-method selector */}
         <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
-          <button
-            onClick={() => setPaymentMethod('card')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              paymentMethod === 'card'
-                ? 'bg-white shadow text-gray-900 border border-gray-200'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <CreditCardIcon className="h-4 w-4" />
-            Tarjeta
-          </button>
-          <button
-            onClick={() => setPaymentMethod('wallet')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              paymentMethod === 'wallet'
-                ? 'bg-white shadow text-gray-900 border border-gray-200'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <WalletIcon className="h-4 w-4" />
-            Billetera Digital
-          </button>
+          {methods.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setPaymentMethod(m.id)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                paymentMethod === m.id
+                  ? 'bg-white shadow text-gray-900 border border-gray-200'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {m.icon}
+              {m.label}
+            </button>
+          ))}
         </div>
+
+        {/* Transfer instructions */}
+        {paymentMethod === 'transfer' && (
+          <div className="space-y-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-orange-800">Datos para Transferencia / Depósito</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Banco</span>
+                  <span className="font-medium text-gray-900">Banrural Guatemala</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Cuenta Monetaria</span>
+                  <span className="font-medium text-gray-900 font-mono">3-123-456789-0</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">A nombre de</span>
+                  <span className="font-medium text-gray-900">PIUMS S.A.</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-2">
+              <InfoIcon className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700">
+                Después de realizar la transferencia, envía el comprobante a <strong>pagos@piums.com</strong>. Tu reserva se confirmará en menos de 2 horas hábiles.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Card form */}
         {paymentMethod === 'card' && (
@@ -337,13 +364,20 @@ function PaymentForm() {
           </div>
         )}
 
-        {/* Wallet placeholder */}
-        {paymentMethod === 'wallet' && (
-          <div className="flex flex-col items-center justify-center py-8 gap-3 border-2 border-dashed border-gray-200 rounded-xl">
-            <WalletIcon className="h-10 w-10 text-gray-300" />
-            <p className="text-sm text-gray-500 text-center">
-              Próximamente: PayPal, Nequi, Daviplata y más
-            </p>
+        {/* PayPal placeholder */}
+        {paymentMethod === 'paypal' && (
+          <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-blue-200 rounded-xl bg-blue-50/40">
+            <PayPalIcon className="h-12 w-12 text-[#003087]" />
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-800">Pago con PayPal</p>
+              <p className="text-xs text-gray-500 mt-1">
+                La integración con PayPal estará disponible próximamente.<br />
+                Mientras tanto, usa Transferencia o Tarjeta.
+              </p>
+            </div>
+            <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-wide">
+              Próximamente en producción
+            </span>
           </div>
         )}
 
@@ -506,6 +540,21 @@ function ShareIcon({ className }: { className?: string }) {
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+    </svg>
+  );
+}
+function BankIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11" />
+    </svg>
+  );
+}
+function PayPalIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c1.013 3.13-.573 4.913-3.636 4.913h-4.458c-.524 0-.968.382-1.05.9l-1.17 7.412H9.35c-.457 0-.785.406-.714.858l1.226-7.774a1.044 1.044 0 0 1 1.033-.888h2.15c4.12 0 7.327-1.674 8.267-6.52.33-1.697.177-3.128-.89-4.36z" />
     </svg>
   );
 }

@@ -143,6 +143,9 @@ model ReviewReport {
   resolvedAt  DateTime?
   resolution  String?  @db.Text
   
+  // Mensajes de seguimiento
+  messages    ReportMessage[]
+
   // Soft delete
   deletedAt   DateTime?
   
@@ -153,6 +156,22 @@ model ReviewReport {
   @@index([reportedBy])
   @@index([status])
   @@map("review_reports")
+}
+
+model ReportMessage {
+  id        String       @id @default(uuid())
+  reportId  String
+  report    ReviewReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Quién envía: "staff" | "client" | "artist"
+  senderType  String
+  senderId    String?       // userId del sender (null = sistema)
+  message     String        @db.Text
+
+  createdAt   DateTime @default(now())
+
+  @@index([reportId])
+  @@map("report_messages")
 }
 
 // Estadísticas de artistas (agregadas, calculadas periódicamente)

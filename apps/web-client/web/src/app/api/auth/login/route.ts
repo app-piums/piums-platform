@@ -34,15 +34,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
+    // También devolvemos el token en el body para que el SDK pueda usarlo directamente
     const nextResponse = NextResponse.json(
-      { success: true, user: data.user, message: "Sesión iniciada" },
+      { success: true, user: data.user, token: data.token, message: "Sesión iniciada" },
       { status: 200 }
     );
 
     const isProduction = process.env.NODE_ENV === "production";
     const cookieOptions = {
       httpOnly: true,
-      secure: isProduction,
+      secure: process.env.HTTPS_ENABLED === 'true',
       sameSite: "strict" as const,
       path: "/",
     };
@@ -66,6 +67,16 @@ export async function POST(request: NextRequest) {
         maxAge: 604800,
       });
     }
+
+    // Email login = usuario existente (el registro siempre va directo a /onboarding).
+    // Setear onboarding como completado server-side para que el proxy no redirija.
+    nextResponse.cookies.set("onboarding_completed", "true", {
+      httpOnly: false, // debe ser legible por JS del cliente también
+      secure: process.env.HTTPS_ENABLED === 'true',
+      sameSite: "strict" as const,
+      maxAge: 31536000, // 1 año
+      path: "/",
+    });
 
     return nextResponse;
   } catch (error) {

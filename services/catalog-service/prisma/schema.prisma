@@ -122,6 +122,9 @@ model Service {
   isAvailable Boolean          @default(true)
   isFeatured  Boolean          @default(false)
   
+  // Qué incluye el servicio
+  whatIsIncluded      String[]         // Lista de ítems incluidos (ej: "Equipo de sonido", "Micrófono")
+
   // Requisitos
   requiresDeposit     Boolean  @default(false)
   depositAmount       Int?     // Monto fijo del depósito en centavos
@@ -135,6 +138,13 @@ model Service {
   // SEO
   tags        String[]
   
+  // Servicio principal del artista (uno por artista, visible en búsquedas)
+  isMainService Boolean  @default(false)
+
+  // Capacidad de personas (para filtrado inteligente)
+  minGuests   Int?     // Mínimo de personas para este servicio
+  maxGuests   Int?     // Máximo de personas que puede atender
+
   // Estadísticas
   viewCount   Int      @default(0)
   bookingCount Int     @default(0)
@@ -148,6 +158,7 @@ model Service {
   @@index([cityId])
   @@index([status])
   @@index([pricingType])
+  @@index([isMainService])
   @@map("services")
 }
 

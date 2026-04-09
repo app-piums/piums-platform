@@ -1,9 +1,91 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body {
   overflow-x: hidden;
   max-width: 100vw;
+}
+
+.dark {
+  --background: #0F172A;
+  --foreground: #F1F5F9;
+  color-scheme: dark;
+}
+
+html.dark,
+.dark body {
+  background-color: #0F172A !important;
+  color: #F1F5F9 !important;
+}
+
+/* ── Surfaces ── */
+.dark [class*="bg-white"]    { background-color: #1E293B !important; }
+.dark [class*="bg-gray-50"]  { background-color: #0F172A !important; }
+.dark [class*="bg-gray-100"] { background-color: #1E293B !important; }
+.dark [class*="bg-gray-200"] { background-color: #243044 !important; }
+.dark [class*="bg-gray-300"] { background-color: #334155 !important; }
+.dark [class*="bg-gray-800"] { background-color: #0F172A !important; }
+.dark [class*="bg-gray-900"] { background-color: #060D1A !important; }
+
+/* ── Typography ── */
+.dark [class*="text-gray-900"] { color: #F1F5F9 !important; }
+.dark [class*="text-gray-800"] { color: #E2E8F0 !important; }
+.dark [class*="text-gray-700"] { color: #CBD5E1 !important; }
+.dark [class*="text-gray-600"] { color: #94A3B8 !important; }
+.dark [class*="text-gray-500"] { color: #64748B !important; }
+.dark [class*="text-gray-400"] { color: #475569 !important; }
+.dark [class*="text-black"]    { color: #F1F5F9 !important; }
+
+/* ── Borders ── */
+.dark [class*="border-gray-100"] { border-color: #1E293B !important; }
+.dark [class*="border-gray-200"] { border-color: #334155 !important; }
+.dark [class*="border-gray-300"] { border-color: #475569 !important; }
+
+/* ── Zinc surfaces ── */
+.dark [class*="bg-zinc-50"]  { background-color: #0F172A !important; }
+.dark [class*="bg-zinc-100"] { background-color: #1E293B !important; }
+.dark [class*="bg-zinc-200"] { background-color: #243044 !important; }
+.dark [class*="bg-zinc-800"] { background-color: #0F172A !important; }
+.dark [class*="bg-zinc-900"] { background-color: #060D1A !important; }
+
+/* ── Zinc typography ── */
+.dark [class*="text-zinc-900"] { color: #F1F5F9 !important; }
+.dark [class*="text-zinc-800"] { color: #E2E8F0 !important; }
+.dark [class*="text-zinc-700"] { color: #CBD5E1 !important; }
+.dark [class*="text-zinc-600"] { color: #94A3B8 !important; }
+.dark [class*="text-zinc-500"] { color: #64748B !important; }
+.dark [class*="text-zinc-400"] { color: #94A3B8 !important; }
+.dark [class*="text-zinc-300"] { color: #CBD5E1 !important; }
+
+/* ── Zinc borders ── */
+.dark [class*="border-zinc-100"] { border-color: #1E293B !important; }
+.dark [class*="border-zinc-200"] { border-color: #334155 !important; }
+.dark [class*="border-zinc-300"] { border-color: #475569 !important; }
+
+/* ── Custom hardcoded bg colors ── */
+.dark [class*="bg-[#FAFAFA]"] { background-color: #0F172A !important; }
+.dark [class*="bg-[#F9FAFB]"] { background-color: #0F172A !important; }
+.dark [class*="bg-[#F3F4F6]"] { background-color: #1E293B !important; }
+
+/* ── Inputs & Forms ── */
+.dark input:not([type="submit"]):not([type="button"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+  border-color: #334155 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748B !important; }
+
+/* ── Card hover glow in dark mode ── */
+.dark a[class*="rounded-2xl"][class*="border"]:hover,
+.dark a[class*="rounded-xl"][class*="border"]:hover,
+.dark div[class*="rounded-xl"][class*="border"]:hover,
+.dark div[class*="rounded-2xl"][class*="border"]:hover {
+  box-shadow: 0 0 0 1px #334155, 0 0 0 3px rgba(255,106,0,0.18), 0 8px 24px rgba(0,0,0,0.45) !important;
 }
 
 :root {
@@ -53,13 +135,81 @@ body {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0F172A;
+    --foreground: #F1F5F9;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Step fade-in: used on onboarding steps when navigating */
+@keyframes piums-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.piums-fade-in {
+  animation: piums-fade-in 0.25s ease-out forwards;
+}
+
+/* ─── Microinteracciones Piums ────────────────────────────────────── */
+
+/* 1. Spinners → azul acento (naranja = CTA, azul = estado de carga) */
+[class~="animate-spin"][class*="border-[#FF6A00]"] {
+  border-color: #00AEEF;
+  border-top-color: transparent;
+}
+
+/* 2. Card hover: halo naranja sutil en Link-wrapped cards */
+a[class*="rounded-2xl"][class*="border"],
+a[class*="rounded-xl"][class*="border"] {
+  transition: box-shadow 0.2s ease;
+}
+a[class*="rounded-2xl"][class*="border"]:hover,
+a[class*="rounded-xl"][class*="border"]:hover {
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.13), 0 6px 20px rgba(255, 106, 0, 0.07);
+}
+
+/* Card hover: div containers */
+div[class*="rounded-xl"][class*="border"][class*="bg-white"],
+div[class*="rounded-2xl"][class*="border"][class*="bg-white"] {
+  transition: box-shadow 0.2s ease;
+}
+div[class*="rounded-xl"][class*="border"][class*="bg-white"]:hover,
+div[class*="rounded-2xl"][class*="border"][class*="bg-white"]:hover {
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.13), 0 6px 20px rgba(255, 106, 0, 0.07);
+}
+
+/* 3. Ripple naranja en botones primarios (CSS puro, sin JS) */
+@keyframes piums-ripple {
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
+  to   { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+button[class*="bg-[#FF6A00]"]:not([class*="fixed"]) {
+  position: relative;
+  overflow: hidden;
+}
+button[class*="bg-[#FF6A00]"]:not([class*="fixed"])::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+button[class*="bg-[#FF6A00]"]:not([class*="fixed"]):active::after {
+  animation: piums-ripple 0.45s ease-out forwards;
 }

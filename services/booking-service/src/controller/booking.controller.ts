@@ -17,6 +17,9 @@ import {
   searchBookingsSchema,
 } from "../schemas/booking.schema";
 import { rescheduleBookingSchema } from "../schemas/reschedule.schema";
+import { usersClient } from "../clients/users.client";
+import { artistsClient } from "../clients/artists.client";
+import { catalogClient } from "../clients/catalog.client";
 
 export class BookingController {
   // ==================== RESERVAS ====================
@@ -24,39 +27,49 @@ export class BookingController {
   async createBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const validatedData = createBookingSchema.parse(req.body);
+
+      // Always use the authenticated user's ID as clientId — never trust the body
+      const clientId = req.user!.id;
       
       const { booking } = await bookingService.createBooking({
         ...validatedData,
+        clientId,
         scheduledDate: new Date(validatedData.scheduledDate),
       });
 
-      // Enviar notificaciones de forma asíncrona (no bloquea la respuesta)
-      // TODO: Obtener datos completos de cliente y artista desde users-service y artists-service
-      notifyBookingCreated({
-        bookingId: booking.id,
-        bookingCode: booking.code || `PIU-${new Date().getFullYear()}-${booking.id.slice(0, 6)}`,
-        clientId: booking.clientId,
-        clientName: 'Cliente', // TODO: Obtener desde users-service
-        clientEmail: 'client@example.com', // TODO: Obtener desde users-service
-        artistId: booking.artistId,
-        artistName: 'Artista', // TODO: Obtener desde artists-service
-        artistEmail: 'artist@example.com', // TODO: Obtener desde artists-service
-        artistCategory: 'Categoría', // TODO: Obtener desde artists-service
-        artistImage: '', // TODO: Obtener desde artists-service
-        serviceName: 'Servicio', // TODO: Obtener desde catalog-service
-        scheduledDate: booking.scheduledDate.toISOString(),
-        durationMinutes: booking.durationMinutes,
-        location: booking.location || 'Sin ubicación',
-        servicePrice: booking.servicePrice,
-        addonsPrice: booking.addonsPrice,
-        totalPrice: booking.totalPrice,
-        currency: booking.currency,
-        depositRequired: booking.depositRequired,
-        depositAmount: booking.depositAmount ?? undefined,
-        clientNotes: booking.clientNotes ?? undefined,
+      // Obtener datos reales de forma asíncrona para las notificaciones
+      Promise.all([
+        usersClient.getUser(booking.clientId),
+        artistsClient.getArtist(booking.artistId),
+        catalogClient.getService(booking.serviceId)
+      ]).then(([user, artist, service]) => {
+        notifyBookingCreated({
+          bookingId: booking.id,
+          bookingCode: booking.code || `PIU-${new Date().getFullYear()}-${booking.id.slice(0, 6)}`,
+          clientId: booking.clientId,
+          clientName: user?.fullName || user?.firstName || 'Cliente',
+          clientEmail: user?.email || 'client@example.com',
+          artistId: booking.artistId,
+          artistName: artist?.artistName || 'Artista',
+          artistEmail: artist?.email || 'artist@example.com',
+          artistCategory: artist?.category || 'Categoría',
+          artistImage: artist?.avatar || '',
+          serviceName: service?.name || 'Servicio',
+          scheduledDate: booking.scheduledDate.toISOString(),
+          durationMinutes: booking.durationMinutes,
+          location: booking.location || 'Sin ubicación',
+          servicePrice: booking.servicePrice,
+          addonsPrice: booking.addonsPrice,
+          totalPrice: booking.totalPrice,
+          currency: booking.currency,
+          depositRequired: booking.depositRequired,
+          depositAmount: booking.depositAmount ?? undefined,
+          clientNotes: booking.clientNotes ?? undefined,
+        }).catch(err => {
+          console.error('Error sending booking notifications:', err);
+        });
       }).catch(err => {
-        console.error('Error sending booking notifications:', err);
-        // No lanzar el error para no bloquear la respuesta
+        console.error('Error fetching data for notifications:', err);
       });
 
       res.status(201).json(booking);
@@ -86,6 +99,16 @@ export class BookingController {
     }
   }
 
+  async adminGetBookingById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const booking = await bookingService.getBookingById(id);
+      res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getBookingByCode(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const code = req.params.code as string;
@@ -109,9 +132,27 @@ export class BookingController {
 
   async searchBookings(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      const userId = req.user!.id;
+      const isAdmin = req.user?.role === 'admin';
+      const isArtist = req.user?.role === 'artista';
+
+      // Artists filter by artistId only; clients see their own bookings; admins can filter freely
+      const clientId = isAdmin
+        ? (req.query.clientId as string | undefined)
+        : isArtist
+          ? undefined
+          : userId;
+
+      // Prevent artists from querying other artists' bookings: force artistId to own userId
+      const artistId = isArtist
+        ? userId
+        : isAdmin
+          ? (req.query.artistId as string | undefined)
+          : undefined;
+
       const query = {
-        clientId: req.query.clientId as string | undefined,
-        artistId: req.query.artistId as string | undefined,
+        clientId,
+        artistId,
         serviceId: req.query.serviceId as string | undefined,
         status: req.query.status as any,
         paymentStatus: req.query.paymentStatus as any,
@@ -150,9 +191,9 @@ export class BookingController {
   async confirmBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const artistId = req.user!.id;
-      
       const { artistNotes } = confirmBookingSchema.parse(req.body);
+      
+      const artistId = req.user!.id;
 
       const booking = await bookingService.confirmBooking(id, artistId, artistNotes);
       res.json(booking);
@@ -164,9 +205,9 @@ export class BookingController {
   async rejectBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const artistId = req.user!.id;
-      
       const { reason } = rejectBookingSchema.parse(req.body);
+      
+      const artistId = req.user!.id;
 
       const booking = await bookingService.rejectBooking(id, artistId, reason);
       res.json(booking);
@@ -178,9 +219,9 @@ export class BookingController {
   async cancelBooking(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user!.id;
-      
       const { reason } = cancelBookingSchema.parse(req.body);
+
+      const userId = req.user!.id;
 
       const booking = await bookingService.cancelBooking(id, userId, reason);
       res.json(booking);
@@ -192,9 +233,9 @@ export class BookingController {
   async changeStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user!.id;
-      
       const { status, reason } = changeStatusSchema.parse(req.body);
+      
+      const userId = req.user!.id;
 
       const booking = await bookingService.changeStatus(id, userId, status, reason);
       res.json(booking);
@@ -206,7 +247,12 @@ export class BookingController {
   async markPayment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      
+
+      // Only admins or internal service calls may mark a booking as paid
+      if (req.user?.role !== 'admin') {
+        return next(new AppError(403, 'Solo administradores pueden marcar pagos manualmente'));
+      }
+
       const { amount, paymentMethod, paymentIntentId, paymentType } = markPaymentSchema.parse(req.body);
 
       const booking = await bookingService.markPayment(
@@ -268,6 +314,23 @@ export class BookingController {
       );
 
       res.json({ slots });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getArtistsBusyOnDate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { date } = req.query;
+      if (!date || typeof date !== 'string') {
+        return res.status(400).json({ message: 'El parámetro date es requerido (YYYY-MM-DD)' });
+      }
+      const parsed = new Date(date);
+      if (isNaN(parsed.getTime())) {
+        return res.status(400).json({ message: 'Fecha inválida' });
+      }
+      const busyArtistIds = await bookingService.getArtistsBusyOnDate(parsed);
+      res.json({ busyArtistIds, date });
     } catch (error) {
       next(error);
     }
@@ -378,6 +441,52 @@ export class BookingController {
     }
   }
 
+  async getUserStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+      const stats = await bookingService.getUserStats(userId as string);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getBatchStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { artistIds } = req.body;
+      const stats = await bookingService.getBatchStats(artistIds);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAdminStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      // TODO: Verificar que el usuario es admin (podría hacerse vía middleware)
+      const stats = await bookingService.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async adminSearchBookings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const query = {
+        search: req.query.search as string,
+        status: req.query.status as any,
+        page: req.query.page ? parseInt(req.query.page as string) : 1,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      };
+
+      const result = await bookingService.adminSearchBookings(query);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   /**
    * Genera y descarga un PDF con los detalles de la reserva
    * GET /api/bookings/:id/pdf
@@ -397,13 +506,19 @@ export class BookingController {
         return res.status(403).json({ message: "No tienes permiso para descargar este PDF" });
       }
 
-      // TODO: Obtener datos completos de cliente, artista y servicio
+      // Obtener datos completos de cliente, artista y servicio
+      const [user, artist, service] = await Promise.all([
+        usersClient.getUser(booking.clientId),
+        artistsClient.getArtist(booking.artistId),
+        catalogClient.getService(booking.serviceId)
+      ]);
+
       const bookingData = {
         ...booking,
-        clientName: 'Cliente', // TODO: Obtener desde users-service
-        artistName: 'Artista', // TODO: Obtener desde artists-service
-        artistCategory: 'Categoría', // TODO: Obtener desde artists-service
-        serviceName: 'Servicio', // TODO: Obtener desde catalog-service
+        clientName: user?.fullName || user?.firstName || 'Cliente',
+        artistName: artist?.artistName || 'Artista',
+        artistCategory: artist?.category || 'Categoría',
+        serviceName: service?.name || 'Servicio',
       };
 
       // Generar PDF

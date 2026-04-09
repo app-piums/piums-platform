@@ -5,6 +5,17 @@
 
 const API_BASE = "/api";
 
+/** Typed API error that includes the HTTP status code for precise error UI. */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return sessionStorage.getItem("admin_token");
@@ -29,7 +40,7 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.message ?? `HTTP ${res.status}`);
+    throw new ApiError(res.status, body?.message ?? `HTTP ${res.status}`);
   }
 
   return res.json() as Promise<T>;
@@ -138,6 +149,34 @@ export interface AdminArtistRow {
   totalBookings?: number;
 }
 
+export interface AdminArtistDetail extends AdminArtistRow {
+  telefono?: string;
+  avatarUrl?: string;
+  bio?: string;
+  pais?: string;
+  ciudad?: string;
+  location?: string;
+  isBlocked?: boolean;
+  reviewsCount?: number;
+  // Identity & OAuth
+  emailVerified?: boolean;
+  provider?: string;           // 'email' | 'google' | 'facebook' | 'tiktok'
+  hasGoogleId?: boolean;
+  hasFacebookId?: boolean;
+  hasTiktokId?: boolean;
+  // Admin review
+  rejectionReason?: string;
+  adminNotes?: string;
+  accountStatus?: string;
+  lastLoginAt?: string;
+  // Document verification
+  documentType?: string;
+  documentNumber?: string;
+  documentFrontUrl?: string;
+  documentBackUrl?: string;
+  documentSelfieUrl?: string;
+}
+
 export interface PaginatedArtists {
   artists: AdminArtistRow[];
   total: number;
@@ -155,10 +194,16 @@ export const artistsApi = {
     return request<PaginatedArtists>(`/admin/artists${qs ? `?${qs}` : ""}`);
   },
 
-  verify: (id: string, approved: boolean) =>
+  detail: (id: string) => request<AdminArtistDetail>(`/admin/artists/${id}`),
+
+  verify: (id: string, approved: boolean, opts?: { rejectionReason?: string; adminNotes?: string }) =>
     request<{ message: string; isVerified: boolean }>(`/admin/artists/${id}/verify`, {
       method: "PATCH",
-      body: JSON.stringify({ approved }),
+      body: JSON.stringify({
+        isVerified: approved,
+        ...(opts?.rejectionReason ? { rejectionReason: opts.rejectionReason } : {}),
+        ...(opts?.adminNotes !== undefined ? { adminNotes: opts.adminNotes } : {}),
+      }),
     }),
 };
 
@@ -166,6 +211,7 @@ export const artistsApi = {
 
 export interface AdminBookingRow {
   id: string;
+  code?: string;           // Código PIU de la reserva (e.g. PIU-XXXX-XXXX)
   clienteNombre: string;
   clienteEmail: string;
   artistaNombre: string;
@@ -176,6 +222,30 @@ export interface AdminBookingRow {
   createdAt: string;
 }
 
+export interface BookingStatusHistory {
+  id: string;
+  status: string;
+  changedAt: string;
+  notes?: string;
+}
+
+export interface AdminBookingDetail extends AdminBookingRow {
+  clientePhone: string | null;
+  artistaEmail: string;
+  estadoLabel: string;
+  montoDecimal: number | null;
+  serviceId: string;
+  scheduledDate: string;
+  scheduledTime: string | null;
+  duration: number | null;
+  notes: string | null;
+  location: string | null;
+  paymentStatus: string | null;
+  totalPrice: number | null;
+  status: string;
+  statusHistory: BookingStatusHistory[];
+}
+
 export interface PaginatedBookings {
   bookings: AdminBookingRow[];
   total: number;
@@ -184,29 +254,38 @@ export interface PaginatedBookings {
 }
 
 export const bookingsApi = {
-  list: (params: { page?: number; limit?: number; estado?: string }) => {
+  list: (params: { page?: number; limit?: number; estado?: string; search?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k === "estado" ? "status" : k, String(v)])
     ).toString();
     return request<PaginatedBookings>(`/admin/bookings${qs ? `?${qs}` : ""}`);
   },
+  getById: (id: string) => request<AdminBookingDetail>(`/admin/bookings/${id}`),
 };
 
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
 export interface AdminReportRow {
   id: string;
-  reporterNombre: string;
-  reporterEmail: string;
-  targetType: "user" | "artist" | "booking";
-  targetId: string;
-  motivo: string;
-  descripcion: string;
-  estado: "pending" | "resolved" | "dismissed";
+  reviewId: string;
+  reportedBy: string;  // userId del que reportó
+  reason: string;     // SPAM | OFFENSIVE | INAPPROPRIATE | OTHER
+  description?: string;
+  status: "PENDING" | "RESOLVED" | "DISMISSED";
   createdAt: string;
   resolvedAt?: string;
+  resolvedBy?: string;
+  resolution?: string;
+  messages?: { id: string; message: string; senderType: string; createdAt: string }[];
+  review?: {
+    id: string;
+    artistId: string;
+    clientId: string;
+    comment?: string;
+    rating: number;
+  };
 }
 
 export interface PaginatedReports {
@@ -223,12 +302,82 @@ export const reportsApi = {
         .filter(([, v]) => v !== undefined && v !== "")
         .map(([k, v]) => [k, String(v)])
     ).toString();
-    return request<PaginatedReports>(`/admin/reports${qs ? `?${qs}` : ""}`);
+    return request<PaginatedReports>(`/reviews/admin/reports/pending${qs ? `?${qs}` : ""}`);
   },
 
   resolve: (id: string, action: "resolved" | "dismissed", notes?: string) =>
-    request<{ message: string }>(`/admin/reports/${id}/resolve`, {
+    request<{ message: string }>(`/reviews/admin/reports/${id}/resolve`, {
       method: "PATCH",
       body: JSON.stringify({ action, notes }),
+    }),
+
+  getMessages: (id: string) =>
+    request<{ messages: { id: string; message: string; senderType: string; createdAt: string }[] }>(
+      `/reviews/admin/reports/${id}/messages`
+    ),
+
+  addMessage: (id: string, message: string) =>
+    request<{ id: string; message: string; senderType: string; createdAt: string }>(
+      `/reviews/admin/reports/${id}/messages`,
+      { method: "POST", body: JSON.stringify({ message }) }
+    ),
+};
+
+// ─── Disputes (Quejas) ────────────────────────────────────────────────────────
+
+export interface DisputeRow {
+  id: string;
+  bookingId: string;
+  reportedBy: string;
+  reportedAgainst?: string;
+  disputeType: string;
+  status: string;
+  subject: string;
+  description: string;
+  priority: number;
+  resolution?: string;
+  resolutionNotes?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  refundAmount?: number;
+  refundIssued?: boolean;
+  createdAt: string;
+  messages?: { id: string; message: string; createdAt: string }[];
+}
+
+export interface PaginatedDisputes {
+  disputes: DisputeRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export const disputesApi = {
+  list: (params: { page?: number; limit?: number; status?: string }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== "")
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return request<PaginatedDisputes>(`/disputes${qs ? `?${qs}` : ""}`);
+  },
+
+  getById: (id: string) =>
+    request<DisputeRow>(`/disputes/${id}`),
+
+  addMessage: (id: string, message: string) =>
+    request<{ id: string; message: string; senderType: string; createdAt: string }>(
+      `/disputes/${id}/messages`,
+      { method: "POST", body: JSON.stringify({ message }) }
+    ),
+
+  updateStatus: (id: string, status: string, notes?: string) =>
+    request<{ message: string; dispute: DisputeRow }>(`/disputes/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status, notes }),
+    }),
+
+  resolve: (id: string, resolution: string, resolutionNotes: string, refundAmount?: number) =>
+    request<{ message: string; dispute: DisputeRow }>(`/disputes/${id}/resolve`, {
+      method: "POST",
+      body: JSON.stringify({ resolution, resolutionNotes, refundAmount }),
     }),
 };

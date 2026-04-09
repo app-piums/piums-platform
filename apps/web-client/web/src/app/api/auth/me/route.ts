@@ -34,8 +34,14 @@ export async function GET(request: NextRequest) {
         nombre: data.nombre,
         email: data.email,
         role: userRole || data.role,
-        pais: data.pais,
-        telefono: data.telefono,
+        avatar: data.avatar,
+        ciudad: data.ciudad ?? null,
+        birthDate: data.birthDate ?? null,
+        documentType: data.documentType ?? null,
+        documentNumber: data.documentNumber ?? null,
+        documentFrontUrl: data.documentFrontUrl ?? null,
+        documentBackUrl: data.documentBackUrl ?? null,
+        documentSelfieUrl: data.documentSelfieUrl ?? null,
       },
     });
   } catch (error) {

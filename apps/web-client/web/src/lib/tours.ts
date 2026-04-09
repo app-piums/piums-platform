@@ -1,0 +1,325 @@
+import React from 'react';
+import type { Tour } from 'nextstepjs';
+
+export const clientTours: Tour[] = [
+  {
+    tour: 'clientTour',
+    steps: [
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"})),
+        title: '¡Bienvenido a Piums!',
+        content: 'Te haremos un recorrido por todas las funcionalidades de la plataforma. En menos de 2 minutos conocerás todo lo que necesitas para reservar el artista perfecto para tu evento.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"})),
+        title: 'Tu Panel Principal',
+        content: 'El dashboard es tu punto de partida. Tienes acceso rápido a tus reservas, artistas recomendados y la agenda del mes. Todo en un vistazo.',
+        selector: '#nav-dashboard',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5"})),
+        title: 'Calendario de Reservas',
+        content: 'Este calendario muestra tus reservas marcadas en naranja. Los días futuros sin reserva son clicables: haz clic en cualquier día para buscar artistas disponibles en esa fecha.',
+        selector: '#dashboard-calendar',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"})),
+        title: 'Buscar por Fecha y Ubicación',
+        content: 'Este acceso rápido abre el buscador por fecha. Selecciona el día de tu evento, activa tu ubicación y te mostraremos artistas disponibles ordenados por cercanía.',
+        selector: '#dashboard-search-by-date',
+        side: 'left',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"})),
+        title: 'Próxima Sesión',
+        content: 'Aquí verás siempre tu próxima reserva confirmada con la fecha y hora. Haz clic en "Ver detalles" para gestionar esa reserva o comunicarte con el artista.',
+        selector: '#dashboard-next-session',
+        side: 'left',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.563.563 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"})),
+        title: 'Artistas Recomendados',
+        content: 'Piums te sugiere artistas según tus preferencias. Haz clic en cualquier tarjeta para ver su perfil completo con portafolio, servicios, precios y reseñas.',
+        selector: '#dashboard-recommended',
+        side: 'top',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"})),
+        title: 'Explorar Artistas',
+        content: 'Aquí encuentras todos los artistas: músicos, DJs, fotógrafos, tatuadores y más. Usa los filtros de categoría, precio y valoración para encontrar exactamente lo que buscas.',
+        selector: '#nav-artists',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"})),
+        title: 'Gestiona tus Reservas',
+        content: 'En Reservas ves todo el historial: solicitudes pendientes, reservas confirmadas y completadas. Puedes contactar al artista o dejar tu reseña desde aquí.',
+        selector: '#nav-bookings',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"})),
+        title: 'Eventos',
+        content: 'Los eventos te permiten agrupar varios artistas en una misma ocasión. Perfecto para bodas o fiestas donde necesitas música, fotografía y más al mismo tiempo.',
+        selector: '#nav-events',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"})),
+        title: 'Tus Favoritos',
+        content: 'Guarda artistas con el botón de corazón en sus perfiles. Así los encuentras rápido cuando necesites hacer una reserva sin volver a buscar desde cero.',
+        selector: '#nav-bookmarks',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"})),
+        title: 'Mensajes',
+        content: 'El chat integrado te conecta directamente con los artistas. Coordina detalles, comparte referencias o resuelve dudas antes y después de reservar.',
+        selector: '#nav-chat',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"})),
+        title: 'Canal de Quejas',
+        content: '¿Tuviste algún problema con una reserva? Repórtalo formalmente aquí. Nuestro equipo de soporte revisa cada caso y te da seguimiento en menos de 48 horas.',
+        selector: '#nav-quejas',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"})),
+        title: 'Configuración de Cuenta',
+        content: 'Administra tu perfil, métodos de pago, notificaciones y seguridad. Mantén tu información actualizada para una mejor experiencia en la plataforma.',
+        selector: '#nav-profile',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"})),
+        title: '¡Todo listo para empezar!',
+        content: 'Ya conoces Piums de punta a punta. Ve al buscador, elige una fecha para tu evento y empieza a explorar artistas. ¡Tu próxima experiencia inolvidable está a un clic!',
+        side: 'bottom',
+        showControls: true,
+        showSkip: false,
+      },
+    ],
+  },
+  {
+    tour: 'bookingsTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"})),
+        title: 'Tus Reservas',
+        content: 'Historial completo de todas tus reservas: pendientes de confirmar, confirmadas, completadas y canceladas. Todo en un solo lugar.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"})),
+        title: 'Filtra por estado',
+        content: 'Usa las pestañas para filtrar. "Pendientes" son reservas que esperan confirmación del artista. "Confirmadas" son tus próximos eventos.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"})),
+        title: 'Acciones disponibles',
+        content: 'En cada reserva puedes ver detalles, enviar mensaje al artista, agregar a un evento o dejar una reseña cuando el evento ya se completó.',
+        selector: '#nav-bookings',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'artistsTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"})),
+        title: 'Explorar Artistas',
+        content: 'Encuentra músicos, DJs, fotógrafos, tatuadores y más. Usa los filtros de categoría, ciudad y precio para afinar tu búsqueda.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"})),
+        title: 'Filtros de búsqueda',
+        content: 'Filtra por categoría creativa y departamento o ciudad. Puedes ordenar por precio o calificación para encontrar el artista ideal.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"})),
+        title: 'Guarda tus favoritos',
+        content: 'Haz clic en una tarjeta para ver el perfil completo. Usa el corazón para guardar al artista en Favoritos y volver cuando quieras reservar.',
+        selector: '#nav-artists',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'chatTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"})),
+        title: 'Mensajes en Tiempo Real',
+        content: 'Chat directo con artistas sobre tus reservas. Todas las conversaciones activas aparecen en el panel izquierdo, ordenadas por recientes.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"})),
+        title: 'Cómo usar el chat',
+        content: 'Selecciona una conversación en la lista izquierda. Escribe tu mensaje en la casilla inferior y pulsa Enviar. Las respuestas llegan en tiempo real.',
+        selector: '#nav-chat',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'bookmarksTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"})),
+        title: 'Tus Favoritos',
+        content: 'Artistas que guardaste con el corazón en sus perfiles. Aquí los tienes a mano para reservarlos cuando lo necesites, sin buscar de nuevo.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"})),
+        title: 'Gestionar favoritos',
+        content: 'Haz clic en una tarjeta para ir al perfil del artista y reservarlo directamente. Para quitar de favoritos, haz clic en el corazón naranja en su perfil.',
+        selector: '#nav-bookmarks',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'eventsTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"})),
+        title: 'Tus Eventos',
+        content: 'Agrupa varios artistas bajo un mismo evento: boda, fiesta, graduación o corporativo. Organiza todo en un lugar y coordina mejor.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"})),
+        title: 'Crear un evento',
+        content: 'Haz clic en "+ Nuevo Evento", ponle nombre, fecha y ubicación. Luego agrega artistas desde tus reservas confirmadas para asociarlos al evento.',
+        selector: '#nav-events',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'quejasTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"})),
+        title: 'Canal de Quejas',
+        content: '¿Algo salió mal? Reporta problemas con reservas de forma formal. Nuestro equipo de soporte revisa cada caso individualmente.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"})),
+        title: 'Cómo reportar un problema',
+        content: 'Selecciona la reserva afectada, describe el problema con detalle y adjunta evidencia si tienes. Te respondemos en menos de 48 horas hábiles.',
+        selector: '#nav-quejas',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'calendarioTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5"})),
+        title: 'Tu Calendario',
+        content: 'Vista mensual de todas tus reservas. Los días naranja tienen reservas confirmadas. Los días grises están libres.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5"})),
+        title: 'Reservar por fecha',
+        content: 'Haz clic en cualquier día futuro disponible para buscar artistas disponibles ese día. El sistema filtra automáticamente por fecha.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  },
+  {
+    tour: 'profileTour',
+    steps: [
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"})),
+        title: 'Tu Perfil',
+        content: 'Administra tus datos personales, foto de perfil, contraseña y método de pago preferido desde las secciones del menú izquierdo.',
+        side: 'bottom',
+        showControls: true,
+        showSkip: true,
+      },
+      {
+        icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"})),
+        title: 'Secciones de configuración',
+        content: 'Navega entre: Información personal, Seguridad, Notificaciones y Pagos. Mantén tus datos actualizados para una mejor experiencia.',
+        selector: '#nav-profile',
+        side: 'right',
+        showControls: true,
+        showSkip: true,
+      }
+    ],
+  }
+];

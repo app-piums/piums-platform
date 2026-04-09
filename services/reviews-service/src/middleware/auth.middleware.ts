@@ -5,8 +5,9 @@ import { AppError } from "./errorHandler";
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 interface JwtPayload {
-  userId: string;
+  id: string;
   email: string;
+  role: string;
 }
 
 declare global {
@@ -46,6 +47,17 @@ export const authenticateToken = (
     }
     next(error);
   }
+};
+
+export const requireAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return next(new AppError(403, 'Acceso denegado: se requiere rol de administrador'));
+  }
+  next();
 };
 
 // Middleware opcional de autenticación

@@ -7,6 +7,7 @@ const router: Router = Router();
 
 // Public search endpoints
 router.get('/artists', optionalAuth, searchLimiter, searchController.searchArtists);
+router.get('/smart', searchLimiter, searchController.smartSearch);
 router.get('/services', optionalAuth, searchLimiter, searchController.searchServices);
 router.get('/autocomplete', optionalAuth, autocompleteLimiter, searchController.autocomplete);
 

@@ -2,8 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import { artistsClient, type ArtistData } from '../clients/artists.client';
 import { catalogClient, type ServiceData } from '../clients/catalog.client';
 import { reviewsClient } from '../clients/reviews.client';
+import { bookingClient } from '../clients/booking.client';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
+import { expandQuery } from '../utils/synonyms';
 import type {
   SearchArtistsInput,
   SearchServicesInput,
@@ -53,6 +55,26 @@ export class SearchService {
         }
       })
     };
+
+    // Filter artists by absence visibility rules:
+    // - VACATION: hidden in all countries (not visible anywhere)
+    // - WORKING_ABROAD: only visible in their destination country
+    if (country) {
+      where.AND = [
+        {
+          OR: [
+            { activeAbsenceType: null },
+            {
+              activeAbsenceType: 'WORKING_ABROAD',
+              activeAbsenceDest: country,
+            },
+          ],
+        },
+      ];
+    } else {
+      // No country filter: hide VACATION and WORKING_ABROAD artists globally
+      where.activeAbsenceType = null;
+    }
 
     // Add text search if query provided
     if (query) {
@@ -336,19 +358,22 @@ export class SearchService {
       // Fetch artist services from catalog-service
       const services = await catalogClient.getServicesByArtist(artistId);
 
-      // Build index data
-      const indexData = {
-        id: artist.id,
-        name: artist.name,
-        email: artist.email,
-        bio: artist.bio,
-        specialties: artist.specialties || [],
-        city: artist.city,
-        state: artist.state,
-        country: artist.country,
-        averageRating: rating?.averageRating || 0,
-        totalReviews: rating?.totalReviews || 0,
-        totalBookings: 0, // TODO: Add booking stats
+        // Fetch artist stats from booking-service
+        const stats = await bookingClient.getArtistStats(artistId);
+
+        // Build index data
+        const indexData = {
+          id: artist.id,
+          name: artist.name,
+          email: artist.email,
+          bio: artist.bio,
+          specialties: artist.specialties || [],
+          city: artist.city,
+          state: artist.state,
+          country: artist.country,
+          averageRating: rating?.averageRating || 0,
+          totalReviews: rating?.totalReviews || 0,
+          totalBookings: stats?.total || 0,
         responseRate: rating?.responseRate || 0,
         hourlyRateMin: artist.minHourlyRate,
         hourlyRateMax: artist.maxHourlyRate,
@@ -358,7 +383,44 @@ export class SearchService {
         servicesCount: services.length,
         serviceIds: services.map(s => s.id),
         serviceTitles: services.map(s => s.title),
-        lastSyncedAt: new Date()
+        mainServicePrice: (() => {
+          const main = services.find((s: ServiceData) => s.isMainService) || services[0] || null;
+          return main ? main.price : null;
+        })(),
+        mainServiceName: (() => {
+          const main = services.find((s: ServiceData) => s.isMainService) || services[0] || null;
+          return main ? main.title : null;
+        })(),
+        lastSyncedAt: new Date(),
+        // Absence tracking: manual blackout takes priority; fall back to GPS-detected country
+        ...((() => {
+          const now = new Date();
+          // 1. Check for active manual blackout
+          const manualAbsence = (artist.blackouts ?? []).find((b: any) =>
+            new Date(b.startAt) <= now && new Date(b.endAt) >= now
+          );
+          if (manualAbsence) {
+            return {
+              activeAbsenceType: manualAbsence.type ?? null,
+              activeAbsenceUntil: new Date(manualAbsence.endAt),
+              activeAbsenceDest: manualAbsence.destinationCountry ?? null,
+            };
+          }
+          // 2. GPS-detected absence: artist is in a different country than their home
+          if (artist.geoCountry && artist.geoCountry !== artist.country) {
+            return {
+              activeAbsenceType: 'WORKING_ABROAD',
+              activeAbsenceUntil: null, // No fixed end date for geo-detected absence
+              activeAbsenceDest: artist.geoCountry,
+            };
+          }
+          // 3. No active absence
+          return {
+            activeAbsenceType: null,
+            activeAbsenceUntil: null,
+            activeAbsenceDest: null,
+          };
+        })())
       };
 
       // Upsert to index
@@ -393,29 +455,35 @@ export class SearchService {
       // Fetch artist rating
       const rating = await reviewsClient.getArtistRating(service.artistId);
 
-      // Build index data
-      const indexData = {
-        id: service.id,
-        artistId: service.artistId,
-        artistName: artist.name,
-        title: service.title,
-        description: service.description,
-        category: service.category,
-        tags: service.tags || [],
-        price: service.price,
-        currency: service.currency,
-        pricingType: service.pricingType,
-        duration: service.duration,
-        capacity: service.capacity,
-        city: service.location?.city || artist.city,
-        state: service.location?.state || artist.state,
-        country: service.location?.country || artist.country,
-        artistRating: rating?.averageRating || 0,
-        artistReviews: rating?.totalReviews || 0,
-        artistBookings: 0, // TODO: Add booking stats
-        isActive: service.isActive,
-        isAvailable: service.isAvailable,
-        totalBookings: 0, // TODO: Add service booking stats
+        // Fetch artist stats from booking-service
+        const stats = await bookingClient.getArtistStats(service.artistId);
+
+        // Build index data
+        const indexData = {
+          id: service.id,
+          artistId: service.artistId,
+          artistName: artist.name,
+          title: service.title,
+          description: service.description,
+          category: (typeof service.category === 'object' && service.category !== null)
+            ? ((service.category as any).name ?? String(service.category))
+            : (service.category as unknown as string) || '',
+          tags: service.tags || [],
+          price: service.price,
+          currency: service.currency,
+          pricingType: service.pricingType,
+          duration: service.duration,
+          capacity: service.capacity,
+          city: service.location?.city || artist.city,
+          state: service.location?.state || artist.state,
+          country: service.location?.country || artist.country,
+          artistRating: rating?.averageRating || 0,
+          artistReviews: rating?.totalReviews || 0,
+          artistBookings: stats?.total || 0,
+          isActive: service.isActive,
+          isAvailable: service.isAvailable,
+          isMainService: service.isMainService || false,
+          totalBookings: stats?.completed || 0,
         lastSyncedAt: new Date()
       };
 
@@ -638,6 +706,143 @@ export class SearchService {
     } catch (error: any) {
       logger.error('Error getting popular searches', error);
       throw new AppError('Error al obtener búsquedas populares', 500);
+    }
+  }
+
+  /**
+   * Búsqueda inteligente: expande la query con sinónimos y busca en ServiceIndex.
+   * Retorna un artista por cada resultado, con el servicio que mejor matchea.
+   *
+   * Lógica de scoring:
+   *   exactMatch (title/description ILIKE term) → +3
+   *   categoryMatch (category ILIKE term)       → +2
+   *   artistRating × 0.3
+   *   log(artistBookings + 1) × 0.2
+   */
+  async smartSearch(query: string, options: {
+    page?: number;
+    limit?: number;
+    city?: string;
+    country?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    minGuests?: number;
+  } = {}) {
+    const { page = 1, limit = 12, city, country, minPrice, maxPrice, minGuests } = options;
+
+    const expandedTerms = expandQuery(query);
+    logger.info(`smartSearch: "${query}" → [${expandedTerms.slice(0, 6).join(', ')}...]`);
+
+    // Search in ServiceIndex: find services matching any expanded term
+    const whereConditions: any[] = expandedTerms.flatMap(term => [
+      { title: { contains: term, mode: 'insensitive' } },
+      { description: { contains: term, mode: 'insensitive' } },
+      { category: { contains: term, mode: 'insensitive' } },
+      { tags: { hasSome: [term] } },
+    ]);
+
+    const whereClause: any = {
+      isActive: true,
+      isAvailable: true,
+      OR: whereConditions,
+      ...(city && { city: { contains: city, mode: 'insensitive' } }),
+      ...(country && { country }),
+      ...(minPrice != null && { price: { gte: minPrice } }),
+      ...(maxPrice != null && { price: { lte: maxPrice } }),
+      ...(minGuests != null && { capacity: { gte: minGuests } }),
+    };
+
+    try {
+      const services = await prisma.serviceIndex.findMany({
+        where: whereClause,
+        orderBy: [
+          { artistRating: 'desc' },
+          { totalBookings: 'desc' },
+        ],
+        take: limit * 5, // fetch more to deduplicate by artist
+      });
+
+      // Deduplicate: best-scored service per artist
+      const artistBestMatch = new Map<string, {
+        service: typeof services[0];
+        score: number;
+        isExactMatch: boolean;
+      }>();
+
+      const queryLower = query.toLowerCase();
+      const exactTerms = expandedTerms.map(t => t.toLowerCase());
+
+      for (const svc of services) {
+        const titleLower = svc.title.toLowerCase();
+        const descLower = svc.description.toLowerCase();
+        const catLower = svc.category.toLowerCase();
+
+        const isExactTitle = exactTerms.some(t => titleLower.includes(t));
+        const isExactDesc = exactTerms.some(t => descLower.includes(t));
+        const isCatMatch = exactTerms.some(t => catLower.includes(t));
+
+        const score =
+          (isExactTitle ? 3 : 0) +
+          (isExactDesc ? 1 : 0) +
+          (isCatMatch ? 2 : 0) +
+          svc.artistRating * 0.3 +
+          Math.log((svc.artistBookings || 0) + 1) * 0.2;
+
+        const isExactMatch = isExactTitle || isExactDesc;
+
+        const existing = artistBestMatch.get(svc.artistId);
+        if (!existing || score > existing.score) {
+          artistBestMatch.set(svc.artistId, { service: svc, score, isExactMatch });
+        }
+      }
+
+      // Fetch artist index data for the matched artists
+      const artistIds = Array.from(artistBestMatch.keys());
+      const artists = await prisma.artistIndex.findMany({
+        where: { id: { in: artistIds }, isActive: true },
+      });
+
+      // Build SmartResult array, sorted by score
+      const sorted = Array.from(artistBestMatch.entries())
+        .sort((a, b) => b[1].score - a[1].score)
+        .slice((page - 1) * limit, page * limit);
+
+      const results = sorted.map(([artistId, { service, score, isExactMatch }]) => {
+        const artist = artists.find(a => a.id === artistId);
+        return {
+          ...artist,
+          matchedService: {
+            id: service.id,
+            name: service.title,
+            price: service.price,
+            currency: service.currency,
+            pricingType: service.pricingType,
+            isExactMatch,
+          },
+          score,
+        };
+      }).filter(r => r.id); // filter out if artist no longer in index
+
+      await this.logSearchQuery({
+        query,
+        queryType: 'MIXED',
+        filters: options as any,
+        resultsCount: artistBestMatch.size,
+      });
+
+      return {
+        artists: results,
+        expandedTerms: expandedTerms.slice(0, 8),
+        pagination: {
+          page,
+          limit,
+          total: artistBestMatch.size,
+          totalPages: Math.ceil(artistBestMatch.size / limit),
+        },
+      };
+    } catch (error: any) {
+      logger.error('Error in smartSearch', error);
+      throw new AppError('Error en búsqueda inteligente', 500);
     }
   }
 }

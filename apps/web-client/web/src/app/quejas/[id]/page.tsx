@@ -1,0 +1,298 @@
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import ClientSidebar from '@/components/ClientSidebar';
+import { useAuth } from '@/contexts/AuthContext';
+import { sdk } from '@piums/sdk';
+import { toast } from '@/lib/toast';
+
+type DisputeStatus = 'OPEN' | 'IN_REVIEW' | 'AWAITING_INFO' | 'RESOLVED' | 'CLOSED' | 'ESCALATED';
+type DisputeType   = 'CANCELLATION' | 'QUALITY' | 'REFUND' | 'NO_SHOW' | 'ARTIST_NO_SHOW' | 'PRICING' | 'BEHAVIOR' | 'OTHER';
+
+const MY_SENDER_TYPE = 'client' as const;
+
+const STATUS_CONFIG: Record<DisputeStatus, { label: string; className: string }> = {
+  OPEN:          { label: 'Abierta',        className: 'bg-yellow-100 text-yellow-700' },
+  IN_REVIEW:     { label: 'En revisión',    className: 'bg-blue-100 text-blue-700' },
+  AWAITING_INFO: { label: 'Info solicitada',className: 'bg-orange-100 text-orange-700' },
+  ESCALATED:     { label: 'Escalada',       className: 'bg-red-100 text-red-700' },
+  RESOLVED:      { label: 'Resuelta',       className: 'bg-green-100 text-green-700' },
+  CLOSED:        { label: 'Cerrada',        className: 'bg-zinc-100 text-zinc-600' },
+};
+
+const TYPE_LABELS: Record<DisputeType, string> = {
+  CANCELLATION:   'Cancelación',
+  QUALITY:        'Calidad',
+  REFUND:         'Reembolso',
+  NO_SHOW:        'No Show (cliente)',
+  ARTIST_NO_SHOW: 'Artista no se presentó',
+  PRICING:        'Precio',
+  BEHAVIOR:       'Comportamiento',
+  OTHER:          'Otro',
+};
+
+function formatMsgTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateSeparator(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Hoy';
+  if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
+  return d.toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+export default function QuejasDetailPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+
+  const [dispute, setDispute] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newMsg, setNewMsg] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const userName = user?.nombre ?? user?.email ?? 'Usuario';
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { router.push(`/login?redirect=/quejas/${id}`); return; }
+
+    sdk.getDisputeById(id)
+      .then((data: any) => {
+        setDispute(data);
+        setMessages(data.messages ?? []);
+      })
+      .catch((err: any) => setError(err?.message || 'Error al cargar la queja'))
+      .finally(() => setLoading(false));
+  }, [authLoading, user, id, router]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  const isActive = dispute && dispute.status !== 'RESOLVED' && dispute.status !== 'CLOSED';
+  const isResolved = dispute && (dispute.status === 'RESOLVED' || dispute.status === 'CLOSED');
+  const visibleMessages = messages.filter(m => !m.isStatusUpdate);
+  const statusCfg = dispute ? (STATUS_CONFIG[dispute.status as DisputeStatus] ?? STATUS_CONFIG.OPEN) : null;
+
+  const grouped: { date: string; messages: any[] }[] = [];
+  visibleMessages.forEach(m => {
+    const day = new Date(m.createdAt).toDateString();
+    const last = grouped[grouped.length - 1];
+    if (last?.date === day) last.messages.push(m);
+    else grouped.push({ date: day, messages: [m] });
+  });
+
+  const sendMessage = async () => {
+    if (!newMsg.trim()) return;
+    try {
+      setSending(true);
+      const msg = await sdk.addDisputeMessage(id, newMsg.trim());
+      setMessages(prev => [...prev, msg]);
+      setNewMsg('');
+    } catch {
+      toast.error('Error al enviar el mensaje');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="h-screen bg-zinc-50 flex overflow-hidden">
+      <ClientSidebar userName={userName} />
+
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
+        {/* Header */}
+        <header className="shrink-0 bg-white border-b border-zinc-200 px-4 py-3 flex items-center gap-3">
+          <Link
+            href="/quejas"
+            className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          <div className="flex-1 min-w-0">
+            {statusCfg && dispute ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${statusCfg.className}`}>
+                  {statusCfg.label}
+                </span>
+                <p className="text-sm font-semibold text-zinc-900 truncate">{dispute.subject}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-400">{loading ? 'Cargando…' : 'Detalle de queja'}</p>
+            )}
+          </div>
+          {loading && (
+            <div className="w-4 h-4 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin shrink-0" />
+          )}
+        </header>
+
+        {error ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <p className="text-zinc-500">{error}</p>
+            <Link href="/quejas" className="text-sm text-[#FF6A00] hover:underline">← Volver a mis quejas</Link>
+          </div>
+        ) : loading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : dispute ? (
+          <>
+            {/* Info strip */}
+            <div className="shrink-0 bg-white border-b border-zinc-200 px-5 py-3">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-xs text-zinc-600 bg-zinc-100 px-2.5 py-0.5 rounded-full">
+                  {TYPE_LABELS[dispute.disputeType as DisputeType] ?? dispute.disputeType}
+                </span>
+                <span className="text-xs font-mono text-zinc-400">#{dispute.bookingId.slice(0, 8)}</span>
+                <span className="text-xs text-zinc-300">·</span>
+                <span className="text-xs text-zinc-400">
+                  {new Date(dispute.createdAt).toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{dispute.description}</p>
+              <p className="text-[11px] text-zinc-400 mt-1.5">
+                El equipo de Piums revisará tu caso y se pondrá en contacto a través de este chat.
+              </p>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-3xl mx-auto px-5 py-6">
+
+                {visibleMessages.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-16 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-zinc-500">Sin mensajes aún</p>
+                      <p className="text-sm text-zinc-400 mt-1">El equipo de Piums se pondrá en contacto pronto.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {grouped.map(group => (
+                      <div key={group.date}>
+                        <div className="flex items-center gap-3 my-6">
+                          <div className="flex-1 h-px bg-zinc-200" />
+                          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                            {formatDateSeparator(group.messages[0].createdAt)}
+                          </span>
+                          <div className="flex-1 h-px bg-zinc-200" />
+                        </div>
+                        <div className="space-y-1.5">
+                          {group.messages.map((m, i) => {
+                            const isMine = m.senderType === MY_SENDER_TYPE;
+                            const isStaff = m.senderType === 'staff';
+                            const prevMsg = group.messages[i - 1];
+                            const showLabel = !prevMsg || prevMsg.senderType !== m.senderType;
+                            const nextMsg = group.messages[i + 1];
+                            const isLast = !nextMsg || nextMsg.senderType !== m.senderType;
+
+                            const senderLabel = isMine ? 'Tú'
+                              : isStaff ? 'Piums Support'
+                              : m.senderType === 'client' ? 'Cliente'
+                              : 'Artista';
+
+                            const bubbleClass = isMine
+                              ? `bg-zinc-100 text-zinc-800 rounded-2xl ${isLast ? 'rounded-tl-sm' : ''}`
+                              : isStaff
+                              ? `bg-[#FF6A00] text-white rounded-2xl ${isLast ? 'rounded-tr-sm' : ''}`
+                              : `bg-indigo-50 text-indigo-900 rounded-2xl ${isLast ? 'rounded-tl-sm' : ''}`;
+
+                            const timeClass = isMine ? 'text-zinc-400'
+                              : isStaff ? 'text-white/60'
+                              : 'text-indigo-400';
+
+                            return (
+                              <div key={m.id ?? i} className={`flex flex-col ${isStaff ? 'items-end' : 'items-start'}`}>
+                                {showLabel && (
+                                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1 px-1 text-zinc-400">
+                                    {senderLabel}
+                                  </p>
+                                )}
+                                <div className={`max-w-[70%] px-4 py-2.5 text-sm ${bubbleClass}`}>
+                                  <p className="leading-relaxed break-words whitespace-pre-wrap">{m.message}</p>
+                                  {m.createdAt && (
+                                    <p className={`text-[10px] mt-1.5 ${timeClass}`}>
+                                      {formatMsgTime(m.createdAt)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {/* Resolution banner */}
+            {isResolved && (
+              <div className="shrink-0 px-4 pb-3">
+                <div className="max-w-3xl mx-auto flex items-center gap-2.5 rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+                  <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-green-700">
+                    {dispute.status === 'RESOLVED' ? 'Esta queja ha sido resuelta.' : 'Esta queja fue cerrada.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Compose */}
+            {isActive && (
+              <div className="shrink-0 border-t border-zinc-200 bg-white px-5 py-3">
+                <div className="max-w-3xl mx-auto flex gap-2">
+                  <input
+                    type="text"
+                    value={newMsg}
+                    onChange={e => setNewMsg(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } }}
+                    placeholder="Escribe un mensaje..."
+                    autoFocus
+                    className="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-colors"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={sending || !newMsg.trim()}
+                    className="px-4 py-2.5 bg-[#FF6A00] text-white rounded-xl text-sm font-medium hover:bg-[#E65F00] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {sending ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    )}
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}

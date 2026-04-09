@@ -18,26 +18,28 @@ export const authMiddleware = (
   next: NextFunction
 ) => {
   try {
-    // Obtener token del header Authorization
+    // Obtener token del header Authorization o de las cookies
+    let token = '';
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.headers.cookie) {
+      // Intento manual de parsear cookies si no hay cookie-parser
+      const cookies = req.headers.cookie.split(';').reduce((acc: any, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {});
+      token = cookies['auth_token'] || cookies['token'];
+    }
+
+    if (!token) {
       return res.status(401).json({
         error: "Unauthorized",
         message: "No authorization token provided",
       });
     }
-
-    // Verificar formato "Bearer <token>"
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer") {
-      return res.status(401).json({
-        error: "Unauthorized",
-        message: "Invalid authorization format. Expected: Bearer <token>",
-      });
-    }
-
-    const token = parts[1];
 
     // Verificar token
     const decoded = jwt.verify(token, JWT_SECRET) as any;

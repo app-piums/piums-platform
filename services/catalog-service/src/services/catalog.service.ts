@@ -287,9 +287,12 @@ export class CatalogService {
     depositAmount?: number;
     depositPercentage?: number;
     requiresConsultation?: boolean;
+    whatIsIncluded?: string[];
     cancellationPolicy?: string;
     termsAndConditions?: string;
     tags?: string[];
+    minGuests?: number;
+    maxGuests?: number;
   }) {
     // Verificar que la categoría exista
     await this.getCategoryById(data.categoryId);
@@ -329,15 +332,27 @@ export class CatalogService {
         depositAmount: data.depositAmount,
         depositPercentage: data.depositPercentage,
         requiresConsultation: data.requiresConsultation || false,
+        whatIsIncluded: data.whatIsIncluded || [],
         cancellationPolicy: data.cancellationPolicy,
         termsAndConditions: data.termsAndConditions,
         tags: data.tags || [],
+        minGuests: data.minGuests,
+        maxGuests: data.maxGuests,
       },
       include: {
         category: true,
         addons: true,
       },
     });
+
+    // Si es el primer servicio activo del artista, marcarlo como servicio principal
+    const existingMainService = await prisma.service.findFirst({
+      where: { artistId: data.artistId, isMainService: true, status: "ACTIVE" },
+    });
+    if (!existingMainService) {
+      await prisma.service.update({ where: { id: service.id }, data: { isMainService: true } });
+      (service as any).isMainService = true;
+    }
 
     logger.info("Servicio creado", "CATALOG_SERVICE", {
       serviceId: service.id,
@@ -678,6 +693,29 @@ export class CatalogService {
     });
 
     logger.info("Paquete eliminado", "CATALOG_SERVICE", { packageId: id });
+  }
+
+  /**
+   * Establece un servicio como el servicio principal del artista
+   */
+  async setMainService(serviceId: string, artistId: string) {
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    if (!service) throw new AppError(404, "Servicio no encontrado");
+    if (service.artistId !== artistId) throw new AppError(403, "No tienes permiso para modificar este servicio");
+
+    await prisma.service.updateMany({
+      where: { artistId, isMainService: true },
+      data: { isMainService: false },
+    });
+
+    const updated = await prisma.service.update({
+      where: { id: serviceId },
+      data: { isMainService: true },
+      include: { category: true, addons: true },
+    });
+
+    logger.info("Servicio principal actualizado", "CATALOG_SERVICE", { serviceId, artistId });
+    return updated;
   }
 }
 

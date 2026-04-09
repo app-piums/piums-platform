@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { InstallPrompt } from '@/components/InstallPrompt';
 import { registerServiceWorker, setupNetworkDetection } from '@/lib/pwa';
 
 export function PWAInitializer() {
@@ -13,5 +12,5 @@ export function PWAInitializer() {
     setupNetworkDetection();
   }, []);
 
-  return <InstallPrompt />;
+  return null;
 }

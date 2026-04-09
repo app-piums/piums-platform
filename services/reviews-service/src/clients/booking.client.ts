@@ -25,7 +25,7 @@ export class BookingClient {
     try {
       const serviceToken = generateServiceToken(userId);
       
-      const response = await fetch(`${this.baseUrl}/api/bookings/bookings/${bookingId}`, {
+      const response = await fetch(`${this.baseUrl}/api/bookings/${bookingId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${serviceToken}`,
@@ -52,7 +52,7 @@ export class BookingClient {
     try {
       const serviceToken = generateServiceToken(userId);
       
-      const response = await fetch(`${this.baseUrl}/api/bookings/bookings/${bookingId}`, {
+      const response = await fetch(`${this.baseUrl}/api/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

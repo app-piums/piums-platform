@@ -4,7 +4,12 @@ import { logger } from "../utils/logger";
 import { notificationsClient } from "../clients/notifications.client";
 import { paymentsClient } from "../clients/payments.client";
 import { catalogClient } from "../clients/catalog.client";
+import { chatClient } from "../clients/chat.client";
 import { generateBookingCode } from "./booking-code.service";
+import { usersClient } from "../clients/users.client";
+import { artistsClient } from "../clients/artists.client";
+import { notifyBookingConfirmed } from "../utils/notifications";
+import { createAvailabilityReservation, removeAvailabilityReservation } from "./availability.service";
 
 const prisma = new PrismaClient();
 
@@ -25,6 +30,7 @@ export class BookingService {
     locationLng?: number;
     selectedAddons?: string[];
     clientNotes?: string;
+    eventId?: string;
   }) {
     const scheduledDate = new Date(data.scheduledDate);
 
@@ -69,12 +75,46 @@ export class BookingService {
     // Generar código único para el booking
     const code = await generateBookingCode();
 
+    // Obtener detalles del artista para coordenadas base
+    const artist = await artistsClient.getArtist(data.artistId);
+    
+    // Resolver ubicación del cliente si no se proporcionan coordenadas
+    if ((!data.locationLat || !data.locationLng) && data.clientId) {
+      const user = await usersClient.getUser(data.clientId);
+      if (user && user.addresses && user.addresses.length > 0) {
+        const defaultAddr = user.addresses.find(a => a.isDefault) || user.addresses[0];
+        if (defaultAddr.lat && defaultAddr.lng) {
+          data.locationLat = defaultAddr.lat;
+          data.locationLng = defaultAddr.lng;
+          // Si no hay string de ubicación, usar el label o street
+          if (!data.location) {
+            data.location = defaultAddr.label || defaultAddr.street || `${defaultAddr.city}, ${defaultAddr.country}`;
+          }
+          logger.info(`Ubicación de cliente resuelta automáticamente: ${data.location}`, "BOOKING_SERVICE", {
+            lat: data.locationLat,
+            lng: data.locationLng
+          });
+        }
+      }
+    }
+
+    let distanceKm = 0;
+    if (artist && artist.baseLocationLat && artist.baseLocationLng && data.locationLat && data.locationLng) {
+      distanceKm = this.getDistance(
+        artist.baseLocationLat,
+        artist.baseLocationLng,
+        data.locationLat,
+        data.locationLng
+      );
+      logger.info(`Distancia calculada para reserva: ${distanceKm.toFixed(2)} km`, "BOOKING_SERVICE");
+    }
+
     // Obtener precio del servicio desde catalog-service
     const priceQuote = await catalogClient.calculatePrice({
       serviceId: data.serviceId,
       durationMinutes: data.durationMinutes,
       selectedAddonIds: data.selectedAddons || [],
-      distanceKm: data.locationLat && data.locationLng ? undefined : 0, // TODO: calcular distancia real
+      distanceKm,
     });
 
     if (!priceQuote) {
@@ -114,6 +154,7 @@ export class BookingService {
         selectedAddons: data.selectedAddons || [],
         clientNotes: data.clientNotes,
         paymentStatus: depositRequired ? "PENDING" : "DEPOSIT_PAID",
+        eventId: data.eventId || null,
       },
     });
 
@@ -188,6 +229,18 @@ export class BookingService {
       paymentIntentCreated: !!paymentIntent,
     });
 
+    // Si la reserva se auto-confirma, bloquear el slot de disponibilidad
+    if (initialStatus === "CONFIRMED") {
+      const endAt = new Date(scheduledDate);
+      endAt.setMinutes(endAt.getMinutes() + data.durationMinutes);
+      createAvailabilityReservation({
+        artistId: data.artistId,
+        bookingId: booking.id,
+        startAt: scheduledDate,
+        endAt,
+      }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
+    }
+
     // Enviar notificación de reserva creada
     notificationsClient.sendNotification({
       userId: data.clientId,
@@ -219,6 +272,15 @@ export class BookingService {
       priority: 'high',
       category: 'booking',
     }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+
+    // Crear conversación para el chat
+    chatClient.createConversation(data.clientId, data.artistId, booking.id)
+      .then(conv => {
+        if (conv) {
+          logger.info("Conversación de chat creada", "BOOKING_SERVICE", { bookingId: booking.id, conversationId: conv.conversation.id });
+        }
+      })
+      .catch(err => logger.error("Error creando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
 
     return {
       booking,
@@ -343,23 +405,28 @@ export class BookingService {
       selectedAddons?: string[];
       clientNotes?: string;
       artistNotes?: string;
+      reviewId?: string;
     }
   ) {
     const booking = await this.getBookingById(id);
 
-    // Verificar permisos
-    if (booking.clientId !== userId && booking.artistId !== userId) {
-      throw new AppError(403, "No tienes permiso para modificar esta reserva");
-    }
+    // If only setting reviewId (internal service call), skip permission/status checks
+    const isReviewIdOnly = data.reviewId && Object.keys(data).length === 1;
+    if (!isReviewIdOnly) {
+      // Verificar permisos
+      if (booking.clientId !== userId && booking.artistId !== userId) {
+        throw new AppError(403, "No tienes permiso para modificar esta reserva");
+      }
 
-    // No permitir modificaciones si ya está cancelada o completada
-    if (
-      booking.status === "CANCELLED_CLIENT" ||
-      booking.status === "CANCELLED_ARTIST" ||
-      booking.status === "COMPLETED" ||
-      booking.status === "REJECTED"
-    ) {
-      throw new AppError(400, "No se puede modificar una reserva cerrada");
+      // No permitir modificaciones si ya está cancelada o completada
+      if (
+        booking.status === "CANCELLED_CLIENT" ||
+        booking.status === "CANCELLED_ARTIST" ||
+        booking.status === "COMPLETED" ||
+        booking.status === "REJECTED"
+      ) {
+        throw new AppError(400, "No se puede modificar una reserva cerrada");
+      }
     }
 
     // Si cambia la fecha, verificar disponibilidad
@@ -391,6 +458,7 @@ export class BookingService {
         selectedAddons: data.selectedAddons,
         clientNotes: data.clientNotes,
         artistNotes: data.artistNotes,
+        reviewId: data.reviewId,
       },
     });
 
@@ -439,21 +507,61 @@ export class BookingService {
       artistId,
     });
 
-    // Enviar notificación al cliente de confirmación
-    notificationsClient.sendNotification({
-      userId: booking.clientId,
-      type: 'BOOKING_CONFIRMED',
-      channel: 'IN_APP',
-      title: 'Reserva Confirmada',
-      message: 'Tu reserva ha sido confirmada por el artista',
-      data: {
-        bookingId: id,
-        scheduledDate: booking.scheduledDate.toISOString(),
-        artistId,
-      },
-      priority: 'high',
-      category: 'booking',
-    }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+    // Bloquear el slot de disponibilidad del artista
+    const endAt = new Date(booking.scheduledDate);
+    endAt.setMinutes(endAt.getMinutes() + booking.durationMinutes);
+    createAvailabilityReservation({
+      artistId: booking.artistId,
+      bookingId: id,
+      startAt: booking.scheduledDate,
+      endAt,
+    }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
+
+    // Enviar notificación al cliente de confirmación con datos reales
+    (async () => {
+      try {
+        const [user, artist, service] = await Promise.all([
+          usersClient.getUser(booking.clientId),
+          artistsClient.getArtist(booking.artistId),
+          catalogClient.getService(booking.serviceId)
+        ]);
+
+        const notificationData = {
+          bookingId: id,
+          bookingCode: booking.code || id.slice(0, 8),
+          clientId: booking.clientId,
+          clientName: user?.fullName || user?.firstName || 'Cliente',
+          clientEmail: user?.email || '',
+          artistId: booking.artistId,
+          artistName: artist?.artistName || 'Artista',
+          artistEmail: artist?.email || '',
+          artistCategory: artist?.category || 'Categoría',
+          artistImage: artist?.avatar || '',
+          serviceName: service?.name || 'Servicio',
+          scheduledDate: booking.scheduledDate.toISOString(),
+          durationMinutes: booking.durationMinutes,
+          location: booking.location || '',
+          servicePrice: Number(booking.totalPrice),
+          totalPrice: Number(booking.totalPrice),
+          currency: booking.currency,
+          depositRequired: booking.depositRequired,
+          depositAmount: Number(booking.depositAmount),
+        };
+
+        await notifyBookingConfirmed(notificationData);
+      } catch (err: any) {
+        logger.error('Error enviando notificación de confirmación', 'BOOKING_SERVICE', { error: err.message });
+      }
+    })();
+
+    // Activar conversación de chat
+    chatClient.activateConversation(id, booking.clientId)
+      .then(res => {
+        if (res) {
+          logger.info("Conversación de chat activada", "BOOKING_SERVICE", { bookingId: id });
+        }
+      })
+      .catch(err => logger.error("Error activando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
 
     return updated;
   }
@@ -584,6 +692,10 @@ export class BookingService {
       by: isClient ? "client" : "artist",
       refundAmount,
     });
+
+    // Liberar el slot de disponibilidad del artista
+    removeAvailabilityReservation(id)
+      .catch(() => { /* puede no existir si nunca fue CONFIRMED */ });
 
     // Enviar notificaciones de cancelación
     if (isClient) {
@@ -1246,6 +1358,181 @@ export class BookingService {
       cancelled,
       totalRevenue: totalRevenue._sum.totalPrice || 0,
     };
+  }
+
+  // ...existing code...
+
+  /**
+   * Obtiene estadísticas globales para el admin
+   */
+  async getAdminStats() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const [
+      stats,
+      revenueThisMonth,
+      bookingsThisMonth,
+      bookingsByMonth
+    ] = await Promise.all([
+      this.getBookingStats(),
+      prisma.booking.aggregate({
+        where: {
+          paymentStatus: "FULLY_PAID",
+          paidAt: { gte: startOfMonth }
+        },
+        _sum: { totalPrice: true }
+      }),
+      prisma.booking.count({
+        where: { createdAt: { gte: startOfMonth } }
+      }),
+      this.getBookingsByMonth(6)
+    ]);
+
+    return {
+      ...stats,
+      revenueThisMonth: revenueThisMonth._sum.totalPrice || 0,
+      bookingsThisMonth,
+      bookingsByMonth
+    };
+  }
+
+  /**
+   * Obtiene conteo de bookings por mes
+   */
+  private async getBookingsByMonth(monthsCount: number) {
+    const result = [];
+    const now = new Date();
+    
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      
+      const count = await prisma.booking.count({
+        where: {
+          createdAt: {
+            gte: d,
+            lt: nextD
+          }
+        }
+      });
+      
+      const monthName = d.toLocaleString('es-ES', { month: 'short' });
+      result.push({ month: monthName, count });
+    }
+    
+    return result;
+  }
+
+  /**
+   * Búsqueda avanzada para admin
+   */
+  async adminSearchBookings(filters: {
+    search?: string;
+    status?: BookingStatus;
+    page: number;
+    limit: number;
+  }) {
+    const { search, status, page, limit } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { id: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { clientId: { contains: search, mode: 'insensitive' } },
+        { artistId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          statusHistory: {
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
+        }
+      }),
+      prisma.booking.count({ where })
+    ]);
+
+    return {
+      bookings,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  /**
+   * Calcula la distancia entre dos puntos (Haversine formula)
+   */
+  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  async getUserStats(userId: string) {
+    const total = await prisma.booking.count({
+      where: { clientId: userId, deletedAt: null }
+    });
+    return { total };
+  }
+
+  async getBatchStats(artistIds: string[]) {
+    const stats = await prisma.booking.groupBy({
+      by: ['artistId'],
+      where: { artistId: { in: artistIds }, deletedAt: null },
+      _count: { id: true }
+    });
+    
+    return stats.reduce((acc: any, s: any) => {
+      acc[s.artistId] = { total: s._count.id };
+      return acc;
+    }, {});
+  }
+
+  /**
+   * Devuelve los IDs de artistas que tienen reservas PENDIENTES o CONFIRMADAS
+   * en una fecha concreta (día completo, zona UTC).
+   */
+  async getArtistsBusyOnDate(date: Date): Promise<string[]> {
+    const start = new Date(date);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setUTCHours(23, 59, 59, 999);
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        scheduledDate: { gte: start, lte: end },
+        status: { in: ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'] },
+        deletedAt: null,
+      },
+      select: { artistId: true },
+    });
+
+    // IDs únicos de artistas ocupados
+    return [...new Set(bookings.map((b) => b.artistId))];
   }
 }
 

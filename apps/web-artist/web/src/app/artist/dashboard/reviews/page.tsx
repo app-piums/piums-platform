@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
+import { ReportModal } from '@/components/ReportModal';
+import { toast } from '@/lib/toast';
 
 export default function ArtistReviewsPage() {
   const router = useRouter();
@@ -17,6 +20,8 @@ export default function ArtistReviewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [respondingToReviewId, setRespondingToReviewId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState('');
 
   const loadReviews = useCallback(async () => {
     try {
@@ -42,7 +47,10 @@ export default function ArtistReviewsPage() {
       console.error('Error loading reviews:', message);
       setError(message || 'Error al cargar las reviews');
 
-      if (isUnauthorizedError(err)) {
+      if (isArtistNotFoundError(err)) {
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        router.push('/artist/onboarding');
+      } else if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/reviews');
       }
     } finally {
@@ -56,13 +64,13 @@ export default function ArtistReviewsPage() {
 
   const handleRespond = async (reviewId: string) => {
     if (!responseText.trim()) {
-      alert('Por favor escribe una respuesta');
+      toast.warning('Por favor escribe una respuesta');
       return;
     }
 
     try {
       await sdk.respondToReview(reviewId, responseText);
-      alert('Respuesta publicada exitosamente');
+      toast.success('Respuesta publicada exitosamente');
       
       // Recargar reviews
       await loadReviews();
@@ -72,7 +80,23 @@ export default function ArtistReviewsPage() {
     } catch (err: unknown) {
       const message = getErrorMessage(err);
       console.error('Error responding to review:', message);
-      alert(message || 'Error al responder la review');
+      toast.error(message || 'Error al responder la review');
+    }
+  };
+
+  const handleOpenReport = (reviewId: string) => {
+    setSelectedReviewId(reviewId);
+    setIsReportModalOpen(true);
+  };
+
+  const handleReportSubmit = async (reviewId: string, reason: string, description: string) => {
+    try {
+      await sdk.reportReview(reviewId, { reason, description });
+      toast.success('Reporte enviado correctamente. El equipo de moderación lo revisará.');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      console.error('Error reporting review:', message);
+      toast.error(message || 'Error al enviar el reporte');
     }
   };
 
@@ -91,6 +115,7 @@ export default function ArtistReviewsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistReviewsTour" />
       
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
@@ -137,7 +162,7 @@ export default function ArtistReviewsPage() {
                         <div>
                           {renderStars(review.rating)}
                           <p className="text-sm text-gray-500 mt-1">
-                            {new Date(review.createdAt).toLocaleDateString('es-MX', {
+                            {new Date(review.createdAt).toLocaleDateString('es-GT', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric',
@@ -184,7 +209,7 @@ export default function ArtistReviewsPage() {
                           </p>
                           <p className="text-gray-800">{review.response.message}</p>
                           <p className="text-xs text-gray-500 mt-2">
-                            {new Date(review.response.createdAt).toLocaleDateString('es-MX')}
+                            {new Date(review.response.createdAt).toLocaleDateString('es-GT')}
                           </p>
                         </div>
                       ) : (
@@ -219,11 +244,23 @@ export default function ArtistReviewsPage() {
                           ) : (
                             <button
                               onClick={() => setRespondingToReviewId(review.id)}
-                              className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                              className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm flex items-center gap-1.5"
                             >
-                              💬 Responder
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Responder
                             </button>
                           )}
+                          <button
+                            onClick={() => handleOpenReport(review.id)}
+                            className="mt-4 px-4 py-2 text-red-500 hover:text-red-600 transition-colors text-sm font-medium flex items-center gap-1"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            Reportar
+                          </button>
                         </>
                       )}
                     </div>
@@ -273,6 +310,13 @@ export default function ArtistReviewsPage() {
           )}
         </div>
       </main>
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reviewId={selectedReviewId}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 }

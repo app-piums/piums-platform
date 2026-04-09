@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Conversation, Message } from '@/types/chat';
 import { ConversationList } from '@/components/chat/ConversationList';
@@ -12,10 +13,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 
 const CHAT_SOCKET_URL =
-  process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4007';
+  process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4010';
 
-export default function ChatPage() {
+function ChatPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -106,9 +108,20 @@ export default function ChatPage() {
         const data = await res.json();
         const convList: Conversation[] = data.conversations ?? data ?? [];
         setConversations(convList);
-        if (convList.length > 0) {
-          setCurrentConversation(convList[0]);
-          const msgRes = await fetch(`/api/chat/messages/${convList[0].id}`, { credentials: 'include' });
+
+        // Auto-select conversation by ?artistId query param, else fall back to first
+        const targetArtistId = searchParams?.get('artistId');
+        const targetBookingId = searchParams?.get('bookingId');
+        let target = convList[0] ?? null;
+        if (targetArtistId) {
+          target = convList.find(c => c.artistId === targetArtistId) ?? convList[0] ?? null;
+        } else if (targetBookingId) {
+          target = convList.find(c => c.bookingId === targetBookingId) ?? convList[0] ?? null;
+        }
+
+        if (target) {
+          setCurrentConversation(target);
+          const msgRes = await fetch(`/api/chat/messages/${target.id}`, { credentials: 'include' });
           if (msgRes.ok) {
             const msgData = await msgRes.json();
             setMessages(msgData.messages ?? msgData ?? []);
@@ -168,7 +181,7 @@ export default function ChatPage() {
       if (!res.ok) throw new Error('Error al enviar mensaje');
       const msg = await res.json();
       const newMsg: Message = msg.message ?? msg;
-      setMessages(prev => [...prev, newMsg]);
+      setMessages(prev => (prev.find(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
       setConversations(prev =>
         prev.map(c =>
           c.id === currentConversation.id
@@ -200,6 +213,7 @@ export default function ChatPage() {
   return (
     <div className="flex bg-gray-50 overflow-hidden" style={{ height: '100dvh' }}>
       <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+        <PageHelpButton tourId="chatTour" />
 
       {/* Main Chat Layout */}
       <div className="flex flex-1 overflow-hidden relative pt-14 lg:pt-0">
@@ -260,7 +274,12 @@ export default function ChatPage() {
                 onSendMessage={handleSendMessage}
                 onTypingStart={handleTypingStart}
                 onTypingStop={handleTypingStop}
-                disabled={isSending}
+                disabled={isSending || currentConversation?.status === 'PENDING'}
+                disabledReason={
+                  currentConversation?.status === 'PENDING'
+                    ? 'En espera de confirmación de reserva para habilitar el chat'
+                    : undefined
+                }
               />
             </>
           ) : (
@@ -279,5 +298,13 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<Loading fullScreen />}>
+      <ChatPageInner />
+    </Suspense>
   );
 }

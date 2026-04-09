@@ -32,7 +32,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00] mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando mensajes...</p>
         </div>
       </div>
@@ -43,7 +43,11 @@ export const MessageList: React.FC<MessageListProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="text-6xl mb-4">💬</div>
+          <div className="flex justify-center mb-4">
+            <svg className="h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No hay mensajes todavía
           </h3>
@@ -62,7 +66,10 @@ export const MessageList: React.FC<MessageListProps> = ({
           <MessageBubble
             key={message.id}
             message={message}
-            isOwnMessage={message.senderId === currentUserId}
+            isOwnMessage={
+              message.senderId === currentUserId || 
+              (message.senderType === 'artist' && currentUserId !== 'me')
+            }
           />
         ))}
         

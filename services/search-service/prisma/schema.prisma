@@ -39,6 +39,10 @@ model ArtistIndex {
   // Pricing
   hourlyRateMin     Float?
   hourlyRateMax     Float?
+
+  // Servicio principal (para mostrar precio en listado)
+  mainServicePrice  Float?
+  mainServiceName   String?
   
   // Status
   isVerified        Boolean @default(false)
@@ -53,6 +57,11 @@ model ArtistIndex {
   // Full-text search fields
   searchVector      Unsupported("tsvector")?
   
+  // Absence tracking (synced from artists-service blackouts)
+  activeAbsenceType   String?   // 'VACATION' | 'WORKING_ABROAD' | null
+  activeAbsenceUntil  DateTime? // When the current absence ends
+  activeAbsenceDest   String?   // Destination country ISO code (when WORKING_ABROAD)
+
   // Metadata
   lastSyncedAt      DateTime @default(now())
   createdAt         DateTime @default(now())
@@ -65,6 +74,7 @@ model ArtistIndex {
   @@index([hourlyRateMin])
   @@index([isActive])
   @@index([isAvailable])
+  @@index([activeAbsenceType])
 }
 
 // Service Search Index - Denormalized data for fast search
@@ -100,6 +110,9 @@ model ServiceIndex {
   artistReviews     Int      @default(0)
   artistBookings    Int      @default(0)
   
+  // Servicio principal
+  isMainService     Boolean  @default(false)
+
   // Status
   isActive          Boolean  @default(true)
   isAvailable       Boolean  @default(true)

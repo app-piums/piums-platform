@@ -5,6 +5,7 @@ import {
   getConversation,
   createConversation,
   markConversationAsRead,
+  activateConversation,
 } from '../controller/conversations.controller';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.get('/', getConversations);
 router.get('/:id', getConversation);
 router.post('/', createConversation);
 router.patch('/:id/read', markConversationAsRead);
+router.patch('/booking/:bookingId/activate', activateConversation);
 
 export default router;

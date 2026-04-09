@@ -22,7 +22,16 @@ async function createUserAndRespond(
   nombre: string,
   email: string,
   password: string,
-  role: string
+  role: string,
+  extra?: {
+    ciudad?: string;
+    birthDate?: string;
+    documentType?: string;
+    documentNumber?: string;
+    documentFrontUrl?: string;
+    documentBackUrl?: string | null;
+    documentSelfieUrl?: string;
+  }
 ) {
   // Validar unicidad de email
   const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -42,6 +51,13 @@ async function createUserAndRespond(
       role,             // ✅ Guardar rol correcto (artista / cliente)
       emailVerified: isDev,
       status: userStatus,
+      ciudad: extra?.ciudad,
+      birthDate: extra?.birthDate ? new Date(extra.birthDate) : undefined,
+      documentType: extra?.documentType,
+      documentNumber: extra?.documentNumber,
+      documentFrontUrl: extra?.documentFrontUrl,
+      documentBackUrl: extra?.documentBackUrl ?? null,
+      documentSelfieUrl: extra?.documentSelfieUrl,
     },
   });
 
@@ -110,8 +126,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 // ─────────────────────────────────────────────────────────────────────────
 export const registerArtist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password } = registerArtistSchema.parse(req.body);
-    await createUserAndRespond(req, res, nombre, email, password, 'artista');
+    const { nombre, email, password, ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = registerArtistSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, 'artista', {
+      ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl,
+    });
   } catch (error: any) {
     logger.error("Error en registro de artista", "AUTH_CONTROLLER", { message: error.message });
     next(error);
@@ -123,8 +141,8 @@ export const registerArtist = async (req: Request, res: Response, next: NextFunc
 // ─────────────────────────────────────────────────────────────────────────
 export const registerClient = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password } = registerClientSchema.parse(req.body);
-    await createUserAndRespond(req, res, nombre, email, password, 'cliente');
+    const { nombre, email, password, ciudad, birthDate } = registerClientSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, 'cliente', { ciudad, birthDate });
   } catch (error: any) {
     logger.error("Error en registro de cliente", "AUTH_CONTROLLER", { message: error.message });
     next(error);
@@ -324,6 +342,14 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
         emailVerified: true,
         role: true,
         status: true,
+        avatar: true,
+        ciudad: true,
+        birthDate: true,
+        documentType: true,
+        documentNumber: true,
+        documentFrontUrl: true,
+        documentBackUrl: true,
+        documentSelfieUrl: true,
       },
     });
 
@@ -533,11 +559,199 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 // ========================================
 
 export const getMe = async (req: Request, res: Response) => {
-  // req.user is populated by isAdmin middleware
   const { id } = (req as any).user;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, nombre: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      nombre: true,
+      role: true,
+      avatar: true,
+      ciudad: true,
+      birthDate: true,
+      documentType: true,
+      documentNumber: true,
+      documentFrontUrl: true,
+      documentBackUrl: true,
+      documentSelfieUrl: true,
+    },
   });
+  if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user });
+};
+
+export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = (req as any).user;
+    const { ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = req.body;
+
+    const updateData: Record<string, unknown> = {};
+    if (ciudad !== undefined) updateData.ciudad = ciudad;
+    if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
+    if (documentType !== undefined) updateData.documentType = documentType;
+    if (documentNumber !== undefined) updateData.documentNumber = documentNumber;
+    if (documentFrontUrl !== undefined) updateData.documentFrontUrl = documentFrontUrl;
+    if (documentBackUrl !== undefined) updateData.documentBackUrl = documentBackUrl ?? null;
+    if (documentSelfieUrl !== undefined) updateData.documentSelfieUrl = documentSelfieUrl;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        role: true,
+        ciudad: true,
+        birthDate: true,
+        documentType: true,
+        documentNumber: true,
+        documentFrontUrl: true,
+        documentBackUrl: true,
+        documentSelfieUrl: true,
+      },
+    });
+
+    res.json({ user });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// POST /auth/firebase  — exchange Firebase ID token for a PIUMS JWT
+// ─────────────────────────────────────────────────────────────────────────
+export const firebaseLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { idToken, role = 'artista' } = req.body;
+
+    if (!idToken || typeof idToken !== 'string') {
+      throw new AppError(400, 'Firebase ID token requerido');
+    }
+
+    // Verify the Firebase ID token using the Identity Toolkit REST API
+    const firebaseApiKey = process.env.FIREBASE_API_KEY;
+    if (!firebaseApiKey) {
+      throw new AppError(500, 'Firebase API key no configurada en el servidor');
+    }
+
+    const tokenInfoRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+
+    if (!tokenInfoRes.ok) {
+      throw new AppError(401, 'Token de Google inválido o expirado');
+    }
+
+    const tokenData = await tokenInfoRes.json() as {
+      users?: Array<{
+        localId: string;
+        email: string;
+        displayName?: string;
+        photoUrl?: string;
+        emailVerified?: boolean;
+      }>;
+    };
+
+    const firebaseUser = tokenData.users?.[0];
+    if (!firebaseUser) {
+      throw new AppError(401, 'Token de Google inválido o expirado');
+    }
+
+    const { localId: googleId, email, displayName: name, photoUrl: picture } = firebaseUser;
+
+    if (!email) {
+      throw new AppError(400, 'No se pudo obtener el email desde Google');
+    }
+
+    // Find existing user by googleId or email
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ googleId }, { email }] },
+    });
+
+    if (user) {
+      // Update googleId if not set, and avatar if we have one
+      if (!user.googleId || (picture && !user.avatar)) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: user.googleId ?? googleId,
+            provider: user.provider ?? 'google',
+            avatar: user.avatar ?? picture ?? undefined,
+          },
+        });
+      }
+
+      // Check account status
+      if (user.status === 'BANNED') {
+        throw new AppError(403, 'Esta cuenta ha sido suspendida permanentemente');
+      }
+      if (user.status === 'SUSPENDED') {
+        throw new AppError(403, 'Esta cuenta está suspendida temporalmente');
+      }
+    } else {
+      // Create new artist account automatically via Google
+      user = await prisma.user.create({
+        data: {
+          nombre: name ?? email.split('@')[0],
+          email,
+          googleId,
+          provider: 'google',
+          avatar: picture ?? undefined,
+          role,
+          emailVerified: true,
+          status: 'ACTIVE',
+          passwordHash: null,
+        },
+      });
+      logger.info('New user via Firebase Google', 'AUTH_CONTROLLER', { userId: user.id, email });
+    }
+
+    // Issue PIUMS tokens
+    const jti = crypto.randomUUID();
+    const token = tokenService.signAccessToken({ id: user.id, email: user.email, role: user.role, jti });
+    const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
+
+    await tokenService.createRefreshToken(user.id, refreshToken, req.ip, req.get('user-agent'));
+    await prisma.session.create({
+      data: { jti, userId: user.id, ipAddress: req.ip, userAgent: req.get('user-agent'), expiresAt: new Date(Date.now() + 3600 * 1000) },
+    });
+
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), lastLoginIp: req.ip } });
+
+    const { passwordHash: _, ...userResponse } = user;
+
+    logger.info('Firebase Google login success', 'AUTH_CONTROLLER', { userId: user.id });
+
+    return res.json({ user: userResponse, token, refreshToken, isNewUser: !user.lastLoginAt || user.lastLoginAt.getTime() === user.createdAt.getTime() });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// PATCH /auth/complete-onboarding  — marca el onboarding como completado
+// ─────────────────────────────────────────────────────────────────────────
+export const completeOnboarding = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = (req as any).user;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { onboardingCompletedAt: new Date() },
+      select: { id: true, onboardingCompletedAt: true },
+    });
+
+    logger.info('Onboarding completed', 'AUTH_CONTROLLER', { userId: id });
+    res.json({ user });
+  } catch (error: any) {
+    next(error);
+  }
+};
 };

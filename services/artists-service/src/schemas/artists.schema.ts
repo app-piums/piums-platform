@@ -48,6 +48,9 @@ export const createArtistSchema = z.object({
   address: z.string().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  baseLocationLabel: z.string().min(2).max(120).optional(),
+  baseLocationLat: z.number().min(-90).max(90).optional(),
+  baseLocationLng: z.number().min(-180).max(180).optional(),
   coverageRadius: z.number().int().min(1).max(500, "Radio de cobertura debe ser entre 1 y 500 km").optional(),
   
   // Pricing
@@ -60,6 +63,9 @@ export const createArtistSchema = z.object({
   requiresDeposit: z.boolean().optional(),
   depositPercentage: z.number().int().min(0).max(100).optional(),
   
+  // Equipo propio del artista
+  equipment: z.array(z.string()).optional(),
+
   // Redes sociales
   website: z.string().url("URL inválida").optional(),
   instagram: z.string().optional(),
@@ -85,6 +91,9 @@ export const updateArtistSchema = z.object({
   address: z.string().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  baseLocationLabel: z.string().min(2).max(120).optional(),
+  baseLocationLat: z.number().min(-90).max(90).optional(),
+  baseLocationLng: z.number().min(-180).max(180).optional(),
   coverageRadius: z.number().int().min(1).max(500).optional(),
   
   hourlyRateMin: z.number().int().min(0).optional(),
@@ -95,6 +104,8 @@ export const updateArtistSchema = z.object({
   requiresDeposit: z.boolean().optional(),
   depositPercentage: z.number().int().min(0).max(100).optional(),
   
+  equipment: z.array(z.string()).optional(),
+
   website: z.string().url().optional(),
   instagram: z.string().optional(),
   facebook: z.string().optional(),
@@ -139,6 +150,7 @@ export const availabilitySchema = z.object({
 
 // Schema para búsqueda de artistas
 export const searchArtistsSchema = z.object({
+  q: z.string().optional(),
   category: ArtistCategoryEnum.optional(),
   city: z.string().optional(),
   country: z.string().optional(),

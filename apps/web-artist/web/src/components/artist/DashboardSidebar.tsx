@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
+import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 interface DashboardTab {
   id: string;
@@ -45,6 +48,18 @@ const tabs: DashboardTab[] = [
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
     href: '/artist/dashboard/services'
   },
+  {
+    id: 'ausencias',
+    label: 'Ausencias / Viajes',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    href: '/artist/dashboard/ausencias'
+  },
+  {
+    id: 'tutorial',
+    label: 'Tutorial',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>,
+    href: '/artist/tutorial'
+  },
 ];
 
 const financeLinks = [
@@ -66,17 +81,16 @@ interface NavContentProps {
   pathname: string | null;
   t: (key: string) => string;
   onNavigate: () => void;
+  user: any;
+  onLogout: () => void;
 }
 
-const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate }) => (
+const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate, user, onLogout }) => (
   <>
     {/* Logo */}
-    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+    <div className="px-6 py-2 border-b border-gray-100 flex items-center justify-between">
       <Link href="/artist/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
-        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-xl">P</span>
-        </div>
-        <span className="text-xl font-bold text-gray-900">PIUMS</span>
+        <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
       </Link>
       {/* Close button — mobile only */}
       <button
@@ -100,6 +114,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
           return (
             <Link
               key={tab.id}
+              id={`artist-nav-${tab.id}`}
               href={tab.href}
               onClick={onNavigate}
               className={`
@@ -132,6 +147,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
             return (
               <Link
                 key={link.id}
+                id={`artist-nav-${link.id}`}
                 href={link.href}
                 onClick={onNavigate}
                 className={`
@@ -155,6 +171,12 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
         <nav className="space-y-1">
           {[
             {
+              id: 'quejas',
+              label: 'Quejas',
+              href: '/artist/dashboard/quejas',
+              icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
+            },
+            {
               id: 'settings',
               label: 'Configuración',
               href: '/artist/dashboard/settings',
@@ -165,6 +187,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
             return (
               <Link
                 key={link.id}
+                id={`artist-nav-${link.id}`}
                 href={link.href}
                 onClick={onNavigate}
                 className={`
@@ -177,6 +200,20 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
               </Link>
             );
           })}
+          <button
+            onClick={() => {
+              onLogout();
+              onNavigate();
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-150"
+          >
+            <div className="text-red-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </div>
+            <span>Cerrar Sesión</span>
+          </button>
         </nav>
       </div>
     </div>
@@ -185,15 +222,13 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
     <div className="p-4 border-t border-gray-200">
       <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
         <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-          AM
+          {user?.nombre?.charAt(0).toUpperCase() || 'A'}
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-900">Alex Morgan</p>
-          <p className="text-xs text-gray-500">Pro Creative</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{user?.nombre || 'Artista'}</p>
+          <p className="text-xs text-gray-500 truncate">{user?.role === 'artista' ? 'Artista Pro' : 'Cliente'}</p>
         </div>
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ThemeToggle />
       </div>
     </div>
   </>
@@ -201,6 +236,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate 
 
 export const DashboardSidebar: React.FC = () => {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const { t } = useTranslation('menu');
   const [isOpen, setIsOpen] = useState(false);
   const handleClose = () => setIsOpen(false);
@@ -209,16 +245,13 @@ export const DashboardSidebar: React.FC = () => {
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 min-h-screen flex-col">
-        <SidebarNavContent pathname={pathname} t={t} onNavigate={() => {}} />
+        <SidebarNavContent pathname={pathname} t={t} onNavigate={() => {}} user={user} onLogout={logout} />
       </aside>
 
       {/* ── Mobile: top bar with hamburger ── */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <Link href="/artist/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">P</span>
-          </div>
-          <span className="text-lg font-bold text-gray-900">PIUMS</span>
+          <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
         </Link>
         <button
           onClick={() => setIsOpen(true)}
@@ -241,7 +274,7 @@ export const DashboardSidebar: React.FC = () => {
           />
           {/* Drawer panel */}
           <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
-            <SidebarNavContent pathname={pathname} t={t} onNavigate={handleClose} />
+            <SidebarNavContent pathname={pathname} t={t} onNavigate={handleClose} user={user} onLogout={logout} />
           </aside>
         </div>
       )}
