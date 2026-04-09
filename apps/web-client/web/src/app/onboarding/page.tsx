@@ -2,25 +2,38 @@
 
 import Image from 'next/image';
 import React, { useState } from 'react';
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 /* ─── Categorías de interés ─────────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: 'photography',     label: 'Fotografía',         subtitle: 'Retratos, eventos, editorial',    icon: CameraIcon   },
-  { id: 'graphic-design',  label: 'Diseño Gráfico',     subtitle: 'Branding, editorial, UI',          icon: PenIcon      },
-  { id: 'music-production',label: 'Producción Musical', subtitle: 'Beats, mezcla, masterización',     icon: MusicIcon    },
-  { id: 'performance',     label: 'Performance',        subtitle: 'Música en vivo, DJs, shows',       icon: MicIcon      },
-  { id: 'digital-art',     label: 'Arte Digital',       subtitle: 'Ilustración, 3D, animación',       icon: PaletteIcon  },
-  { id: 'video',           label: 'Video',              subtitle: 'Cinematografía, edición',          icon: VideoIcon    },
+  { id: 'live-music',      label: 'Música en Vivo',       subtitle: 'Bandas, solistas, acústico',           icon: MicIcon      },
+  { id: 'dj',              label: 'DJs & Electrónica',    subtitle: 'Fiestas, clubs, bodas',                icon: SoundwaveIcon},
+  { id: 'photography',     label: 'Fotografía',            subtitle: 'Eventos, retratos, bodas',             icon: CameraIcon   },
+  { id: 'video',           label: 'Video & Contenido',    subtitle: 'Clips, documentales, redes',           icon: VideoIcon    },
+  { id: 'graphic-design',  label: 'Diseño & Branding',    subtitle: 'Flyers, logos, portadas',              icon: PenIcon      },
+  { id: 'music-production',label: 'Producción Musical',   subtitle: 'Beats, mezcla, grabación',             icon: MusicIcon    },
+  { id: 'dance',           label: 'Danza & Performance',  subtitle: 'Urbano, clásico, shows',               icon: MicIcon      },
+  { id: 'tattoo',          label: 'Tatuaje & Body Art',   subtitle: 'Tattoo, piercing, body paint',         icon: PenIcon      },
+  { id: 'magic',           label: 'Magia & Entretenimiento', subtitle: 'Ilusionistas, malabaristas, circo',  icon: SoundwaveIcon},
+  { id: 'visual-art',      label: 'Arte Visual',          subtitle: 'Pintura, ilustración, escultura',     icon: PenIcon      },
+  { id: 'writing',         label: 'Escritura & Letras',   subtitle: 'Letristas, guionistas, contenidos',   icon: MusicIcon    },
+  { id: 'makeup',          label: 'Maquillaje & Estilismo', subtitle: 'Bodas, cine, teatro, pasarela',     icon: CameraIcon   },
 ];
 
 /* ─── Sub-etiquetas por categoría ────────────────────────────────────────── */
 const SUBCATEGORIES: Record<string, { sectionLabel: string; tags: string[] }> = {
-  'photography':      { sectionLabel: 'Estilos de Fotografía', tags: ['Retratos', 'Editorial', 'Eventos', 'Urbana', 'Film', 'Producto'] },
-  'graphic-design':   { sectionLabel: 'Diseño Visual',         tags: ['Branding & Identidad', 'Animación 3D', 'Tipografía', 'Ilustración', 'UX Design', 'Motion'] },
-  'music-production': { sectionLabel: 'Géneros Musicales',     tags: ['Jazz', 'Rock & Roll', 'Hip-Hop', 'Techno', 'Clásica', 'Indie Pop'] },
-  'performance':      { sectionLabel: 'Tipos de Performance',  tags: ['Banda en Vivo', 'Set DJ', 'Artista Solo', 'Comedia', 'Teatro', 'Danza'] },
-  'digital-art':      { sectionLabel: 'Estilos de Arte Digital',tags: ['Arte Conceptual', 'Diseño de Personajes', 'Modelado 3D', 'Motion Graphics', 'Pixel Art'] },
-  'video':            { sectionLabel: 'Estilos de Video',      tags: ['Cinematográfico', 'Documental', 'Comercial', 'Video Musical', 'Bodas', 'Cortometraje'] },
+  'live-music':       { sectionLabel: 'Estilo Musical',           tags: ['Banda de Rock', 'Jazz & Blues', 'Pop Acústico', 'Cantautor', 'Clásica', 'Folklore & Regional'] },
+  'dj':               { sectionLabel: 'Géneros & Ocasiones',      tags: ['House & Tech', 'Reggaeton & Urban', 'Pop & Comercial', 'Hip-Hop & Trap', 'DJ para Bodas', 'Festival & Club'] },
+  'photography':      { sectionLabel: 'Estilos de Fotografía',    tags: ['Eventos', 'Retratos', 'Editorial', 'Bodas', 'Producto', 'Urbana & Street'] },
+  'video':            { sectionLabel: 'Tipos de Video',           tags: ['Clips Musicales', 'Bodas & Celebraciones', 'Redes Sociales', 'Documental', 'Comercial', 'Cortometraje'] },
+  'graphic-design':   { sectionLabel: 'Servicios de Diseño',      tags: ['Logo & Identidad', 'Flyers & Carteles', 'Portadas de Álbum', 'Redes Sociales', 'Merch & Textil', 'Cartelería de Evento'] },
+  'music-production': { sectionLabel: 'Servicios de Estudio',     tags: ['Beat Making', 'Mezcla & Mastering', 'Grabación en Estudio', 'Composición', 'Arreglos', 'Jingle & Publicidad'] },
+  'dance':            { sectionLabel: 'Estilos de Danza',         tags: ['Urbano & Hip-Hop', 'Ballet Clásico', 'Contemporáneo', 'Latino & Salsa', 'Folklore', 'Show & Entretenimiento'] },
+  'tattoo':           { sectionLabel: 'Tipos de Tattoo & Art',    tags: ['Realismo', 'Geométrico', 'Minimalista', 'Neo-Tradicional', 'Line Art', 'Color & Acuarela'] },
+  'magic':            { sectionLabel: 'Tipos de Show',            tags: ['Magia de Cerca', 'Gran Ilusionismo', 'Malabares', 'Acrobacia', 'Circo', 'Fuego & Pirotecnia'] },
+  'visual-art':       { sectionLabel: 'Tipo de Arte',             tags: ['Pintura al Óleo', 'Acuarela', 'Ilustración Digital', 'Mural', 'Escultura', 'Arte Urbano'] },
+  'writing':          { sectionLabel: 'Tipo de Escritura',        tags: ['Letras de Canción', 'Guiones', 'Copywriting', 'Poesía', 'Contenidos Web', 'Libros & Narrativa'] },
+  'makeup':           { sectionLabel: 'Especialidad',             tags: ['Maquillaje de Bodas', 'Cine & Teatro', 'Efectos Especiales FX', 'Pasarela & Moda', 'Caracterización', 'Nail Art'] },
 };
 
 /* ─── Componente principal ───────────────────────────────────────────────── */
@@ -54,7 +67,7 @@ export default function ClientOnboardingPage() {
     });
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // Guardar preferencias en localStorage para uso futuro
     localStorage.setItem('piums_onboarding_done', '1');
     localStorage.setItem('piums_interests', JSON.stringify({
@@ -63,18 +76,37 @@ export default function ClientOnboardingPage() {
         Object.entries(selectedTags).map(([k, v]) => [k, [...v]])
       ),
     }));
+    // Marcar onboarding como completado en cookie para el middleware
+    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+    // Persistir fecha de onboarding en la base de datos
+    try {
+      await fetch('/api/auth/complete-onboarding', { method: 'PATCH', credentials: 'include' });
+    } catch {
+      // No bloquear la navegación si falla el registro
+    }
+    window.location.href = '/dashboard';
+  };
+
+  const handleSkip = async () => {
+    document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+    try {
+      await fetch('/api/auth/complete-onboarding', { method: 'PATCH', credentials: 'include' });
+    } catch {
+      // No bloquear la navegación si falla el registro
+    }
     window.location.href = '/dashboard';
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {step === 1 && <StepWelcome onStart={() => setStep(2)} />}
+      {step === 1 && <StepWelcome onStart={() => setStep(2)} onSkip={handleSkip} />}
       {step === 2 && (
         <StepInterests
           selected={selectedCategories}
           onToggle={toggleCategory}
           onContinue={() => setStep(3)}
           onBack={() => setStep(1)}
+          onSkip={handleSkip}
         />
       )}
       {step === 3 && (
@@ -84,6 +116,7 @@ export default function ClientOnboardingPage() {
           onToggleTag={toggleTag}
           onFinish={handleFinish}
           onBack={() => setStep(2)}
+          onSkip={handleSkip}
         />
       )}
     </div>
@@ -93,13 +126,13 @@ export default function ClientOnboardingPage() {
 /* ════════════════════════════════════════════════════════════════════════════
    STEP 1 — Welcome
    ════════════════════════════════════════════════════════════════════════════ */
-function StepWelcome({ onStart }: { onStart: () => void }) {
+function StepWelcome({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
   return (
-    <div className="flex-1 flex flex-col min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-orange-50/30 to-white">
+    <div className="flex-1 flex flex-col min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-orange-50/30 to-white dark:from-[#0F172A] dark:via-[#1E293B]/40 dark:to-[#0F172A] piums-fade-in">
       {/* Top bar */}
       <header className="flex items-center justify-between px-8 pt-8">
         <PiumsLogo />
-        <MoonIcon className="h-6 w-6 text-gray-300" />
+        <ThemeToggle />
       </header>
 
       {/* Content */}
@@ -128,7 +161,7 @@ function StepWelcome({ onStart }: { onStart: () => void }) {
                 <ArrowRightIcon className="h-4 w-4" />
               </button>
               <button
-                onClick={() => { window.location.href = '/dashboard'; }}
+                onClick={onSkip}
                 className="text-gray-500 hover:text-gray-800 font-medium transition-colors"
               >
                 Omitir
@@ -141,7 +174,7 @@ function StepWelcome({ onStart }: { onStart: () => void }) {
                 {['from-rose-400 to-pink-600', 'from-violet-400 to-purple-600', 'from-amber-400 to-orange-500'].map((g, i) => (
                   <div
                     key={i}
-                    className={`h-9 w-9 rounded-full bg-gradient-to-br ${g} border-2 border-white flex items-center justify-center text-white text-xs font-bold`}
+                    className={`h-9 w-9 rounded-full bg-gradient-to-br ${g} border-2 border-white dark:border-[#1E293B] flex items-center justify-center text-white text-xs font-bold`}
                   >
                     {['A', 'B', 'C'][i]}
                   </div>
@@ -207,14 +240,16 @@ function StepInterests({
   onToggle,
   onContinue,
   onBack,
+  onSkip,
 }: {
   selected: Set<string>;
   onToggle: (id: string) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }) {
   return (
-    <div className="flex-1 flex flex-col px-6 py-8 max-w-2xl mx-auto w-full">
+    <div className="flex-1 flex flex-col px-6 py-8 max-w-2xl mx-auto w-full piums-fade-in">
       {/* Top */}
       <div className="flex items-center justify-between mb-8">
         <PiumsLogo />
@@ -274,7 +309,7 @@ function StepInterests({
         Continuar →
       </button>
       <button
-        onClick={() => { window.location.href = '/dashboard'; }}
+        onClick={onSkip}
         className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
       >
         Omitir por ahora
@@ -299,18 +334,20 @@ function StepRefine({
   onToggleTag,
   onFinish,
   onBack,
+  onSkip,
 }: {
   categories: string[];
   selectedTags: Record<string, Set<string>>;
   onToggleTag: (catId: string, tag: string) => void;
   onFinish: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }) {
   // Si no seleccionó categorías, mostrar todas
   const toShow = categories.length > 0 ? categories : CATEGORIES.map(c => c.id);
 
   return (
-    <div className="flex-1 flex flex-col px-6 py-8 max-w-2xl mx-auto w-full">
+    <div className="flex-1 flex flex-col px-6 py-8 max-w-2xl mx-auto w-full piums-fade-in">
       {/* Top */}
       <div className="flex items-center justify-between mb-8">
         <PiumsLogo />
@@ -333,21 +370,34 @@ function StepRefine({
       </p>
 
       {/* Sections */}
-      <div className="space-y-6 mb-10 overflow-y-auto max-h-[420px] pr-1">
+      <div className="space-y-4 mb-10 overflow-y-auto max-h-[440px] pr-1">
         {toShow.map(catId => {
           const sub = SUBCATEGORIES[catId];
           if (!sub) return null;
           const catInfo = CATEGORIES.find(c => c.id === catId);
           const Icon = catInfo?.icon ?? MusicIcon;
           const activeTags = selectedTags[catId] ?? new Set();
+          const activeCount = activeTags.size;
           return (
-            <div key={catId}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-5 w-5 rounded text-[#FF6A00]">
-                  <Icon className="h-5 w-5" />
+            <div key={catId} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+              {/* Category header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-xl bg-[#FF6A00]/10 flex items-center justify-center text-[#FF6A00]">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 leading-none mb-0.5">{catInfo?.label}</p>
+                    <p className="text-sm font-semibold text-gray-800 leading-none">{sub.sectionLabel}</p>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-800">{sub.sectionLabel}</span>
+                {activeCount > 0 && (
+                  <span className="text-xs font-semibold bg-[#FF6A00] text-white rounded-full px-2 py-0.5">
+                    {activeCount}
+                  </span>
+                )}
               </div>
+              {/* Tags */}
               <div className="flex flex-wrap gap-2">
                 {sub.tags.map(tag => {
                   const active = activeTags.has(tag);
@@ -355,10 +405,10 @@ function StepRefine({
                     <button
                       key={tag}
                       onClick={() => onToggleTag(catId, tag)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
                         active
-                          ? 'bg-[#FF6A00] border-[#FF6A00] text-white'
-                          : 'border-gray-200 text-gray-600 hover:border-[#FF6A00] hover:text-[#FF6A00]'
+                          ? 'bg-[#FF6A00] border-[#FF6A00] text-white shadow-sm shadow-orange-200/60'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-[#FF6A00] hover:text-[#FF6A00]'
                       }`}
                     >
                       {tag}
@@ -379,7 +429,7 @@ function StepRefine({
         Ir a mi Dashboard →
       </button>
       <button
-        onClick={() => { window.location.href = '/dashboard'; }}
+        onClick={onSkip}
         className="mt-3 text-sm text-gray-400 hover:text-gray-600 text-center w-full transition-colors"
       >
         Omitir por ahora
@@ -402,7 +452,7 @@ function StepRefine({
    Shared UI
    ════════════════════════════════════════════════════════════════════════════ */
 function PiumsLogo() {
-  return <Image src="/logo.jpg" alt="PIUMS" width={100} height={34} className="h-8 w-auto" />;
+  return <Image src="/logo.png" alt="PIUMS" width={32} height={32} className="h-8 w-auto" />;
 }
 
 /* ─── Icons (inline SVG para no depender de librerías) ───────────────────── */
@@ -467,13 +517,6 @@ function ChevronLeftIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-  );
-}
-function MoonIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
     </svg>
   );
 }

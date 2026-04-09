@@ -70,3 +70,18 @@ export const markConversationAsRead = async (req: AuthRequest, res: Response, ne
     next(error);
   }
 };
+
+export const activateConversation = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { bookingId } = req.params;
+    const conversation = await chatService.activateConversationByBookingId(bookingId);
+    
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversación no encontrada para este booking' });
+    }
+
+    res.json({ conversation, message: 'Conversación activada' });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -122,6 +122,18 @@ router.patch(
   catalogController.toggleServiceStatus.bind(catalogController)
 );
 
+/**
+ * PATCH /api/services/:id/set-main
+ * Establecer servicio como servicio principal del artista
+ * Requiere autenticación (propietario del servicio)
+ */
+router.patch(
+  "/services/:id/set-main",
+  authenticateToken,
+  updateLimiter,
+  catalogController.setMainService.bind(catalogController)
+);
+
 // ==================== ADD-ONS ====================
 
 /**

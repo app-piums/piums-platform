@@ -56,11 +56,15 @@ export default function OAuthCallbackPage() {
 
           login(user);
 
-          // Redirect to home or dashboard
-          router.push('/');
+          // Para clientes OAuth: resetear onboarding para que el middleware
+          // redirija si es primer ingreso
+          if ((decoded.role || 'cliente') === 'cliente') {
+            document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+          }
+
+          router.push('/dashboard');
         } catch (decodeError) {
           console.error('Error decoding token:', decodeError);
-          // Even if decode fails, token is saved, redirect to home
           router.push('/');
         }
       } catch (err) {

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTranslation } from "next-i18next";
+import { useTranslation } from "react-i18next";
 import Image from "next/image";
 import Link from "next/link";
 import { countries, type Country } from "../../lib/countries";
 import PasswordStrengthIndicator, { calculatePasswordStrength } from "../../components/PasswordStrengthIndicator";
 import { useAuth } from "../../contexts/AuthContext";
 import { Footer } from "@/components/Footer";
+import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
+import { sdk } from '@piums/sdk';
 
 interface FieldError {
   nombre?: string;
@@ -17,6 +20,8 @@ interface FieldError {
   terms?: string;
   pais?: string;
   telefono?: string;
+  ciudad?: string;
+  birthDate?: string;
 }
 
 export default function RegisterPage() {
@@ -32,6 +37,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [telefono, setTelefono] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -42,6 +49,37 @@ export default function RegisterPage() {
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleRegister = async () => {
+    setGoogleLoading(true);
+    setGeneralError("");
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+
+      const response = await fetch('/api/auth/firebase-google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Error al autenticar con Google');
+
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        sdk.setAuthToken(data.token);
+      }
+      if (data.user) login(data.user);
+      window.location.href = '/dashboard';
+    } catch (err: unknown) {
+      setGeneralError(err instanceof Error ? err.message : 'Error al registrarse con Google');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   // Auto-focus en primer campo con error
   useEffect(() => {
@@ -88,6 +126,17 @@ export default function RegisterPage() {
           return t('errorTelefonoRequired');
         if ((value as string).length < 8) 
           return t('errorTelefonoInvalid');
+        return "";
+      case "ciudad":
+        if (!value || typeof value !== 'string' || !value.trim())
+          return "Ingresa tu ciudad";
+        return "";
+      case "birthDate":
+        if (!value || typeof value !== 'string') return "Ingresa tu fecha de nacimiento";
+        const bd = new Date(value);
+        if (isNaN(bd.getTime())) return "Fecha inválida";
+        const age = (Date.now() - bd.getTime()) / (365.25 * 24 * 3600 * 1000);
+        if (age < 18) return "Debes ser mayor de 18 años para registrarte";
         return "";
       case "terms":
         if (!value) 
@@ -205,6 +254,10 @@ export default function RegisterPage() {
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
+      pais: validateField("pais", selectedCountry?.code || ""),
+      telefono: validateField("telefono", telefono),
+      ciudad: validateField("ciudad", ciudad),
+      birthDate: validateField("birthDate", birthDate),
       terms: validateField("terms", acceptTerms),
     };
 
@@ -214,6 +267,10 @@ export default function RegisterPage() {
       email: true,
       password: true,
       confirmPassword: true,
+      pais: true,
+      telefono: true,
+      ciudad: true,
+      birthDate: true,
       terms: true,
     });
 
@@ -234,6 +291,8 @@ export default function RegisterPage() {
           nombre,
           email,
           password,
+          ciudad: ciudad || undefined,
+          birthDate: birthDate || undefined,
         }),
         credentials: 'include', // 🔒 Importante para cookies httpOnly
       });
@@ -291,10 +350,10 @@ export default function RegisterPage() {
           <div className="text-center">
             <div className="flex justify-center mb-6">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.png" 
                 alt="Piúms" 
-                width={150} 
-                height={50}
+                width={48} 
+                height={48}
                 priority
                 className="h-12 w-auto"
               />
@@ -540,6 +599,55 @@ export default function RegisterPage() {
                   </p>
                 </div>
 
+                {/* Ciudad */}
+                <div>
+                  <label htmlFor="ciudad" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                    Ciudad <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="ciudad"
+                    name="ciudad"
+                    type="text"
+                    value={ciudad}
+                    onChange={(e) => setCiudad(e.target.value)}
+                    onBlur={(e) => handleBlur("ciudad", e.target.value)}
+                    className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 ${
+                      touched.ciudad && errors.ciudad
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "border-zinc-300 focus:border-zinc-500 focus:ring-zinc-500 dark:border-zinc-700"
+                    }`}
+                    placeholder="Ej: Guatemala City, Quetzaltenango…"
+                  />
+                  {touched.ciudad && errors.ciudad && (
+                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.ciudad}</p>
+                  )}
+                </div>
+
+                {/* Fecha de nacimiento */}
+                <div>
+                  <label htmlFor="birthDate" className="block text-sm font-medium text-zinc-700 mb-1 dark:text-zinc-300">
+                    Fecha de nacimiento <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="birthDate"
+                    name="birthDate"
+                    type="date"
+                    max={new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000).toISOString().split('T')[0]}
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    onBlur={(e) => handleBlur("birthDate", e.target.value)}
+                    className={`block w-full rounded-lg border px-4 py-3 text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-50 ${
+                      touched.birthDate && errors.birthDate
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "border-zinc-300 focus:border-zinc-500 focus:ring-zinc-500 dark:border-zinc-700"
+                    }`}
+                  />
+                  {touched.birthDate && errors.birthDate && (
+                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.birthDate}</p>
+                  )}
+                  <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">Debes ser mayor de 18 años</p>
+                </div>
+
                 {/* Términos y condiciones */}
                 <div>
                   <label className="flex items-start gap-3 cursor-pointer">
@@ -599,6 +707,50 @@ export default function RegisterPage() {
             )}
 
             <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <p className="text-center text-xs text-zinc-400">o regístrate con</p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={handleGoogleRegister}
+                  disabled={googleLoading}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {googleLoading ? (
+                    <svg className="h-4 w-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                  )}
+                  Google
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = `/api/auth/facebook`; }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
+                >
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="#1877F2">
+                    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.514c-1.491 0-1.956.93-1.956 1.875v2.256h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                  </svg>
+                  Facebook
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = `/api/auth/tiktok`; }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
+                >
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/>
+                  </svg>
+                  TikTok
+                </button>
+              </div>
               <div className="text-center text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">¿Ya tienes cuenta? </span>
                 <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-50">

@@ -10,11 +10,15 @@
   },
   "dependencies": {
     "@piums/sdk": "workspace:*",
+    "firebase": "^12.11.0",
+    "i18next": "^23.11.5",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
-    "next-i18next": "15.4.2",
+    "nextstepjs": "^2.2.0",
+    "pigeon-maps": "^0.22.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-i18next": "^15.0.1",
     "socket.io-client": "^4.6.1",
     "yet-another-react-lightbox": "^3.15.0"
   },

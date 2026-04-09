@@ -5,7 +5,7 @@ const MAX_RATING = parseInt(process.env.MAX_RATING || "5");
 
 // Schema para crear una reseña
 export const createReviewSchema = z.object({
-  bookingId: z.string().uuid("bookingId debe ser un UUID válido"),
+  bookingId: z.string().min(1, "bookingId es requerido"),
   rating: z
     .number()
     .int("Rating debe ser un número entero")
@@ -13,7 +13,7 @@ export const createReviewSchema = z.object({
     .max(MAX_RATING, `Rating máximo es ${MAX_RATING}`),
   comment: z
     .string()
-    .min(10, "El comentario debe tener al menos 10 caracteres")
+    .min(3, "El comentario debe tener al menos 3 caracteres")
     .max(2000, "El comentario no puede exceder 2000 caracteres")
     .optional(),
   photos: z
@@ -37,7 +37,7 @@ export const updateReviewSchema = z.object({
     .optional(),
   comment: z
     .string()
-    .min(10, "El comentario debe tener al menos 10 caracteres")
+    .min(3, "El comentario debe tener al menos 3 caracteres")
     .max(2000, "El comentario no puede exceder 2000 caracteres")
     .optional(),
 });
@@ -62,9 +62,9 @@ export const reportReviewSchema = z.object({
 
 // Schema para filtrar reseñas
 export const filterReviewsSchema = z.object({
-  artistId: z.string().uuid().optional(),
-  clientId: z.string().uuid().optional(),
-  serviceId: z.string().uuid().optional(),
+  artistId: z.string().optional(),
+  clientId: z.string().optional(),
+  serviceId: z.string().optional(),
   rating: z.coerce.number().int().min(MIN_RATING).max(MAX_RATING).optional(),
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "HIDDEN"]).optional(),
   hasComment: z.coerce.boolean().optional(),

@@ -17,8 +17,24 @@ interface AccessTokenPayload {
 }
 
 export class TokenService {
-  private readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-  private readonly JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+  private readonly JWT_SECRET: string;
+  private readonly JWT_REFRESH_SECRET: string;
+
+  constructor() {
+    const secret = process.env.JWT_SECRET;
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+    if (!secret || !refreshSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('FATAL: JWT_SECRET / JWT_REFRESH_SECRET no definidos en producción', 'TOKEN_SERVICE');
+        process.exit(1);
+      }
+      logger.warn('JWT secrets no definidos — usando placeholders de desarrollo (NO USAR EN PRODUCCIÓN)', 'TOKEN_SERVICE');
+    }
+
+    this.JWT_SECRET = secret || 'dev_jwt_CHANGE_ME_NOT_FOR_PRODUCTION';
+    this.JWT_REFRESH_SECRET = refreshSecret || 'dev_refresh_CHANGE_ME_NOT_FOR_PRODUCTION';
+  }
   private readonly JWT_EXPIRY = process.env.JWT_EXPIRY || '15m';
   private readonly JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 
@@ -198,7 +214,7 @@ export class TokenService {
       // Obtener usuario para generar nuevo access token
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true },
+        select: { id: true, email: true, role: true },
       });
 
       if (!user) {
@@ -210,6 +226,7 @@ export class TokenService {
       const newAccessToken = this.signAccessToken({
         id: user.id,
         email: user.email,
+        role: user.role,
         jti,
       });
       const newRefreshToken = this.signRefreshToken({ id: user.id, jti });

@@ -44,7 +44,18 @@ export const updateMyProfile = async (
     }
 
     const artist = await artistsService.getArtistByAuthId(authId);
-    const updatedArtist = await artistsService.updateArtist(artist.id, req.body);
+
+    // Allowlist: only permit safe fields to prevent mass-assignment
+    const ALLOWED_FIELDS = [
+      'bio', 'displayName', 'nombre', 'phone', 'location', 'cityId',
+      'category', 'socialLinks', 'imageUrl', 'basePrice', 'experienceYears',
+      'availability', 'languages', 'tags', 'portfolioItems',
+    ];
+    const safeBody = Object.fromEntries(
+      Object.entries(req.body).filter(([k]) => ALLOWED_FIELDS.includes(k))
+    );
+
+    const updatedArtist = await artistsService.updateArtist(artist.id, safeBody);
 
     logger.info("Perfil actualizado desde dashboard", "ARTIST_DASHBOARD", { artistId: artist.id });
     res.json({ artist: updatedArtist, message: "Perfil actualizado exitosamente" });
@@ -115,16 +126,13 @@ export const acceptBooking = async (
       throw new AppError(401, "No autenticado");
     }
     const artist = await artistsService.getArtistByAuthId(authId);
-    const bookingId = req.params.id;
-    // TODO: Llamar al booking-service para aceptar la reserva
-    // const success = await bookingServiceClient.confirmBooking(bookingId, artist.id);
-    // if (!success) {
-    //   throw new AppError(500, "Error al aceptar la reserva");
-    // }
-
-    // TODO: Llamar al booking-service para aceptar la reserva
-    // Verificar que la reserva pertenezca al artista
-    // Cambiar status a CONFIRMED
+    const bookingId = req.params.id as string;
+    const authToken = req.headers.authorization?.substring(7);
+    const success = await bookingServiceClient.confirmBooking(bookingId, artist.id, authToken);
+    
+    if (!success) {
+      throw new AppError(500, "Error al aceptar la reserva");
+    }
 
     logger.info("Reserva aceptada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
     res.json({ 
@@ -153,11 +161,13 @@ export const declineBooking = async (
     const artist = await artistsService.getArtistByAuthId(authId);
     const bookingId = req.params.id as string;
     const reason = req.body.reason as string | undefined;
+    const authToken = req.headers.authorization?.substring(7);
     // TODO: Llamar al booking-service para rechazar la reserva
     const success = await bookingServiceClient.rejectBooking(
       bookingId,
       artist.id,
-      reason || "Sin razón especificada"
+      reason || "Sin razón especificada",
+      authToken
     );
 
     if (!success) {
@@ -178,9 +188,76 @@ export const declineBooking = async (
 };
 
 /**
- * GET /api/artists/me/stats - Obtener estadísticas del artista
+ * PATCH /api/artists/me/bookings/:id/complete - Marcar reserva como completada
  */
+export const completeBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const bookingId = req.params.id as string;
+    const authToken = req.headers.authorization?.substring(7);
+    const success = await bookingServiceClient.completeBooking(bookingId, artist.id, authToken);
 
+    if (!success) {
+      throw new AppError(500, "Error al completar la reserva");
+    }
+
+    logger.info("Reserva completada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
+    res.json({
+      message: "Reserva marcada como completada",
+      bookingId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/artists/dashboard/me/bookings/:id/cancel - Cancelar reserva como artista
+ */
+export const cancelBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) {
+      throw new AppError(401, "No autenticado");
+    }
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const bookingId = req.params.id as string;
+    const { reason } = req.body as { reason?: string };
+    if (!reason || reason.trim().length < 10) {
+      throw new AppError(400, "La razón debe tener al menos 10 caracteres");
+    }
+    const authToken = req.headers.authorization?.substring(7);
+    const success = await bookingServiceClient.cancelBooking(bookingId, artist.id, reason.trim(), authToken);
+
+    if (!success) {
+      throw new AppError(500, "Error al cancelar la reserva");
+    }
+
+    logger.info("Reserva cancelada", "ARTIST_DASHBOARD", { artistId: artist.id, bookingId });
+    res.json({
+      message: "Reserva cancelada",
+      bookingId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/artists/dashboard/me/stats - Obtener estadísticas del artista
+ */
 export const getMyStats = async (
   req: AuthRequest,
   res: Response,

@@ -39,9 +39,7 @@ export interface PriceCalculationInput {
   serviceId: string;
   durationMinutes?: number; // Para servicios con pricing por tiempo
   selectedAddonIds?: string[]; // IDs de los addons seleccionados
-  distanceKm?: number; // Distancia para calcular costos de viaje
-  locationLat?: number; // Coordenadas para calcular distancia automáticamente
-  locationLng?: number;
+  distanceKm?: number; // Distancia en km (pre-calculada por el caller)
   discountCode?: string; // Código de descuento (futuro)
 }
 
@@ -72,65 +70,78 @@ export const calculateServicePrice = async (
   }
 
   const pricing = service.pricing;
-  if (!pricing) {
-    throw new Error(`Service pricing not configured: ${serviceId}`);
-  }
-
   const travelRules = service.travelRules;
 
   const items: PriceItem[] = [];
-  const currency = pricing.currency;
 
   // ==================== CALCULAR PRECIO BASE ====================
 
-  let basePriceCents = pricing.basePriceCents;
+  let basePriceCents: number;
+  let currency: string;
 
-  switch (pricing.pricingModel) {
-    case 'FIXED':
-      // Precio fijo, sin cálculos adicionales
-      items.push({
-        type: 'BASE',
-        name: service.name,
-        qty: 1,
-        unitPriceCents: basePriceCents,
-        totalPriceCents: basePriceCents,
-      });
-      break;
+  if (!pricing) {
+    // Fallback: usar basePrice del servicio cuando no hay pricing avanzado configurado
+    basePriceCents = service.basePrice || 0;
+    currency = service.currency || 'GTQ';
 
-    case 'BASE_PLUS_HOURLY':
-    case 'PACKAGE':
-      // Precio base + minutos adicionales
-      if (!durationMinutes) {
-        throw new Error('durationMinutes is required for this pricing model');
-      }
+    items.push({
+      type: 'BASE',
+      name: service.name,
+      qty: 1,
+      unitPriceCents: basePriceCents,
+      totalPriceCents: basePriceCents,
+    });
+  } else {
+    basePriceCents = pricing.basePriceCents;
+    currency = pricing.currency;
 
-      const includedMinutes = pricing.includedMinutes || 0;
-      const extraMinutes = Math.max(0, durationMinutes - includedMinutes);
-      const extraMinuteCost = pricing.extraMinutePriceCents || 0;
-      const totalExtraCost = extraMinutes * extraMinuteCost;
-
-      // Item del precio base
-      items.push({
-        type: 'BASE',
-        name: `${service.name} (incluye ${includedMinutes} min)`,
-        qty: 1,
-        unitPriceCents: basePriceCents,
-        totalPriceCents: basePriceCents,
-      });
-
-      // Item de minutos adicionales (si aplica)
-      if (extraMinutes > 0) {
+    switch (pricing.pricingModel) {
+      case 'FIXED':
+        // Precio fijo, sin cálculos adicionales
         items.push({
           type: 'BASE',
-          name: `Tiempo adicional (${extraMinutes} min)`,
-          qty: extraMinutes,
-          unitPriceCents: extraMinuteCost,
-          totalPriceCents: totalExtraCost,
-          metadata: { includedMinutes, extraMinutes },
+          name: service.name,
+          qty: 1,
+          unitPriceCents: basePriceCents,
+          totalPriceCents: basePriceCents,
         });
-        basePriceCents += totalExtraCost;
-      }
-      break;
+        break;
+
+      case 'BASE_PLUS_HOURLY':
+      case 'PACKAGE':
+        // Precio base + minutos adicionales
+        if (!durationMinutes) {
+          throw new Error('durationMinutes is required for this pricing model');
+        }
+
+        const includedMinutes = pricing.includedMinutes || 0;
+        const extraMinutes = Math.max(0, durationMinutes - includedMinutes);
+        const extraMinuteCost = pricing.extraMinutePriceCents || 0;
+        const totalExtraCost = extraMinutes * extraMinuteCost;
+
+        // Item del precio base
+        items.push({
+          type: 'BASE',
+          name: `${service.name} (incluye ${includedMinutes} min)`,
+          qty: 1,
+          unitPriceCents: basePriceCents,
+          totalPriceCents: basePriceCents,
+        });
+
+        // Item de minutos adicionales (si aplica)
+        if (extraMinutes > 0) {
+          items.push({
+            type: 'BASE',
+            name: `Tiempo adicional (${extraMinutes} min)`,
+            qty: extraMinutes,
+            unitPriceCents: extraMinuteCost,
+            totalPriceCents: totalExtraCost,
+            metadata: { includedMinutes, extraMinutes },
+          });
+          basePriceCents += totalExtraCost;
+        }
+        break;
+    }
   }
 
   // ==================== CALCULAR ADDONS ====================
@@ -170,37 +181,79 @@ export const calculateServicePrice = async (
     }
   }
 
-  // ==================== CALCULAR VIAJE ====================
+  // ==================== CALCULAR VIAJE / VIÁTICOS ====================
+
+  // Tarifas de viáticos configurables por variable de entorno (en centavos GTQ)
+  const VIATICOS_FOOD_PER_DAY_CENTS     = parseInt(process.env.VIATICOS_FOOD_CENTS     ?? '15000', 10); // Q 150/día
+  const VIATICOS_LODGING_PER_DAY_CENTS  = parseInt(process.env.VIATICOS_LODGING_CENTS  ?? '40000', 10); // Q 400/día
+  const VIATICOS_TRANSPORT_CENTS        = parseInt(process.env.VIATICOS_TRANSPORT_CENTS ?? '20000', 10); // Q 200 fijo
+
+  const DEFAULT_PRICE_PER_KM_CENTS = 2000; // Q 20.00 por km adicional por defecto
+  const DEFAULT_INCLUDED_KM = 10;          // 10 km incluidos por defecto
+
+  // numDays: derivado de durationMinutes — multi-día cuando >= 1440 min (24h)
+  const numDays = durationMinutes ? Math.ceil(durationMinutes / 1440) : 1;
 
   let travelCostCents = 0;
 
-  if (travelRules && distanceKm !== undefined && distanceKm > 0) {
-    const includedKm = travelRules.includedKm || 0;
+  if (distanceKm !== undefined && distanceKm > 0) {
+    const includedKm = travelRules?.includedKm ?? DEFAULT_INCLUDED_KM;
     const extraKm = Math.max(0, distanceKm - includedKm);
-    const pricePerKmCents = travelRules.pricePerKmCents || 0;
 
-    // Validar distancia máxima
-    if (travelRules.maxDistanceKm && distanceKm > travelRules.maxDistanceKm) {
+    // Validar distancia máxima si existe regla
+    if (travelRules?.maxDistanceKm && distanceKm > travelRules.maxDistanceKm) {
       throw new Error(
         `Distance ${distanceKm}km exceeds maximum allowed ${travelRules.maxDistanceKm}km`
       );
     }
 
-    if (extraKm > 0 && pricePerKmCents > 0) {
-      travelCostCents = extraKm * pricePerKmCents;
-      items.push({
-        type: 'TRAVEL',
-        name: `Desplazamiento (${extraKm.toFixed(1)} km adicionales)`,
-        qty: 1,
-        unitPriceCents: travelCostCents,
-        totalPriceCents: travelCostCents,
-        metadata: {
-          totalKm: distanceKm,
-          includedKm,
-          extraKm,
-          pricePerKm: pricePerKmCents,
-        },
-      });
+    if (extraKm > 0) {
+      if (numDays > 1) {
+        // ── VIÁTICOS: multi-día + fuera de cobertura → tarifa plana plataforma ──
+        const foodTotal    = VIATICOS_FOOD_PER_DAY_CENTS    * numDays;
+        const lodgingTotal = VIATICOS_LODGING_PER_DAY_CENTS * numDays;
+        travelCostCents    = foodTotal + lodgingTotal + VIATICOS_TRANSPORT_CENTS;
+
+        items.push({
+          type: 'TRAVEL',
+          name: `Viáticos (${numDays} días)`,
+          qty: 1,
+          unitPriceCents: travelCostCents,
+          totalPriceCents: travelCostCents,
+          metadata: {
+            type: 'VIATICOS',
+            numDays,
+            foodPerDay:    VIATICOS_FOOD_PER_DAY_CENTS,
+            lodgingPerDay: VIATICOS_LODGING_PER_DAY_CENTS,
+            transport:     VIATICOS_TRANSPORT_CENTS,
+            foodTotal,
+            lodgingTotal,
+            distanceKm,
+            includedKm,
+          },
+        });
+      } else {
+        // ── TRASLADO: día único + fuera de cobertura → precio por km ──
+        const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
+        if (pricePerKmCents > 0) {
+          travelCostCents = Math.round(extraKm * pricePerKmCents);
+          items.push({
+            type: 'TRAVEL',
+            name: `Desplazamiento (${extraKm.toFixed(1)} km adicionales)`,
+            qty: 1,
+            unitPriceCents: travelCostCents,
+            totalPriceCents: travelCostCents,
+            metadata: {
+              type: 'TRASLADO',
+              totalKm: distanceKm,
+              includedKm,
+              extraKm,
+              pricePerKm: pricePerKmCents,
+              isDefault: !travelRules || travelRules.pricePerKmCents === null,
+            },
+          });
+        }
+      }
     }
   }
 

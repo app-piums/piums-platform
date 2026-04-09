@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   userName: string;
@@ -25,18 +26,23 @@ type SidebarContentProps = {
   navItems: NavItem[];
   onLinkClick: (event: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
   onClose: () => void;
+  onLogout: () => void;
 };
 
 export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { logout } = useAuth();
 
   const navItems: NavItem[] = [
-    { href: '/dashboard',  icon: HomeIcon,   label: 'Inicio' },
-    { href: '/artists',    icon: SearchIcon, label: 'Artistas' },
-    { href: '/bookings',   icon: CalIcon,    label: 'Reservas' },
-    { href: '/bookmarks',  icon: HeartIcon,  label: 'Favoritos' },
-    { href: '/chat',       icon: ChatIcon,   label: 'Mensajes', badge: 3 },
+    { href: '/dashboard',        icon: HomeIcon,     label: 'Inicio' },
+    { href: '/artists',          icon: SearchIcon,   label: 'Artistas' },
+    { href: '/bookings',         icon: CalIcon,      label: 'Reservas' },
+    { href: '/events',           icon: EventsIcon,   label: 'Eventos' },
+    { href: '/bookmarks',        icon: HeartIcon,    label: 'Favoritos' },
+    { href: '/chat',             icon: ChatIcon,     label: 'Mensajes', badge: 3 },
+    { href: '/quejas',           icon: AlertIcon,    label: 'Quejas' },
+    { href: '/tutorial',         icon: TutorialIcon, label: 'Tutorial' },
   ];
 
   const handleLinkClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -57,12 +63,13 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
           navItems={navItems}
           onLinkClick={handleLinkClick}
           onClose={() => setIsOpen(false)}
+          onLogout={logout}
         />
       </aside>
 
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-16 flex items-center justify-between">
         <Link href="/dashboard" onClick={(event) => handleLinkClick(event, '/dashboard')}>
-          <Image src="/logo.jpg" alt="PIUMS" width={72} height={26} className="h-7 w-auto" priority />
+          <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
         </Link>
         <button
           onClick={() => setIsOpen(true)}
@@ -85,6 +92,7 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
               navItems={navItems}
               onLinkClick={handleLinkClick}
               onClose={() => setIsOpen(false)}
+              onLogout={logout}
             />
           </aside>
         </div>
@@ -93,12 +101,12 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
   );
 }
 
-function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: SidebarContentProps) {
+function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose, onLogout }: SidebarContentProps) {
   return (
     <>
-      <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-5 py-2 border-b border-gray-100 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2" onClick={(event) => onLinkClick(event, '/dashboard')}>
-          <Image src="/logo.jpg" alt="PIUMS" width={80} height={28} className="h-7 w-auto" priority />
+          <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
         </Link>
         <button
           className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
@@ -116,9 +124,11 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: 
         <nav className="space-y-0.5">
           {navItems.map(({ href, icon: Icon, label, badge }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
+            const navId = `nav-${href.replace(/^\//, '')}`;
             return (
               <Link
                 key={href}
+                id={navId}
                 href={href}
                 onClick={(event) => onLinkClick(event, href)}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
@@ -143,6 +153,7 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: 
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Cuenta</p>
           <nav className="space-y-0.5">
             <Link
+              id="nav-profile"
               href="/profile"
               onClick={(event) => onLinkClick(event, '/profile')}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
@@ -152,6 +163,18 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose }: 
               <SettingsIcon className={`h-5 w-5 shrink-0 ${pathname.startsWith('/profile') ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
               Configuración
             </Link>
+            <button
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <svg className="h-5 w-5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Cerrar Sesión
+            </button>
           </nav>
         </div>
       </div>
@@ -191,6 +214,15 @@ function HeartIcon({ className }: { className?: string }) {
 function ChatIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
 }
+function AlertIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>;
+}
+function EventsIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+}
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+}
+function TutorialIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>;
 }

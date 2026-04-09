@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useRouter } from 'next/navigation';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
+import { toast } from '@/lib/toast';
 
 type DeleteAccountTabProps = {
   onDirtyChange?: (isDirty: boolean) => void;
@@ -29,17 +30,17 @@ export default function DeleteAccountTab(props: DeleteAccountTabProps = {}) {
 
   const handleDeleteAccount = async () => {
     if (!password) {
-      alert('Por favor, ingresa tu contraseña');
+      toast.warning('Por favor, ingresa tu contraseña');
       return;
     }
 
     if (!understood) {
-      alert('Por favor, confirma que entiendes las consecuencias');
+      toast.warning('Por favor, confirma que entiendes las consecuencias');
       return;
     }
 
     if (confirmText !== 'ELIMINAR') {
-      alert('Por favor, escribe "ELIMINAR" para confirmar');
+      toast.warning('Por favor, escribe "ELIMINAR" para confirmar');
       return;
     }
 
@@ -51,14 +52,14 @@ export default function DeleteAccountTab(props: DeleteAccountTabProps = {}) {
       
       setTimeout(() => {
         setLoading(false);
-        alert('Cuenta eliminada correctamente');
+        toast.success('Cuenta eliminada correctamente');
         // Redirect to homepage
         router.push('/');
       }, 2000);
     } catch (error) {
       console.error('Error deleting account:', error);
       setLoading(false);
-      alert('Error al eliminar la cuenta');
+      toast.error('Error al eliminar la cuenta');
     }
   };
 

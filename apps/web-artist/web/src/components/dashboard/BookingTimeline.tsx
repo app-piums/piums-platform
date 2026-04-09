@@ -133,7 +133,7 @@ export const BookingTimeline: React.FC<BookingTimelineProps> = ({
 
                 {event.amount && (
                   <p className="text-sm font-semibold text-green-600 mt-1">
-                    Q{event.amount.toLocaleString('es-GT')}
+                    ${event.amount.toLocaleString('en-US')}
                   </p>
                 )}
               </div>

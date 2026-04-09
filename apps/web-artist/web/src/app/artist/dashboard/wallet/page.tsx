@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { DashboardSidebar } from "@/components/artist/DashboardSidebar";
 
 const MOCK_TRANSACTIONS = [
@@ -34,6 +35,7 @@ export default function WalletPage() {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistWalletTour" />
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8 max-w-4xl">
           {/* Header */}
@@ -47,21 +49,21 @@ export default function WalletPage() {
             <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow">
               <p className="text-sm font-medium text-orange-100">Balance disponible</p>
               <p className="text-3xl font-bold mt-1">
-                Q{balance.toLocaleString("es-GT")}
+                ${balance.toLocaleString("en-US")}
               </p>
               <p className="text-xs text-orange-200 mt-1">Listo para retirar</p>
             </div>
             <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
               <p className="text-sm font-medium text-gray-500">Por cobrar</p>
               <p className="text-2xl font-bold text-yellow-600 mt-1">
-                Q{pendiente.toLocaleString("es-GT")}
+                ${pendiente.toLocaleString("en-US")}
               </p>
               <p className="text-xs text-gray-400 mt-1">Pagos pendientes</p>
             </div>
             <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
               <p className="text-sm font-medium text-gray-500">Total retirado</p>
               <p className="text-2xl font-bold text-gray-800 mt-1">
-                Q{retirado.toLocaleString("es-GT")}
+                ${retirado.toLocaleString("en-US")}
               </p>
               <p className="text-xs text-gray-400 mt-1">Histórico</p>
             </div>
@@ -146,7 +148,7 @@ export default function WalletPage() {
                         tx.type === "credit" ? "text-green-600" : "text-red-500"
                       }`}
                     >
-                      {tx.type === "credit" ? "+" : "-"}Q{tx.amount.toLocaleString("es-GT")}
+                      {tx.type === "credit" ? "+" : "-"}${tx.amount.toLocaleString("en-US")}
                     </p>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${

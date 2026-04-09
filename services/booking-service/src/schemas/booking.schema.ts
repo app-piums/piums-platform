@@ -29,7 +29,7 @@ export const createBookingSchema = z.object({
   serviceId: z.string().uuid("serviceId inválido"),
   
   scheduledDate: z.string().datetime("Fecha inválida"),
-  durationMinutes: z.number().int().min(15, "Duración mínima: 15 minutos").max(1440, "Duración máxima: 24 horas"),
+  durationMinutes: z.number().int().min(15, "Duración mínima: 15 minutos").max(43200, "Duración máxima: 30 días"),
   
   location: z.string().optional(),
   locationLat: z.number().min(-90).max(90).optional(),
@@ -38,18 +38,21 @@ export const createBookingSchema = z.object({
   selectedAddons: z.array(z.string().uuid()).optional(),
   
   clientNotes: z.string().max(1000).optional(),
+  
+  eventId: z.string().uuid().optional(),
 });
 
 // Schema para actualizar reserva
 export const updateBookingSchema = z.object({
   scheduledDate: z.string().datetime().optional(),
-  durationMinutes: z.number().int().min(15).max(1440).optional(),
+  durationMinutes: z.number().int().min(15).max(43200).optional(),
   location: z.string().optional(),
   locationLat: z.number().min(-90).max(90).optional(),
   locationLng: z.number().min(-180).max(180).optional(),
   selectedAddons: z.array(z.string().uuid()).optional(),
   clientNotes: z.string().max(1000).optional(),
   artistNotes: z.string().max(1000).optional(),
+  reviewId: z.string().optional(),
 });
 
 // Schema para cambiar estado
@@ -71,6 +74,7 @@ export const confirmBookingSchema = z.object({
 // Schema para rechazar reserva
 export const rejectBookingSchema = z.object({
   reason: z.string().min(10, "La razón debe tener al menos 10 caracteres").max(500),
+});
 });
 
 // Schema para marcar pago

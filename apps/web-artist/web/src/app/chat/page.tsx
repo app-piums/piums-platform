@@ -1,7 +1,7 @@
 "use client";
 import { io, Socket } from 'socket.io-client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Conversation, Message } from '@/types/chat';
 import { ConversationList } from '@/components/chat/ConversationList';
@@ -12,40 +12,96 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 import { getErrorMessage } from '@/lib/errors';
 
+const CHAT_SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4010';
+
 export default function ChatPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  // WebSocket para mensajes en tiempo real
-  useEffect(() => {
-    if (!user || !isAuthenticated) return;
-    // Ajusta la URL y path según tu backend
-    const socket: Socket = io(process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4007', {
-      path: '/socket.io/',
-      auth: { token: typeof window !== 'undefined' ? localStorage.getItem('token') : '' },
-      transports: ['websocket'],
-    });
-
-    socket.on('connect', () => {
-      // Opcional: console.log('Conectado a WebSocket');
-    });
-
-    socket.on('message:received', (msg: Message) => {
-      // Si el mensaje es para la conversación actual, agregarlo
-      setMessages(prev => [...prev, msg]);
-      // Opcional: actualizar conversaciones si es necesario
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [user, isAuthenticated]);
+  const [error, setError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+  const currentConversationIdRef = useRef<string | null>(null);
+
+  // WebSocket para mensajes en tiempo real
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+
+    fetch('/api/chat/token', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!data?.token) return;
+
+        const socket: Socket = io(CHAT_SOCKET_URL, {
+          path: '/socket.io/',
+          auth: { token: data.token },
+          transports: ['websocket'],
+        });
+
+        socket.on('connect', () => {
+          if (currentConversationIdRef.current) {
+            socket.emit('conversation:join', { conversationId: currentConversationIdRef.current });
+          }
+        });
+
+        socket.on('message:received', (msg: Message) => {
+          setConversations(prev =>
+            prev.map(c =>
+              c.id === msg.conversationId
+                ? {
+                    ...c,
+                    lastMessageAt: msg.createdAt,
+                    unreadCount:
+                      msg.conversationId === currentConversationIdRef.current
+                        ? 0
+                        : (c.unreadCount ?? 0) + 1,
+                    messages: [msg, ...(c.messages ?? []).filter(m => m.id !== msg.id)],
+                  }
+                : c
+            )
+          );
+
+          if (msg.conversationId === currentConversationIdRef.current) {
+            setMessages(prev => (prev.find(m => m.id === msg.id) ? prev : [...prev, msg]));
+          }
+        });
+
+        socket.on('typing:start', ({ conversationId }: { conversationId: string }) => {
+          if (conversationId === currentConversationIdRef.current) {
+            setIsTyping(true);
+          }
+        });
+
+        socket.on('typing:stop', ({ conversationId }: { conversationId: string }) => {
+          if (conversationId === currentConversationIdRef.current) {
+            setIsTyping(false);
+          }
+        });
+
+        socketRef.current = socket;
+      })
+      .catch(() => {});
+
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, [user, isAuthenticated]);
+
+  useEffect(() => {
+    currentConversationIdRef.current = currentConversation?.id ?? null;
+    setIsTyping(false);
+  }, [currentConversation?.id]);
+
+  useEffect(() => {
+    if (socketRef.current?.connected && currentConversation) {
+      socketRef.current.emit('conversation:join', { conversationId: currentConversation.id });
+    }
+  }, [currentConversation?.id]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push('/login?redirect=/chat');
@@ -63,12 +119,13 @@ export default function ChatPage() {
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Error al cargar conversaciones');
-        const data = await res.json();
-        setConversations(data);
-        if (data.length > 0) {
-          setCurrentConversation(data[0]);
+          const data = await res.json();
+          const convList: Conversation[] = data.conversations ?? data ?? [];
+          setConversations(convList);
+          if (convList.length > 0) {
+            setCurrentConversation(convList[0]);
           // Cargar mensajes de la primera conversación
-          const msgRes = await fetch(`/api/chat/messages/${data[0].id}`, {
+            const msgRes = await fetch(`/api/chat/messages/${convList[0].id}`, {
             headers: {
               'Content-Type': 'application/json',
             },
@@ -76,7 +133,8 @@ export default function ChatPage() {
           });
           if (msgRes.ok) {
             const msgData = await msgRes.json();
-            setMessages(msgData);
+              const history: Message[] = msgData.messages ?? msgData ?? [];
+              setMessages(history);
           } else {
             setMessages([]);
             setError('Error al cargar mensajes de la conversación.');
@@ -95,8 +153,8 @@ export default function ChatPage() {
   }, []);
 
   const selectConversation = (conversationId: string) => {
-    const conv = conversations.find(c => c.id === conversationId) ?? null;
-    setCurrentConversation(conv);
+      const conv = conversations.find(c => c.id === conversationId) ?? null;
+      setCurrentConversation(conv);
     // Cargar mensajes reales
     if (conv) {
       setError(null);
@@ -107,7 +165,8 @@ export default function ChatPage() {
         .then(async res => {
           if (!res.ok) throw new Error('Error al cargar mensajes');
           const msgData = await res.json();
-          setMessages(msgData);
+            const history: Message[] = msgData.messages ?? msgData ?? [];
+            setMessages(history);
         })
         .catch((err: unknown) => {
           setMessages([]);
@@ -146,11 +205,16 @@ export default function ChatPage() {
       .then(async res => {
         if (!res.ok) throw new Error('Error al enviar mensaje');
         const msg = await res.json();
-        setMessages(prev => [...prev, msg]);
+        const newMsg: Message = msg.message ?? msg;
+        setMessages(prev => (prev.find(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
         setConversations(prev =>
           prev.map(c =>
             c.id === currentConversation.id
-              ? { ...c, lastMessageAt: msg.createdAt, messages: [...(c.messages ?? []), msg] }
+              ? {
+                  ...c,
+                  lastMessageAt: newMsg.createdAt,
+                  messages: [newMsg, ...(c.messages ?? []).filter(m => m.id !== newMsg.id)],
+                }
               : c
           )
         );
@@ -161,8 +225,17 @@ export default function ChatPage() {
       .finally(() => setIsSending(false));
   };
 
-  const handleTypingStart = () => setIsTyping(false);
-  const handleTypingStop = () => {};
+  const handleTypingStart = () => {
+    if (socketRef.current?.connected && currentConversation) {
+      socketRef.current.emit('typing:start', { conversationId: currentConversation.id });
+    }
+  };
+
+  const handleTypingStop = () => {
+    if (socketRef.current?.connected && currentConversation) {
+      socketRef.current.emit('typing:stop', { conversationId: currentConversation.id });
+    }
+  };
 
   if (authLoading || !isAuthenticated) return <Loading fullScreen />;
 

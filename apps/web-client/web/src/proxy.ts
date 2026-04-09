@@ -7,7 +7,9 @@ export function proxy(request: NextRequest) {
 
   // Si el usuario es artista, redirigir a la app de artistas
   if (token && userRole === 'artista') {
-    const artistUrl = process.env.NEXT_PUBLIC_ARTIST_URL || 'http://localhost:3001';
+    const host = request.headers.get('host') || 'localhost:3000';
+    const hostname = host.split(':')[0];
+    const artistUrl = process.env.NEXT_PUBLIC_ARTIST_URL || `${request.nextUrl.protocol}//${hostname}:3001`;
     return NextResponse.redirect(new URL(request.nextUrl.pathname, artistUrl));
   }
 
@@ -26,6 +28,30 @@ export function proxy(request: NextRequest) {
 
   if (isProtectedRoute && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // Para clientes autenticados: redirigir al onboarding si no lo han completado
+  const onboardingCompleted = request.cookies.get('onboarding_completed')?.value;
+  const isOnboardingRoute = request.nextUrl.pathname.startsWith('/onboarding');
+
+  if (
+    token &&
+    userRole === 'cliente' &&
+    onboardingCompleted !== 'true' &&
+    !isOnboardingRoute &&
+    request.nextUrl.pathname.startsWith('/dashboard')
+  ) {
+    return NextResponse.redirect(new URL('/onboarding', request.url));
+  }
+
+  // Si ya completó onboarding e intenta ir a /onboarding, al dashboard
+  if (
+    token &&
+    userRole === 'cliente' &&
+    onboardingCompleted === 'true' &&
+    isOnboardingRoute
+  ) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();

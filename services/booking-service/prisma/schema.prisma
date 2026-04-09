@@ -39,6 +39,41 @@ enum BookingItemType {
   DISCOUNT  // Descuento aplicado
 }
 
+enum EventStatus {
+  DRAFT       // Borrador — el cliente aún está agregando artistas
+  ACTIVE      // Activo — al menos un booking confirmado
+  COMPLETED   // Completado
+  CANCELLED   // Cancelado
+}
+
+// ==================== EVENTO ====================
+// Un Evento agrupa múltiples Bookings independientes bajo un mismo paraguas.
+// Cada booking mantiene su propia fecha/hora y artista.
+model Event {
+  id          String      @id @default(uuid())
+  code        String      @unique // Código legible (PIUE-2026-000001)
+
+  clientId    String      // Dueño del evento (users-service)
+  name        String      // Nombre del evento (ej: "Graduación Juan")
+  description String?     @db.Text
+  location    String?     // Dirección del evento
+  locationLat Float?
+  locationLng Float?
+  notes       String?     @db.Text
+  eventDate   DateTime?   // Fecha del evento
+
+  status      EventStatus  @default(DRAFT)
+
+  bookings    Booking[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+  @@map("events")
+}
+
 model Booking {
   id          String   @id @default(uuid())
   code        String?  @unique // Código legible único (ej: PIU-2026-000123)
@@ -110,7 +145,11 @@ model Booking {
   
   // Review (después de completar)
   reviewId        String?      @unique
-  
+
+  // Evento (agrupación opcional de múltiples bookings)
+  eventId         String?
+  event           Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
   // Soft delete para auditorías
   deletedAt       DateTime?
   

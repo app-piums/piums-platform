@@ -38,7 +38,12 @@ export interface Artist {
   avatar?: string;
   coverPhoto?: string;
   category?: string;
+  city?: string; // Nombre legible (ej: Ciudad de Guatemala)
   cityId?: string;
+  baseLocationLabel?: string;
+  baseLocationLat?: number;
+  baseLocationLng?: number;
+  coverageRadius?: number;
   experienceYears?: number;
   rating?: number;
   reviewsCount?: number;
@@ -50,6 +55,7 @@ export interface Artist {
 }
 
 export interface ArtistProfile extends Artist {
+  specialties?: string[];
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
   services?: Service[];
@@ -185,4 +191,73 @@ export interface Category {
   description?: string;
   icon?: string;
   parentId?: string;
+}
+
+// ============================================================================
+// Event Types
+// ============================================================================
+
+export type EventStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+export interface PiumsEvent {
+  id: string;
+  code: string;
+  clientId: string;
+  name: string;
+  description?: string;
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
+  notes?: string;
+  status: EventStatus;
+  bookings?: EventBookingRef[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventBookingRef {
+  id: string;
+  code: string;
+  artistId: string;
+  serviceId: string;
+  scheduledDate: string;
+  status: string;
+  totalPrice: number;
+  currency: string;
+}
+
+export interface CreateEventPayload {
+  name: string;
+  description?: string;
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
+  notes?: string;
+}
+
+export interface UpdateEventPayload {
+  name?: string;
+  description?: string;
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
+  notes?: string;
+}
+
+export interface EventBreakdown {
+  eventId: string;
+  eventCode: string;
+  eventName: string;
+  bookings: {
+    bookingId: string;
+    code: string;
+    artistId: string;
+    serviceId: string;
+    scheduledDate: string;
+    status: string;
+    totalPrice: number;
+    currency: string;
+  }[];
+  grandTotalCents: number;
+  currency: string;
 }

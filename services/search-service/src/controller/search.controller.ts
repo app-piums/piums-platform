@@ -6,7 +6,8 @@ import {
   autocompleteSchema,
   indexArtistSchema,
   indexServiceSchema,
-  bulkIndexSchema
+  bulkIndexSchema,
+  smartSearchSchema,
 } from '../schemas/search.schema';
 
 export const searchController = {
@@ -15,6 +16,17 @@ export const searchController = {
     try {
       const filters = searchArtistsSchema.parse(req.query);
       const result = await searchService.searchArtists(filters);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Smart search with synonym expansion
+  async smartSearch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { q, page, limit, city, country, minPrice, maxPrice, minGuests } = smartSearchSchema.parse(req.query);
+      const result = await searchService.smartSearch(q, { page, limit, city, country, minPrice, maxPrice, minGuests });
       res.json(result);
     } catch (error) {
       next(error);

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
+import { toast } from '@/lib/toast';
 
 type Channel = 'email' | 'sms' | 'push';
 type CategoryId = 'bookings' | 'messages' | 'reviews' | 'promotions';
@@ -85,10 +86,10 @@ export default function NotificationsTab(props: NotificationsTabProps = {}) {
       // TODO: await sdk.updateNotificationSettings(settings)
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setInitialSettings(cloneSettings(settings));
-      alert('Preferencias guardadas correctamente');
+      toast.success('Preferencias guardadas correctamente');
     } catch (error) {
       console.error('Error updating notification settings:', error);
-      alert('Error al actualizar la configuración');
+      toast.error('Error al actualizar la configuración');
     } finally {
       setLoading(false);
     }

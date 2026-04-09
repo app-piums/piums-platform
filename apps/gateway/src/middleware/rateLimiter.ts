@@ -4,7 +4,7 @@ import { logger } from "../utils/logger";
 // Rate limiter global para todo el gateway
 export const globalRateLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"), // 15 minutos
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100"), // 100 requests por ventana
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "2000"), // 2000 requests por ventana
   message: {
     error: "Too Many Requests",
     message: "You have exceeded the request limit. Please try again later.",

@@ -26,13 +26,19 @@ export class ReviewService {
       throw new AppError(404, "Booking no encontrado");
     }
 
-    // Verificar que el booking esté completado
-    if (booking.status !== "COMPLETED") {
-      throw new AppError(400, "Solo puedes dejar una reseña después de completar el servicio");
+    // Verificar que el booking esté en un estado que permita reseña
+    // Permitimos CONFIRMED, ACCEPTED (según UI) y COMPLETED
+    const allowedStatuses = ["CONFIRMED", "ACCEPTED", "PAYMENT_COMPLETED", "COMPLETED"];
+    if (!allowedStatuses.includes(booking.status)) {
+      throw new AppError(400, `Solo puedes dejar una reseña en reservas confirmadas o completadas (Estado actual: ${booking.status})`);
     }
 
     // Verificar que el booking pertenezca al cliente
     if (booking.clientId !== data.clientId) {
+      logger.warn("Discrepancia de clientId detectada", "REVIEW_SERVICE", {
+        bookingClientId: booking.clientId,
+        requestClientId: data.clientId,
+      });
       throw new AppError(403, "No tienes permiso para reseñar este booking");
     }
 
@@ -460,15 +466,24 @@ export class ReviewService {
   /**
    * Obtener reportes pendientes (admin)
    */
-  async getPendingReports(page = 1, limit = 20) {
+  async getPendingReports(page = 1, limit = 20, estado?: string) {
     const skip = (page - 1) * limit;
+
+    // Map frontend estado to DB status; default to PENDING
+    const statusMap: Record<string, string> = {
+      pending: 'PENDING',
+      resolved: 'RESOLVED',
+      dismissed: 'DISMISSED',
+    };
+    const statusFilter = estado ? (statusMap[estado.toLowerCase()] ?? 'PENDING') : 'PENDING';
+    const whereClause: any = { deletedAt: null };
+    if (estado !== '') whereClause.status = statusFilter;
+    // Empty string means "all"
+    if (estado === '') delete whereClause.status;
 
     const [reports, total] = await Promise.all([
       prisma.reviewReport.findMany({
-        where: {
-          status: "PENDING",
-          deletedAt: null,
-        },
+        where: whereClause,
         include: {
           review: {
             include: {
@@ -481,22 +496,128 @@ export class ReviewService {
         take: limit,
       }),
       prisma.reviewReport.count({
-        where: {
-          status: "PENDING",
-          deletedAt: null,
-        },
+        where: whereClause,
       }),
     ]);
 
     return {
       reports,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     };
+  }
+
+  /**
+   * Resolver un reporte (admin)
+   */
+  async resolveReport(
+    id: string,
+    resolvedBy: string,
+    data: {
+      status: "RESOLVED" | "DISMISSED";
+      resolution?: string;
+    }
+  ) {
+    const report = await prisma.reviewReport.findUnique({
+      where: { id, deletedAt: null },
+    });
+
+    if (!report) {
+      throw new AppError(404, "Reporte no encontrado");
+    }
+
+    const updated = await prisma.reviewReport.update({
+      where: { id },
+      data: {
+        status: data.status,
+        resolution: data.resolution,
+        resolvedBy,
+        resolvedAt: new Date(),
+      },
+    });
+
+    logger.info("Reporte resuelto", "REVIEW_SERVICE", {
+      reportId: id,
+      resolvedBy,
+      status: data.status,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Obtener mensajes de un reporte
+   */
+  async getReportMessages(reportId: string) {
+    const report = await prisma.reviewReport.findUnique({
+      where: { id: reportId, deletedAt: null },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+    if (!report) throw new AppError(404, "Reporte no encontrado");
+    return report.messages;
+  }
+
+  /**
+   * Agregar un mensaje a un reporte (staff → cliente/artista)
+   */
+  async addReportMessage(
+    reportId: string,
+    senderId: string,
+    senderType: "staff" | "client" | "artist",
+    message: string
+  ) {
+    const report = await prisma.reviewReport.findUnique({
+      where: { id: reportId, deletedAt: null },
+    });
+    if (!report) throw new AppError(404, "Reporte no encontrado");
+
+    const msg = await (prisma as any).reportMessage.create({
+      data: { reportId, senderId, senderType, message },
+    });
+
+    logger.info("Mensaje agregado a reporte", "REVIEW_SERVICE", { reportId, senderType });
+    return msg;
+  }
+
+  /**
+   * Obtener estadísticas de reportes para el admin
+   */
+  async getAdminStats() {
+    const pendingCount = await prisma.reviewReport.count({
+      where: {
+        status: "PENDING",
+        deletedAt: null,
+      },
+    });
+
+    return {
+      pendingCount,
+    };
+  }
+
+  /**
+   * Obtener estadísticas de reseñas de un usuario específico
+   */
+  async getUserStats(userId: string) {
+    const [totalReviews, totalReports] = await Promise.all([
+      prisma.review.count({ where: { clientId: userId, deletedAt: null } }),
+      prisma.reviewReport.count({ where: { reportedBy: userId, deletedAt: null } })
+    ]);
+    return { totalReviews, totalReports };
+  }
+
+  async getBatchRatings(artistIds: string[]) {
+    const ratings = await prisma.review.groupBy({
+      by: ['artistId'],
+      where: { artistId: { in: artistIds }, deletedAt: null },
+      _avg: { rating: true }
+    });
+    
+    return ratings.reduce((acc: any, r: any) => {
+      acc[r.artistId] = { rating: r._avg.rating };
+      return acc;
+    }, {});
   }
 
   // ==================== ARTIST RATINGS ====================
@@ -599,6 +720,19 @@ export class ReviewService {
       averageRating,
       responseRate,
     });
+
+    // Sync rating and reviewCount to artists-service
+    try {
+      const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET || '';
+      await fetch(`${artistsUrl}/artists/internal/${artistId}/rating`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret },
+        body: JSON.stringify({ rating: averageRating, reviewCount: totalReviews }),
+      });
+    } catch (syncErr) {
+      logger.warn('Failed to sync rating to artists-service', 'REVIEW_SERVICE', { artistId, syncErr });
+    }
   }
 
   /**

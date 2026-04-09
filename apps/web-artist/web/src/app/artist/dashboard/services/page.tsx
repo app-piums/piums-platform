@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, Service, ServiceCategory } from '@piums/sdk';
-import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 
 type PricingType = 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
 
@@ -15,6 +16,9 @@ interface ServiceForm {
   pricingType: PricingType;
   basePrice: string;
   durationMin: string;
+  whatIsIncluded: string[];
+  minGuests: string;
+  maxGuests: string;
 }
 
 const PRICING_LABELS: Record<PricingType, string> = {
@@ -58,6 +62,7 @@ export default function ArtistServicesPage() {
 
   // Toggling status
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [whatIsIncludedInput, setWhatIsIncludedInput] = useState('');
 
   const emptyForm: ServiceForm = {
     name: '',
@@ -66,6 +71,9 @@ export default function ArtistServicesPage() {
     pricingType: 'FIXED',
     basePrice: '',
     durationMin: '',
+    whatIsIncluded: [],
+    minGuests: '',
+    maxGuests: '',
   };
   const [form, setForm] = useState<ServiceForm>(emptyForm);
 
@@ -87,7 +95,10 @@ export default function ArtistServicesPage() {
       const message = getErrorMessage(err);
       console.error('Error loading services:', message);
       setError(message || 'Error al cargar los servicios');
-      if (isUnauthorizedError(err)) {
+      if (isArtistNotFoundError(err)) {
+        document.cookie = 'onboarding_completed=false; path=/; max-age=86400; SameSite=strict';
+        router.push('/artist/onboarding');
+      } else if (isUnauthorizedError(err)) {
         router.push('/login?redirect=/artist/dashboard/services');
       }
     } finally {
@@ -99,10 +110,19 @@ export default function ArtistServicesPage() {
     void loadData();
   }, [loadData]);
 
+  // Auto-open create modal when coming from dashboard with ?create=1
+  useEffect(() => {
+    if (!isLoading && new URLSearchParams(window.location.search).get('create') === '1') {
+      openCreate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
   const openCreate = () => {
     setEditingService(null);
     setForm(emptyForm);
     setFormError(null);
+    setWhatIsIncludedInput('');
     setShowModal(true);
   };
 
@@ -115,8 +135,12 @@ export default function ArtistServicesPage() {
       pricingType: (service.pricingType as PricingType) || 'FIXED',
       basePrice: String(service.basePrice),
       durationMin: String(service.durationMin || service.duration || ''),
+      whatIsIncluded: service.whatIsIncluded || [],
+      minGuests: service.minGuests != null ? String(service.minGuests) : '',
+      maxGuests: service.maxGuests != null ? String(service.maxGuests) : '',
     });
     setFormError(null);
+    setWhatIsIncludedInput('');
     setShowModal(true);
   };
 
@@ -126,6 +150,7 @@ export default function ArtistServicesPage() {
     setEditingService(null);
     setForm(emptyForm);
     setFormError(null);
+    setWhatIsIncludedInput('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +173,9 @@ export default function ArtistServicesPage() {
           pricingType: form.pricingType,
           basePrice: price,
           durationMin: form.durationMin ? parseInt(form.durationMin, 10) : undefined,
+          whatIsIncluded: form.whatIsIncluded,
+          minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
+          maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
@@ -161,6 +189,9 @@ export default function ArtistServicesPage() {
           pricingType: form.pricingType,
           basePrice: price,
           durationMin: form.durationMin ? parseInt(form.durationMin, 10) : undefined,
+          whatIsIncluded: form.whatIsIncluded,
+          minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
+          maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
         });
         setServices((prev) => [created, ...prev]);
       }
@@ -202,6 +233,7 @@ export default function ArtistServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistServicesTour" />
 
       <main className="flex-1 p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
         <div className="max-w-7xl mx-auto">
@@ -272,7 +304,7 @@ export default function ArtistServicesPage() {
                         <div className="flex items-center gap-6 mb-4">
                           <div>
                             <p className="text-xs text-gray-500">Precio base</p>
-                            <p className="text-xl font-bold text-gray-900">Q{service.basePrice.toLocaleString('es-GT')}</p>
+                            <p className="text-xl font-bold text-gray-900">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           </div>
                           {duration ? (
                             <div>
@@ -466,6 +498,88 @@ export default function ArtistServicesPage() {
                   placeholder="Ej: 60"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
+              </div>
+
+              {/* Guest capacity */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mínimo de personas
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.minGuests}
+                    onChange={(e) => setForm({ ...form, minGuests: e.target.value })}
+                    placeholder="Ej: 10"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Máximo de personas
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.maxGuests}
+                    onChange={(e) => setForm({ ...form, maxGuests: e.target.value })}
+                    placeholder="Ej: 300"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* What's included */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué incluye este servicio?</label>
+                <p className="text-xs text-gray-400 mb-2">Presiona Enter o haz clic en Agregar para añadir ítems</p>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={whatIsIncludedInput}
+                    onChange={(e) => setWhatIsIncludedInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = whatIsIncludedInput.trim();
+                        if (val && !form.whatIsIncluded.includes(val)) {
+                          setForm({ ...form, whatIsIncluded: [...form.whatIsIncluded, val] });
+                        }
+                        setWhatIsIncludedInput('');
+                      }
+                    }}
+                    placeholder="Ej: Sistema de sonido propio"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = whatIsIncludedInput.trim();
+                      if (val && !form.whatIsIncluded.includes(val)) {
+                        setForm({ ...form, whatIsIncluded: [...form.whatIsIncluded, val] });
+                      }
+                      setWhatIsIncludedInput('');
+                    }}
+                    className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm font-medium transition-colors"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                {form.whatIsIncluded.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.whatIsIncluded.map((item, i) => (
+                      <span key={i} className="flex items-center gap-1 bg-purple-50 border border-purple-200 text-purple-700 text-xs px-2.5 py-1 rounded-full">
+                        {item}
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, whatIsIncluded: form.whatIsIncluded.filter((_, idx) => idx !== i) })}
+                          className="hover:text-red-500 ml-0.5 leading-none"
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">

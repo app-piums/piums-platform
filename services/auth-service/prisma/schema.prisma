@@ -18,6 +18,7 @@ model User {
   provider            String?
   googleId            String?             @unique
   facebookId          String?             @unique
+  tiktokId            String?             @unique
   role                String              @default("user")
   isBlocked           Boolean             @default(false)
   isVerified          Boolean             @default(false)
@@ -25,11 +26,24 @@ model User {
   twoFactorEnabled    Boolean             @default(false)
   twoFactorSecret     String?
   backupCodes         String[]
-  lastLoginAt         DateTime?
-  lastLoginIp         String?
+  lastLoginAt              DateTime?
+  lastLoginIp              String?
+  onboardingCompletedAt    DateTime?
   lastPasswordChange  DateTime            @default(now())
   failedLoginAttempts Int                 @default(0)
   lockedUntil         DateTime?
+  // Datos de contacto
+  ciudad              String?
+  birthDate           DateTime?
+  // Documento de identidad (solo artistas)
+  documentType        String?             // DPI | PASSPORT | RESIDENCE_CARD
+  documentNumber      String?
+  documentFrontUrl    String?
+  documentBackUrl     String?
+  documentSelfieUrl   String?
+  // Revisión de admin
+  rejectionReason     String?             // Razón de rechazo de verificación
+  adminNotes          String?             // Notas internas del admin
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   deletedAt           DateTime?

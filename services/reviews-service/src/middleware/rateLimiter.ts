@@ -8,7 +8,7 @@ const asRequestHandler = (handler: ReturnType<typeof rateLimit>): RequestHandler
 export const apiLimiter: RequestHandler = asRequestHandler(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100, // 100 requests por ventana
-  message: "Demasiados requests desde esta IP, por favor intenta más tarde.",
+  message: { status: 'error', message: 'Demasiados requests desde esta IP, por favor intenta más tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
 }));
@@ -17,7 +17,7 @@ export const apiLimiter: RequestHandler = asRequestHandler(rateLimit({
 export const createReviewLimiter: RequestHandler = asRequestHandler(rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 5, // Máximo 5 reseñas por hora
-  message: "Has creado demasiadas reseñas recientemente. Intenta más tarde.",
+  message: { status: 'error', message: 'Has creado demasiadas reseñas recientemente. Intenta más tarde.' },
   skipSuccessfulRequests: true,
 }));
 
@@ -25,14 +25,14 @@ export const createReviewLimiter: RequestHandler = asRequestHandler(rateLimit({
 export const responseReviewLimiter: RequestHandler = asRequestHandler(rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 20, // Máximo 20 respuestas por hora
-  message: "Has respondido demasiadas reseñas recientemente. Intenta más tarde.",
+  message: { status: 'error', message: 'Has respondido demasiadas reseñas recientemente. Intenta más tarde.' },
 }));
 
 // Rate limiter para reportar reseñas
 export const reportReviewLimiter: RequestHandler = asRequestHandler(rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 horas
   max: 10, // Máximo 10 reportes por día
-  message: "Has reportado demasiadas reseñas hoy. Intenta mañana.",
+  message: { status: 'error', message: 'Has reportado demasiadas reseñas hoy. Intenta mañana.' },
 }));
 
 // Rate limiter para marcar como útil

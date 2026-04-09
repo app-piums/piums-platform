@@ -6,7 +6,11 @@ import { Loading } from '@/components/Loading';
 import { ArtistCard } from '@/components/ArtistCard';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
+import { ThemeToggle } from '@/contexts/ThemeContext';
+import { sdk } from '@piums/sdk';
 import type { Artist, Service } from '@piums/sdk';
+import { TalentPicker } from '@/components/TalentPicker';
 
 type TabType = 'all' | 'artists' | 'services';
 type SortOption = 'relevance' | 'rating' | 'price_asc' | 'price_desc';
@@ -21,9 +25,11 @@ const CATEGORIES = [
 ];
 const CITIES = [
   { value: '', label: 'Todas las ciudades' },
-  { value: '1', label: 'Ciudad de México' },
-  { value: '2', label: 'Guadalajara' },
-  { value: '3', label: 'Monterrey' },
+  { value: 'guatemala', label: 'Ciudad de Guatemala' },
+  { value: 'quetzaltenango', label: 'Quetzaltenango' },
+  { value: 'escuintla', label: 'Escuintla' },
+  { value: 'antigua', label: 'Antigua Guatemala' },
+  { value: 'mixco', label: 'Mixco' },
 ];
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'relevance',  label: 'Relevancia' },
@@ -37,59 +43,56 @@ function SearchContent() {
   const router = useRouter();
   const { user } = useAuth();
   const searchParams = useSearchParams();
+  const { formatPrice } = useCurrency();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [artists, setArtists] = useState<Artist[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>((searchParams.get('tab') as TabType) || 'all');
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'relevance');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState(searchParams.get('location') || '');
-
-  useEffect(() => {
-    if (query) performSearch();
-  }, [query, activeTab, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [selectedTalentId, setSelectedTalentId] = useState<string | undefined>(undefined);
 
   const performSearch = async () => {
+    if (!query && !selectedCategory && !selectedCity) return;
     try {
       setLoading(true);
-      // Mock data (replace with real SDK call later)
-      const mockArtists: Artist[] = Array.from({ length: 8 }, (_, i) => ({
-        id: `artist-${i + 1}`,
-        userId: `user-${i + 1}`,
-        nombre: `${query} - Artista ${i + 1}`,
-        slug: `artista-${i + 1}`,
-        bio: 'Profesional con experiencia en eventos de todo tipo. Calidad garantizada.',
-        category: CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1].label,
-        rating: 4 + Math.random(),
-        reviewsCount: Math.floor(Math.random() * 50) + 5,
-        bookingsCount: Math.floor(Math.random() * 100) + 10,
-        experienceYears: Math.floor(Math.random() * 10) + 2,
-        isVerified: Math.random() > 0.5,
-        isActive: true,
-        isPremium: Math.random() > 0.7,
-        createdAt: new Date().toISOString(),
-        cityId: 'Ciudad de México',
-      }));
-      const mockServices: Service[] = Array.from({ length: 6 }, (_, i) => ({
-        id: `service-${i + 1}`,
-        artistId: `artist-${i + 1}`,
-        name: `${query} - Servicio ${i + 1}`,
-        description: 'Descripción detallada del servicio ofrecido con todas las características incluidas.',
-        basePrice: 5000 + Math.floor(Math.random() * 15000),
-        duration: 240 + Math.floor(Math.random() * 240),
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      }));
-      setArtists(mockArtists);
-      setServices(mockServices);
+      setSearchError(null);
+
+      if (query) {
+        // Smart search — returns matchedService with the specific service price that matched
+        const results = await sdk.smartSearch({
+          q: query,
+          city: selectedCity || undefined,
+        });
+        setArtists(results.artists ?? []);
+        setExpandedTerms(results.expandedTerms ?? []);
+      } else {
+        // Filter-only search (category/city without text query)
+        const results = await sdk.searchArtists({
+          categoria: selectedCategory || undefined,
+          ciudad: selectedCity || undefined,
+        });
+        setArtists((results as any).artists ?? []);
+        setExpandedTerms([]);
+      }
+      setServices([]);
     } catch (err) {
       console.error('Error searching:', err);
+      setSearchError('Error al buscar. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    performSearch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, activeTab, sortBy, selectedCategory, selectedCity]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +101,7 @@ function SearchContent() {
     if (selectedCategory) params.set('category', selectedCategory);
     if (selectedCity) params.set('location', selectedCity);
     router.push(`/search${params.toString() ? `?${params}` : ''}`);
-    performSearch();
+    // Note: useEffect watches query/category/city changes and will trigger performSearch
   };
 
   const totalResults = artists.length + services.length;
@@ -116,12 +119,20 @@ function SearchContent() {
             <h1 className="text-xl font-bold text-gray-900">Buscar</h1>
             <p className="text-sm text-gray-400">Encuentra el profesional perfecto para tu evento</p>
           </div>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <CurrencyToggle />
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           {/* Mobile title */}
-          <div className="lg:hidden mb-4">
+          <div className="lg:hidden mb-4 flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-900">Buscar</h1>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <CurrencyToggle />
+            </div>
           </div>
 
           {/* Search form */}
@@ -157,24 +168,33 @@ function SearchContent() {
             </div>
           </form>
 
-          {/* No query state */}
-          {!query && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-              <div className="h-16 w-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
-                <SearchIcon className="h-8 w-8 text-[#FF6A00]" />
+          {/* No query state — talent picker */}
+          {!query && !loading && (
+            <div>
+              <div className="mb-5">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-[#F1F5F9] mb-1">¿Cuál es tu superpoder creativo?</h3>
+                <p className="text-sm text-gray-400 dark:text-[#94A3B8]">Elige un talento para encontrar al profesional perfecto</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Busca artistas y servicios</h3>
-              <p className="text-gray-500 text-sm mb-6">Ingresa un término de búsqueda o elige una categoría popular</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {POPULAR.map(term => (
-                  <button key={term}
-                    onClick={() => { setQuery(term); router.push(`/search?q=${encodeURIComponent(term)}`); }}
-                    className="px-4 py-2 bg-orange-50 hover:bg-orange-100 text-[#FF6A00] text-sm font-medium rounded-xl transition-colors"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
+              <TalentPicker
+                selectedTalentId={selectedTalentId}
+                onSelect={(id, label, category) => {
+                  setSelectedTalentId(id);
+                  setQuery(label);
+                  setSelectedCategory(category.toLowerCase());
+                }}
+                onClear={() => {
+                  setSelectedTalentId(undefined);
+                  setQuery('');
+                  setSelectedCategory('');
+                }}
+              />
+            </div>
+          )}
+
+          {/* Search error */}
+          {searchError && !loading && (
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-4 text-sm text-red-700 text-center">
+              {searchError}
             </div>
           )}
 
@@ -213,6 +233,16 @@ function SearchContent() {
                 <p className="text-sm text-gray-400">{totalResults} resultados</p>
               </div>
 
+              {/* Expanded terms hint (smart search) */}
+              {expandedTerms.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-gray-400">También buscamos:</span>
+                  {expandedTerms.map(term => (
+                    <span key={term} className="px-2 py-0.5 bg-orange-50 text-[#FF6A00] text-xs rounded-full border border-orange-100">{term}</span>
+                  ))}
+                </div>
+              )}
+
               {/* Artist results */}
               {visibleArtists.length > 0 && (
                 <div>
@@ -237,7 +267,7 @@ function SearchContent() {
                             <p className="text-xs text-gray-400 mt-2">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <p className="text-lg font-bold text-[#FF6A00]">${service.basePrice.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-[#FF6A00]">{formatPrice(service.basePrice / 100)}</p>
                             <button
                               onClick={() => router.push(`/artists/${service.artistId}`)}
                               className="mt-2 text-xs font-medium text-[#FF6A00] border border-[#FF6A00]/30 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"

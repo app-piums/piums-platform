@@ -5,7 +5,7 @@ export const searchArtistsSchema = z.object({
   query: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  country: z.string().optional().default('Mexico'),
+  country: z.string().optional(),
   specialties: z.array(z.string()).optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
   minPrice: z.coerce.number().min(0).optional(),
@@ -27,7 +27,7 @@ export const searchServicesSchema = z.object({
   artistId: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  country: z.string().optional().default('Mexico'),
+  country: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
@@ -69,3 +69,17 @@ export const bulkIndexSchema = z.object({
 });
 
 export type BulkIndexInput = z.infer<typeof bulkIndexSchema>;
+
+// Smart Search Schema
+export const smartSearchSchema = z.object({
+  q: z.string().min(1),
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(50).optional().default(12),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  minPrice: z.coerce.number().min(0).optional(),
+  maxPrice: z.coerce.number().min(0).optional(),
+  minGuests: z.coerce.number().min(1).optional(),
+});
+
+export type SmartSearchInput = z.infer<typeof smartSearchSchema>;

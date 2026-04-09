@@ -12,9 +12,13 @@ import {
   verifyEmail,
   resendVerification,
   logout,
-  getMe
+  getMe,
+  updateProfile,
+  firebaseLogin,
+  completeOnboarding,
 } from "../controller/auth.controller";
 import { isAdmin } from "../middleware/isAdmin";
+import { authenticate } from "../middleware/authenticate";
 import { 
   loginLimiter, 
   registerLimiter,
@@ -31,6 +35,7 @@ router.post("/register", registerLimiter, register);
 router.post("/register/artist", registerLimiter, registerArtist);
 router.post("/register/client", registerLimiter, registerClient);
 router.post("/login", loginLimiter, login);
+router.post("/firebase", loginLimiter, firebaseLogin);
 router.post("/refresh", refreshTokenLimiter, refreshToken);
 router.post("/verify", verify);
 router.post("/logout", logout);
@@ -38,14 +43,16 @@ router.post("/logout", logout);
 // Password reset
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordLimiter, resetPassword);
-router.post("/change-password", changePassword); // Requiere autenticación
+router.post("/change-password", authenticate, changePassword); // Requiere autenticación
 
 // Email verification
 router.post("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationLimiter, resendVerification);
 
-// Get current authenticated user (admin only)
-router.get("/me", isAdmin, getMe);
+// Get current authenticated user (any authenticated user)
+router.get("/me", authenticate, getMe);
+router.patch("/profile", authenticate, updateProfile);
+router.patch("/complete-onboarding", authenticate, completeOnboarding);
 
 export default router;
 

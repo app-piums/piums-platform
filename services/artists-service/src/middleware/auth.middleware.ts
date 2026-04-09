@@ -1,14 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { PrismaClient } from "@prisma/client";
 import { AppError } from "./errorHandler";
 import { logger } from "../utils/logger";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-change-me";
+const prisma = new PrismaClient();
 
 export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
+    role?: string;
   };
 }
 
@@ -32,6 +35,7 @@ export const authenticateToken = (
     const decoded = jwt.verify(token, JWT_SECRET) as {
       id: string;
       email: string;
+      role?: string;
     };
 
     req.user = decoded;
@@ -50,27 +54,47 @@ export const authenticateToken = (
 };
 
 /**
- * Middleware para verificar que el usuario acceda solo a su propio perfil de artista
+ * Middleware para verificar que el usuario acceda solo a su propio perfil de artista.
+ * Admins pueden modificar cualquier perfil.
  */
-export const authorizeArtistOwner = (
+export const authorizeArtistOwner = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const requestedArtistId = req.params.id;
-  const authenticatedUserId = req.user?.id;
+  try {
+    const artistId = req.params.id;
+    const authenticatedUserId = req.user?.id;
+    const userRole = req.user?.role;
 
-  // Nota: Aquí asumimos que el ID del artista es el authId
-  // En producción, deberías verificar contra la base de datos
-  if (requestedArtistId !== authenticatedUserId) {
-    logger.warn("Intento de acceso no autorizado a perfil de artista", "AUTH_MIDDLEWARE", {
-      requestedArtistId,
-      authenticatedUserId,
-    });
-    return next(new AppError(403, "No tienes permisos para modificar este perfil"));
+    // Admins pueden modificar cualquier perfil
+    if (userRole === "admin") {
+      return next();
+    }
+
+    if (!authenticatedUserId) {
+      return next(new AppError(401, "No autenticado"));
+    }
+
+    // Buscar el perfil de artista y comparar authId con el usuario autenticado
+    const artist = await prisma.artist.findUnique({ where: { id: artistId } });
+    if (!artist) {
+      return next(new AppError(404, "Perfil de artista no encontrado"));
+    }
+
+    if (artist.authId !== authenticatedUserId) {
+      logger.warn("Intento de acceso no autorizado a perfil de artista", "AUTH_MIDDLEWARE", {
+        artistId,
+        artistAuthId: artist.authId,
+        authenticatedUserId,
+      });
+      return next(new AppError(403, "No tienes permisos para modificar este perfil"));
+    }
+
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  next();
 };
 
 /**

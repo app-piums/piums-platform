@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 // Rate limiter general para todas las rutas
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por ventana
+  max: process.env.NODE_ENV === "development" ? 10000 : 100,
   message: "Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde",
   standardHeaders: true,
   legacyHeaders: false,
@@ -12,7 +12,7 @@ export const apiLimiter = rateLimit({
 // Rate limiter para creación de perfil de artista
 export const createArtistLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
-  max: 3, // 3 intentos por hora
+  max: process.env.NODE_ENV === "development" ? 200 : 3,
   message: "Límite de creación de perfiles alcanzado, intenta más tarde",
   standardHeaders: true,
   legacyHeaders: false,

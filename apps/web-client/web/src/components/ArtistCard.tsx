@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import type { Artist } from '@piums/sdk';
 
 interface ArtistCardProps {
@@ -14,6 +15,7 @@ interface ArtistCardProps {
 }
 
 export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
+  const { formatPrice } = useCurrency();
   return (
     <Link href={`/artists/${artist.slug || artist.id}`}>
       <Card hover padding="none" className="overflow-hidden h-full">
@@ -112,6 +114,25 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
               <span>{artist.cityId}</span>
             </div>
           )}
+
+          {/* Price — prefer matchedService (smart-search result), fall back to mainServicePrice */}
+          {artist.matchedService ? (
+            <div className="flex items-center justify-between gap-2 bg-orange-50 rounded-lg px-2.5 py-1.5 mb-3">
+              <span className="text-xs text-gray-500 truncate">{artist.matchedService.name}</span>
+              <span className="text-xs font-bold text-[#FF6A00] shrink-0">
+                {formatPrice(artist.matchedService.price)}
+              </span>
+            </div>
+          ) : (artist.mainServicePrice != null && artist.mainServicePrice > 0) ? (
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500 truncate">
+                {artist.mainServiceName ?? 'Servicio principal'}
+              </span>
+              <span className="text-sm font-semibold text-[#FF6A00]">
+                Desde {formatPrice(artist.mainServicePrice)}
+              </span>
+            </div>
+          ) : null}
 
           {/* CTA Button */}
           <Button fullWidth size="sm" variant="primary">

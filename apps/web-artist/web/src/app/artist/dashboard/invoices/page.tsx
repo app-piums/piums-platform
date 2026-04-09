@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHelpButton } from '@/components/PageHelpButton';
 import { DashboardSidebar } from "@/components/artist/DashboardSidebar";
 
 type InvoiceStatus = "pagada" | "pendiente" | "vencida";
@@ -50,6 +51,7 @@ export default function InvoicesPage() {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <DashboardSidebar />
+        <PageHelpButton tourId="artistInvoicesTour" />
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8 max-w-5xl">
           {/* Header */}
@@ -143,7 +145,7 @@ export default function InvoicesPage() {
                         <div className="flex items-center justify-between sm:justify-end gap-4 pl-12 sm:pl-0 shrink-0">
                           <div className="text-right">
                             <p className="text-base font-bold text-gray-900">
-                              Q{inv.amount.toLocaleString("es-GT")}
+                              ${inv.amount.toLocaleString("en-US")}
                             </p>
                             <p className="text-xs text-gray-400">Vence: {inv.dueDate}</p>
                           </div>
@@ -169,7 +171,7 @@ export default function InvoicesPage() {
                 <div className="px-4 sm:px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
                   <span className="text-sm text-gray-500">{filtered.length} factura{filtered.length !== 1 ? "s" : ""}</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    Total: Q{totalAmount.toLocaleString("es-GT")}
+                    Total: ${totalAmount.toLocaleString("en-US")}
                   </span>
                 </div>
               </>

@@ -11,10 +11,10 @@ export default function Home() {
         {/* Navbar */}
         <nav className="flex items-center justify-between px-8 py-5 border-b border-zinc-100 dark:border-zinc-900">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Piums"
-            width={120}
-            height={40}
+            width={36}
+            height={36}
             className="h-9 w-auto"
             priority
           />
@@ -37,7 +37,10 @@ export default function Home() {
         {/* Hero */}
         <main className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/5 px-4 py-1.5 text-xs font-medium text-[#FF6A00]">
-            🎵 La plataforma de artistas
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+            La plataforma de artistas
           </span>
 
           <h1 className="max-w-2xl text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">

@@ -70,6 +70,37 @@ export class CloudinaryProvider {
   }
 
   /**
+   * Subir documento de identidad a Cloudinary
+   */
+  async uploadDocument(buffer: Buffer, folder: string): Promise<string> {
+    try {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `piums/documents/${folder}`,
+            public_id: `doc_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            transformation: [
+              { quality: 'auto', fetch_format: 'auto' },
+            ],
+          },
+          (error, result) => {
+            if (error) {
+              logger.error('Error uploading document to Cloudinary', 'CLOUDINARY_PROVIDER', error);
+              reject(error);
+            } else {
+              resolve(result!.secure_url);
+            }
+          }
+        );
+        streamifier.createReadStream(buffer).pipe(uploadStream);
+      });
+    } catch (error: any) {
+      logger.error('Failed to upload document', 'CLOUDINARY_PROVIDER', error);
+      throw new Error(`Error al subir documento: ${error.message}`);
+    }
+  }
+
+  /**
    * Verificar conexión con Cloudinary
    */
   async checkConnection(): Promise<boolean> {

@@ -7,6 +7,15 @@ type RegisterBody = {
   nombre: string;
   email: string;
   password: string;
+  pais?: string;
+  telefono?: string;
+  ciudad?: string;
+  birthDate?: string;
+  documentType?: string;
+  documentNumber?: string;
+  documentFrontUrl?: string;
+  documentBackUrl?: string;
+  documentSelfieUrl?: string;
 };
 
 type RegisterResponse = {
@@ -35,6 +44,21 @@ const isRegisterBody = (value: unknown): value is RegisterBody => {
   );
 };
 
+const extractRegisterFields = (body: RegisterBody) => ({
+  nombre: body.nombre,
+  email: body.email,
+  password: body.password,
+  ...(body.pais !== undefined && { pais: body.pais }),
+  ...(body.telefono !== undefined && { telefono: body.telefono }),
+  ...(body.ciudad !== undefined && { ciudad: body.ciudad }),
+  ...(body.birthDate !== undefined && { birthDate: body.birthDate }),
+  ...(body.documentType !== undefined && { documentType: body.documentType }),
+  ...(body.documentNumber !== undefined && { documentNumber: body.documentNumber }),
+  ...(body.documentFrontUrl !== undefined && { documentFrontUrl: body.documentFrontUrl }),
+  ...(body.documentBackUrl !== undefined && { documentBackUrl: body.documentBackUrl }),
+  ...(body.documentSelfieUrl !== undefined && { documentSelfieUrl: body.documentSelfieUrl }),
+});
+
 const isAbortError = (error: unknown): boolean =>
   error instanceof Error && error.name === "AbortError";
 
@@ -43,7 +67,7 @@ const getErrorMessage = (error: unknown): string =>
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: process.env.HTTPS_ENABLED === 'true',
   sameSite: "strict" as const,
   path: "/",
 };
@@ -71,7 +95,7 @@ export async function POST(request: NextRequest) {
       response = await fetch(`${AUTH_SERVICE_URL}/auth/register/artist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(extractRegisterFields(body)),
         signal: controller.signal,
       });
 

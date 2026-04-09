@@ -7,11 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ConversationStatus {
+  PENDING
+  ACTIVE
+  ARCHIVED
+}
+
 model Conversation {
   id        String    @id @default(uuid())
   userId    String
   artistId  String
   bookingId String?   @unique
+  status    ConversationStatus @default(PENDING)
   lastMessageAt DateTime @default(now())
   messages  Message[]
   createdAt DateTime  @default(now())

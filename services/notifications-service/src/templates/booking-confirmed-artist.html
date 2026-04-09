@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva Confirmada</title>
+    <style>
+        body { margin:0; padding:0; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background-color:#f4f4f4; color:#333; }
+        .container { max-width:600px; margin:0 auto; background:#fff; }
+        .header { background:linear-gradient(135deg,#10B981 0%,#059669 100%); padding:40px 30px; text-align:center; }
+        .header h1 { color:#fff; margin:0; font-size:26px; font-weight:600; }
+        .header p { color:rgba(255,255,255,0.85); margin:8px 0 0; font-size:15px; }
+        .content { padding:40px 30px; }
+        .badge { background:linear-gradient(135deg,#10B981 0%,#059669 100%); color:#fff; padding:16px 24px; border-radius:8px; margin-bottom:28px; text-align:center; }
+        .badge p { margin:0 0 4px; font-size:13px; opacity:0.9; }
+        .badge h2 { margin:0; font-size:22px; font-weight:700; letter-spacing:2px; }
+        .client-card { display:flex; align-items:center; background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:28px; gap:16px; }
+        .client-avatar { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#FF6A00,#EE0979); display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; font-weight:700; flex-shrink:0; }
+        .client-name { font-size:18px; font-weight:600; color:#333; margin:0 0 4px; }
+        .client-label { font-size:13px; color:#888; margin:0; }
+        .details { background:#f8f9fa; border-radius:8px; padding:24px; margin-bottom:28px; }
+        .detail-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #e5e7eb; font-size:14px; }
+        .detail-row:last-child { border-bottom:none; padding-bottom:0; }
+        .detail-label { color:#666; font-weight:500; }
+        .detail-value { color:#333; font-weight:600; text-align:right; max-width:60%; }
+        .total-row .detail-value { color:#10B981; font-size:16px; }
+        .cta { text-align:center; margin:32px 0 0; }
+        .btn { display:inline-block; background:linear-gradient(135deg,#10B981 0%,#059669 100%); color:#fff; padding:14px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:15px; }
+        .footer { background:#f4f4f4; padding:24px 30px; text-align:center; font-size:12px; color:#999; }
+        .footer a { color:#10B981; text-decoration:none; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>✅ Reserva Confirmada</h1>
+        <p>Has aceptado una nueva reserva</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Code badge -->
+        <div class="badge">
+            <p>Código de reserva</p>
+            <h2>{{bookingCode}}</h2>
+        </div>
+
+        <!-- Greeting -->
+        <p style="font-size:16px;margin:0 0 20px;">
+            Hola <strong>{{artistName}}</strong>,<br><br>
+            Has confirmado exitosamente la reserva de <strong>{{clientName}}</strong>.
+            Aquí tienes un resumen de los detalles para tu agenda.
+        </p>
+
+        <!-- Client card -->
+        <div class="client-card">
+            <div class="client-avatar">{{clientInitial}}</div>
+            <div>
+                <p class="client-name">{{clientName}}</p>
+                <p class="client-label">Cliente</p>
+            </div>
+        </div>
+
+        <!-- Booking details -->
+        <div class="details">
+            <div class="detail-row">
+                <span class="detail-label">Servicio</span>
+                <span class="detail-value">{{serviceName}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Fecha</span>
+                <span class="detail-value">{{bookingDate}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Hora</span>
+                <span class="detail-value">{{bookingTime}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Duración</span>
+                <span class="detail-value">{{duration}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Lugar</span>
+                <span class="detail-value">{{location}}</span>
+            </div>
+            <div class="detail-row total-row">
+                <span class="detail-label">Total</span>
+                <span class="detail-value">{{totalPrice}}</span>
+            </div>
+        </div>
+
+        <!-- Next steps -->
+        <p style="font-size:14px;color:#555;margin:0 0 24px;line-height:1.6;">
+            El cliente ha sido notificado de la confirmación. El chat con el cliente ya está habilitado
+            en tu panel. Recuerda estar puntual y preparado para el día del evento.
+        </p>
+
+        <!-- CTA -->
+        <div class="cta">
+            <a href="{{bookingsUrl}}" class="btn">Ver mis reservas</a>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>¿Necesitas ayuda? <a href="{{helpUrl}}">Contáctanos</a></p>
+        <p>© 2026 Piums · Plataforma de Artistas</p>
+    </div>
+
+</div>
+</body>
+</html>

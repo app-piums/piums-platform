@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
+import { toast } from '@/lib/toast';
 
 type SecurityTabProps = {
   onDirtyChange?: (isDirty: boolean) => void;
@@ -22,15 +23,15 @@ export default function SecurityTab(props: SecurityTabProps = {}) {
 
   const validatePassword = () => {
     if (!passwordData.currentPassword) {
-      alert('Por favor, ingresa tu contraseña actual');
+      toast.warning('Por favor, ingresa tu contraseña actual');
       return false;
     }
     if (passwordData.newPassword.length < 8) {
-      alert('La nueva contraseña debe tener al menos 8 caracteres');
+      toast.warning('La nueva contraseña debe tener al menos 8 caracteres');
       return false;
     }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Las contraseñas no coinciden');
+      toast.warning('Las contraseñas no coinciden');
       return false;
     }
     return true;
@@ -44,10 +45,10 @@ export default function SecurityTab(props: SecurityTabProps = {}) {
       // TODO: await sdk.changePassword({ currentPassword, newPassword })
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      alert('Contraseña actualizada correctamente');
+      toast.success('Contraseña actualizada correctamente');
     } catch (error) {
       console.error('Error changing password:', error);
-      alert('Error al cambiar la contraseña');
+      toast.error('Error al cambiar la contraseña');
     } finally {
       setLoading(false);
     }

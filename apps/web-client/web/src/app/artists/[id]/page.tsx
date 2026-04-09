@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Lightbox } from '@/components/Lightbox';
@@ -11,13 +11,17 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { ReportModal } from '@/components/ReportModal';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
 import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
+import { toast } from '@/lib/toast';
 
 export default function ArtistProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const artistId = params.id as string;
   
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
@@ -28,14 +32,45 @@ export default function ArtistProfilePage() {
   const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingReviews, setLoadingReviews] = useState(false);
-  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('about');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState('');
+  // Write-review form
+  const [completedBookings, setCompletedBookings] = useState<{ id: string; code: string }[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewBookingId, setReviewBookingId] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('services');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null);
+  const startingPrice = useMemo(() => {
+    if (services.length > 0) {
+      const validPrices = services
+        .map((service) => (service.basePrice ?? 0) / 100)
+        .filter((amount) => amount && amount > 0);
+      if (validPrices.length) {
+        return Math.min(...validPrices);
+      }
+    }
+
+    if (artist?.hourlyRateMin) {
+      return Math.round(artist.hourlyRateMin / 100);
+    }
+
+    return null;
+  }, [services, artist?.hourlyRateMin]);
+
+  const highlightedServiceName = useMemo(() => services[0]?.name ?? null, [services]);
   const tabItems: Array<{ key: typeof activeTab; label: string }> = [
-    { key: 'about', label: 'Acerca de' },
     { key: 'services', label: 'Servicios' },
     { key: 'portfolio', label: 'Portafolio' },
     { key: 'reviews', label: 'Reseñas' },
+    { key: 'about', label: 'Acerca de' },
   ];
 
   const loadArtistData = useCallback(async () => {
@@ -105,6 +140,59 @@ export default function ArtistProfilePage() {
     }
   }, [activeTab, loadReviews, reviews.length]);
 
+  // Load completed bookings for this artist so the user can leave a review
+  useEffect(() => {
+    if (activeTab !== 'reviews' || !user) return;
+    (async () => {
+      try {
+        const { sdk } = await import('@piums/sdk');
+        const result = await sdk.listBookings({ status: 'COMPLETED', artistId, limit: 20 });
+        const mapped = (result.bookings ?? []).map((b: any) => ({
+          id: b.id,
+          code: b.bookingCode ?? b.id.slice(0, 8),
+        }));
+        setCompletedBookings(mapped);
+        if (mapped.length > 0) setReviewBookingId(mapped[0].id);
+      } catch {
+        // silently ignore — user may not be logged in or no bookings
+      }
+    })();
+  }, [activeTab, artistId, user]);
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) return;
+    if (!reviewBookingId) {
+      setReviewError('Necesitas una reserva completada con este artista para dejar una reseña.');
+      return;
+    }
+    const trimmedComment = reviewComment.trim();
+    if (trimmedComment && trimmedComment.length < 3) {
+      setReviewError('El comentario debe tener al menos 3 caracteres.');
+      return;
+    }
+    try {
+      setReviewSubmitting(true);
+      setReviewError(null);
+      const { sdk } = await import('@piums/sdk');
+      await sdk.createReview({
+        bookingId: reviewBookingId,
+        rating: reviewRating,
+        comment: trimmedComment || undefined,
+      });
+      setReviewSuccess(true);
+      setShowReviewForm(false);
+      setReviewComment('');
+      setReviewRating(5);
+      // Reload reviews
+      setReviews([]);
+      loadReviews(1);
+    } catch (err: any) {
+      setReviewError(err?.message ?? 'Error al enviar la reseña');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   const handleLoadMoreReviews = () => {
     if (reviewsPage < reviewsTotalPages) {
       loadReviews(reviewsPage + 1);
@@ -118,6 +206,21 @@ export default function ArtistProfilePage() {
 
   const closeLightbox = () => {
     setLightboxOpen(false);
+  };
+  const handleOpenReport = (reviewId: string) => {
+    setSelectedReviewId(reviewId);
+    setIsReportModalOpen(true);
+  };
+
+  const handleReportSubmit = async (reviewId: string, reason: string, description: string) => {
+    try {
+      const { sdk } = await import('@piums/sdk');
+      await sdk.reportReview(reviewId, { reason, description });
+      toast.success('Reporte enviado correctamente. Los administradores lo revisarán pronto.');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      toast.error('Error al enviar el reporte.');
+    }
   };
 
   const nextImage = () => {
@@ -152,6 +255,21 @@ export default function ArtistProfilePage() {
       </div>
     );
   }
+
+  const artistIsFavorite = isFavorite(artist.id);
+  const handleFavoriteToggle = () => {
+    toggleFavorite({
+      id: artist.id,
+      nombre: artist.nombre,
+      category: artist.category,
+      cityId: artist.cityId,
+      avatar: artist.avatar,
+      coverPhoto: artist.coverPhoto,
+      rating: artist.rating ?? null,
+      startingPrice,
+      highlightedService: highlightedServiceName,
+    });
+  };
 
   const portfolioImages = artist.portfolio?.map(item => ({
     url: item.imageUrl || '/placeholder-image.jpg',
@@ -267,9 +385,44 @@ export default function ArtistProfilePage() {
               )}
             </div>
 
-            <Button onClick={handleBookNow} size="lg">
-              Reservar Ahora
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={handleBookNow} size="lg">
+                Reservar Ahora
+              </Button>
+              <button
+                type="button"
+                onClick={handleFavoriteToggle}
+                aria-pressed={artistIsFavorite}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors shadow-sm ${
+                  artistIsFavorite
+                    ? 'border-[#FF6A00] text-[#FF6A00] bg-[#FF6A00]/5'
+                    : 'border-gray-200 text-gray-600 hover:border-[#FF6A00]/60 hover:text-[#FF6A00]'
+                }`}
+              >
+                <svg
+                  className={`h-5 w-5 ${artistIsFavorite ? 'fill-[#FF6A00]' : ''}`}
+                  fill={artistIsFavorite ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.8}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+                {artistIsFavorite ? 'Guardado' : 'Guardar'}
+              </button>
+            </div>
+            {artistIsFavorite && (
+              <p className="flex items-center gap-1 mt-2 text-xs text-[#FF6A00]">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Añadido a tus favoritos
+              </p>
+            )}
           </div>
         </div>
 
@@ -335,15 +488,42 @@ export default function ArtistProfilePage() {
                   </Card>
                 ) : (
                   services.map((service) => (
-                    <Card key={service.id}>
+                    <div
+                      key={service.id}
+                      onMouseEnter={() => setHoveredServiceId(service.id)}
+                      onMouseLeave={() => setHoveredServiceId(null)}
+                    >
+                    <Card>
                       <CardContent>
                         <div className="flex justify-between items-start mb-3">
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
                             <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                            {/* What's included — revealed on hover with smooth animation */}
+                            {(service.whatIsIncluded?.length ?? 0) > 0 && (
+                              <div className={`grid transition-all duration-300 ease-in-out ${
+                                hoveredServiceId === service.id
+                                  ? 'grid-rows-[1fr] opacity-100 mt-3'
+                                  : 'grid-rows-[0fr] opacity-0 mt-0'
+                              }`}>
+                                <div className="overflow-hidden">
+                                  <div className="pt-3 border-t border-gray-100 space-y-1.5">
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Incluye</p>
+                                    {service.whatIsIncluded!.map((item, i) => (
+                                      <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                        <svg className="h-3.5 w-3.5 text-[#FF6A00] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M12 2l1.8 5.4 5.7.4-4.4 3.3 1.6 5.5L12 13.5l-4.7 3.1 1.6-5.5L4.5 7.8l5.7-.4z" />
+                                        </svg>
+                                        <span>{item}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-[#FF6A00]">${service.basePrice.toLocaleString()}</p>
+                          <div className="text-right ml-4 shrink-0">
+                            <p className="text-2xl font-bold text-[#FF6A00]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                             <p className="text-sm text-gray-500">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                         </div>
@@ -352,6 +532,7 @@ export default function ArtistProfilePage() {
                         </Button>
                       </CardContent>
                     </Card>
+                    </div>
                   ))
                 )}
               </div>
@@ -404,6 +585,130 @@ export default function ArtistProfilePage() {
 
             {activeTab === 'reviews' && (
               <div className="space-y-4">
+
+                {/* Write-a-review block */}
+                {user && !reviewSuccess && (
+                  <Card>
+                    <CardContent>
+                      {!showReviewForm ? (
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">¿Ya trabajaste con este artista?</p>
+                          <button
+                            onClick={() => setShowReviewForm(true)}
+                            className="flex items-center gap-2 rounded-xl bg-[#FF6A00] px-4 py-2 text-sm font-semibold text-white hover:bg-[#E65F00] transition-colors"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                            Escribir reseña
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-4">Escribe tu reseña</h3>
+
+                          {/* Booking selector */}
+                          {completedBookings.length > 1 && (
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Reserva</label>
+                              <select
+                                value={reviewBookingId}
+                                onChange={e => setReviewBookingId(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20"
+                              >
+                                {completedBookings.map(b => (
+                                  <option key={b.id} value={b.id}>{b.code}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Star rating */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Calificación</label>
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onMouseEnter={() => setReviewHover(star)}
+                                  onMouseLeave={() => setReviewHover(0)}
+                                  onClick={() => setReviewRating(star)}
+                                  className="text-2xl transition-transform hover:scale-110"
+                                >
+                                  <svg
+                                    className={`h-8 w-8 ${
+                                      star <= (reviewHover || reviewRating)
+                                        ? 'text-yellow-400'
+                                        : 'text-gray-300'
+                                    } transition-colors`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                </button>
+                              ))}
+                              <span className="ml-2 self-center text-sm text-gray-500">
+                                {['', 'Pésimo', 'Malo', 'Regular', 'Bueno', 'Excelente'][reviewRating]}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Comment */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Comentario <span className="text-gray-400 font-normal">(opcional)</span>
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={reviewComment}
+                              onChange={e => setReviewComment(e.target.value)}
+                              placeholder="Cuéntanos tu experiencia con este artista…"
+                              maxLength={2000}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 resize-none"
+                            />
+                            <div className="mt-1 flex justify-between text-xs text-gray-400">
+                              <span>{reviewComment.trim().length > 0 && reviewComment.trim().length < 3 ? <span className="text-red-500">Mínimo 3 caracteres</span> : null}</span>
+                              <span>{reviewComment.length}/2000</span>
+                            </div>
+                          </div>
+
+                          {reviewError && (
+                            <p className="mb-3 text-sm text-red-500">{reviewError}</p>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => { setShowReviewForm(false); setReviewError(null); }}
+                              className="flex-1 rounded-xl border border-gray-200 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={handleSubmitReview}
+                              disabled={reviewSubmitting || reviewRating === 0}
+                              className="flex-1 rounded-xl bg-[#FF6A00] py-2 text-sm font-semibold text-white hover:bg-[#E65F00] disabled:opacity-60 transition-colors"
+                            >
+                              {reviewSubmitting ? 'Enviando…' : 'Publicar reseña'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Success banner */}
+                {reviewSuccess && (
+                  <div className="flex items-center gap-3 rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+                    <svg className="h-5 w-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-sm text-green-700 font-medium">¡Reseña publicada! Gracias por tu opinión.</p>
+                  </div>
+                )}
+
                 {loadingReviews && reviews.length === 0 ? (
                   <Card>
                     <CardContent>
@@ -443,7 +748,7 @@ export default function ArtistProfilePage() {
                               </div>
                             </div>
                             <span className="text-sm text-gray-500">
-                              {new Date(review.createdAt).toLocaleDateString('es-MX', {
+                              {new Date(review.createdAt).toLocaleDateString('es-GT', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
@@ -453,6 +758,17 @@ export default function ArtistProfilePage() {
                           {review.comment && (
                             <p className="text-gray-700">{review.comment}</p>
                           )}
+                          <div className="flex justify-end mt-2">
+                            <button
+                              onClick={() => handleOpenReport(review.id)}
+                              className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1"
+                            >
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              Reportar
+                            </button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -497,6 +813,12 @@ export default function ArtistProfilePage() {
         </div>
       </div>
       </div>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reviewId={selectedReviewId}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 }
