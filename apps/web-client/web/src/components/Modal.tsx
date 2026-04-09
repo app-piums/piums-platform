@@ -37,24 +37,24 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 backdrop-blur-sm bg-black/20 transition-opacity"
+        className="fixed inset-0 backdrop-blur-sm bg-black/30 dark:bg-black/60 transition-opacity"
         onClick={handleBackdropClick}
       />
 
       {/* Modal panel */}
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         <div
-          className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 w-full ${sizeClasses[size]}`}
+          className={`relative transform overflow-hidden rounded-2xl bg-white dark:bg-[#1E293B] text-left shadow-xl transition-all sm:my-8 w-full ${sizeClasses[size]}`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900" id="modal-title">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-[#334155]">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-[#F1F5F9]" id="modal-title">
               {title}
             </h3>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors"
+              className="rounded-lg p-1 text-gray-400 dark:text-[#64748B] hover:bg-gray-100 dark:hover:bg-[#334155] hover:text-gray-500 dark:hover:text-[#94A3B8] transition-colors"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -63,13 +63,13 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
           </div>
 
           {/* Body */}
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 text-gray-700 dark:text-[#CBD5E1]">
             {children}
           </div>
 
           {/* Footer */}
           {footer && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-[#334155] bg-gray-50 dark:bg-[#0F172A]">
               {footer}
             </div>
           )}
