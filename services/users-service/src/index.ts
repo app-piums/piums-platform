@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import usersRoutes from "./routes/users.routes";
 import profileRoutes from "./routes/profile.routes";
+import favoriteRoutes from "./routes/favorite.routes";
 import healthRoutes from "./routes/health.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
@@ -23,6 +24,7 @@ app.use(apiLimiter as any);
 app.use("/health", healthRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/users/me/profile", profileRoutes);
+app.use("/api/users/me/favorites", favoriteRoutes);
 
 // Middleware de error handling (debe ir al final)
 app.use(errorHandler);
