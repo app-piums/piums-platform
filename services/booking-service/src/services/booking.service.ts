@@ -78,18 +78,18 @@ export class BookingService {
     // Obtener detalles del artista para coordenadas base
     const artist = await artistsClient.getArtist(data.artistId);
     
-    // Resolver ubicación del cliente si no se proporcionan coordenadas
-    if ((!data.locationLat || !data.locationLng) && data.clientId) {
+    // Resolver ubicación del cliente SOLO si el usuario no proporcionó ninguna ubicación explícitamente
+    // Esto mantiene consistencia: una vez seleccionada, no se sobrescribe automáticamente
+    const hasExplicitLocation = data.location || data.locationLat || data.locationLng;
+    
+    if (!hasExplicitLocation && data.clientId) {
       const user = await usersClient.getUser(data.clientId);
       if (user && user.addresses && user.addresses.length > 0) {
         const defaultAddr = user.addresses.find(a => a.isDefault) || user.addresses[0];
         if (defaultAddr.lat && defaultAddr.lng) {
           data.locationLat = defaultAddr.lat;
           data.locationLng = defaultAddr.lng;
-          // Si no hay string de ubicación, usar el label o street
-          if (!data.location) {
-            data.location = defaultAddr.label || defaultAddr.street || `${defaultAddr.city}, ${defaultAddr.country}`;
-          }
+          data.location = defaultAddr.label || defaultAddr.street || `${defaultAddr.city}, ${defaultAddr.country}`;
           logger.info(`Ubicación de cliente resuelta automáticamente: ${data.location}`, "BOOKING_SERVICE", {
             lat: data.locationLat,
             lng: data.locationLng
