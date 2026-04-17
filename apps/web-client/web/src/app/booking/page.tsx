@@ -751,7 +751,7 @@ function BookingContent() {
 
       const booking = await sdk.createBooking(payload);
       setShowConfirmModal(false);
-      router.push(`/booking/confirmation/${booking.id}`);
+      router.push(`/booking/checkout?bookingId=${booking.id}`);
     } catch (error) {
       console.error('Error creating booking:', error);
       setShowConfirmModal(false);

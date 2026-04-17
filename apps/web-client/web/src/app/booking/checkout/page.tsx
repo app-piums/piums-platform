@@ -1,35 +1,51 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+import { sdk } from '@piums/sdk';
+import type { Booking } from '@piums/sdk';
+import { toast } from '@/lib/toast';
 
-// ─── Mock booking summary data ────────────────────────────────────────────────
-const BOOKING = {
-  serviceTitle: 'Sesión de Fotografía Creativa',
-  artistName: 'Alex Martínez',
-  artistAvatar: '',
-  rating: 4.8,
-  reviewCount: 333,
-  date: 'Viernes, 24 Noviembre 2023',
-  timeStart: '10:00 AM',
-  timeEnd: '12:00 PM',
-  durationLabel: '2 Horas',
-  imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&q=80',
-  priceBase: 103.78,
-  piumsFee: 10.22,
-  discount: -8.00,
-  discountLabel: 'Descuento "Add on 2"',
-  total: 122.00,
-  cancellationNote: 'Cancelación gratuita hasta 34 horas antes',
-};
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
-// ─── Steps header ─────────────────────────────────────────────────────────────
+function centsToDisplay(cents: number): string {
+  return (cents / 100).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatScheduledDate(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('es-GT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const time = d.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
+  return { date, time };
+}
+
+function addMinutesToIso(iso: string, minutes: number): string {
+  return new Date(new Date(iso).getTime() + minutes * 60000).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
+}
+
+function durationLabel(minutes: number): string {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0 && mins > 0) return `${hrs} h ${mins} min`;
+  if (hrs > 0) return `${hrs} hora${hrs !== 1 ? 's' : ''}`;
+  return `${mins} min`;
+}
+
 const STEPS = [
   { label: 'Detalles', num: 1 },
-  { label: 'Reservas',  num: 2 },
-  { label: 'Pago',      num: 3 },
+  { label: 'Reservas', num: 2 },
+  { label: 'Pago', num: 3 },
 ];
 
 function StepsHeader({ current }: { current: number }) {
@@ -39,25 +55,19 @@ function StepsHeader({ current }: { current: number }) {
         <Link href="/dashboard">
           <Image src="/logo.png" alt="PIUMS" width={28} height={28} className="h-7 w-auto" />
         </Link>
-
-        {/* Steps */}
         <div className="flex items-center gap-0">
           {STEPS.map((step, i) => {
-            const done   = step.num < current;
+            const done = step.num < current;
             const active = step.num === current;
             return (
               <React.Fragment key={step.num}>
                 <div className="flex flex-col items-center min-w-[56px]">
                   <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                    done   ? 'bg-green-500 border-green-500 text-white'
-                    : active ? 'bg-[#FF6A00] border-[#FF6A00] text-white'
-                    : 'bg-white border-gray-200 text-gray-400'
+                    done ? 'bg-green-500 border-green-500 text-white' : active ? 'bg-[#FF6A00] border-[#FF6A00] text-white' : 'bg-white border-gray-200 text-gray-400'
                   }`}>
                     {done ? <CheckIcon className="h-3.5 w-3.5" /> : step.num}
                   </div>
-                  <span className={`text-[11px] mt-1 font-medium ${
-                    done ? 'text-green-500' : active ? 'text-[#FF6A00]' : 'text-gray-400'
-                  }`}>
+                  <span className={`text-[11px] mt-1 font-medium ${done ? 'text-green-500' : active ? 'text-[#FF6A00]' : 'text-gray-400'}`}>
                     {step.label}
                   </span>
                 </div>
@@ -68,8 +78,6 @@ function StepsHeader({ current }: { current: number }) {
             );
           })}
         </div>
-
-        {/* Help */}
         <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
           <InfoIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Ayuda</span>
@@ -79,147 +87,150 @@ function StepsHeader({ current }: { current: number }) {
   );
 }
 
-// ─── Left: booking summary ────────────────────────────────────────────────────
-function BookingSummary() {
-  const b = BOOKING;
+function BookingSummary({ booking }: { booking: Booking }) {
+  const { date, time } = formatScheduledDate(booking.scheduledDate);
+  const endTime = addMinutesToIso(booking.scheduledDate, booking.durationMinutes);
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      {/* Header */}
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
         <div className="h-7 w-7 rounded-lg bg-orange-100 flex items-center justify-center">
           <ClipboardIcon className="h-4 w-4 text-[#FF6A00]" />
         </div>
         <h2 className="font-semibold text-gray-900">Resumen de la Reserva</h2>
       </div>
-
       <div className="px-5 py-4 space-y-5">
-        {/* Service row */}
         <div className="flex items-start gap-3">
-          <div className="h-14 w-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-            <Image
-              src={b.imageUrl}
-              alt={b.serviceTitle}
-              width={56}
-              height={56}
-              className="w-full h-full object-cover"
-            />
+          <div className="h-14 w-14 rounded-xl bg-orange-50 shrink-0 flex items-center justify-center">
+            <ClipboardIcon className="h-6 w-6 text-[#FF6A00]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-sm leading-snug">{b.serviceTitle}</p>
-            <p className="text-xs text-gray-400 mt-0.5">con {b.artistName}</p>
-            <div className="flex items-center gap-1 mt-1">
-              <StarFilledIcon className="h-3.5 w-3.5 text-yellow-400" />
-              <span className="text-xs font-semibold text-gray-700">{b.rating}</span>
-              <span className="text-xs text-gray-400">({b.reviewCount} reseñas)</span>
-            </div>
+            <p className="font-semibold text-gray-900 text-sm leading-snug">
+              {(booking as any).serviceName || 'Servicio'}
+            </p>
+            {(booking as any).artistName && (
+              <p className="text-xs text-gray-400 mt-0.5">con {(booking as any).artistName}</p>
+            )}
+            <span className="inline-block mt-1 text-[10px] font-semibold bg-orange-100 text-[#FF6A00] px-2 py-0.5 rounded-full">
+              #{(booking as any).code || booking.id.slice(0, 8).toUpperCase()}
+            </span>
           </div>
         </div>
-
-        {/* Date & time */}
         <div className="space-y-2">
           <div className="flex items-start gap-2.5">
             <CalendarIcon className="h-4 w-4 text-[#FF6A00] shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Fecha</p>
-              <p className="text-sm font-medium text-gray-800">{b.date}</p>
+              <p className="text-sm font-medium text-gray-800 capitalize">{date}</p>
             </div>
           </div>
           <div className="flex items-start gap-2.5">
             <ClockIcon className="h-4 w-4 text-[#FF6A00] shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-gray-800">
-                {b.timeStart} – {b.timeEnd}{' '}
-                <span className="text-xs text-gray-400">({b.durationLabel})</span>
+                {time} &ndash; {endTime}{' '}
+                <span className="text-xs text-gray-400">({durationLabel(booking.durationMinutes)})</span>
               </p>
             </div>
           </div>
+          {booking.location && (
+            <div className="flex items-start gap-2.5">
+              <ShieldIcon className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-gray-700 leading-snug">{booking.location}</p>
+            </div>
+          )}
         </div>
-
-        {/* Price breakdown */}
         <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
           <div className="flex justify-between text-gray-600">
-            <span>Servicio Artístico (x2 hrs)</span>
-            <span className="font-medium">${b.priceBase.toLocaleString('en-US')}</span>
+            <span>Servicio base</span>
+            <span className="font-medium">{booking.currency} {centsToDisplay(booking.servicePrice)}</span>
           </div>
-          <div className="flex justify-between text-gray-600">
-            <span>Tarifa de servicio Piums</span>
-            <span className="font-medium">${b.piumsFee.toLocaleString('en-US')}</span>
-          </div>
-          <div className="flex justify-between text-green-600">
-            <span>{b.discountLabel}</span>
-            <span className="font-medium">${b.discount.toLocaleString('en-US')}</span>
-          </div>
+          {booking.addonsPrice > 0 && (
+            <div className="flex justify-between text-gray-600">
+              <span>Add-ons</span>
+              <span className="font-medium">{booking.currency} {centsToDisplay(booking.addonsPrice)}</span>
+            </div>
+          )}
           <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
             <span>Total a pagar</span>
-            <span>${b.total.toLocaleString('en-US')}</span>
+            <span>{booking.currency} {centsToDisplay(booking.totalPrice)}</span>
           </div>
         </div>
-
-        {/* Cancellation */}
         <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1.5">
           <ShieldIcon className="h-3.5 w-3.5 text-green-500" />
-          {b.cancellationNote}
+          Cancelación gratuita hasta 24 horas antes
         </p>
       </div>
     </div>
   );
 }
 
-// ─── Right: notes + payment form ─────────────────────────────────────────────
-function PaymentForm() {
+function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId: string }) {
+  const stripe = useStripe();
+  const elements = useElements();
   const router = useRouter();
-  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'card' | 'paypal'>('transfer');
-  const [cardNumber, setCardNumber]   = useState('');
-  const [expiry, setExpiry]           = useState('');
-  const [cvc, setCvc]                 = useState('');
-  const [cardName, setCardName]       = useState('');
-  const [saveCard, setSaveCard]       = useState(false);
-  const [notes, setNotes]             = useState('');
-  const [submitting, setSubmitting]   = useState(false);
-
-  const formatCardNumber = (val: string) => {
-    const digits = val.replace(/\D/g, '').slice(0, 16);
-    return digits.replace(/(.{4})/g, '$1 ').trim();
-  };
-
-  const formatExpiry = (val: string) => {
-    const digits = val.replace(/\D/g, '').slice(0, 4);
-    if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2);
-    return digits;
-  };
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'transfer' | 'paypal'>('card');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1800));
-    router.push('/booking/confirmation');
+    setErrorMsg(null);
+    try {
+      if (paymentMethod === 'transfer' || paymentMethod === 'paypal') {
+        router.push(`/booking/confirmation/${bookingId}`);
+        return;
+      }
+      if (!stripe || !elements) {
+        setErrorMsg('Stripe no está listo. Por favor recarga la página.');
+        setSubmitting(false);
+        return;
+      }
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `${window.location.origin}/booking/confirmation/${bookingId}` },
+        redirect: 'if_required',
+      });
+      if (error) {
+        const msg = error.message || 'Error al procesar el pago. Por favor intenta de nuevo.';
+        setErrorMsg(msg);
+        toast.error(msg);
+      } else {
+        try { sessionStorage.removeItem(`piums_pi_${bookingId}`); } catch {}
+        toast.success('¡Pago procesado exitosamente!');
+        router.push(`/booking/confirmation/${bookingId}`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error inesperado al procesar el pago';
+      setErrorMsg(msg);
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const canSubmit = paymentMethod === 'transfer' || paymentMethod === 'paypal'
-    || (cardNumber.replace(/\s/g, '').length === 16 && expiry.length === 5 && cvc.length >= 3 && cardName.trim().length > 2);
-
   const methods = [
+    { id: 'card' as const, label: 'Tarjeta', icon: <CreditCardIcon className="h-4 w-4" /> },
     { id: 'transfer' as const, label: 'Transferencia', icon: <BankIcon className="h-4 w-4" /> },
-    { id: 'card'     as const, label: 'Tarjeta',       icon: <CreditCardIcon className="h-4 w-4" /> },
-    { id: 'paypal'   as const, label: 'PayPal',        icon: <PayPalIcon className="h-4 w-4" /> },
+    { id: 'paypal' as const, label: 'PayPal', icon: <PayPalIcon className="h-4 w-4" /> },
   ];
+
+  const canSubmit = paymentMethod === 'transfer' || paymentMethod === 'paypal' || (!!stripe && !!elements);
 
   return (
     <div className="space-y-5">
-
-      {/* Notes */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Notas para el Artista</h2>
         <textarea
           rows={4}
           value={notes}
-          onChange={e => setNotes(e.target.value)}
+          onChange={e => setNotes(e.target.value.slice(0, 300))}
           placeholder="¿Tienes algún requerimiento especial o idea para la sesión?"
           className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300"
         />
         <p className="text-right text-xs text-gray-300 mt-1">{notes.length}/300</p>
       </div>
 
-      {/* Payment method */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-gray-900">Método de Pago</h2>
@@ -229,16 +240,13 @@ function PaymentForm() {
           </div>
         </div>
 
-        {/* 3-method selector */}
         <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
           {methods.map(m => (
             <button
               key={m.id}
               onClick={() => setPaymentMethod(m.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                paymentMethod === m.id
-                  ? 'bg-white shadow text-gray-900 border border-gray-200'
-                  : 'text-gray-500 hover:text-gray-700'
+                paymentMethod === m.id ? 'bg-white shadow text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {m.icon}
@@ -247,23 +255,21 @@ function PaymentForm() {
           ))}
         </div>
 
-        {/* Transfer instructions */}
+        {paymentMethod === 'card' && (
+          <PaymentElement options={{ layout: 'tabs', paymentMethodOrder: ['card'] }} />
+        )}
+
         {paymentMethod === 'transfer' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
               <p className="text-sm font-semibold text-orange-800">Datos para Transferencia / Depósito</p>
               <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-500">Banco</span><span className="font-medium text-gray-900">Banrural Guatemala</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Cuenta Monetaria</span><span className="font-medium text-gray-900 font-mono">3-123-456789-0</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">A nombre de</span><span className="font-medium text-gray-900">PIUMS S.A.</span></div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Banco</span>
-                  <span className="font-medium text-gray-900">Banrural Guatemala</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Cuenta Monetaria</span>
-                  <span className="font-medium text-gray-900 font-mono">3-123-456789-0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">A nombre de</span>
-                  <span className="font-medium text-gray-900">PIUMS S.A.</span>
+                  <span className="text-gray-500">Monto</span>
+                  <span className="font-bold text-[#FF6A00]">{booking.currency} {centsToDisplay(booking.totalPrice)}</span>
                 </div>
               </div>
             </div>
@@ -276,132 +282,40 @@ function PaymentForm() {
           </div>
         )}
 
-        {/* Card form */}
-        {paymentMethod === 'card' && (
-          <div className="space-y-3">
-            {/* Card number */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                Número de Tarjeta
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="1234 1234 1234 1234"
-                  value={cardNumber}
-                  onChange={e => setCardNumber(formatCardNumber(e.target.value))}
-                  className="w-full pl-12 pr-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300 font-mono tracking-widest"
-                />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-0.5">
-                  <div className="h-4 w-6 bg-blue-600 rounded-sm opacity-90" />
-                  <div className="h-4 w-6 bg-red-500 rounded-sm opacity-90 -ml-2" />
-                </div>
-              </div>
-            </div>
-
-            {/* Expiry + CVC */}
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                  Fecha de Expiración
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="MM / AA"
-                  value={expiry}
-                  onChange={e => setExpiry(formatExpiry(e.target.value))}
-                  maxLength={5}
-                  className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                  CVC{' '}
-                  <span className="text-gray-300">(3 dígitos)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    placeholder="CVC"
-                    value={cvc}
-                    onChange={e => setCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    className="w-full pl-4 pr-10 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300"
-                  />
-                  <LockIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-                </div>
-              </div>
-            </div>
-
-            {/* Card name */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                Nombre en la tarjeta
-              </label>
-              <input
-                type="text"
-                placeholder="Como aparece en la tarjeta"
-                value={cardName}
-                onChange={e => setCardName(e.target.value)}
-                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300"
-              />
-            </div>
-
-            {/* Save card */}
-            <label className="flex items-center gap-2.5 cursor-pointer group">
-              <div
-                onClick={() => setSaveCard(v => !v)}
-                className={`h-4.5 w-4.5 h-[18px] w-[18px] rounded border-2 flex items-center justify-center transition-all ${
-                  saveCard ? 'bg-[#FF6A00] border-[#FF6A00]' : 'border-gray-300 group-hover:border-[#FF6A00]'
-                }`}
-              >
-                {saveCard && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-              </div>
-              <span className="text-sm text-gray-600">Guardar tarjeta para futuras reservas</span>
-            </label>
-          </div>
-        )}
-
-        {/* PayPal placeholder */}
         {paymentMethod === 'paypal' && (
           <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-blue-200 rounded-xl bg-blue-50/40">
             <PayPalIcon className="h-12 w-12 text-[#003087]" />
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-800">Pago con PayPal</p>
-              <p className="text-xs text-gray-500 mt-1">
-                La integración con PayPal estará disponible próximamente.<br />
-                Mientras tanto, usa Transferencia o Tarjeta.
-              </p>
+              <p className="text-xs text-gray-500 mt-1">La integración con PayPal estará disponible próximamente.<br />Mientras tanto, usa Transferencia o Tarjeta.</p>
             </div>
-            <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-wide">
-              Próximamente en producción
-            </span>
+            <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-wide">Próximamente</span>
           </div>
         )}
 
-        {/* CTA */}
+        {errorMsg && (
+          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+            <InfoIcon className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-red-700">{errorMsg}</p>
+          </div>
+        )}
+
         <button
           onClick={handleConfirm}
           disabled={!canSubmit || submitting}
           className="w-full py-4 bg-[#FF6A00] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 text-base"
         >
           {submitting ? (
-            <>
-              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Procesando...
-            </>
+            <><div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Procesando...</>
+          ) : paymentMethod === 'card' ? (
+            <>Confirmar y Pagar {booking.currency} {centsToDisplay(booking.totalPrice)}<ArrowRightIcon className="h-5 w-5" /></>
           ) : (
-            <>
-              Confirmar y Pagar ${BOOKING.total.toFixed(2)}
-              <ArrowRightIcon className="h-5 w-5" />
-            </>
+            <>Confirmar Reserva<ArrowRightIcon className="h-5 w-5" /></>
           )}
         </button>
 
         <p className="text-center text-xs text-gray-400 leading-relaxed">
-          Al hacer clic en aceptar los{' '}
+          Al hacer clic aceptas los{' '}
           <Link href="/" className="underline hover:text-gray-600">Términos del Servicio</Link>
           {' '}y{' '}
           <Link href="/" className="underline hover:text-gray-600">Política de Privacidad</Link>
@@ -412,33 +326,129 @@ function PaymentForm() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default function CheckoutPage() {
+function CheckoutPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const bookingId = searchParams.get('bookingId');
+
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!bookingId) {
+      setError('No se proporcionó un ID de reserva válido.');
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const bookingData = await sdk.getBooking(bookingId);
+        if (!bookingData) throw new Error('Reserva no encontrada');
+        setBooking(bookingData);
+
+        let storedSecret: string | null = null;
+        try { storedSecret = sessionStorage.getItem(`piums_pi_${bookingId}`); } catch {}
+
+        if (storedSecret) {
+          setClientSecret(storedSecret);
+          return;
+        }
+
+        const pi = await sdk.createPaymentIntent({
+          bookingId,
+          amount: bookingData.totalPrice,
+          currency: bookingData.currency || 'GTQ',
+          paymentMethods: ['card'],
+        });
+
+        if (!pi.clientSecret) throw new Error('No se recibió el token de pago del servidor');
+
+        setClientSecret(pi.clientSecret);
+        try { sessionStorage.setItem(`piums_pi_${bookingId}`, pi.clientSecret); } catch {}
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error al cargar la página de pago';
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [bookingId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
+        <StepsHeader current={3} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-500">Preparando tu pago...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !booking || !clientSecret) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
+        <StepsHeader current={3} />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <InfoIcon className="h-6 w-6 text-red-500" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No se pudo cargar el pago</h2>
+            <p className="text-sm text-gray-500 mb-4">{error || 'Ocurrió un problema inesperado.'}</p>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="px-6 py-2 bg-[#FF6A00] text-white rounded-lg font-semibold text-sm"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const stripeOptions = {
+    clientSecret,
+    appearance: {
+      theme: 'stripe' as const,
+      variables: {
+        colorPrimary: '#FF6A00',
+        colorBackground: '#ffffff',
+        colorText: '#111827',
+        colorDanger: '#EF4444',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        borderRadius: '12px',
+      },
+    },
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
       <StepsHeader current={3} />
-
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 md:px-6 py-8">
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-          {/* Left: summary */}
           <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-24">
-            <BookingSummary />
+            <BookingSummary booking={booking} />
           </div>
-
-          {/* Right: form */}
           <div className="flex-1 min-w-0">
-            <PaymentForm />
+            <Elements stripe={stripePromise} options={stripeOptions}>
+              <PaymentFormInner booking={booking} bookingId={bookingId!} />
+            </Elements>
           </div>
-
         </div>
       </main>
-
       <footer className="border-t border-gray-100 bg-white mt-8">
         <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-400">
-            © 2026 Piums – Economía Naranja. Todos los derechos reservados.
-          </p>
+          <p className="text-xs text-gray-400">&copy; 2026 Piums &ndash; Economía Naranja. Todos los derechos reservados.</p>
           <div className="flex items-center gap-3 text-gray-300">
             <LockIcon className="h-4 w-4" />
             <ShareIcon className="h-4 w-4" />
@@ -449,107 +459,52 @@ export default function CheckoutPage() {
   );
 }
 
-// ─── Inline icons ─────────────────────────────────────────────────────────────
-function CheckIcon({ className }: { className?: string }) {
+export default function CheckoutPage() {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-    </svg>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+          <div className="h-8 w-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <CheckoutPageInner />
+    </Suspense>
   );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>;
 }
 function InfoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 }
 function ClipboardIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-    </svg>
-  );
-}
-function StarFilledIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>;
 }
 function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 }
 function ClockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 }
 function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>;
 }
 function LockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
 }
 function CreditCardIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  );
-}
-function WalletIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
 }
 function ArrowRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>;
 }
 function ShareIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>;
 }
 function BankIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11" />
-    </svg>
-  );
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11" /></svg>;
 }
 function PayPalIcon({ className }: { className?: string }) {
   return (
