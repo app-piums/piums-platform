@@ -231,6 +231,12 @@ importers:
       '@piums/sdk':
         specifier: workspace:*
         version: link:../../../packages/sdk
+      '@stripe/react-stripe-js':
+        specifier: ^6.2.0
+        version: 6.2.0(@stripe/stripe-js@9.2.0)(react-dom@19.2.3)(react@19.2.3)
+      '@stripe/stripe-js':
+        specifier: ^9.2.0
+        version: 9.2.0
       firebase:
         specifier: ^12.11.0
         version: 12.11.0
