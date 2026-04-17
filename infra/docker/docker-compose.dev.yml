@@ -280,6 +280,7 @@ services:
       USERS_SERVICE_URL: http://users-service:4002
       ARTISTS_SERVICE_URL: http://artists-service:4003
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003
     depends_on:
       postgres:

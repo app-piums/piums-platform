@@ -22,8 +22,30 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 const router = Router();
 
-// ─── Internal service-to-service route (internal network only) ──────────────
+// ─── Internal service-to-service routes (internal network only) ─────────────
 // Validates a shared internal secret header to prevent abuse if accidentally exposed.
+
+router.get("/internal/by-auth/:authId", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const providedSecret = req.headers['x-internal-secret'];
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { authId } = req.params;
+    const artist = await prisma.artist.findUnique({
+      where: { authId },
+      select: { id: true, authId: true, artistName: true, email: true },
+    });
+    if (!artist || (artist as any).deletedAt) {
+      return res.status(404).json({ error: 'Artist not found' });
+    }
+    res.json({ id: artist.id, authId: artist.authId, artistName: artist.artistName });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch("/internal/:id/rating", async (req, res, next) => {
   try {
     const internalSecret = process.env.INTERNAL_SERVICE_SECRET;

@@ -38,6 +38,7 @@ export const createUserSchema = z.object({
   authId: z.string().min(1, "authId requerido"),
   email: z.string().email("Email inválido"),
   nombre: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
+  ciudad: z.string().min(2, "Ciudad inválida").optional(),
   telefono: z.string().optional(),
   pais: z.string().optional(),
 });

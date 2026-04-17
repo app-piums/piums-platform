@@ -6,6 +6,29 @@ import { logger } from "../utils/logger";
 const prisma = new PrismaClient();
 
 export class UsersService {
+  private slugify(text: string) {
+    return text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9_-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  private async generateUniqueProfileSlug(base: string) {
+    const normalizedBase = this.slugify(base) || `user-${Date.now()}`;
+    let candidate = normalizedBase;
+    let suffix = 1;
+
+    while (await prisma.profile.findUnique({ where: { slug: candidate } })) {
+      candidate = `${normalizedBase}-${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
   /**
    * Crear usuario inicial (llamado desde auth-service después de registro)
    */
@@ -13,6 +36,7 @@ export class UsersService {
     authId: string;
     email: string;
     nombre: string;
+    ciudad?: string;
     telefono?: string;
     pais?: string;
   }) {
@@ -36,6 +60,35 @@ export class UsersService {
           lastLoginAt: new Date(),
         },
       });
+
+      // Crear perfil base para persistir metadata pública inicial (ej. ciudad).
+      // Si falla, no bloquea la creación del usuario.
+      try {
+        const existingProfile = await prisma.profile.findUnique({
+          where: { userId: user.id },
+        });
+
+        if (!existingProfile) {
+          const slug = await this.generateUniqueProfileSlug(`${data.nombre}-${data.authId.slice(0, 8)}`);
+
+          await prisma.profile.create({
+            data: {
+              userId: user.id,
+              displayName: data.nombre,
+              slug,
+              city: data.ciudad,
+              country: data.pais ?? "Guatemala",
+              keywords: [],
+              categories: [],
+            },
+          });
+        }
+      } catch (profileError) {
+        logger.warn("No se pudo crear perfil inicial", "USERS_SERVICE", {
+          userId: user.id,
+          error: profileError,
+        });
+      }
 
       logger.info("Usuario creado", "USERS_SERVICE", { userId: user.id, email: user.email });
       return user;

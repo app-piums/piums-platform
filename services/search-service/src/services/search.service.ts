@@ -21,7 +21,8 @@ export class SearchService {
 
   async searchArtists(filters: SearchArtistsInput) {
     const {
-      query,
+      q,
+      query: queryParam,
       city,
       state,
       country,
@@ -37,6 +38,7 @@ export class SearchService {
     } = filters;
 
     const skip = (page! - 1) * limit!;
+    const query = q || queryParam;
 
     // Build where clause
     const where: any = {
@@ -56,21 +58,22 @@ export class SearchService {
       })
     };
 
+    // Build AND conditions array to combine absence rules + text search
+    const andConditions: any[] = [];
+
     // Filter artists by absence visibility rules:
     // - VACATION: hidden in all countries (not visible anywhere)
     // - WORKING_ABROAD: only visible in their destination country
     if (country) {
-      where.AND = [
-        {
-          OR: [
-            { activeAbsenceType: null },
-            {
-              activeAbsenceType: 'WORKING_ABROAD',
-              activeAbsenceDest: country,
-            },
-          ],
-        },
-      ];
+      andConditions.push({
+        OR: [
+          { activeAbsenceType: null },
+          {
+            activeAbsenceType: 'WORKING_ABROAD',
+            activeAbsenceDest: country,
+          },
+        ],
+      });
     } else {
       // No country filter: hide VACATION and WORKING_ABROAD artists globally
       where.activeAbsenceType = null;
@@ -78,13 +81,20 @@ export class SearchService {
 
     // Add text search if query provided
     if (query) {
-      // Simple approach: search in name, bio, specialties, serviceTitles
-      where.OR = [
-        { name: { contains: query, mode: 'insensitive' } },
-        { bio: { contains: query, mode: 'insensitive' } },
-        { specialties: { hasSome: [query] } },
-        { serviceTitles: { hasSome: [query] } }
-      ];
+      const expandedQuery = expandQuery(query);
+      // Flatten: artist must match at least one field for at least one term
+      const fieldConditions: any[] = [];
+      for (const term of expandedQuery) {
+        fieldConditions.push({ name: { contains: term, mode: 'insensitive' } });
+        fieldConditions.push({ bio: { contains: term, mode: 'insensitive' } });
+        fieldConditions.push({ specialties: { hasSome: [term] } });
+        fieldConditions.push({ serviceTitles: { hasSome: [term] } });
+      }
+      andConditions.push({ OR: fieldConditions });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     // Build orderBy clause

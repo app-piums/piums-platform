@@ -11,6 +11,7 @@ import { tokenService } from "../services/token.service";
 import { passwordService } from "../services/password.service";
 import { verificationService } from "../services/verification.service";
 import { notificationsClient } from "../clients/notifications.client";
+import { usersClient } from "../clients/users.client";
 import { prisma } from "../lib/prisma";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -62,6 +63,14 @@ async function createUserAndRespond(
   });
 
   logger.info("Usuario registrado", "AUTH_CONTROLLER", { userId: user.id, email: user.email, role: user.role });
+
+  // Crear perfil en users-service (fire-and-forget)
+  usersClient.createUserProfile({
+    authId: user.id,
+    email: user.email,
+    nombre: user.nombre,
+    ciudad: extra?.ciudad,
+  });
 
   // Email de verificación solo en producción
   if (!isDev) {
