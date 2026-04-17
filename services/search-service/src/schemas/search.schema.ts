@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 // Search Artists Schema
 export const searchArtistsSchema = z.object({
+  q: z.string().optional(),
   query: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
