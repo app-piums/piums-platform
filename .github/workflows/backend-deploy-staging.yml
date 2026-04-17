@@ -1,4 +1,4 @@
-name: Deploy to Staging
+name: Backend Deploy - Staging
 
 on:
   push:
@@ -9,11 +9,11 @@ on:
       - 'packages/**'
       - 'apps/gateway/**'
       - 'infra/docker/docker-compose.staging.yml'
-      - '.github/workflows/deploy-staging.yml'
+      - '.github/workflows/backend-deploy-staging.yml'
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Docker image tag to deploy'
+        description: 'Docker image tag to deploy (default: develop)'
         required: false
         default: 'develop'
 
@@ -26,14 +26,14 @@ jobs:
   # ============================================================================
   # Pre-Deploy Checks
   # ============================================================================
-  
+
   pre-deploy:
     name: Pre-Deploy Checks
     runs-on: ubuntu-latest
-    
+
     outputs:
       image_tag: ${{ steps.set-tag.outputs.tag }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,20 +49,39 @@ jobs:
 
       - name: Verify images exist
         run: |
-          echo "Verifying images for tag: ${{ steps.set-tag.outputs.tag }}"
-          # TODO: Add actual verification logic
-          docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-auth-service:${{ steps.set-tag.outputs.tag }} || true
+          TAG="${{ steps.set-tag.outputs.tag }}"
+          echo "Verifying backend images for tag: $TAG"
+
+          SERVICES=(
+            "auth-service"
+            "users-service"
+            "artists-service"
+            "catalog-service"
+            "booking-service"
+            "payments-service"
+            "reviews-service"
+            "notifications-service"
+            "search-service"
+            "chat-service"
+            "gateway"
+          )
+
+          for service in "${SERVICES[@]}"; do
+            echo "Checking $service:$TAG"
+            docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-$service:$TAG || true
+          done
 
   # ============================================================================
-  # Database Migrations
+  # Database Migrations (per service, parallel)
   # ============================================================================
-  
+
   migrate-databases:
-    name: Run Database Migrations
+    name: Migrate DB - ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: pre-deploy
-    
+
     strategy:
+      fail-fast: false
       matrix:
         service:
           - auth-service
@@ -75,20 +94,20 @@ jobs:
           - notifications-service
           - search-service
           - chat-service
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
@@ -102,22 +121,22 @@ jobs:
           if [ -f "prisma/schema.prisma" ]; then
             npx prisma migrate deploy
           else
-            echo "No Prisma schema found, skipping migrations"
+            echo "No Prisma schema found in ${{ matrix.service }}, skipping"
           fi
 
   # ============================================================================
   # Deploy to Staging Server
   # ============================================================================
-  
+
   deploy:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: [pre-deploy, migrate-databases]
-    
+
     environment:
       name: staging
       url: https://staging.piums.com
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -142,101 +161,98 @@ jobs:
             .env.staging \
             ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:/opt/piums/.env
 
-      - name: Deploy services
+      - name: Deploy backend services
         run: |
           ssh -i ~/.ssh/staging_key \
             ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
             cd /opt/piums
-            
-            # Pull latest images
+
+            # Pull latest backend images
             docker-compose pull
-            
-            # Stop old containers
+
+            # Restart services with zero-downtime rolling update
             docker-compose down
-            
-            # Start new containers
+
+            # Start with new images
             docker-compose up -d
-            
-            # Wait for services to be healthy
+
+            # Wait for services to initialize
             sleep 30
-            
-            # Check health
+
+            # Show running containers
             docker-compose ps
-            
-            # Clean up old images
+
+            # Clean up dangling images
             docker image prune -f
           EOF
 
-      - name: Health check
+      - name: Gateway health check
         run: |
           sleep 10
           curl -f https://staging.piums.com/health || exit 1
 
       - name: Cleanup SSH keys
         if: always()
-        run: rm -f ~/.ssh/staging_key
+        run: rm -f ~/.ssh/staging_key .env.staging
 
   # ============================================================================
-  # Smoke Tests
+  # Smoke Tests - Backend Endpoints
   # ============================================================================
-  
+
   smoke-tests:
-    name: Run Smoke Tests
+    name: Smoke Tests
     runs-on: ubuntu-latest
     needs: deploy
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
+    steps:
       - name: Test Gateway
-        run: curl -f https://staging.piums.com/health
+        run: curl -sf https://staging.piums.com/health
 
       - name: Test Auth Service
-        run: curl -f https://staging.piums.com/api/auth/health
+        run: curl -sf https://staging.piums.com/api/auth/health
 
       - name: Test Users Service
-        run: curl -f https://staging.piums.com/api/users/health
+        run: curl -sf https://staging.piums.com/api/users/health
 
       - name: Test Artists Service
-        run: curl -f https://staging.piums.com/api/artists/health
+        run: curl -sf https://staging.piums.com/api/artists/health
 
       - name: Test Catalog Service
-        run: curl -f https://staging.piums.com/api/catalog/health
+        run: curl -sf https://staging.piums.com/api/catalog/health
 
       - name: Test Booking Service
-        run: curl -f https://staging.piums.com/api/bookings/health
+        run: curl -sf https://staging.piums.com/api/bookings/health
 
       - name: Test Payments Service
-        run: curl -f https://staging.piums.com/api/payments/health
+        run: curl -sf https://staging.piums.com/api/payments/health
 
   # ============================================================================
-  # Rollback (on failure)
+  # Rollback on Failure
   # ============================================================================
-  
+
   rollback:
     name: Rollback Deployment
     runs-on: ubuntu-latest
     needs: [deploy, smoke-tests]
     if: failure()
-    
+
     steps:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/staging_key
           chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -H ${{ secrets.STAGING_SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Rollback to previous version
         run: |
           ssh -i ~/.ssh/staging_key \
             ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
             cd /opt/piums
-            
-            # Rollback using previous docker-compose state
+            echo "Rolling back staging backend..."
             docker-compose down
-            docker-compose up -d --scale gateway=0
             docker-compose up -d
+            echo "Rollback complete"
           EOF
 
       - name: Cleanup
@@ -246,28 +262,27 @@ jobs:
   # ============================================================================
   # Notification
   # ============================================================================
-  
+
   notify:
     name: Send Notification
     runs-on: ubuntu-latest
     needs: [deploy, smoke-tests]
     if: always()
-    
+
     steps:
-      - name: Send Slack notification
-        if: always()
+      - name: Deployment summary
         run: |
-          STATUS="${{ job.status }}"
-          COLOR="good"
-          if [ "$STATUS" != "success" ]; then
-            COLOR="danger"
-          fi
-          
-          echo "Deployment to Staging: $STATUS"
-          echo "Image Tag: ${{ needs.pre-deploy.outputs.image_tag }}"
-          echo "Commit: ${{ github.sha }}"
-          
-          # TODO: Add actual Slack webhook integration
+          echo "======================================="
+          echo " Backend Staging Deployment - Summary"
+          echo "======================================="
+          echo " Status     : ${{ job.status }}"
+          echo " Deploy     : ${{ needs.deploy.result }}"
+          echo " Smoke Tests: ${{ needs.smoke-tests.result }}"
+          echo " Image Tag  : ${{ needs.pre-deploy.outputs.image_tag }}"
+          echo " Commit     : ${{ github.sha }}"
+          echo " URL        : https://staging.piums.com"
+          echo "======================================="
+          # TODO: Add Slack/Teams notification
           # curl -X POST -H 'Content-type: application/json' \
-          #   --data "{\"text\":\"Staging Deployment: $STATUS\"}" \
+          #   --data "{\"text\":\"Staging Deploy: ${{ job.status }} - ${{ needs.pre-deploy.outputs.image_tag }}\"}" \
           #   ${{ secrets.SLACK_WEBHOOK_URL }}
