@@ -10,7 +10,7 @@ import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 
-type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'ALL';
+type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'ALL';
 
 type ArtistBookingsFilters = {
   status?: BookingStatus;
@@ -39,7 +39,7 @@ export default function ArtistBookingsPage() {
   const [quejaBooking, setQuejaBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [statusCounts, setStatusCounts] = useState<Record<string, number | null>>({
-    PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null,
+    PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null, REJECTED: null,
   });
 
   const loadBookings = useCallback(async () => {
@@ -74,7 +74,7 @@ export default function ArtistBookingsPage() {
   }, [activeStatus, currentPage, router]);
 
   const loadStatusCounts = useCallback(async () => {
-    const statuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
+    const statuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED'] as const;
     const results = await Promise.allSettled(
       statuses.map(async (status) => {
         const response = (await sdk.getArtistBookings({ status, page: 1, limit: 1 })) as ArtistBookingsResponse;
@@ -172,6 +172,7 @@ export default function ArtistBookingsPage() {
     CONFIRMED: 'Confirmada',
     COMPLETED: 'Completada',
     CANCELLED: 'Cancelada',
+    REJECTED: 'Rechazada',
   };
 
   const STATUS_STYLES: Record<string, string> = {
@@ -179,6 +180,7 @@ export default function ArtistBookingsPage() {
     CONFIRMED: 'bg-green-100 text-green-700 border border-green-200',
     COMPLETED: 'bg-blue-100  text-blue-700  border border-blue-200',
     CANCELLED: 'bg-gray-100  text-gray-600  border border-gray-200',
+    REJECTED:  'bg-red-100   text-red-600   border border-red-200',
   };
 
   const BORDER_ACCENT: Record<string, string> = {
@@ -186,6 +188,7 @@ export default function ArtistBookingsPage() {
     CONFIRMED: 'border-l-green-500',
     COMPLETED: 'border-l-blue-500',
     CANCELLED: 'border-l-gray-400',
+    REJECTED:  'border-l-red-400',
   };
 
   const statusCountValues = Object.values(statusCounts);
@@ -203,6 +206,7 @@ export default function ArtistBookingsPage() {
     { value: 'CONFIRMED', label: 'Confirmadas' },
     { value: 'COMPLETED', label: 'Completadas' },
     { value: 'CANCELLED', label: 'Canceladas'  },
+    { value: 'REJECTED',  label: 'Rechazadas'  },
     { value: 'ALL',       label: 'Todas'        },
   ];
 

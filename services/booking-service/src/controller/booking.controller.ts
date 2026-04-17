@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { bookingService } from "../services/booking.service";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { AppError } from "../middleware/errorHandler";
 import { notifyBookingCreated } from "../utils/notifications";
 import { generateBookingPDF } from "../utils/pdf";
 import {
@@ -22,6 +23,18 @@ import { artistsClient } from "../clients/artists.client";
 import { catalogClient } from "../clients/catalog.client";
 
 export class BookingController {
+  /**
+   * Resuelve el authId del JWT al id del perfil de artista en piums_artists.
+   * Necesario porque bookings se crean con el id del artista, no con su authId.
+   */
+  private async resolveArtistId(authId: string): Promise<string> {
+    const artistId = await artistsClient.getArtistIdByAuthId(authId);
+    if (!artistId) {
+      throw new AppError(404, 'Perfil de artista no encontrado para este usuario');
+    }
+    return artistId;
+  }
+
   // ==================== RESERVAS ====================
 
   async createBooking(req: AuthRequest, res: Response, next: NextFunction) {
@@ -143,12 +156,13 @@ export class BookingController {
           ? undefined
           : userId;
 
-      // Prevent artists from querying other artists' bookings: force artistId to own userId
-      const artistId = isArtist
-        ? userId
-        : isAdmin
-          ? (req.query.artistId as string | undefined)
-          : undefined;
+      // Prevent artists from querying other artists' bookings: force artistId to own profile id
+      let artistId: string | undefined;
+      if (isArtist) {
+        artistId = await this.resolveArtistId(userId);
+      } else if (isAdmin) {
+        artistId = req.query.artistId as string | undefined;
+      }
 
       const query = {
         clientId,
@@ -193,7 +207,7 @@ export class BookingController {
       const id = req.params.id as string;
       const { artistNotes } = confirmBookingSchema.parse(req.body);
       
-      const artistId = req.user!.id;
+      const artistId = await this.resolveArtistId(req.user!.id);
 
       const booking = await bookingService.confirmBooking(id, artistId, artistNotes);
       res.json(booking);
@@ -207,7 +221,7 @@ export class BookingController {
       const id = req.params.id as string;
       const { reason } = rejectBookingSchema.parse(req.body);
       
-      const artistId = req.user!.id;
+      const artistId = await this.resolveArtistId(req.user!.id);
 
       const booking = await bookingService.rejectBooking(id, artistId, reason);
       res.json(booking);
@@ -374,7 +388,7 @@ export class BookingController {
   async unblockSlot(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const artistId = req.user!.id;
+      const artistId = await this.resolveArtistId(req.user!.id);
 
       await bookingService.unblockSlot(id, artistId);
       res.status(204).send();
