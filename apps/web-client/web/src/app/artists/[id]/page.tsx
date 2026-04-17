@@ -241,6 +241,18 @@ export default function ArtistProfilePage() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!artist) return;
+    try {
+      const { sdk } = await import('@piums/sdk');
+      const { conversation } = await sdk.createConversation({ artistId: artist.id });
+      router.push(`/chat?conversationId=${conversation.id}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al abrir el chat';
+      toast.error(msg);
+    }
+  };
+
   if (loading) {
     return <Loading fullScreen />;
   }
@@ -799,7 +811,7 @@ export default function ArtistProfilePage() {
                 <Button fullWidth size="lg" onClick={handleBookNow} className="mb-3">
                   Reservar Ahora
                 </Button>
-                <Button fullWidth variant="outline">
+                <Button fullWidth variant="outline" onClick={handleSendMessage}>
                   Enviar Mensaje
                 </Button>
                 
