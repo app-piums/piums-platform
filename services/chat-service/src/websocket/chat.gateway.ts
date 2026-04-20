@@ -1,4 +1,6 @@
 import { Server as SocketServer, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
 import { Server as HttpServer } from 'http';
 import { verifySocketToken } from '../middleware/auth.middleware';
 import { ChatService } from '../services/chat.service';
@@ -32,11 +34,33 @@ export class ChatGateway {
 
     this.setupMiddleware();
     this.setupEventHandlers();
-    
+
+    // Initialize Redis adapter when REDIS_HOST is defined (required for K8s multi-replica)
+    // Falls back to in-memory adapter when REDIS_HOST is not set (local dev)
+    if (process.env.REDIS_HOST) {
+      const redisOptions = {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
+        lazyConnect: true,
+      };
+      const pubClient = new Redis(redisOptions);
+      const subClient = pubClient.duplicate();
+
+      Promise.all([pubClient.connect(), subClient.connect()])
+        .then(() => {
+          this.io.adapter(createAdapter(pubClient, subClient));
+          logger.info('Socket.io Redis adapter connected', 'CHAT_GATEWAY');
+        })
+        .catch((err) => {
+          logger.error('Redis adapter connection failed, falling back to in-memory', 'CHAT_GATEWAY', err);
+        });
+    }
+
     // Listen to HTTP POST messages being created and broadcast them via WebSocket
     import('../services/chat.service').then(({ chatEmitter }) => {
       chatEmitter.on('new_message', (message, conversation) => {
-        const recipientId = conversation.userId === message.senderId ? conversation.artistId : conversation.userId;
+        const recipientId = conversation.participant1Id === message.senderId ? conversation.participant2Id : conversation.participant1Id;
         
         // Notify recipient if connected
         this.io.to(`user:${recipientId}`).emit('message:received', message);
@@ -45,6 +69,11 @@ export class ChatGateway {
         this.io.to(`user:${message.senderId}`).emit('message:received', message);
       });
     });
+  }
+
+  // Helper to get the other participant
+  private getOtherParticipant(conversation: any, currentUserId: string): string {
+    return conversation.participant1Id === currentUserId ? conversation.participant2Id : conversation.participant1Id;
   }
 
   private setupMiddleware() {
@@ -93,20 +122,20 @@ export class ChatGateway {
           const conversation = await chatService.getConversation(data.conversationId, userId);
           
           if (conversation.status !== 'ACTIVE') {
-            return socket.emit('message:error', { message: 'La conversación aún no está activa. El artista debe confirmar la reserva.' });
+            return socket.emit('message:error', { message: 'La conversación aún no está activa.' });
           }
 
           const message = await chatService.sendMessage(
             data.conversationId,
             userId,
             data.content,
-            data.type || 'text'
+            data.type || 'TEXT'
           );
 
           // Enviar el mensaje al emisor
           socket.emit('message:sent', { message });
 
-          const recipientId = conversation.userId === userId ? conversation.artistId : conversation.userId;
+          const recipientId = this.getOtherParticipant(conversation, userId);
 
           // Enviar al destinatario si está conectado
           const recipientSocketId = this.userSockets.get(recipientId);
@@ -143,7 +172,7 @@ export class ChatGateway {
       socket.on('typing:start', async (data: { conversationId: string }) => {
         try {
           const conversation = await chatService.getConversation(data.conversationId, userId);
-          const recipientId = conversation.userId === userId ? conversation.artistId : conversation.userId;
+          const recipientId = this.getOtherParticipant(conversation, userId);
 
           // Notificar al otro usuario
           this.io.to(`user:${recipientId}`).emit('typing:start', {
@@ -161,7 +190,7 @@ export class ChatGateway {
       socket.on('typing:stop', async (data: { conversationId: string }) => {
         try {
           const conversation = await chatService.getConversation(data.conversationId, userId);
-          const recipientId = conversation.userId === userId ? conversation.artistId : conversation.userId;
+          const recipientId = this.getOtherParticipant(conversation, userId);
 
           // Notificar al otro usuario
           this.io.to(`user:${recipientId}`).emit('typing:stop', {

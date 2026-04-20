@@ -20,8 +20,8 @@ export class ChatService {
         prisma.conversation.findMany({
           where: {
             OR: [
-              { userId },
-              { artistId: userId },
+              { participant1Id: userId },
+              { participant2Id: userId },
             ],
           },
           include: {
@@ -37,8 +37,8 @@ export class ChatService {
         prisma.conversation.count({
           where: {
             OR: [
-              { userId },
-              { artistId: userId },
+              { participant1Id: userId },
+              { participant2Id: userId },
             ],
           },
         }),
@@ -51,7 +51,7 @@ export class ChatService {
             where: {
               conversationId: conversation.id,
               senderId: { not: userId },
-              read: false,
+              status: 'SENT',
             },
           });
 
@@ -90,7 +90,7 @@ export class ChatService {
       }
 
       // Verificar que el usuario tenga acceso a esta conversación
-      if (conversation.userId !== userId && conversation.artistId !== userId) {
+      if (conversation.participant1Id !== userId && conversation.participant2Id !== userId) {
         throw new AppError(403, 'No tienes acceso a esta conversación');
       }
 
@@ -102,31 +102,38 @@ export class ChatService {
     }
   }
 
-  async createConversation(userId: string, artistId: string, bookingId?: string) {
+  async createConversation(participant1Id: string, participant2Id: string, bookingId?: string) {
     try {
       // Check if conversation already exists
       const existing = await prisma.conversation.findFirst({
         where: {
-          userId,
-          artistId,
+          AND: [
+            {
+              OR: [
+                { participant1Id, participant2Id },
+                { participant1Id: participant2Id, participant2Id: participant1Id },
+              ],
+            },
+            bookingId ? { bookingId } : {},
+          ],
         },
       });
 
       if (existing) {
-        // Si ya existe pero el bookingId es diferente (raro), podríamos actualizarlo o simplemente devolver la existente
         return existing;
       }
 
       const conversation = await prisma.conversation.create({
         data: {
-          userId,
-          artistId,
+          participant1Id,
+          participant2Id,
           bookingId,
-          status: 'PENDING', // Inicia como PENDING por defecto al crear desde booking
+          status: 'ACTIVE',
+          type: 'DIRECT',
         },
       });
 
-      logger.info('Conversation created', 'CHAT_SERVICE', { conversationId: conversation.id, status: conversation.status });
+      logger.info('Conversation created', 'CHAT_SERVICE', { conversationId: conversation.id });
       return conversation;
     } catch (error: any) {
       logger.error('Error creating conversation', 'CHAT_SERVICE', error);
@@ -134,7 +141,7 @@ export class ChatService {
     }
   }
 
-  async updateConversationStatus(conversationId: string, status: 'PENDING' | 'ACTIVE' | 'ARCHIVED') {
+  async updateConversationStatus(conversationId: string, status: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
     try {
       const conversation = await prisma.conversation.update({
         where: { id: conversationId },
@@ -151,16 +158,26 @@ export class ChatService {
 
   async activateConversationByBookingId(bookingId: string) {
     try {
-      const conversation = await prisma.conversation.update({
+      // Primero buscar la conversación por bookingId
+      const conversation = await prisma.conversation.findFirst({
         where: { bookingId },
+      });
+
+      if (!conversation) {
+        logger.warn('Conversation not found for bookingId', 'CHAT_SERVICE', { bookingId });
+        return null;
+      }
+
+      // Ahora actualizar por id
+      const updated = await prisma.conversation.update({
+        where: { id: conversation.id },
         data: { status: 'ACTIVE' },
       });
 
-      logger.info('Conversation activated by bookingId', 'CHAT_SERVICE', { bookingId, conversationId: conversation.id });
-      return conversation;
+      logger.info('Conversation activated by bookingId', 'CHAT_SERVICE', { bookingId, conversationId: updated.id });
+      return updated;
     } catch (error: any) {
       logger.error('Error activating conversation by bookingId', 'CHAT_SERVICE', error);
-      // No lanzamos error si no existe la conversación, solo loggueamos
       return null;
     }
   }
@@ -178,7 +195,7 @@ export class ChatService {
         throw new AppError(404, 'Conversación no encontrada');
       }
 
-      if (conversation.userId !== userId && conversation.artistId !== userId) {
+      if (conversation.participant1Id !== userId && conversation.participant2Id !== userId) {
         throw new AppError(403, 'No tienes acceso a esta conversación');
       }
 
@@ -209,7 +226,7 @@ export class ChatService {
     }
   }
 
-  async sendMessage(conversationId: string, senderId: string, content: string, type: string = 'text') {
+  async sendMessage(conversationId: string, senderId: string, content: string, type: string = 'TEXT') {
     try {
       // Verificar acceso
       const conversation = await prisma.conversation.findUnique({
@@ -220,47 +237,42 @@ export class ChatService {
         throw new AppError(404, 'Conversación no encontrada');
       }
 
-      if (conversation.userId !== senderId && conversation.artistId !== senderId) {
+      if (conversation.participant1Id !== senderId && conversation.participant2Id !== senderId) {
         throw new AppError(403, 'No tienes acceso a esta conversación');
-      }
-
-      // Solo se permite enviar mensajes cuando la conversación está ACTIVE.
-      // Conversaciones ligadas a una reserva inician en PENDING hasta que el artista confirma.
-      if (conversation.status !== 'ACTIVE' && conversation.bookingId) {
-        throw new AppError(403, 'El chat se habilitará cuando el artista confirme la reserva');
       }
 
       // Moderation: filtrar malas palabras
       let filteredContent = content;
-      if (type === 'text') {
+      if (type === 'TEXT') {
         filteredContent = filter.clean(content);
       }
-
-      // Determinar senderType
-      const senderType = conversation.artistId === senderId ? 'artist' : 'user';
 
       // Crear mensaje
       const message = await prisma.message.create({
         data: {
           conversationId,
           senderId,
-          senderType,
           content: filteredContent,
-          type,
+          type: type as any,
+          status: 'SENT',
+          deliveredAt: new Date(),
         },
       });
 
       // Actualizar lastMessageAt de la conversación
       await prisma.conversation.update({
         where: { id: conversationId },
-        data: { lastMessageAt: new Date() },
+        data: {
+          lastMessageAt: new Date(),
+          lastMessagePreview: content.substring(0, 100),
+        },
       });
 
       logger.info('Message sent', 'CHAT_SERVICE', { messageId: message.id });
-      
+
       // Emit to WebSocket Gateway
       chatEmitter.emit('new_message', message, conversation);
-      
+
       return message;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
@@ -280,20 +292,17 @@ export class ChatService {
         throw new AppError(404, 'Mensaje no encontrado');
       }
 
-      // Solo puede marcar como leído el destinatario (no el emisor)
-      if (message.senderId === userId) {
-        throw new AppError(400, 'No puedes marcar tu propio mensaje como leído');
-      }
-
       // Verificar acceso a la conversación
-      if (message.conversation.userId !== userId && message.conversation.artistId !== userId) {
+      if (
+        message.conversation.participant1Id !== userId &&
+        message.conversation.participant2Id !== userId
+      ) {
         throw new AppError(403, 'No tienes acceso a este mensaje');
       }
 
       const updatedMessage = await prisma.message.update({
         where: { id: messageId },
         data: {
-          read: true,
           readAt: new Date(),
         },
       });
@@ -316,24 +325,23 @@ export class ChatService {
         throw new AppError(404, 'Conversación no encontrada');
       }
 
-      if (conversation.userId !== userId && conversation.artistId !== userId) {
+      if (conversation.participant1Id !== userId && conversation.participant2Id !== userId) {
         throw new AppError(403, 'No tienes acceso a esta conversación');
       }
 
-      // Marcar todos los mensajes no leídos de otros usuarios
+      // Actualizar todos los mensajes no leídos de esta conversación
       await prisma.message.updateMany({
         where: {
           conversationId,
           senderId: { not: userId },
-          read: false,
         },
         data: {
-          read: true,
           readAt: new Date(),
         },
       });
 
       logger.info('Conversation marked as read', 'CHAT_SERVICE', { conversationId });
+      return conversation;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error marking conversation as read', 'CHAT_SERVICE', error);
@@ -343,23 +351,20 @@ export class ChatService {
 
   async getUnreadCount(userId: string) {
     try {
-      const count = await prisma.message.count({
+      const unreadCount = await prisma.message.count({
         where: {
           conversation: {
-            OR: [
-              { userId },
-              { artistId: userId },
-            ],
+            OR: [{ participant1Id: userId }, { participant2Id: userId }],
           },
           senderId: { not: userId },
-          read: false,
+          readAt: null,
         },
       });
 
-      return count;
+      return { unreadCount };
     } catch (error: any) {
       logger.error('Error getting unread count', 'CHAT_SERVICE', error);
-      throw new AppError(500, 'Error al obtener contador de mensajes no leídos');
+      throw new AppError(500, 'Error al obtener contador de no leídos');
     }
   }
 }
