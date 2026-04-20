@@ -128,6 +128,7 @@ services:
       NODE_ENV: development
       PORT: 4002
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
+      JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       CLOUDINARY_CLOUD_NAME: dumqooqjv
       CLOUDINARY_API_KEY: 179725519298881
       CLOUDINARY_API_SECRET: jTmfpOxPMU3MGpcMgxOs7apWW44

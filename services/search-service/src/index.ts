@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import healthRoutes from './routes/health.routes';
 import searchRoutes from './routes/search.routes';
+import { searchService } from './services/search.service';
 
 // Load environment variables
 dotenv.config();
@@ -49,6 +50,13 @@ app.use(errorHandler);
 // Start server
 const server = app.listen(PORT, () => {
   logger.info(`Search Service running on port ${PORT}`);
+
+  // Auto-reindex all artists on startup (fire-and-forget)
+  setTimeout(() => {
+    searchService.bulkIndexArtists().catch((err: Error) => {
+      logger.error(`Startup reindex failed: ${err.message}`);
+    });
+  }, 3000); // 3s delay so DB connections settle
 });
 
 // Graceful shutdown
