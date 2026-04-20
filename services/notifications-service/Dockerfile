@@ -16,11 +16,11 @@ RUN pnpm install --no-frozen-lockfile
 # Copiar código fuente
 COPY . .
 
-# Compilar TypeScript si existe tsconfig.json
-RUN if [ -f "tsconfig.json" ]; then pnpm run build 2>/dev/null || npm run build 2>/dev/null || echo "No build script found"; fi
-
-# Generar Prisma Client si existe schema.prisma
+# Generar Prisma Client antes de compilar TypeScript
 RUN if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
+
+# Compilar TypeScript
+RUN if [ -f "tsconfig.json" ]; then pnpm run build 2>/dev/null || npm run build 2>/dev/null || echo "No build script found"; fi
 
 # ============================================================================
 # Imagen final

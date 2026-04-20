@@ -306,7 +306,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.REVIEWS_SERVICE_URL || "http://localhost:4006",
       changeOrigin: true,
-      pathRewrite: { "^/api/reviews": "/api/reviews" },
+      pathRewrite: { "^": "/api/reviews" },
       on: { proxyReq: fixRequestBody },
     })
   );
