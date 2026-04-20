@@ -1172,3 +1172,91 @@ Vercel se encarga automáticamente del deploy de frontends sin necesidad de conf
 - **Rutas de API**: todas pasan por Gateway en `/api/*`
 - **Rutas protegidas** en web-artist: manejadas por `src/middleware.ts`
 - **Rutas protegidas** en web-client: manejadas por `src/proxy.ts`
+
+---
+
+## 19. Kubernetes — Docker Desktop (Local)
+
+**Fecha de implementación**: 20 de abril de 2026
+
+### 19.1 Estado actual
+
+El cluster local de Kubernetes (Docker Desktop, Kubeadm v1.34.1) corre en paralelo con Docker Compose. Ambos entornos son independientes:
+
+| Entorno | Acceso | Contexto |
+|---|---|---|
+| Docker Compose (dev) | `http://localhost:3005` | desarrollo normal, hot-reload |
+| Kubernetes (local) | `http://localhost:80` | simulación multi-réplica |
+
+### 19.2 Archivos K8s
+
+```
+infra/k8s/
+├─ base/                        # Manifiestos base (producción-ready)
+│  ├─ namespace.yaml
+│  ├─ configmap.yaml            # Variables de entorno comunes (REDIS_HOST, URLs, etc.)
+│  ├─ secrets.yaml              # Placeholders CHANGE_ME (no comitear valores reales)
+│  ├─ deployments.yaml          # 11 Deployments (gateway + 10 microservicios)
+│  ├─ services.yaml             # 13 Services (ClusterIP + LoadBalancer para gateway)
+│  ├─ ingress.yaml              # Nginx ingress → api.piums.app + sticky sessions
+│  └─ hpa.yaml                  # HPAs para 6 servicios críticos
+├─ overlays/
+│  ├─ local/                    # ← Overlay para Docker Desktop K8s
+│  │  ├─ kustomization.yaml     # Patches: imágenes locales, 1 réplica, puertos, DB URLs
+│  │  ├─ infra.yaml             # Postgres StatefulSet + Redis Deployment + PVC
+│  │  └─ dev-secrets.yaml       # Credenciales de desarrollo (piums_dev_password)
+│  ├─ staging/                  # Overlay staging (1 réplica por servicio)
+│  └─ production/               # Overlay producción (2-8 réplicas + HPA activo)
+```
+
+### 19.3 Comandos principales
+
+```bash
+# Aplicar/actualizar todo el stack
+kubectl apply -k infra/k8s/overlays/local/
+
+# Ver estado
+kubectl get pods -n piums
+kubectl get svc -n piums
+kubectl get hpa -n piums
+
+# Logs de un servicio
+kubectl logs -n piums -l app=chat-service --tail=30
+
+# Eliminar todo el stack K8s
+kubectl delete namespace piums
+```
+
+### 19.4 Chat Service — Multi-réplica con Redis Adapter
+
+El `chat-service` corre con **2 réplicas** en K8s. Para que los WebSockets funcionen entre réplicas, se usa `@socket.io/redis-adapter` (instalado en `services/chat-service/package.json`).
+
+El adapter se activa **condicionalmente** en `services/chat-service/src/websocket/chat.gateway.ts`:
+- Si `REDIS_HOST` está definido (K8s vía `piums-config` ConfigMap) → Redis adapter activo
+- Si no está definido (Docker Compose dev) → in-memory adapter (comportamiento anterior)
+
+### 19.5 Correcciones de puertos (K8s vs código fuente)
+
+Los servicios tienen puertos por defecto en código que **no coinciden** con los números en `deployments.yaml`. El overlay local los corrige con patches `env.PORT`:
+
+| Servicio | Puerto en código | Puerto en K8s manifesto | Fix |
+|---|---|---|---|
+| payments-service | 4007 | 4005 | `PORT=4005` patch |
+| reviews-service | 4008 | 4006 | `PORT=4006` patch |
+| notifications-service | 4006 | 4007 | `PORT=4007` patch |
+| booking-service | 4005 | 4008 | `PORT=4008` patch |
+| gateway | `/health` 404 | `/api/health` | probe path patch |
+
+### 19.6 Pendiente para producción
+
+- Instalar `metrics-server` para que los HPAs funcionen (actualmente muestran `<unknown>`):
+  ```bash
+  kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+  ```
+- Instalar `nginx-ingress-controller` para que el Ingress resuelva `api.piums.app`
+- Configurar `REDIS_PASSWORD` real en el Secret de producción
+- Push de imágenes al registry antes de desplegar en producción:
+  ```bash
+  docker tag docker-chat-service:latest ghcr.io/app-piums/piums-platform/chat-service:latest
+  docker push ghcr.io/app-piums/piums-platform/chat-service:latest
+  ```
