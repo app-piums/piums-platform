@@ -104,7 +104,7 @@ async function createUserAndRespond(
 
   const redirectUrl = role === 'artista'
     ? (process.env.ARTIST_APP_URL || 'http://localhost:3001')
-    : (process.env.CLIENT_APP_URL || 'http://localhost:3002');
+    : (process.env.CLIENT_APP_URL || 'http://localhost:3000');
 
   const { passwordHash: _, ...userResponse } = user;
 
@@ -283,7 +283,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Determinar URL de redirección basada en el rol del usuario
     let redirectUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
     
-    if (user.role === 'artist') {
+    if (user.role === 'artista') {
       redirectUrl = process.env.ARTIST_APP_URL || 'http://localhost:3001';
     } else if (user.role === 'admin') {
       redirectUrl = process.env.ADMIN_APP_URL || 'http://localhost:3002';
@@ -444,8 +444,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 
 export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // @ts-ignore - userId viene del middleware de autenticación
-    const userId = req.userId;
+    const userId = (req as any).user?.id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -454,6 +453,10 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 
     if (newPassword.length < 8) {
       throw new AppError(400, "La contraseña debe tener al menos 8 caracteres");
+    }
+
+    if (currentPassword === newPassword) {
+      throw new AppError(400, "La nueva contraseña debe ser diferente a la actual");
     }
 
     const result = await passwordService.changePassword(
@@ -762,5 +765,4 @@ export const completeOnboarding = async (req: Request, res: Response, next: Next
   } catch (error: any) {
     next(error);
   }
-};
 };

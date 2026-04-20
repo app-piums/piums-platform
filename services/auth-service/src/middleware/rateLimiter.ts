@@ -1,16 +1,20 @@
 import rateLimit from "express-rate-limit";
 
-// Rate limiter para login: Límite moderado
+// Rate limiter para login: clave por IP+email para no bloquear toda la IP compartida
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // 5 intentos por ventana
+  max: 10, // 10 intentos por ventana por clave IP+email
+  keyGenerator: (req) => {
+    const email = (req.body?.email || '').toLowerCase().trim();
+    return `login:${req.ip}:${email}`;
+  },
   message: {
     status: "error",
     message: "Demasiados intentos de inicio de sesión. Por favor intenta nuevamente en 15 minutos.",
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // No contar requests exitosos
+  skipSuccessfulRequests: true,
 });
 
 // Rate limiter para registro: Límite estricto (relajado en development para seed/testing)
