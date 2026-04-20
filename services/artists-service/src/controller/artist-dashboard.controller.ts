@@ -5,6 +5,7 @@ import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { bookingServiceClient } from "../clients/booking.client";
 import { paymentsServiceClient } from "../clients/payments.client";
+import { availabilitySchema } from "../schemas/artists.schema";
 
 const artistsService = new ArtistsService();
 
@@ -303,6 +304,70 @@ export const getMyStats = async (
     });
 
     res.json({ stats });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/artists/dashboard/me/availability - Obtener disponibilidad semanal del artista autenticado
+ */
+export const getMyAvailability = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, "No autenticado");
+    const artist = await artistsService.getArtistByAuthId(authId);
+    const availability = await artistsService.getAvailability(artist.id);
+    res.json({ availability });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/artists/dashboard/me/availability - Guardar disponibilidad semanal
+ * Acepta un array de { dayOfWeek, startTime, endTime }
+ * dayOfWeek puede venir como "Lunes", "lunes" o "LUNES" — se normaliza aquí.
+ */
+const DAY_MAP: Record<string, string> = {
+  lunes: 'LUNES', martes: 'MARTES', miercoles: 'MIERCOLES', miércoles: 'MIERCOLES',
+  jueves: 'JUEVES', viernes: 'VIERNES', sabado: 'SABADO', sábado: 'SABADO',
+  domingo: 'DOMINGO',
+};
+
+export const setMyAvailability = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, "No autenticado");
+    const artist = await artistsService.getArtistByAuthId(authId);
+
+    const rawItems: any[] = req.body.availability ?? req.body;
+    if (!Array.isArray(rawItems)) {
+      throw new AppError(400, "Se esperaba un array de disponibilidad");
+    }
+
+    const normalized = rawItems.map((item: any) => {
+      const rawDay: string = String(item.dayOfWeek ?? '');
+      const dayOfWeek = DAY_MAP[rawDay.toLowerCase()] ?? rawDay.toUpperCase();
+      return availabilitySchema.parse({ dayOfWeek, startTime: item.startTime, endTime: item.endTime });
+    });
+
+    const availability = await artistsService.setAvailability(artist.id, normalized);
+
+    logger.info("Disponibilidad actualizada desde dashboard", "ARTIST_DASHBOARD", {
+      artistId: artist.id,
+      days: normalized.map(d => d.dayOfWeek),
+    });
+
+    res.json({ availability, message: "Disponibilidad configurada" });
   } catch (error) {
     next(error);
   }

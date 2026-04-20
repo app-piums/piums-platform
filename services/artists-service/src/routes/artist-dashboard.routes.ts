@@ -9,8 +9,9 @@ import {
   completeBooking,
   cancelBooking,
   getMyStats,
+  getMyAvailability,
+  setMyAvailability,
 } from "../controller/artist-dashboard.controller";
-import { getAvailability, setAvailability } from "../controller/artists.controller";
 import {
   getAbsences,
   createAbsence,
@@ -37,9 +38,9 @@ router.post("/me/bookings/:id/cancel", cancelBooking);
 // Estadísticas
 router.get("/me/stats", getMyStats);
 
-// Disponibilidad (reutilizando del controller existente)
-router.get("/me/availability", getAvailability);
-router.post("/me/availability", setAvailability);
+// Disponibilidad semanal
+router.get("/me/availability", getMyAvailability);
+router.post("/me/availability", setMyAvailability);
 
 // Ausencias / Viajes
 router.get("/me/absences", getAbsences);
