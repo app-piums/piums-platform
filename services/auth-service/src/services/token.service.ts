@@ -264,7 +264,7 @@ export class TokenService {
       logger.info('Refresh token rotated successfully', 'TOKEN_SERVICE', { userId });
 
       return {
-        accessToken: newAccessToken,
+        token: newAccessToken,
         refreshToken: newRefreshToken,
       };
     } catch (error: any) {

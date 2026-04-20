@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+const stripHtml = (s: string) => s.replace(/<[^>]*>/g, '').trim();
+
 // Schema base de registro (campos comunes)
 const baseRegisterSchema = z.object({
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres").transform(stripHtml),
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   pais: z.string().min(2, "Selecciona un país").optional(),
@@ -12,7 +14,7 @@ const baseRegisterSchema = z.object({
 
 // Schema general (con selección de rol - para uso interno/admin)
 export const registerSchema = z.object({
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres").transform(stripHtml),
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   role: z.enum(["cliente", "artista"], { errorMap: () => ({ message: "El rol debe ser cliente o artista" }) }),
