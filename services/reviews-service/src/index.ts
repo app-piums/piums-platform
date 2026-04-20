@@ -36,7 +36,7 @@ app.use((req, _res, next) => {
 
 // Routes
 app.use("/health", healthRoutes);
-app.use("/api/reviews", reviewRoutes);
+app.use("/api", reviewRoutes);
 
 // Error handling (debe ir al final)
 app.use(errorHandler);
