@@ -16,6 +16,14 @@ export interface AuthRequest extends Request {
 /**
  * Middleware para verificar JWT
  */
+export const requireAdmin: RequestHandler = (req, res, next) => {
+  const authReq = req as AuthRequest;
+  if (!authReq.user || authReq.user.role !== 'admin') {
+    return next(new AppError(403, 'Acceso denegado. Se requiere rol de administrador.'));
+  }
+  next();
+};
+
 export const authenticateToken: RequestHandler = (
   req,
   res,

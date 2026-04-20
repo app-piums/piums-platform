@@ -24,7 +24,6 @@ export const PaymentStatusEnum = z.enum([
 
 // Schema para crear reserva
 export const createBookingSchema = z.object({
-  clientId: z.string().min(1, "clientId es requerido"),
   artistId: z.string().min(1, "artistId es requerido"),
   serviceId: z.string().uuid("serviceId inválido"),
   
@@ -74,7 +73,6 @@ export const confirmBookingSchema = z.object({
 // Schema para rechazar reserva
 export const rejectBookingSchema = z.object({
   reason: z.string().min(10, "La razón debe tener al menos 10 caracteres").max(500),
-});
 });
 
 // Schema para marcar pago
