@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { AppError } from "../middleware/errorHandler";
 import { reviewService } from "../services/review.service";
 import {
   createReviewSchema,
@@ -68,8 +69,9 @@ export class ReviewController {
     try {
       const id = req.params.id as string;
       const userId = req.user.id;
+      const isAdmin = req.user.role === 'admin';
 
-      const review = await reviewService.deleteReview(id, userId);
+      const review = await reviewService.deleteReview(id, userId, isAdmin);
       res.json({ message: "Reseña eliminada", review });
     } catch (error) {
       next(error);
@@ -81,8 +83,19 @@ export class ReviewController {
   async respondToReview(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const reviewId = req.params.id as string;
-      const artistId = req.user.id;
+      const authId = req.user.id;
       const { message } = respondReviewSchema.parse(req.body);
+
+      // Resolve authId → artistId via artists-service internal endpoint
+      const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      const artistRes = await fetch(
+        `${artistsUrl}/artists/internal/by-auth/${authId}`,
+        { headers: { 'x-internal-secret': process.env.INTERNAL_SERVICE_SECRET || '' } }
+      );
+      if (!artistRes.ok) {
+        throw new AppError(403, 'No tienes un perfil de artista activo');
+      }
+      const { id: artistId } = await artistRes.json() as { id: string };
 
       const response = await reviewService.respondToReview(reviewId, artistId, message);
       res.status(201).json(response);

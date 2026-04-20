@@ -59,6 +59,7 @@ model Review {
   photos      ReviewPhoto[]
   response    ReviewResponse?
   reports     ReviewReport[]
+  helpfulVotes ReviewHelpfulVote[]
   
   // Verificación
   isVerified  Boolean  @default(true) // Si la reserva fue verificada
@@ -172,6 +173,21 @@ model ReportMessage {
 
   @@index([reportId])
   @@map("report_messages")
+}
+
+// Votos de utilidad (evita votos duplicados por usuario)
+model ReviewHelpfulVote {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  isHelpful Boolean
+
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
+  @@map("review_helpful_votes")
 }
 
 // Estadísticas de artistas (agregadas, calculadas periódicamente)
