@@ -1,0 +1,176 @@
+# ============================================================================
+# Local Infrastructure: PostgreSQL StatefulSet + Redis Deployment
+# Only applied in the local overlay — production uses managed services.
+# ============================================================================
+
+# ─────────────────────── Postgres Init Script ───────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: piums
+data:
+  init-databases.sql: |
+    \c postgres;
+    CREATE DATABASE IF NOT EXISTS piums_auth;
+    CREATE DATABASE IF NOT EXISTS piums_users;
+    CREATE DATABASE IF NOT EXISTS piums_artists;
+    CREATE DATABASE IF NOT EXISTS piums_catalog;
+    CREATE DATABASE IF NOT EXISTS piums_bookings;
+    CREATE DATABASE IF NOT EXISTS piums_payments;
+    CREATE DATABASE IF NOT EXISTS piums_reviews;
+    CREATE DATABASE IF NOT EXISTS piums_notifications;
+    CREATE DATABASE IF NOT EXISTS piums_search;
+    CREATE DATABASE IF NOT EXISTS piums_chat;
+    GRANT ALL PRIVILEGES ON DATABASE piums_auth TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_users TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_artists TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_catalog TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_bookings TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_payments TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_reviews TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_notifications TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_search TO piums;
+    GRANT ALL PRIVILEGES ON DATABASE piums_chat TO piums;
+---
+# ─────────────────────── Postgres PVC ───────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: piums
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# ─────────────────────── Postgres StatefulSet ───────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: piums
+  labels:
+    app: postgres
+    tier: database
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: piums
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: piums-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: piums_main
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, piums]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, piums]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data
+        - name: init-sql
+          configMap:
+            name: postgres-init-sql
+---
+# ─────────────────────── Postgres Service ───────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: piums
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# ─────────────────────── Redis Deployment ───────────────────────────────────
+# redis-service (ClusterIP) is already defined in base/services.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: piums
+  labels:
+    app: redis
+    tier: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6379
+          livenessProbe:
+            exec:
+              command: [redis-cli, ping]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: [redis-cli, ping]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
