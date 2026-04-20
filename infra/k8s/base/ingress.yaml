@@ -14,6 +14,12 @@ metadata:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection "upgrade";
+    # Sticky sessions — ensures WebSocket clients reconnect to the same pod
+    # (secondary to Redis adapter, adds resilience for connection handshakes)
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "piums-route"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
+    nginx.ingress.kubernetes.io/session-cookie-samesite: "Strict"
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:

@@ -324,7 +324,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4010
-      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_chat
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       ARTISTS_SERVICE_URL: http://artists-service:4003
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002
