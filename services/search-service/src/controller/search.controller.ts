@@ -25,8 +25,8 @@ export const searchController = {
   // Smart search with synonym expansion
   async smartSearch(req: Request, res: Response, next: NextFunction) {
     try {
-      const { q, page, limit, city, country, minPrice, maxPrice, minGuests } = smartSearchSchema.parse(req.query);
-      const result = await searchService.smartSearch(q, { page, limit, city, country, minPrice, maxPrice, minGuests });
+      const { q, page, limit, city, country, minPrice, maxPrice, minGuests, isVerified } = smartSearchSchema.parse(req.query);
+      const result = await searchService.smartSearch(q, { page, limit, city, country, minPrice, maxPrice, minGuests, isVerified });
       res.json(result);
     } catch (error) {
       next(error);

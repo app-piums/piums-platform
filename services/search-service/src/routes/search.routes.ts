@@ -17,6 +17,20 @@ router.post('/index/service', requireAuth, indexLimiter, searchController.indexS
 router.post('/index/bulk', requireAuth, indexLimiter, searchController.bulkIndex);
 router.get('/index/status', requireAuth, searchController.getIndexStatus);
 
+// Remove an artist from the index by its id (artists-service id, same as ArtistIndex.id)
+router.delete('/index/artist/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { PrismaClient } = await import('../generated/prisma');
+    const prisma = new PrismaClient();
+    const { id } = req.params;
+    await prisma.artistIndex.deleteMany({ where: { id } });
+    await prisma.serviceIndex.deleteMany({ where: { artistId: id } });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Analytics endpoints
 router.get('/popular', searchController.getPopularSearches);
 
