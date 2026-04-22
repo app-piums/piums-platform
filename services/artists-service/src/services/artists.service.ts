@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { triggerArtistReindex } from "../utils/searchReindex";
 
 const prisma = new PrismaClient();
 
@@ -64,6 +65,7 @@ export class ArtistsService {
       });
 
       logger.info("Artista creado", "ARTISTS_SERVICE", { artistId: artist.id, email: artist.email });
+      triggerArtistReindex(artist.id);
       return artist;
     } catch (error) {
       logger.error("Error creando artista", "ARTISTS_SERVICE", { error });
@@ -155,6 +157,7 @@ export class ArtistsService {
       });
 
       logger.info("Artista actualizado", "ARTISTS_SERVICE", { artistId: id });
+      triggerArtistReindex(id);
       return artist;
     } catch (error) {
       logger.error("Error actualizando artista", "ARTISTS_SERVICE", { error });
