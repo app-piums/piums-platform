@@ -15,13 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Llamar directamente al auth-service
+    // Llamar directamente al auth-service — force role='artista' so users
+    // registered as clients can also log into the artist app (dual-role).
     const response = await fetch(`${AUTH_SERVICE_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role: 'artista' }),
     });
 
     const data = await response.json();
