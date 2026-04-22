@@ -46,6 +46,7 @@ function UsersContent() {
   const [searchInput, setSearchInput] = useState("");
   const [role, setRole] = useState("");
   const [confirmBlock, setConfirmBlock] = useState<AdminUserRow | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<AdminUserRow | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users", page, search, role],
@@ -57,6 +58,14 @@ function UsersContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setConfirmBlock(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => usersApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setConfirmDelete(null);
     },
   });
 
@@ -128,16 +137,24 @@ function UsersContent() {
                     <span className="text-xs text-zinc-400">{new Date(u.createdAt).toLocaleDateString("es-MX")}</span>
                   </div>
                   {u.role !== "admin" && (
-                    <button
-                      onClick={() => setConfirmBlock(u)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                        u.isBlocked
-                          ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-400"
-                          : "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
-                      }`}
-                    >
-                      {u.isBlocked ? "Desbloquear" : "Bloquear"}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setConfirmBlock(u)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                          u.isBlocked
+                            ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-400"
+                            : "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
+                        }`}
+                      >
+                        {u.isBlocked ? "Desbloquear" : "Bloquear"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(u)}
+                        className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-red-500 dark:hover:text-white"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -198,16 +215,24 @@ function UsersContent() {
                   </td>
                   <td className="px-5 py-3.5">
                     {u.role !== "admin" && (
-                      <button
-                        onClick={() => setConfirmBlock(u)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                          u.isBlocked
-                            ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-400"
-                            : "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
-                        }`}
-                      >
-                        {u.isBlocked ? "Desbloquear" : "Bloquear"}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setConfirmBlock(u)}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                            u.isBlocked
+                              ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-400"
+                              : "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
+                          }`}
+                        >
+                          {u.isBlocked ? "Desbloquear" : "Bloquear"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(u)}
+                          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-red-500 dark:hover:text-white"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -287,6 +312,41 @@ function UsersContent() {
                   : confirmBlock.isBlocked
                   ? "Desbloquear"
                   : "Bloquear"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              ¿Eliminar usuario?
+            </h3>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+              {confirmDelete.nombre} ({confirmDelete.email}) se eliminará de forma permanente, junto con su perfil de artista (si aplica).
+            </p>
+            <p className="mt-2 text-xs font-medium text-red-600">Esta acción no se puede deshacer.</p>
+            {deleteMutation.isError && (
+              <p className="mt-3 text-xs text-red-500">
+                {(deleteMutation.error as Error).message}
+              </p>
+            )}
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 rounded-lg border border-zinc-200 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => deleteMutation.mutate(confirmDelete.id)}
+                disabled={deleteMutation.isPending}
+                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleteMutation.isPending ? "Eliminando…" : "Eliminar"}
               </button>
             </div>
           </div>

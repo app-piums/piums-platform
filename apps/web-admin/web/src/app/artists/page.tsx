@@ -16,7 +16,7 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
         verified
-          ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+          ? "bg-[#FF6A00]/15 text-[#FF6A00] dark:bg-[#FF6A00]/20 dark:text-[#FF8A33]"
           : "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
       }`}
     >
@@ -391,13 +391,13 @@ function ArtistDetailDrawer({
               {/* Current status summary */}
               <div className={`rounded-xl border p-4 ${
                 data.isVerified
-                  ? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30"
+                  ? "border-[#FF6A00]/30 bg-orange-50 dark:border-[#FF6A00]/40 dark:bg-[#FF6A00]/10"
                   : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
               }`}>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 mb-1">Estado actual</p>
                 <div className="flex items-center gap-2">
                   <VerifiedBadge verified={data.isVerified} />
-                  <span className={`text-sm ${data.isVerified ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
+                  <span className={`text-sm ${data.isVerified ? "text-[#FF6A00] dark:text-[#FF8A33]" : "text-amber-700 dark:text-amber-400"}`}>
                     {data.isVerified
                       ? "Este artista ya está verificado. Puedes revocar si es necesario."
                       : "Pendiente de revisión. Revisa el perfil y documentos antes de decidir."}
