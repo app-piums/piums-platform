@@ -137,6 +137,45 @@ export const toggleBlockUser = async (req: Request, res: Response, next: NextFun
   }
 };
 
+// DELETE /api/admin/users/:id - Eliminar usuario y sus datos en microservicios
+export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const adminId = (req as any).user?.id;
+
+    const existing = await prisma.user.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ error: 'User not found' });
+    if (existing.role === 'admin') {
+      return res.status(403).json({ error: 'No se puede eliminar un administrador' });
+    }
+
+    // Best-effort cleanup across services (fire-and-forget; never block the delete)
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+    const usersUrl = process.env.USERS_SERVICE_URL || 'http://users-service:4002';
+    if (internalSecret) {
+      await Promise.allSettled([
+        fetch(`${artistsUrl}/artists/internal/by-auth/${id}`, {
+          method: 'DELETE',
+          headers: { 'x-internal-secret': internalSecret },
+        }),
+        fetch(`${usersUrl}/users/internal/by-auth/${id}`, {
+          method: 'DELETE',
+          headers: { 'x-internal-secret': internalSecret },
+        }),
+      ]);
+    }
+
+    await prisma.user.delete({ where: { id } });
+
+    logger.info('User deleted', 'ADMIN_CONTROLLER', { adminId, userId: id });
+    res.json({ message: 'User deleted successfully', id });
+  } catch (error: any) {
+    logger.error(`Error deleting user: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
 // GET /api/admin/artists - Lista artistas
 export const getArtists = async (req: Request, res: Response, next: NextFunction) => {
   try {

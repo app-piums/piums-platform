@@ -4,6 +4,7 @@ import {
   getStats,
   getUsers,
   toggleBlockUser,
+  deleteUser,
   getArtists,
   getArtistDetail,
   verifyArtist,
@@ -26,6 +27,7 @@ router.get('/stats', getStats);
 router.get('/users', getUsers);
 router.get('/users/:id', getUserDetail);
 router.patch('/users/:id/block', toggleBlockUser);
+router.delete('/users/:id', deleteUser);
 
 // Artists management
 router.get('/artists', getArtists);
