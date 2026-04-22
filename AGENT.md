@@ -1,6 +1,6 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
-**Fecha de última actualización**: 8 de abril de 2026
+**Fecha de última actualización**: 22 de abril de 2026
 **Último commit**: `dave` branch — fix: resize search bar and shrink count text in buscar-artistas (`f623985`)
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
@@ -50,24 +50,35 @@ Opera bajo la **moneda GTQ (Quetzal guatemalteco)**. Locale: `es-GT`. Símbolo: 
 
 ## 3. Puertos y Servicios
 
-| Servicio | Puerto | Base de datos |
-|---|---|---|
-| API Gateway | 3000 | — |
-| auth-service | 4001 | piums_auth |
-| users-service | 4002 | piums_users |
-| artists-service | 4003 | piums_artists |
-| catalog-service | 4004 | piums_catalog |
-| payments-service | 4005 | piums_payments |
-| reviews-service | 4006 | piums_reviews |
-| notifications-service | 4007 | piums_notifications |
-| booking-service | 4008 | piums_bookings |
-| search-service | 4009 | piums_search |
-| web-client | 3002 | — |
-| web-artist | 3001 | — |
-| PostgreSQL | 5432 | — |
-| Redis | 6379 | — |
+> Stack dev real: **Docker Compose** ([infra/docker/docker-compose.dev.yml](infra/docker/docker-compose.dev.yml)). Los manifiestos de K8s existen para prod/infra pero el desarrollo local usa Docker.
 
-Punto de entrada único: `http://localhost:3000` (API Gateway)
+### Backend (Docker Compose — mapeo `host:container`)
+
+| Servicio | Host | Container | Base de datos |
+|---|---|---|---|
+| **gateway** | **3005** | 3000 | — |
+| auth-service | 4001 | 4001 | piums_auth |
+| users-service | 4002 | 4002 | piums_users |
+| artists-service | 4003 | 4003 | piums_artists |
+| catalog-service | 4004 | 4004 | piums_catalog |
+| payments-service | 4005 | 4005 | piums_payments |
+| reviews-service | 4006 | 4006 | piums_reviews |
+| notifications-service | 4007 | 4007 | piums_notifications |
+| booking-service | 4008 | 4008 | piums_bookings |
+| search-service | 4009 | 4009 | piums_search |
+| chat-service | 4010 | 4010 | — |
+| postgres | 5432 | 5432 | — |
+| redis | 6379 | 6379 | — |
+
+**Punto de entrada único al backend**: `http://localhost:3005` (API Gateway)
+
+### Frontends (Docker Compose — mapeo `host:container`)
+
+| App | Host | Container |
+|---|---|---|
+| web-client | 3000 | 3000 |
+| web-artist | 3001 | 3001 |
+| web-admin | 3002 | 3003 |
 
 ---
 
