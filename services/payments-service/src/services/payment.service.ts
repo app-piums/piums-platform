@@ -229,7 +229,9 @@ export class PaymentService {
       await bookingClient.markPayment(
         payment.bookingId,
         payment.amount,
-        payment.paymentMethod || undefined
+        payment.paymentMethod || undefined,
+        payment.stripePaymentIntentId || undefined,
+        payment.paymentType === "DEPOSIT" ? "DEPOSIT" : "FULL_PAYMENT"
       );
     }
 
