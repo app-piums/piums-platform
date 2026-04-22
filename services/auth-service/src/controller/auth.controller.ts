@@ -717,14 +717,34 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
 
 // ─────────────────────────────────────────────────────────────────────────
 // POST /auth/firebase  — exchange Firebase ID token for a PIUMS JWT
+//
+// Nota: verificamos el token contra la Identity Toolkit REST API de Google
+// (https://identitytoolkit.googleapis.com/v1/accounts:lookup) en lugar de
+// usar firebase-admin. Ambos caminos verifican la firma del JWT contra el
+// proyecto de Firebase de PIUMS; la REST API no requiere service account
+// (solo FIREBASE_API_KEY pública), pesa ~0 MB adicionales y no necesita
+// distribuir la clave privada del service account en los secrets del
+// contenedor. Google la considera segura para intercambiar ID tokens.
 // ─────────────────────────────────────────────────────────────────────────
+const ALLOWED_FIREBASE_ROLES = ['cliente', 'artista'] as const;
+type FirebaseRole = typeof ALLOWED_FIREBASE_ROLES[number];
+
 export const firebaseLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { idToken, role = 'artista' } = req.body;
+    const { idToken, role: rawRole = 'artista' } = req.body ?? {};
 
     if (!idToken || typeof idToken !== 'string') {
       throw new AppError(400, 'Firebase ID token requerido');
     }
+
+    // Validar role antes de hacer cualquier otro trabajo
+    if (typeof rawRole !== 'string' || !ALLOWED_FIREBASE_ROLES.includes(rawRole as FirebaseRole)) {
+      throw new AppError(
+        400,
+        `Role inválido. Valores permitidos: ${ALLOWED_FIREBASE_ROLES.join(', ')}`
+      );
+    }
+    const role: FirebaseRole = rawRole as FirebaseRole;
 
     // Verify the Firebase ID token using the Identity Toolkit REST API
     const firebaseApiKey = process.env.FIREBASE_API_KEY;
@@ -888,7 +908,8 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
     const { passwordHash: _, ...userBase } = user;
     // Expose the effective role in the response so the frontend opens the
     // correct dashboard even when the user's stored role differs.
-    const userResponse = { ...userBase, role: effectiveRole };
+    // Also expose `_id` (alias de `id`) for iOS/mobile clients que lo esperan.
+    const userResponse = { ...userBase, _id: user.id, role: effectiveRole };
 
     logger.info('Firebase Google login success', 'AUTH_CONTROLLER', { userId: user.id, role: effectiveRole });
 

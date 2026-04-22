@@ -276,6 +276,10 @@ export default function ArtistOnboardingPage() {
   const [docFrontPreview, setDocFrontPreview] = useState<string | null>(null);
   const [docBackPreview, setDocBackPreview] = useState<string | null>(null);
   const [docSelfiePreview, setDocSelfiePreview] = useState<string | null>(null);
+  const [docFrontUrl, setDocFrontUrl] = useState<string | null>(null);
+  const [docBackUrl, setDocBackUrl] = useState<string | null>(null);
+  const [docSelfieUrl, setDocSelfieUrl] = useState<string | null>(null);
+  const [docUploading, setDocUploading] = useState<{ front: boolean; back: boolean; selfie: boolean }>({ front: false, back: false, selfie: false });
 
   // Step numbers:
   // 1 = Welcome
@@ -347,9 +351,11 @@ export default function ArtistOnboardingPage() {
 
   const handleAddExtraLink = () => setExtraLinks([...extraLinks, '']);
 
-  const handleDocFileChange = (field: 'front' | 'back' | 'selfie') => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocFileChange = (field: 'front' | 'back' | 'selfie') => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Local preview
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
@@ -358,6 +364,30 @@ export default function ArtistOnboardingPage() {
       else setDocSelfiePreview(dataUrl);
     };
     reader.readAsDataURL(file);
+
+    // Upload to Cloudinary via backend
+    setDocUploading(prev => ({ ...prev, [field]: true }));
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/users/documents/upload?folder=${field}`, {
+        method: 'POST',
+        body: fd,
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        toast.error(data.message || 'No se pudo subir el documento');
+        return;
+      }
+      if (field === 'front') setDocFrontUrl(data.url);
+      else if (field === 'back') setDocBackUrl(data.url);
+      else setDocSelfieUrl(data.url);
+    } catch {
+      toast.error('No se pudo subir el documento');
+    } finally {
+      setDocUploading(prev => ({ ...prev, [field]: false }));
+    }
   };
 
   const handleExtraLinkChange = (index: number, value: string) => {
@@ -369,7 +399,7 @@ export default function ArtistOnboardingPage() {
   const handleFinish = async () => {
     setIsLoading(true);
     try {
-      if (docFrontPreview || docSelfiePreview || docType || docNumber) {
+      if (docFrontUrl || docSelfieUrl || docType || docNumber) {
         await fetch('/api/auth/profile', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -377,9 +407,9 @@ export default function ArtistOnboardingPage() {
           body: JSON.stringify({
             documentType: docType || undefined,
             documentNumber: docNumber || undefined,
-            documentFrontUrl: docFrontPreview || undefined,
-            documentBackUrl: docBackPreview || undefined,
-            documentSelfieUrl: docSelfiePreview || undefined,
+            documentFrontUrl: docFrontUrl || undefined,
+            documentBackUrl: docBackUrl || undefined,
+            documentSelfieUrl: docSelfieUrl || undefined,
           }),
         }).catch(() => { toast.warning('No se pudieron guardar los documentos. Podrás subirlos más tarde.'); });
       }
@@ -1343,6 +1373,11 @@ export default function ArtistOnboardingPage() {
                       <div className="relative rounded-xl overflow-hidden border-2 border-orange-400">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={preview} alt={label} className="w-full h-44 object-cover" />
+                        {docUploading[field] && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <span className="text-white text-sm font-semibold bg-black/60 px-3 py-1.5 rounded-full">Subiendo…</span>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                           <span className="text-white text-sm font-semibold bg-black/50 px-3 py-1.5 rounded-full">Cambiar foto</span>
                         </div>
