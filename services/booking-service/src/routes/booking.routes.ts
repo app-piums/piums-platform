@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { bookingController } from "../controller/booking.controller";
-import { authenticateToken, requireAdmin } from "../middleware/auth.middleware";
+import { authenticateToken, requireAdmin, internalAuth } from "../middleware/auth.middleware";
 import {
   createBookingLimiter,
   updateLimiter,
@@ -295,6 +295,20 @@ router.get(
   "/bookings/:id/pdf",
   authenticateToken,
   bookingController.downloadBookingPDF.bind(bookingController)
+);
+
+// ==================== RUTAS INTERNAS (solo inter-servicio) ====================
+
+router.get(
+  "/bookings/internal/:id",
+  internalAuth,
+  bookingController.internalGetBooking.bind(bookingController)
+);
+
+router.post(
+  "/bookings/internal/:id/mark-payment",
+  internalAuth,
+  bookingController.internalMarkPayment.bind(bookingController)
 );
 
 export default router;

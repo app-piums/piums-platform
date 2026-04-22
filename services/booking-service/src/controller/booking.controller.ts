@@ -580,6 +580,33 @@ export class BookingController {
       next(error);
     }
   }
+
+  // ==================== ENDPOINTS INTERNOS (inter-servicio) ====================
+
+  async internalGetBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const booking = await bookingService.getBookingById(req.params.id as string);
+      res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async internalMarkPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { amount, paymentMethod, paymentIntentId, paymentType } = markPaymentSchema.parse(req.body);
+      const booking = await bookingService.markPayment(
+        req.params.id as string,
+        amount,
+        paymentMethod,
+        paymentIntentId,
+        paymentType
+      );
+      res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const bookingController = new BookingController();
