@@ -1,41 +1,39 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 
-export type DisplayCurrency = 'GTQ' | 'USD';
-
-// Reference exchange rate (April 2026). Replace with a live API in production.
-const GTQ_TO_USD = 7.75;
+/**
+ * PIUMS ahora opera exclusivamente en USD. El contexto se mantiene para no
+ * romper imports previos, pero siempre formatea en USD.
+ */
+export type DisplayCurrency = 'USD';
 
 interface CurrencyContextValue {
   currency: DisplayCurrency;
   setCurrency: (c: DisplayCurrency) => void;
-  /** Format a GTQ amount (full units, not cents) for display in the selected currency */
-  formatPrice: (amountGTQ: number) => string;
+  /** Format a USD amount (full units, not cents) for display */
+  formatPrice: (amountUSD: number) => string;
 }
 
+const formatUSD = (amount: number) =>
+  `$${Number(amount).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+
 const CurrencyContext = createContext<CurrencyContextValue>({
-  currency: 'GTQ',
+  currency: 'USD',
   setCurrency: () => {},
-  formatPrice: (a) => `Q${a.toLocaleString('es-GT')}`,
+  formatPrice: formatUSD,
 });
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrency] = useState<DisplayCurrency>('GTQ');
-
-  const formatPrice = useCallback(
-    (amountGTQ: number) => {
-      if (currency === 'USD') {
-        const usd = amountGTQ / GTQ_TO_USD;
-        return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-      }
-      return `Q${Math.round(amountGTQ).toLocaleString('es-GT')}`;
-    },
-    [currency],
-  );
+  const formatPrice = useCallback((amount: number) => formatUSD(amount), []);
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, formatPrice }}>
+    <CurrencyContext.Provider
+      value={{ currency: 'USD', setCurrency: () => {}, formatPrice }}
+    >
       {children}
     </CurrencyContext.Provider>
   );
@@ -43,25 +41,13 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
 export const useCurrency = () => useContext(CurrencyContext);
 
-/** Small inline toggle — renders a GTQ / USD pill switcher */
+/** Stub: se preserva para no romper imports; USD es la única moneda ahora. */
 export function CurrencyToggle({ className }: { className?: string }) {
-  const { currency, setCurrency } = useCurrency();
   return (
-    <div className={`inline-flex items-center rounded-lg border border-gray-200 overflow-hidden text-xs font-semibold ${className ?? ''}`}>
-      {(['GTQ', 'USD'] as const).map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => setCurrency(c)}
-          className={`px-3 py-1.5 transition-colors ${
-            currency === c
-              ? 'bg-[#FF6A00] text-white'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
-          }`}
-        >
-          {c}
-        </button>
-      ))}
-    </div>
+    <span
+      className={`inline-flex items-center rounded-lg bg-[#FF6A00] px-3 py-1.5 text-xs font-semibold text-white ${className ?? ''}`}
+    >
+      USD
+    </span>
   );
 }

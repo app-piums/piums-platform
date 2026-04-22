@@ -360,7 +360,7 @@ function CheckoutPageInner() {
         const pi = await sdk.createPaymentIntent({
           bookingId,
           amount: bookingData.totalPrice,
-          currency: bookingData.currency || 'GTQ',
+          currency: bookingData.currency || 'USD',
           paymentMethods: ['card'],
         });
 
