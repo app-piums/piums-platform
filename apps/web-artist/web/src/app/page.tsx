@@ -131,7 +131,7 @@ export default async function Home() {
                 </svg>
               </div>
               <h3 className="font-semibold text-zinc-50 mb-1">Cobra en Quetzales</h3>
-              <p className="text-sm text-zinc-500">Pagos seguros y directos en GTQ. Sin efectivo, sin riesgos, sin intermediarios.</p>
+              <p className="text-sm text-zinc-500">Pagos seguros y directos en USD. Sin efectivo, sin riesgos, sin intermediarios.</p>
             </div>
           </div>
 
