@@ -34,4 +34,7 @@ router.delete('/index/artist/:id', requireAuth, async (req, res, next) => {
 // Analytics endpoints
 router.get('/popular', searchController.getPopularSearches);
 
+// Dynamic synonym registration — called from artist onboarding for custom roles
+router.post('/synonyms', requireAuth, searchController.addSynonym);
+
 export default router;

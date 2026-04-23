@@ -17,7 +17,11 @@ import {
   checkAvailabilitySchema,
   searchBookingsSchema,
 } from "../schemas/booking.schema";
-import { rescheduleBookingSchema } from "../schemas/reschedule.schema";
+import {
+  rescheduleBookingSchema,
+  createRescheduleRequestSchema,
+  respondToRescheduleSchema,
+} from "../schemas/reschedule.schema";
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
 import { catalogClient } from "../clients/catalog.client";
@@ -576,6 +580,69 @@ export class BookingController {
         message: "Reserva reprogramada exitosamente",
         booking,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==================== SOLICITUDES DE CAMBIO DE FECHA ====================
+
+  async createRescheduleRequest(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id: bookingId } = req.params;
+      const clientId = req.user!.id;
+      const { proposedDate, reason } = createRescheduleRequestSchema.parse(req.body);
+
+      const request = await bookingService.createRescheduleRequest(
+        bookingId,
+        clientId,
+        new Date(proposedDate),
+        reason
+      );
+
+      res.status(201).json({ message: "Solicitud de cambio de fecha enviada", request });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async respondToReschedule(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { requestId } = req.params;
+      const artistAuthId = req.user!.id;
+      const artistId = await this.resolveArtistId(artistAuthId);
+      const { accept, rejectionReason } = respondToRescheduleSchema.parse(req.body);
+
+      const result = await bookingService.respondToReschedule(requestId, artistId, accept, rejectionReason);
+
+      res.json({ message: accept ? "Solicitud aceptada, enlace enviado al cliente" : "Solicitud rechazada", ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async confirmRescheduleByToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token } = req.query as { token: string };
+
+      if (!token) {
+        return res.status(400).json({ message: "Token requerido" });
+      }
+
+      const result = await bookingService.confirmRescheduleByToken(token);
+      res.json({ message: "Cambio de fecha confirmado exitosamente", ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async listRescheduleRequests(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id: bookingId } = req.params;
+      const userId = req.user!.id;
+
+      const requests = await bookingService.listRescheduleRequests(bookingId, userId);
+      res.json({ requests });
     } catch (error) {
       next(error);
     }

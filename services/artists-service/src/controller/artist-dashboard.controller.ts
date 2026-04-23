@@ -9,6 +9,24 @@ import { availabilitySchema } from "../schemas/artists.schema";
 
 const artistsService = new ArtistsService();
 
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
+
+async function syncAvatarToAuthService(authId: string, avatarUrl: string) {
+  try {
+    await fetch(`${AUTH_SERVICE_URL}/internal/users/${authId}/avatar`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': INTERNAL_SECRET,
+      },
+      body: JSON.stringify({ avatarUrl }),
+    });
+  } catch (err: any) {
+    logger.warn('Could not sync avatar to auth-service', 'ARTIST_DASHBOARD', { authId, error: err.message });
+  }
+}
+
 /**
  * GET /api/artists/me - Obtener mi perfil de artista (simplificado para dashboard)
  */
@@ -50,13 +68,18 @@ export const updateMyProfile = async (
     const ALLOWED_FIELDS = [
       'bio', 'displayName', 'nombre', 'phone', 'location', 'cityId',
       'category', 'socialLinks', 'imageUrl', 'basePrice', 'experienceYears',
-      'availability', 'languages', 'tags', 'portfolioItems',
+      'availability', 'languages', 'tags', 'portfolioItems', 'avatar',
     ];
     const safeBody = Object.fromEntries(
       Object.entries(req.body).filter(([k]) => ALLOWED_FIELDS.includes(k))
     );
 
     const updatedArtist = await artistsService.updateArtist(artist.id, safeBody);
+
+    // If avatar was updated, sync to auth-service so web reads the latest
+    if (safeBody.avatar && typeof safeBody.avatar === 'string') {
+      syncAvatarToAuthService(authId, safeBody.avatar);
+    }
 
     logger.info("Perfil actualizado desde dashboard", "ARTIST_DASHBOARD", { artistId: artist.id });
     res.json({ artist: updatedArtist, message: "Perfil actualizado exitosamente" });
