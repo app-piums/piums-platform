@@ -26,6 +26,193 @@ const creativeDisciplines = [
   { id: 'other',           name: 'Otro',                subtitle: 'Otro talento creativo',          icon: '⚡' },
 ];
 
+// Especialidades específicas por disciplina
+const TALENT_BY_DISCIPLINE: Record<string, { id: string; label: string; keywords: string[] }[]> = {
+  musician: [
+    { id: 'cantante_solista',  label: 'Cantante / Solista',   keywords: ['cantante', 'solista', 'vocalista'] },
+    { id: 'guitarrista',       label: 'Guitarrista',           keywords: ['guitarra', 'guitarrista'] },
+    { id: 'pianista',          label: 'Pianista',              keywords: ['piano', 'pianista', 'teclado'] },
+    { id: 'bajista',           label: 'Bajista',               keywords: ['bajo', 'bajista'] },
+    { id: 'baterista',         label: 'Baterista',             keywords: ['batería', 'baterista', 'drummer'] },
+    { id: 'violinista',        label: 'Violinista',            keywords: ['violín', 'violin', 'cuerdas'] },
+    { id: 'saxofonista',       label: 'Saxofonista',           keywords: ['saxofón', 'saxo'] },
+    { id: 'trompetista',       label: 'Trompetista',           keywords: ['trompeta', 'trompetista'] },
+    { id: 'chelista',          label: 'Chelista',              keywords: ['cello', 'chelo', 'violonchelo'] },
+    { id: 'acordeonista',      label: 'Acordeonista',          keywords: ['acordeón', 'accordion'] },
+    { id: 'percusionista',     label: 'Percusionista',         keywords: ['percusión', 'congas', 'timbales'] },
+    { id: 'arpista',           label: 'Arpista',               keywords: ['arpa', 'arpista'] },
+    { id: 'banda_musical',     label: 'Banda Musical',         keywords: ['banda', 'grupo musical'] },
+    { id: 'mariachi',          label: 'Mariachi',              keywords: ['mariachi', 'trío', 'ranchero'] },
+    { id: 'marimba',           label: 'Marimba',               keywords: ['marimba', 'marimba guatemalteca'] },
+    { id: 'grupo_acustico',    label: 'Grupo Acústico',        keywords: ['grupo acústico', 'unplugged'] },
+    { id: 'trio_cuarteto',     label: 'Trío / Cuarteto',       keywords: ['trío', 'cuarteto', 'ensemble'] },
+    { id: 'rapero_freestyle',  label: 'Rapero / Freestyle',    keywords: ['rap', 'rapero', 'freestyle', 'hip hop'] },
+    { id: 'productor_musical', label: 'Productor Musical',     keywords: ['productor', 'beatmaker', 'producción'] },
+  ],
+  dj: [
+    { id: 'dj_bodas',       label: 'DJ para Bodas',       keywords: ['dj bodas', 'dj wedding'] },
+    { id: 'dj_corporativo', label: 'DJ Corporativo',      keywords: ['dj corporativo', 'dj empresarial'] },
+    { id: 'dj_electronica', label: 'DJ Electrónica',      keywords: ['dj electrónica', 'techno', 'house'] },
+    { id: 'dj_generalista', label: 'DJ Eventos',          keywords: ['dj', 'disc jockey', 'animador musical'] },
+    { id: 'beatmaker',      label: 'Beatmaker',           keywords: ['beatmaker', 'beat', 'trap', 'producer'] },
+  ],
+  photographer: [
+    { id: 'fotografo_eventos',  label: 'Fotógrafo de Eventos',  keywords: ['foto eventos', 'fotografía eventos'] },
+    { id: 'fotografo_boda',     label: 'Fotógrafo de Bodas',    keywords: ['foto boda', 'wedding photographer'] },
+    { id: 'fotografo_retrato',  label: 'Fotógrafo de Retrato',  keywords: ['retrato', 'portrait'] },
+    { id: 'fotografo_producto', label: 'Fotografía Comercial',  keywords: ['foto producto', 'ecommerce'] },
+    { id: 'drone_operator',     label: 'Drone Operator',        keywords: ['drone', 'dron', 'aéreo'] },
+  ],
+  filmmaker: [
+    { id: 'videografo',           label: 'Videógrafo de Eventos', keywords: ['videógrafo', 'video eventos'] },
+    { id: 'editor_video',         label: 'Editor de Video',       keywords: ['edición', 'editor de video'] },
+    { id: 'director_audiovisual', label: 'Director Audiovisual',  keywords: ['director', 'producción audiovisual'] },
+    { id: 'streaming',            label: 'Streaming / En Vivo',   keywords: ['streaming', 'live stream'] },
+    { id: 'colorista',            label: 'Colorista',             keywords: ['color grading', 'colorista'] },
+  ],
+  'graphic-designer': [
+    { id: 'disenador_grafico', label: 'Diseñador Gráfico',    keywords: ['diseño gráfico', 'flyer', 'cartel'] },
+    { id: 'branding',          label: 'Branding / Identidad', keywords: ['branding', 'logo', 'identidad visual'] },
+    { id: 'disenador_uxui',    label: 'Diseñador UX/UI',      keywords: ['ux/ui', 'diseño web', 'app design'] },
+    { id: 'motion_graphics',   label: 'Motion Graphics',      keywords: ['motion graphics', 'animación gráfica'] },
+    { id: 'disenador_redes',   label: 'Diseño para Redes',    keywords: ['diseño redes sociales', 'instagram'] },
+    { id: 'arte_ia',           label: 'Arte con IA',          keywords: ['midjourney', 'stable diffusion', 'ai art'] },
+  ],
+  illustrator: [
+    { id: 'ilustrador', label: 'Ilustrador Digital', keywords: ['ilustración', 'digital art'] },
+    { id: 'caligrafo',  label: 'Calígrafo',          keywords: ['caligrafía', 'lettering'] },
+    { id: 'artesano',   label: 'Artesano',           keywords: ['artesanía', 'handcraft'] },
+  ],
+  dancer: [
+    { id: 'bailarin_urbano',  label: 'Bailarín Urbano',    keywords: ['hip hop dance', 'breakdance', 'urban dance'] },
+    { id: 'bailarin_clasico', label: 'Bailarín Clásico',   keywords: ['ballet', 'danza clásica', 'contemporáneo'] },
+    { id: 'coreografo',       label: 'Coreógrafo',         keywords: ['coreografía', 'show de baile'] },
+    { id: 'danza_folklorica', label: 'Danza Folklórica',   keywords: ['danza folklórica', 'folclore', 'baile típico'] },
+  ],
+  mc: [
+    { id: 'animador_mc',      label: 'Animador / MC',       keywords: ['animador', 'mc', 'maestro de ceremonias'] },
+    { id: 'host_eventos',     label: 'Host de Eventos',     keywords: ['host', 'conductor', 'animación eventos'] },
+    { id: 'comedian_standup', label: 'Stand-up Comedian',   keywords: ['stand up', 'comediante', 'humor'] },
+    { id: 'show_infantil',    label: 'Shows Infantiles',    keywords: ['shows infantiles', 'payaso', 'animación niños'] },
+  ],
+  writer: [
+    { id: 'escritor',          label: 'Escritor Creativo',    keywords: ['escritor', 'escritura creativa'] },
+    { id: 'guionista',         label: 'Guionista',            keywords: ['guión', 'scriptwriter', 'screenplay'] },
+    { id: 'letrista',          label: 'Letrista',             keywords: ['letras', 'songwriter', 'composición'] },
+    { id: 'copywriter',        label: 'Copy Creativo',        keywords: ['copy', 'copywriting', 'redacción'] },
+    { id: 'locutor_voiceover', label: 'Locutor / Voice Over', keywords: ['locutor', 'voice over', 'narrador'] },
+  ],
+  tattooist: [
+    { id: 'tatuador',           label: 'Tatuador',           keywords: ['tatuaje', 'tattoo', 'tatuador'] },
+    { id: 'tattoo_realista',    label: 'Tattoo Realista',    keywords: ['tattoo realista', 'realismo tatuaje'] },
+    { id: 'tattoo_minimalista', label: 'Tattoo Minimalista', keywords: ['fine line', 'tattoo minimalista'] },
+    { id: 'piercing_artist',    label: 'Piercing Artist',    keywords: ['piercing', 'pircing', 'perforación'] },
+  ],
+  makeup: [
+    { id: 'maquillador_eventos', label: 'Maquillador/a Eventos',  keywords: ['maquillaje eventos', 'makeup artist'] },
+    { id: 'maquillaje_novia',    label: 'Especialista en Novias', keywords: ['maquillaje novia', 'bridal makeup'] },
+    { id: 'body_paint',          label: 'Body Paint',             keywords: ['body paint', 'body art'] },
+    { id: 'estilista',           label: 'Estilista / Peinados',   keywords: ['estilista', 'peinado', 'hair stylist'] },
+    { id: 'barbero_pro',         label: 'Barbero Profesional',    keywords: ['barbero', 'barbería', 'barber'] },
+    { id: 'manicurista',         label: 'Nail Artist',            keywords: ['manicure', 'nail art', 'uñas'] },
+  ],
+  painter: [
+    { id: 'pintor',    label: 'Pintor / Artista', keywords: ['pintura', 'pintor', 'acuarela', 'óleo'] },
+    { id: 'muralista', label: 'Muralista',        keywords: ['mural', 'muralista', 'arte urbano'] },
+  ],
+  sculptor: [
+    { id: 'escultor',  label: 'Escultor',  keywords: ['escultura', 'escultor'] },
+    { id: 'ceramista', label: 'Ceramista', keywords: ['cerámica', 'ceramista', 'torno'] },
+  ],
+  magician: [
+    { id: 'mago_ilusionista', label: 'Mago / Ilusionista', keywords: ['mago', 'magia', 'ilusionista'] },
+  ],
+  acrobat: [
+    { id: 'acrobata',    label: 'Acróbata',      keywords: ['acróbata', 'circo', 'telas aéreas'] },
+    { id: 'show_fuego',  label: 'Show de Fuego', keywords: ['fuego', 'malabares fuego', 'fire show'] },
+    { id: 'malabarismo', label: 'Malabarista',   keywords: ['malabarismo', 'malabares', 'juggling'] },
+  ],
+  other: [],
+};
+
+// Sugerencias de nombre/categoría/descripción de servicio por talent ID
+const SERVICE_SUGGESTIONS: Record<string, { name: string; category: string; description: string }> = {
+  cantante_solista:     { name: 'Presentación en Vivo - Cantante Solista', category: 'Música en vivo',          description: 'Show de canto en vivo para eventos, bodas y celebraciones. Repertorio amplio adaptable al tipo de evento.' },
+  guitarrista:          { name: 'Guitarra en Vivo para Eventos',           category: 'Música en vivo',          description: 'Actuación de guitarra en vivo para bodas, eventos corporativos y celebraciones.' },
+  pianista:             { name: 'Piano en Vivo para Eventos',              category: 'Música en vivo',          description: 'Música de piano en vivo para crear una atmósfera elegante en tu evento.' },
+  bajista:              { name: 'Bajo Eléctrico / Sesión Musical',         category: 'Música en vivo',          description: 'Servicio de bajo eléctrico para proyectos musicales, conciertos y sesiones de estudio.' },
+  baterista:            { name: 'Batería en Vivo para Eventos',            category: 'Música en vivo',          description: 'Show de batería en vivo y servicios de sesión para conciertos y grabaciones.' },
+  violinista:           { name: 'Violín en Vivo para Eventos',             category: 'Música en vivo',          description: 'Actuación de violín en vivo para bodas, eventos y celebraciones especiales.' },
+  saxofonista:          { name: 'Saxofón en Vivo para Eventos',            category: 'Música en vivo',          description: 'Show de saxofón en vivo para brindar un toque de elegancia y estilo a tu evento.' },
+  trompetista:          { name: 'Trompeta en Vivo para Eventos',           category: 'Música en vivo',          description: 'Actuación de trompeta en vivo para jazz, salsa, bodas y eventos especiales.' },
+  chelista:             { name: 'Cello en Vivo para Eventos',              category: 'Música en vivo',          description: 'Música de cello en vivo para bodas, recepciones y eventos de gala.' },
+  acordeonista:         { name: 'Acordeón en Vivo para Eventos',           category: 'Música en vivo',          description: 'Show de acordeón en vivo para vallenatos, norteñas y música regional.' },
+  percusionista:        { name: 'Percusión en Vivo para Eventos',          category: 'Música en vivo',          description: 'Show de percusión: congas, timbales y percusión latina para tus eventos.' },
+  arpista:              { name: 'Arpa en Vivo para Eventos',               category: 'Música en vivo',          description: 'Música de arpa en vivo para bodas, recepciones y eventos elegantes.' },
+  banda_musical:        { name: 'Banda Musical para Eventos',              category: 'Música en vivo',          description: 'Show completo de banda musical en vivo para bodas, fiestas y eventos corporativos.' },
+  mariachi:             { name: 'Mariachi para Eventos y Serenatas',       category: 'Música en vivo',          description: 'Mariachi en vivo para serenatas, bodas, fiestas y celebraciones especiales.' },
+  marimba:              { name: 'Marimba Guatemalteca para Eventos',       category: 'Música en vivo',          description: 'Marimba en vivo para bodas, eventos sociales y corporativos.' },
+  grupo_acustico:       { name: 'Grupo Acústico para Eventos',            category: 'Música en vivo',          description: 'Grupo acústico en vivo para eventos íntimos, bodas y celebraciones al aire libre.' },
+  trio_cuarteto:        { name: 'Trío / Cuarteto Musical',                 category: 'Música en vivo',          description: 'Ensemble de cámara para bodas, recepciones y eventos de gala.' },
+  rapero_freestyle:     { name: 'Show de Rap y Freestyle',                 category: 'Música en vivo',          description: 'Presentación de rap y freestyle en vivo para eventos, festivales y activaciones.' },
+  productor_musical:    { name: 'Producción Musical Profesional',          category: 'Música en vivo',          description: 'Producción de beats y composición musical para artistas y proyectos creativos.' },
+  dj_bodas:             { name: 'DJ para Bodas',                           category: 'DJ para eventos',         description: 'Servicio completo de DJ para bodas: música para ceremonia, cocktail y recepción.' },
+  dj_corporativo:       { name: 'DJ para Eventos Corporativos',            category: 'DJ para eventos',         description: 'DJ profesional para eventos empresariales, lanzamientos y activaciones de marca.' },
+  dj_electronica:       { name: 'DJ Set Electrónico',                      category: 'DJ para eventos',         description: 'DJ set de música electrónica para fiestas privadas, clubes y festivales.' },
+  dj_generalista:       { name: 'DJ Animador para Eventos',                category: 'DJ para eventos',         description: 'DJ animador para todo tipo de eventos: cumpleaños, quinceañeras, fiestas y graduaciones.' },
+  beatmaker:            { name: 'Producción de Beats',                     category: 'DJ para eventos',         description: 'Producción de beats y bases musicales personalizadas para artistas.' },
+  fotografo_eventos:    { name: 'Fotografía de Eventos',                   category: 'Fotografía de eventos',   description: 'Fotografía profesional de eventos: bodas, fiestas, graduaciones y celebraciones.' },
+  fotografo_boda:       { name: 'Fotografía de Bodas',                     category: 'Fotografía de eventos',   description: 'Fotografía artística y documental para tu boda. Capturamos cada momento especial.' },
+  fotografo_retrato:    { name: 'Sesión de Retrato Profesional',           category: 'Fotografía de retrato',   description: 'Sesión fotográfica de retrato: headshots, lifestyle y editorial.' },
+  fotografo_producto:   { name: 'Fotografía Comercial de Producto',        category: 'Fotografía de retrato',   description: 'Fotografía de producto para e-commerce, redes sociales y campañas publicitarias.' },
+  drone_operator:       { name: 'Fotografía y Video con Drone',            category: 'Videografía y edición',   description: 'Imágenes y video aéreo con drone para eventos, inmuebles y producciones.' },
+  videografo:           { name: 'Videografía de Eventos',                  category: 'Videografía y edición',   description: 'Cobertura en video de bodas, eventos y celebraciones con edición profesional.' },
+  editor_video:         { name: 'Edición de Video Profesional',            category: 'Videografía y edición',   description: 'Edición y post-producción de video para redes sociales, YouTube y producciones.' },
+  director_audiovisual: { name: 'Producción Audiovisual',                  category: 'Videografía y edición',   description: 'Dirección y producción audiovisual para comerciales, videoclips y documentales.' },
+  streaming:            { name: 'Streaming en Vivo de Eventos',            category: 'Videografía y edición',   description: 'Transmisión profesional en vivo de eventos, conferencias y ceremonias.' },
+  colorista:            { name: 'Color Grading Profesional',               category: 'Videografía y edición',   description: 'Corrección de color y etalonaje profesional para producciones audiovisuales.' },
+  disenador_grafico:    { name: 'Diseño Gráfico Profesional',              category: 'Diseño gráfico y branding', description: 'Diseño de flyers, carteles, banners y material gráfico para tu negocio o evento.' },
+  branding:             { name: 'Branding e Identidad Visual',             category: 'Diseño gráfico y branding', description: 'Creación de identidad de marca: logo, colores, tipografía y manual de marca.' },
+  disenador_uxui:       { name: 'Diseño UX/UI para Apps y Web',            category: 'Diseño gráfico y branding', description: 'Diseño de interfaces y experiencia de usuario para apps web y móviles.' },
+  motion_graphics:      { name: 'Motion Graphics y Animación',             category: 'Diseño gráfico y branding', description: 'Animaciones y motion graphics para redes sociales, intro de YouTube y publicidad.' },
+  disenador_redes:      { name: 'Diseño de Contenido para Redes',          category: 'Contenido para redes sociales', description: 'Diseño de contenido visual para Instagram, Facebook, TikTok y LinkedIn.' },
+  arte_ia:              { name: 'Arte con Inteligencia Artificial',        category: 'Diseño gráfico y branding', description: 'Creación de imágenes artísticas y comerciales con IA (Midjourney, Stable Diffusion).' },
+  ilustrador:           { name: 'Ilustración Digital Personalizada',       category: 'Ilustración digital',     description: 'Ilustración digital para libros, portadas, redes sociales y proyectos creativos.' },
+  caligrafo:            { name: 'Caligrafía y Lettering',                  category: 'Ilustración digital',     description: 'Caligrafía artística y lettering para bodas, eventos y proyectos de branding.' },
+  artesano:             { name: 'Artesanía Personalizada',                 category: 'Otro',                    description: 'Creación de piezas artesanales personalizadas para regalos, decoración y eventos.' },
+  bailarin_urbano:      { name: 'Show de Baile Urbano',                    category: 'Baile y coreografía',     description: 'Presentación de baile urbano (hip hop, breakdance) para eventos y celebraciones.' },
+  bailarin_clasico:     { name: 'Show de Danza Clásica',                   category: 'Baile y coreografía',     description: 'Presentación de ballet o danza contemporánea para eventos y festivales.' },
+  coreografo:           { name: 'Coreografía para Eventos',                category: 'Baile y coreografía',     description: 'Diseño y dirección de coreografías para shows, bodas y eventos especiales.' },
+  danza_folklorica:     { name: 'Danza Folklórica para Eventos',           category: 'Baile y coreografía',     description: 'Presentación de danza folklórica guatemalteca para eventos culturales y sociales.' },
+  animador_mc:          { name: 'Animación y MC para Eventos',             category: 'Animación de eventos',    description: 'Animación profesional como maestro de ceremonias para bodas, quinceañeras y eventos.' },
+  host_eventos:         { name: 'Host Profesional de Eventos',             category: 'Animación de eventos',    description: 'Conducción y hosting profesional para eventos corporativos y congresos.' },
+  comedian_standup:     { name: 'Show de Stand-up Comedy',                 category: 'Animación de eventos',    description: 'Show de comedia en vivo para eventos, cenas de empresa y celebraciones.' },
+  show_infantil:        { name: 'Show Infantil para Fiestas',              category: 'Animación de eventos',    description: 'Animación infantil completa con juegos, show y actividades para fiestas de niños.' },
+  escritor:             { name: 'Escritura Creativa',                      category: 'Escritura y guiones',     description: 'Redacción de contenido creativo: historias, artículos, blogs y textos literarios.' },
+  guionista:            { name: 'Guión para Video o Teatro',               category: 'Escritura y guiones',     description: 'Escritura de guiones para cortometrajes, videos corporativos y obras de teatro.' },
+  letrista:             { name: 'Letras para Canciones',                   category: 'Escritura y guiones',     description: 'Composición de letras de canciones en español para cualquier género musical.' },
+  copywriter:           { name: 'Copy Creativo para Marcas',               category: 'Escritura y guiones',     description: 'Redacción publicitaria para campañas, redes sociales y sitios web.' },
+  locutor_voiceover:    { name: 'Locución y Voice Over Profesional',       category: 'Escritura y guiones',     description: 'Locución profesional para comerciales, documentales, videos y contenido digital.' },
+  tatuador:             { name: 'Tatuaje Personalizado',                   category: 'Otro',                    description: 'Diseño y aplicación de tatuajes personalizados en distintos estilos y técnicas.' },
+  tattoo_realista:      { name: 'Tatuaje Realista',                        category: 'Otro',                    description: 'Especialista en tatuajes realistas: retratos, naturaleza y escenas detalladas.' },
+  tattoo_minimalista:   { name: 'Tatuaje Minimalista (Fine Line)',         category: 'Otro',                    description: 'Tatuajes delicados y minimalistas: fine line, micro-tatuajes y diseños pequeños.' },
+  piercing_artist:      { name: 'Piercing Profesional',                    category: 'Otro',                    description: 'Servicio de piercing profesional con materiales de alta calidad y técnica segura.' },
+  maquillador_eventos:  { name: 'Maquillaje para Eventos',                 category: 'Otro',                    description: 'Maquillaje profesional para quinceañeras, graduaciones, bodas y eventos especiales.' },
+  maquillaje_novia:     { name: 'Maquillaje Nupcial',                      category: 'Otro',                    description: 'Maquillaje artístico y duradero para novias: prueba previa incluida.' },
+  body_paint:           { name: 'Body Paint Artístico',                    category: 'Otro',                    description: 'Pintura corporal artística para sesiones fotográficas, shows y eventos.' },
+  estilista:            { name: 'Estilismo y Peinado para Eventos',        category: 'Otro',                    description: 'Peinados profesionales para bodas, quinceañeras y eventos especiales.' },
+  barbero_pro:          { name: 'Barbería Profesional',                    category: 'Otro',                    description: 'Corte, perfilado y arreglo de barba con técnicas profesionales.' },
+  manicurista:          { name: 'Nail Art y Manicure',                     category: 'Otro',                    description: 'Diseño de uñas artístico: acrílicas, gel, nail art y decoración.' },
+  pintor:               { name: 'Pintura Artística Personalizada',         category: 'Otro',                    description: 'Creación de cuadros y obras de arte personalizadas para regalos y decoración.' },
+  muralista:            { name: 'Mural Artístico para Espacios',           category: 'Otro',                    description: 'Diseño y ejecución de murales artísticos para negocios, hogares y espacios públicos.' },
+  escultor:             { name: 'Escultura Personalizada',                 category: 'Otro',                    description: 'Creación de esculturas y piezas artísticas en distintos materiales.' },
+  ceramista:            { name: 'Cerámica Artística',                      category: 'Otro',                    description: 'Creación de piezas de cerámica artesanal: tazas, platos, esculturas y más.' },
+  mago_ilusionista:     { name: 'Show de Magia',                           category: 'Animación de eventos',    description: 'Show de magia e ilusionismo para eventos, fiestas infantiles y corporativos.' },
+  acrobata:             { name: 'Show de Acrobacia',                       category: 'Animación de eventos',    description: 'Espectáculo acrobático en vivo para festivales, eventos y celebraciones.' },
+  show_fuego:           { name: 'Show de Fuego',                           category: 'Animación de eventos',    description: 'Espectáculo de malabares y fuego para eventos nocturnos, festivales y bodas.' },
+  malabarismo:          { name: 'Show de Malabarismo',                     category: 'Animación de eventos',    description: 'Actuación de malabarismo y circo para eventos, fiestas y festivales.' },
+};
+
 // Opciones de equipo por disciplina
 const EQUIPMENT_BY_DISCIPLINE: Record<string, { section: string; items: string[] }[]> = {
   musician: [
@@ -228,6 +415,8 @@ export default function ArtistOnboardingPage() {
 
   // Step 2: Creative Superpower
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
+  const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
+  const [customRole, setCustomRole] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Step 3: Equipment (NEW)
@@ -396,6 +585,16 @@ export default function ArtistOnboardingPage() {
     setExtraLinks(newLinks);
   };
 
+  // Pre-fill Step 6 fields when talent or discipline changes
+  useEffect(() => {
+    const suggestion = selectedTalentId ? SERVICE_SUGGESTIONS[selectedTalentId] : null;
+    if (suggestion) {
+      setServiceName((prev) => prev || suggestion.name);
+      setServiceCategory((prev) => prev || suggestion.category);
+      setServiceDescription((prev) => prev || suggestion.description);
+    }
+  }, [selectedTalentId, selectedDiscipline]);
+
   const handleFinish = async () => {
     setIsLoading(true);
     try {
@@ -434,13 +633,30 @@ export default function ArtistOnboardingPage() {
       };
       const category = disciplineCategoryMap[selectedDiscipline || ''] || 'OTRO';
 
+      // Build specialties: talent label + custom role
+      const talentList = selectedTalentId ? TALENT_BY_DISCIPLINE[selectedDiscipline || ''] ?? [] : [];
+      const talentEntry = talentList.find(t => t.id === selectedTalentId);
+      const specialties: string[] = [category];
+      if (talentEntry) specialties.push(talentEntry.label);
+      if (customRole.trim()) specialties.push(customRole.trim());
+
+      // Register custom role in smartsearch if it's new
+      if (customRole.trim().length >= 2) {
+        fetch('/api/search/suggest-synonym', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ term: customRole.trim(), synonyms: [category.toLowerCase(), selectedDiscipline || ''] }),
+        }).catch(() => {});
+      }
+
       const res = await fetch('/api/artist/create-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           category,
-          specialties: [category],
+          specialties,
           equipment: selectedEquipment,
           bio: shortBio || undefined,
           instagram: instagramHandle || undefined,
@@ -649,7 +865,9 @@ export default function ArtistOnboardingPage() {
                   key={discipline.id}
                   onClick={() => {
                     setSelectedDiscipline(discipline.id);
-                    setSelectedEquipment([]); // reset when discipline changes
+                    setSelectedEquipment([]);
+                    setSelectedTalentId(null);
+                    setCustomRole('');
                   }}
                   className={`relative p-6 rounded-2xl border-2 transition-all text-left ${
                     selectedDiscipline === discipline.id
@@ -670,6 +888,52 @@ export default function ArtistOnboardingPage() {
                 </button>
               ))}
             </div>
+            {/* Especialidad específica — aparece al seleccionar una disciplina */}
+            {selectedDiscipline && selectedDiscipline !== 'other' && (TALENT_BY_DISCIPLINE[selectedDiscipline]?.length ?? 0) > 0 && (
+              <div className="mb-8">
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  ¿Cuál es tu especialidad dentro de esta disciplina? <span className="font-normal text-gray-500">(opcional)</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {TALENT_BY_DISCIPLINE[selectedDiscipline].map((talent) => (
+                    <button
+                      key={talent.id}
+                      type="button"
+                      onClick={() => setSelectedTalentId(prev => prev === talent.id ? null : talent.id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                        selectedTalentId === talent.id
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-orange-400 hover:text-orange-600'
+                      }`}
+                    >
+                      {talent.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rol personalizado — para "Otro" o si no encuentran su especialidad */}
+            {selectedDiscipline && (selectedDiscipline === 'other' || selectedTalentId === null) && (
+              <div className="mb-8">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {selectedDiscipline === 'other' ? 'Describe tu rol creativo' : '¿No encuentras tu especialidad? Escríbela'}
+                  <span className="font-normal text-gray-500 ml-1">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={customRole}
+                  onChange={(e) => setCustomRole(e.target.value)}
+                  placeholder={selectedDiscipline === 'other' ? 'ej: Beatboxer, Poeta, Mago de close-up...' : 'ej: Bajista de sesión, Trombonista de jazz...'}
+                  maxLength={60}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500 outline-none transition-all"
+                />
+                {customRole.trim().length >= 2 && (
+                  <p className="text-xs text-orange-600 mt-1.5">Se añadirá a nuestro buscador para que clientes te encuentren.</p>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">
               <button onClick={() => setCurrentStep(1)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

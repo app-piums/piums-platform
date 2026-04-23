@@ -36,13 +36,17 @@ self.addEventListener('install', (event) => {
   
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => {
+      .then(async (cache) => {
         console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        await Promise.allSettled(
+          STATIC_ASSETS.map(url =>
+            cache.add(url).catch(e => console.warn('[SW] Could not cache:', url, e))
+          )
+        );
       })
       .then(() => {
         console.log('[SW] Service worker installed');
-        return self.skipWaiting(); // Activate immediately
+        return self.skipWaiting();
       })
       .catch((error) => {
         console.error('[SW] Installation failed:', error);
@@ -166,6 +170,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         console.log('[SW] Failed to fetch:', request.url);
+        return caches.match('/offline').then(r => r || new Response('Offline', { status: 503 }));
       })
   );
 });

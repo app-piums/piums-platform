@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import session from "express-session";
 import type { RequestHandler } from "express";
 import passport from "passport";
+import { PrismaClient } from "@prisma/client";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
 import oauthRoutes from "./routes/oauth.routes";
@@ -14,6 +15,8 @@ import { apiLimiter } from "./middleware/rateLimiter";
 import { logger } from "./utils/logger";
 import { configureGoogleStrategy } from "./strategies/google.strategy";
 import { configureFacebookStrategy } from "./strategies/facebook.strategy";
+
+const prismaInternal = new PrismaClient();
 
 const app = express();
 
@@ -40,6 +43,30 @@ app.use("/health", healthRoutes);
 app.use("/auth", authRoutes);
 app.use("/auth", oauthRoutes); // OAuth routes under /auth
 app.use("/admin", adminRoutes);
+
+// Internal endpoint: sync avatar from another service
+// Protected by INTERNAL_SERVICE_SECRET header — never exposed through the gateway
+app.put("/internal/users/:authId/avatar", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!internalSecret || req.headers['x-internal-secret'] !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { authId } = req.params;
+    const { avatarUrl } = req.body as { avatarUrl?: string };
+    if (!avatarUrl && avatarUrl !== null) {
+      return res.status(400).json({ error: 'avatarUrl required' });
+    }
+    await prismaInternal.user.update({
+      where: { id: authId },
+      data: { avatar: avatarUrl ?? null },
+    });
+    logger.info('Avatar synced from external service', 'AUTH_INTERNAL', { authId });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Middleware de error handling (debe ir al final)
 app.use(errorHandler);

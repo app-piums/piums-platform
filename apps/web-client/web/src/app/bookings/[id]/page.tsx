@@ -7,6 +7,7 @@ import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
+import { ModifyDateModal } from '@/components/bookings/ModifyDateModal';
 import { sdk, type Service, type ArtistProfile, type Booking } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
@@ -49,6 +50,8 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState<string | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [isModifyDateOpen, setIsModifyDateOpen] = useState(false);
+  const [rescheduleRequestSent, setRescheduleRequestSent] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -130,6 +133,8 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const cancelReason = booking.cancellationReason || booking.cancelReason;
   const canReview = booking.status?.toLowerCase() === 'completed' && !reviewed && !booking.reviewId;
   const canAddToEvent = booking.status?.toUpperCase() === 'PENDING' && !booking.eventId;
+  const canRequestReschedule = ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(booking.status?.toUpperCase() || '') && !rescheduleRequestSent;
+  const hasPendingReschedule = ['RESCHEDULE_PENDING_ARTIST', 'RESCHEDULE_PENDING_CLIENT'].includes(booking.status?.toUpperCase() || '');
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
     try {
@@ -294,6 +299,20 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
 
                 {/* Acciones del Dashboard Widget */}
                 <div className="bg-gray-50 p-5 px-5 flex flex-col gap-3">
+                   {canRequestReschedule && (
+                     <button
+                       onClick={() => setIsModifyDateOpen(true)}
+                       className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                     >
+                       <CalendarIcon className="h-4 w-4" />
+                       Cambiar Fecha
+                     </button>
+                   )}
+                   {hasPendingReschedule && (
+                     <div className="w-full py-2.5 bg-yellow-50 border border-yellow-200 text-yellow-800 font-semibold rounded-xl text-sm text-center">
+                       ⏳ Solicitud de cambio de fecha en proceso
+                     </div>
+                   )}
                    {canReview && (
                      <button
                        onClick={() => setIsReviewModalOpen(true)}
@@ -358,6 +377,15 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
         artistName={artist?.nombre || booking.artistName || 'el Artista'}
         bookingCode={booking.code || booking.id.substring(0, 8).toUpperCase()}
         onSubmit={handleReviewSubmit}
+      />
+
+      <ModifyDateModal
+        isOpen={isModifyDateOpen}
+        onClose={() => setIsModifyDateOpen(false)}
+        bookingId={booking.id}
+        bookingCode={booking.code || booking.id.substring(0, 8).toUpperCase()}
+        currentDate={booking.scheduledDate || booking.startAt || new Date().toISOString()}
+        onRequested={() => setRescheduleRequestSent(true)}
       />
     </div>
   );

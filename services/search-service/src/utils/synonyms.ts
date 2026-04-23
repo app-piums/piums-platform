@@ -158,6 +158,76 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   cuarteto:     ['cuarteto', 'trío', 'ensemble de cuerdas'],
   'ingeniero de sonido': ['ingeniero de sonido', 'técnico de sonido', 'audiovisual', 'audio live'],
 
+  // ── Instrumentistas ─────────────────────────────────────────────────────────
+  bajista:      ['bajista', 'bajo eléctrico', 'bajo', 'musica', 'música'],
+  bajo:         ['bajo', 'bajista', 'bajo eléctrico', 'bajo acústico', 'musica'],
+  trompetista:  ['trompetista', 'trompeta', 'viento', 'jazz', 'musica', 'música'],
+  trompeta:     ['trompeta', 'trompetista', 'viento metal', 'musica'],
+  flautista:    ['flautista', 'flauta', 'flauta traversa', 'viento madera', 'musica'],
+  flauta:       ['flauta', 'flautista', 'flauta traversa', 'musica'],
+  chelista:     ['chelista', 'cellista', 'cello', 'chelo', 'violonchelo', 'cuerdas', 'musica'],
+  cello:        ['cello', 'chelo', 'chelista', 'violonchelo', 'cuerdas', 'musica'],
+  chelo:        ['chelo', 'cello', 'chelista', 'violonchelo', 'cuerdas', 'musica'],
+  arpista:      ['arpista', 'arpa', 'cuerdas', 'musica', 'música'],
+  arpa:         ['arpa', 'arpista', 'cuerdas', 'musica'],
+  acordeonista: ['acordeonista', 'acordeón', 'accordion', 'musica', 'música'],
+  acordeon:     ['acordeón', 'acordeonista', 'vallenato', 'musica'],
+  trombonista:  ['trombonista', 'trombón', 'viento metal', 'jazz', 'musica'],
+  trombon:      ['trombón', 'trombonista', 'viento', 'musica'],
+  percusionista: ['percusionista', 'percusión', 'baterista', 'congas', 'timbales', 'musica'],
+  conguero:     ['conguero', 'conga', 'percusión', 'percusionista', 'musica'],
+  timbalero:    ['timbalero', 'timbales', 'percusión', 'percusionista', 'musica'],
+  tecladista:   ['tecladista', 'teclista', 'teclado', 'piano', 'sintetizador', 'musica'],
+  teclista:     ['teclista', 'tecladista', 'teclado', 'piano', 'musica'],
+  organista:    ['organista', 'órgano', 'teclado', 'musica', 'música'],
+  clarinetista: ['clarinetista', 'clarinete', 'viento madera', 'musica'],
+  clarinete:    ['clarinete', 'clarinetista', 'musica'],
+
+  // ── Formatos de agrupación ───────────────────────────────────────────────────
+  duo:          ['dúo', 'duo', 'pareja musical', 'dúo musical', 'musica'],
+  dueto:        ['dueto', 'dúo', 'pareja musical', 'musica'],
+  quinteto:     ['quinteto', 'cinco músicos', 'conjunto', 'musica'],
+  sexteto:      ['sexteto', 'seis músicos', 'conjunto', 'musica'],
+  orquesta:     ['orquesta', 'banda', 'conjunto musical', 'big band', 'musica', 'música'],
+  'big band':   ['big band', 'orquesta jazz', 'big band jazz', 'orquesta', 'musica'],
+  combo:        ['combo', 'combo musical', 'banda pequeña', 'conjunto musical', 'musica'],
+  ensemble:     ['ensemble', 'conjunto de cámara', 'cuarteto', 'trío', 'musica'],
+  'cover band': ['cover band', 'banda de covers', 'tributo', 'banda tributo', 'musica'],
+  tributo:      ['tributo', 'banda tributo', 'cover band', 'homenaje musical', 'musica'],
+  'banda tributo': ['banda tributo', 'tributo', 'cover band', 'homenaje musical'],
+
+  // ── Géneros musicales ────────────────────────────────────────────────────────
+  reggaeton:    ['reggaeton', 'reguetón', 'urbano', 'musica urbana', 'musica'],
+  regueton:     ['reguetón', 'reggaeton', 'urbano', 'musica urbana', 'musica'],
+  salsa:        ['salsa', 'salsero', 'música tropical', 'tropical', 'musica', 'música'],
+  salsero:      ['salsero', 'salsa', 'música tropical', 'musica'],
+  cumbia:       ['cumbia', 'cumbiambero', 'música tropical', 'tropical', 'musica'],
+  merengue:     ['merengue', 'merenguero', 'música tropical', 'tropical', 'musica'],
+  bolero:       ['bolero', 'bolerista', 'música romántica', 'romantico', 'musica'],
+  romantico:    ['romántico', 'bolero', 'balada', 'música romántica', 'musica'],
+  jazz:         ['jazz', 'jazzista', 'swing', 'blues', 'big band', 'musica', 'música'],
+  blues:        ['blues', 'blues band', 'jazz', 'rock blues', 'musica'],
+  rock:         ['rock', 'banda de rock', 'rockero', 'musica rock', 'musica'],
+  rockero:      ['rockero', 'rock', 'banda de rock', 'musica'],
+  pop:          ['pop', 'música pop', 'cantante pop', 'musica'],
+  balada:       ['balada', 'baladas', 'romántico', 'baladista', 'musica'],
+  trova:        ['trova', 'trovador', 'canción de autor', 'folk', 'musica'],
+  trovador:     ['trovador', 'trova', 'canción de autor', 'musica'],
+  flamenco:     ['flamenco', 'flamenco guitar', 'guitarrista flamenco', 'musica'],
+  gospel:       ['gospel', 'coro gospel', 'música cristiana', 'alabanza', 'musica'],
+  vallenato:    ['vallenato', 'acordeón', 'cumbia', 'música colombiana', 'musica'],
+  tropical:     ['tropical', 'salsa', 'cumbia', 'merengue', 'música tropical', 'musica'],
+  'musica tropical': ['música tropical', 'tropical', 'salsa', 'cumbia', 'merengue'],
+  norteño:      ['norteño', 'música norteña', 'conjunto norteño', 'banda norteña', 'musica'],
+  ranchero:     ['ranchero', 'música ranchera', 'mariachi', 'corrido', 'musica'],
+  corrido:      ['corrido', 'música ranchera', 'corrido tumbado', 'banda', 'musica'],
+  trap:         ['trap', 'trap music', 'urbano', 'rapero', 'beatmaker', 'musica'],
+  'hip hop':    ['hip hop', 'rap', 'rapero', 'freestyle', 'urbano', 'musica'],
+  electronica:  ['electrónica', 'electronic music', 'house', 'techno', 'DJ', 'musica'],
+  house:        ['house', 'deep house', 'DJ', 'música electrónica', 'musica'],
+  techno:       ['techno', 'DJ', 'electrónica', 'musica'],
+  regional:     ['regional', 'música regional', 'folklor', 'músico regional', 'musica'],
+
   // ── DJ expandido ────────────────────────────────────────────────────────
   'dj bodas':   ['dj bodas', 'dj para bodas', 'animación musical boda', 'música bodas'],
   'dj corporativo': ['dj corporativo', 'dj empresarial', 'dj eventos corporativos'],
@@ -247,6 +317,27 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'experiencia tematica': ['experiencia temática', 'evento inmersivo', 'actividad temática'],
 };
 
+// Dynamic synonyms added at runtime (e.g. from artist onboarding custom roles)
+const dynamicSynonyms: Map<string, string[]> = new Map();
+
+/**
+ * Adds a term + its synonyms to the in-memory map at runtime.
+ * Called when an artist registers a role not present in SYNONYM_MAP.
+ */
+export function addDynamicSynonym(term: string, synonyms: string[]): void {
+  const key = term.toLowerCase().trim();
+  if (!key) return;
+  const existing = dynamicSynonyms.get(key) ?? SYNONYM_MAP[key] ?? [];
+  const merged = Array.from(new Set([...existing, ...synonyms, key]));
+  dynamicSynonyms.set(key, merged);
+}
+
+/** Returns true if the term already exists in either map */
+export function hasSynonym(term: string): boolean {
+  const key = term.toLowerCase().trim();
+  return key in SYNONYM_MAP || dynamicSynonyms.has(key);
+}
+
 /**
  * Expande una query con sus sinónimos.
  * Retorna un array de términos únicos (incluyendo los originales).
@@ -270,13 +361,21 @@ export function expandQuery(query: string): string[] {
     }
   }
 
-  // 3. Expandir cada palabra individual
+  // 3. Expandir cada palabra individual (mapa estático + dinámico)
   for (const word of words) {
     if (SYNONYM_MAP[word]) {
       SYNONYM_MAP[word].forEach(s => terms.add(s));
     }
+    if (dynamicSynonyms.has(word)) {
+      dynamicSynonyms.get(word)!.forEach(s => terms.add(s));
+    }
     // También buscar sub-términos dentro de frases del mapa
     for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
+      if (key.includes(' ') && normalized.includes(key)) {
+        synonyms.forEach(s => terms.add(s));
+      }
+    }
+    for (const [key, synonyms] of dynamicSynonyms.entries()) {
       if (key.includes(' ') && normalized.includes(key)) {
         synonyms.forEach(s => terms.add(s));
       }

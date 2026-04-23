@@ -297,6 +297,49 @@ router.get(
   bookingController.downloadBookingPDF.bind(bookingController)
 );
 
+// ==================== SOLICITUDES DE CAMBIO DE FECHA ====================
+
+/**
+ * POST /api/bookings/:id/reschedule-request
+ * Cliente solicita cambio de fecha
+ */
+router.post(
+  "/bookings/:id/reschedule-request",
+  authenticateToken,
+  createBookingLimiter,
+  bookingController.createRescheduleRequest.bind(bookingController)
+);
+
+/**
+ * POST /api/reschedule-requests/:requestId/respond
+ * Artista acepta o rechaza la solicitud
+ */
+router.post(
+  "/reschedule-requests/:requestId/respond",
+  authenticateToken,
+  updateLimiter,
+  bookingController.respondToReschedule.bind(bookingController)
+);
+
+/**
+ * GET /api/reschedule-requests/confirm?token=xxx
+ * Cliente confirma el cambio de fecha (público, viene del email)
+ */
+router.get(
+  "/reschedule-requests/confirm",
+  bookingController.confirmRescheduleByToken.bind(bookingController)
+);
+
+/**
+ * GET /api/bookings/:id/reschedule-requests
+ * Listar historial de solicitudes de cambio de fecha
+ */
+router.get(
+  "/bookings/:id/reschedule-requests",
+  authenticateToken,
+  bookingController.listRescheduleRequests.bind(bookingController)
+);
+
 // ==================== RUTAS INTERNAS (solo inter-servicio) ====================
 
 router.get(
