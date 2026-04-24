@@ -120,12 +120,11 @@ export class UsersService {
    * Obtener perfil de usuario por ID
    */
   async getUserById(id: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        addresses: true,
-      },
-    });
+    // Primero busca por id primario; si no, prueba por authId (clientId en bookings = authId)
+    let user = await prisma.user.findUnique({ where: { id }, include: { addresses: true } });
+    if (!user) {
+      user = await prisma.user.findUnique({ where: { authId: id }, include: { addresses: true } });
+    }
 
     if (!user || user.deletedAt) {
       throw new AppError(404, "Usuario no encontrado");

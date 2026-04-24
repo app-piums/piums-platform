@@ -5,6 +5,7 @@ import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { bookingServiceClient } from "../clients/booking.client";
 import { paymentsServiceClient } from "../clients/payments.client";
+import { usersClient } from "../clients/users.client";
 import { availabilitySchema } from "../schemas/artists.schema";
 
 const artistsService = new ArtistsService();
@@ -119,13 +120,31 @@ export const getMyBookings = async (
       authToken,
     });
 
+    // Enrich bookings with client name/email from users-service in parallel
+    const enrichedBookings = await Promise.all(
+      bookingsData.bookings.map(async (booking) => {
+        const user = await usersClient.getUser(booking.clientId);
+        if (!user) return booking;
+        const parts = [user.firstName, user.lastName].filter(Boolean);
+        const clientName = parts.length > 0
+          ? parts.join(' ')
+          : user.fullName || user.nombre || undefined;
+        return {
+          ...booking,
+          clientName: clientName || undefined,
+          clientEmail: user.email || undefined,
+          clientAvatar: user.avatar || undefined,
+        };
+      })
+    );
+
     logger.info("Artist bookings retrieved", "ARTIST_DASHBOARD", {
       artistId: artist.id,
       count: bookingsData.total,
     });
 
     res.json({
-      bookings: bookingsData.bookings,
+      bookings: enrichedBookings,
       total: bookingsData.total,
       page: bookingsData.page,
       totalPages: bookingsData.totalPages,
