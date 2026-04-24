@@ -11,17 +11,27 @@ datasource db {
 }
 
 enum BookingStatus {
-  PENDING           // Esperando confirmación del artista
-  CONFIRMED         // Confirmada por el artista
-  PAYMENT_PENDING   // Esperando pago del depósito
-  PAYMENT_COMPLETED // Pago completado
-  IN_PROGRESS       // En progreso (día de la cita)
-  COMPLETED         // Completada exitosamente
-  RESCHEDULED       // Reprogramada
-  CANCELLED_CLIENT  // Cancelada por el cliente
-  CANCELLED_ARTIST  // Cancelada por el artista
-  REJECTED          // Rechazada por el artista
-  NO_SHOW           // Cliente no se presentó
+  PENDING                    // Esperando confirmación del artista
+  CONFIRMED                  // Confirmada por el artista
+  PAYMENT_PENDING            // Esperando pago del depósito
+  PAYMENT_COMPLETED          // Pago completado
+  IN_PROGRESS                // En progreso (día de la cita)
+  COMPLETED                  // Completada exitosamente
+  RESCHEDULED                // Reprogramada
+  RESCHEDULE_PENDING_ARTIST  // Solicitud de cambio esperando respuesta del artista
+  RESCHEDULE_PENDING_CLIENT  // Artista aceptó, esperando confirmación del cliente
+  CANCELLED_CLIENT           // Cancelada por el cliente
+  CANCELLED_ARTIST           // Cancelada por el artista
+  REJECTED                   // Rechazada por el artista
+  NO_SHOW                    // Cliente no se presentó
+}
+
+enum RescheduleStatus {
+  PENDING_ARTIST   // Esperando que el artista acepte o rechace
+  PENDING_CLIENT   // Artista aceptó, esperando confirmación del cliente
+  CONFIRMED        // Cliente confirmó, fecha cambiada
+  REJECTED         // Artista rechazó la solicitud
+  EXPIRED          // El cliente no confirmó a tiempo (24h)
 }
 
 enum PaymentStatus {
@@ -150,12 +160,15 @@ model Booking {
   eventId         String?
   event           Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
+  // Solicitudes de cambio de fecha
+  rescheduleRequests RescheduleRequest[]
+
   // Soft delete para auditorías
   deletedAt       DateTime?
-  
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  
+
   @@index([clientId])
   @@index([artistId])
   @@index([serviceId])
@@ -387,4 +400,36 @@ model DisputeMessage {
   @@index([senderId])
   @@index([createdAt])
   @@map("dispute_messages")
+}
+
+// Solicitudes de cambio de fecha — flujo de doble confirmación
+model RescheduleRequest {
+  id                    String           @id @default(uuid())
+  bookingId             String
+  booking               Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  requestedBy           String           // clientId que solicita el cambio
+  proposedDate          DateTime         // Nueva fecha propuesta
+  reason                String?          @db.Text
+
+  status                RescheduleStatus @default(PENDING_ARTIST)
+
+  // Token para que el cliente confirme por email (válido 24h)
+  confirmationToken     String?          @unique
+  tokenExpiresAt        DateTime?
+
+  // Respuesta del artista
+  artistRespondedAt     DateTime?
+  artistRejectionReason String?          @db.Text
+
+  // Confirmación final del cliente
+  clientConfirmedAt     DateTime?
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([bookingId])
+  @@index([confirmationToken])
+  @@index([status])
+  @@map("reschedule_requests")
 }

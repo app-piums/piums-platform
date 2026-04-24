@@ -25,6 +25,7 @@ export default function ArtistDashboardPage() {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [artistProfile, setArtistProfile] = useState<any>(null);
+  const [artistServices, setArtistServices] = useState<any[]>([]);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -42,6 +43,11 @@ export default function ArtistDashboardPage() {
         const profile = profileData.value as any;
         artistCountryRef.current = profile?.country ?? null;
         setArtistProfile(profile);
+        if (profile?.id) {
+          sdk.getArtistServices(profile.id)
+            .then((services) => setArtistServices(services))
+            .catch(() => { /* non-critical */ });
+        }
       }
       if (bookingsData.status === 'fulfilled') {
         const now = new Date();
@@ -281,7 +287,7 @@ export default function ArtistDashboardPage() {
                 const checks = [
                   { label: 'Foto de perfil agregada', done: !!(artistProfile?.imageUrl || artistProfile?.profilePicture) },
                   { label: 'Descripción de perfil', done: !!(artistProfile?.bio && artistProfile.bio.length > 10) },
-                  { label: 'Servicios publicados', done: !!(stats && stats.bookings.total > 0) },
+                  { label: 'Servicios publicados', done: artistServices.length > 0 },
                   { label: 'Redes sociales vinculadas', done: !!(artistProfile?.socialLinks && Object.values(artistProfile.socialLinks).some((v: any) => !!v)) },
                   { label: 'Primera reseña obtenida', done: !!(stats && (stats.rating?.totalReviews ?? 0) > 0) },
                 ];

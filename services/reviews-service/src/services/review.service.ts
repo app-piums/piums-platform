@@ -266,11 +266,10 @@ export class ReviewService {
   /**
    * Eliminar una reseña (soft delete)
    */
-  async deleteReview(id: string, userId: string) {
+  async deleteReview(id: string, userId: string, isAdmin = false) {
     const review = await this.getReviewById(id, false);
 
-    // Solo el cliente puede eliminar su propia reseña
-    if (review.clientId !== userId) {
+    if (!isAdmin && review.clientId !== userId) {
       throw new AppError(403, "No tienes permiso para eliminar esta reseña");
     }
 
@@ -410,23 +409,26 @@ export class ReviewService {
   async markHelpful(reviewId: string, userId: string, isHelpful: boolean) {
     await this.getReviewById(reviewId, false);
 
-    // TODO: Implementar sistema para evitar votos duplicados (requiere tabla adicional)
-    // Por ahora, incrementamos directamente
+    const existing = await prisma.reviewHelpfulVote.findUnique({
+      where: { reviewId_userId: { reviewId, userId } },
+    });
+
+    if (existing) {
+      throw new AppError(409, 'Ya registraste tu voto en esta reseña');
+    }
+
+    await prisma.reviewHelpfulVote.create({
+      data: { reviewId, userId, isHelpful },
+    });
 
     const field = isHelpful ? "helpfulCount" : "notHelpfulCount";
 
     const updated = await prisma.review.update({
       where: { id: reviewId },
-      data: {
-        [field]: { increment: 1 },
-      },
+      data: { [field]: { increment: 1 } },
     });
 
-    logger.info("Voto registrado en reseña", "REVIEW_SERVICE", {
-      reviewId,
-      userId,
-      isHelpful,
-    });
+    logger.info("Voto registrado en reseña", "REVIEW_SERVICE", { reviewId, userId, isHelpful });
 
     return updated;
   }

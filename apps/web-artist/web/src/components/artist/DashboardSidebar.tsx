@@ -1,12 +1,101 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/contexts/ThemeContext';
+import { sdk } from '@piums/sdk';
+
+// ─── Notification Bell ───────────────────────────────────────────────────────
+
+function NotificationBell() {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    sdk.getNotifications({ status: 'PENDING', limit: 20 })
+      .then((data) => setNotifications(data.notifications ?? []))
+      .catch(() => { /* notifications non-critical */ });
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const markAllRead = async () => {
+    const ids = notifications.map((n) => n.id);
+    if (!ids.length) return;
+    try {
+      await sdk.markNotificationsAsRead(ids);
+      setNotifications([]);
+    } catch { /* non-critical */ }
+    setIsOpen(false);
+  };
+
+  const unreadCount = notifications.length;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+        aria-label="Notificaciones"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Notificaciones</h3>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllRead}
+                className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+              >
+                Marcar todas como leídas
+              </button>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-gray-500 px-4 py-6 text-center">Sin notificaciones nuevas</p>
+          ) : (
+            <ul className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+              {notifications.slice(0, 10).map((n) => (
+                <li key={n.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+                  <p className="text-sm text-gray-800 font-medium">{n.title || n.type || 'Notificación'}</p>
+                  {n.message && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>}
+                  {n.createdAt && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(n.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface DashboardTab {
   id: string;
@@ -92,15 +181,18 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate,
       <Link href="/artist/dashboard" className="flex items-center gap-2" onClick={onNavigate}>
         <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
       </Link>
-      {/* Close button — mobile only */}
-      <button
-        className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-        onClick={onNavigate}
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+      <div className="flex items-center gap-1">
+        <NotificationBell />
+        {/* Close button — mobile only */}
+        <button
+          className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+          onClick={onNavigate}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     {/* Main Menu */}
@@ -253,15 +345,18 @@ export const DashboardSidebar: React.FC = () => {
         <Link href="/artist/dashboard" className="flex items-center gap-2">
           <Image src="/logo.png" alt="PIUMS" width={64} height={64} className="h-16 w-auto" unoptimized priority />
         </Link>
-        <button
-          onClick={() => setIsOpen(true)}
-          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-          aria-label="Abrir menú"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            aria-label="Abrir menú"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* ── Mobile drawer ── */}

@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface StatusBadgeProps {
-  status: 'pending' | 'confirmed' | 'in-progress' | 'completed' | 'cancelled' | 'rejected';
+  status: string;
   animated?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -15,7 +15,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   size = 'md',
   className = '',
 }) => {
-  const statusConfig = {
+  const statusConfig: Record<string, { label: string; bgColor: string; textColor: string; borderColor: string; dotColor: string }> = {
     pending: {
       label: 'Pendiente',
       bgColor: 'bg-yellow-100',
@@ -58,7 +58,45 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       borderColor: 'border-red-300',
       dotColor: 'bg-red-500',
     },
+    payment_pending: {
+      label: 'Pago Pendiente',
+      bgColor: 'bg-amber-100',
+      textColor: 'text-amber-800',
+      borderColor: 'border-amber-300',
+      dotColor: 'bg-amber-500',
+    },
+    payment_completed: {
+      label: 'Pago Completado',
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
+      borderColor: 'border-blue-300',
+      dotColor: 'bg-blue-500',
+    },
+    cancelled_client: {
+      label: 'Cancelada por Cliente',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-700',
+      borderColor: 'border-gray-300',
+      dotColor: 'bg-gray-400',
+    },
+    cancelled_artist: {
+      label: 'Cancelada por Artista',
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-800',
+      borderColor: 'border-red-300',
+      dotColor: 'bg-red-500',
+    },
+    no_show: {
+      label: 'No Se Presentó',
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-800',
+      borderColor: 'border-orange-300',
+      dotColor: 'bg-orange-500',
+    },
   };
+
+  const normalizedStatus = status.toLowerCase().replace(/-/g, '_');
+  const animatedStatuses = ['pending', 'in-progress', 'in_progress', 'payment_pending'];
 
   const sizes = {
     sm: 'px-2 py-0.5 text-xs gap-1',
@@ -72,7 +110,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     lg: 'w-2.5 h-2.5',
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[normalizedStatus] ?? {
+    label: status,
+    bgColor: 'bg-gray-100',
+    textColor: 'text-gray-700',
+    borderColor: 'border-gray-300',
+    dotColor: 'bg-gray-400',
+  };
 
   return (
     <span
@@ -93,7 +137,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
           ${dotSizes[size]}
           rounded-full
           ${config.dotColor}
-          ${animated && (status === 'pending' || status === 'in-progress') ? 'animate-pulse' : ''}
+          ${animated && animatedStatuses.includes(normalizedStatus) ? 'animate-pulse' : ''}
         `}
       />
       {config.label}

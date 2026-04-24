@@ -10,7 +10,7 @@ import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 
-type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'ALL';
+type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'RESCHEDULE_PENDING_ARTIST' | 'ALL';
 
 type ArtistBookingsFilters = {
   status?: BookingStatus;
@@ -167,12 +167,37 @@ export default function ArtistBookingsPage() {
     }
   };
 
+  const handleRespondReschedule = async (requestId: string, accept: boolean, bookingId: string) => {
+    const rejectionReason = !accept ? prompt('¿Por qué rechazas el cambio de fecha? (opcional)') ?? undefined : undefined;
+    if (!accept && rejectionReason === null) return;
+
+    try {
+      setProcessingBookingId(bookingId);
+      const res = await fetch(`/api/reschedule-requests/${requestId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accept, rejectionReason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Error al responder');
+      toast.success(accept ? 'Aceptado. Se enviará enlace al cliente.' : 'Solicitud rechazada.');
+      await loadBookings();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al responder');
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
+
   const STATUS_ES: Record<string, string> = {
     PENDING: 'Pendiente',
     CONFIRMED: 'Confirmada',
     COMPLETED: 'Completada',
     CANCELLED: 'Cancelada',
     REJECTED: 'Rechazada',
+    RESCHEDULE_PENDING_ARTIST: 'Cambio de fecha',
+    RESCHEDULE_PENDING_CLIENT: 'Esperando cliente',
+    RESCHEDULED: 'Reprogramada',
   };
 
   const STATUS_STYLES: Record<string, string> = {
@@ -189,6 +214,9 @@ export default function ArtistBookingsPage() {
     COMPLETED: 'border-l-blue-500',
     CANCELLED: 'border-l-gray-400',
     REJECTED:  'border-l-red-400',
+    RESCHEDULE_PENDING_ARTIST: 'border-l-purple-400',
+    RESCHEDULE_PENDING_CLIENT: 'border-l-purple-300',
+    RESCHEDULED: 'border-l-teal-400',
   };
 
   const statusCountValues = Object.values(statusCounts);
@@ -202,12 +230,13 @@ export default function ArtistBookingsPage() {
     : null;
 
   const TABS: Array<{ value: BookingStatus; label: string }> = [
-    { value: 'PENDING',   label: 'Pendientes'  },
-    { value: 'CONFIRMED', label: 'Confirmadas' },
-    { value: 'COMPLETED', label: 'Completadas' },
-    { value: 'CANCELLED', label: 'Canceladas'  },
-    { value: 'REJECTED',  label: 'Rechazadas'  },
-    { value: 'ALL',       label: 'Todas'        },
+    { value: 'PENDING',                  label: 'Pendientes'    },
+    { value: 'RESCHEDULE_PENDING_ARTIST', label: 'Cambio fecha' },
+    { value: 'CONFIRMED',                label: 'Confirmadas'   },
+    { value: 'COMPLETED',                label: 'Completadas'   },
+    { value: 'CANCELLED',                label: 'Canceladas'    },
+    { value: 'REJECTED',                 label: 'Rechazadas'    },
+    { value: 'ALL',                      label: 'Todas'          },
   ];
 
   const STATS = [
@@ -380,6 +409,51 @@ export default function ArtistBookingsPage() {
                       </div>
 
                       {/* Actions — full width on mobile */}
+                      {booking.status === 'RESCHEDULE_PENDING_ARTIST' && (
+                        <div className="px-4 pb-4 pt-1 space-y-2">
+                          <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                            <p className="text-xs font-semibold text-purple-800 mb-0.5">Solicitud de cambio de fecha</p>
+                            <p className="text-xs text-purple-700">El cliente solicita cambiar la fecha de esta reserva. Acepta si tienes disponibilidad, o rechaza para mantener la fecha original.</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // requestId comes from rescheduleRequests — fetch inline
+                                fetch(`/api/bookings/${booking.id}/reschedule-requests`)
+                                  .then(r => r.json())
+                                  .then(d => {
+                                    const pending = (d.requests || []).find((r: any) => r.status === 'PENDING_ARTIST');
+                                    if (pending) void handleRespondReschedule(pending.id, true, booking.id);
+                                  });
+                              }}
+                              disabled={processingBookingId === booking.id}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 active:scale-95 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                              {processingBookingId === booking.id ? (
+                                <span className="flex items-center gap-1.5"><span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />Procesando</span>
+                              ) : (
+                                <>✓ Aceptar cambio</>
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                fetch(`/api/bookings/${booking.id}/reschedule-requests`)
+                                  .then(r => r.json())
+                                  .then(d => {
+                                    const pending = (d.requests || []).find((r: any) => r.status === 'PENDING_ARTIST');
+                                    if (pending) void handleRespondReschedule(pending.id, false, booking.id);
+                                  });
+                              }}
+                              disabled={processingBookingId === booking.id}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white text-red-600 text-sm font-semibold rounded-lg border-2 border-red-500 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50"
+                            >
+                              ✗ Rechazar
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {booking.status === 'PENDING' && (
                         <div className="flex gap-2 px-4 pb-4 pt-1">
                           <button

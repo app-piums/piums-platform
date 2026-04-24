@@ -72,6 +72,33 @@ async function createUserAndRespond(
     ciudad: extra?.ciudad,
   });
 
+  // For artists, also bootstrap an artist profile and trigger verification when
+  // KYC documents were supplied (required for password-based artist registration).
+  if (role === 'artista') {
+    try {
+      const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+      if (internalSecret) {
+        await fetch(`${artistsUrl}/artists/internal/bootstrap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret },
+          body: JSON.stringify({ authId: user.id, email: user.email, nombre: user.nombre }),
+        }).catch(() => {});
+
+        // If docs were provided, auto-verify (dev) / mark pending review (prod).
+        if (extra?.documentFrontUrl && extra?.documentSelfieUrl) {
+          await fetch(`${artistsUrl}/artists/internal/by-auth/${user.id}/verification`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret },
+            body: JSON.stringify({}),
+          }).catch(() => {});
+        }
+      }
+    } catch (err: any) {
+      logger.warn(`Artist bootstrap/verification on register failed: ${err.message}`, 'AUTH_CONTROLLER');
+    }
+  }
+
   // Email de verificación solo en producción
   if (!isDev) {
     try {
@@ -104,7 +131,7 @@ async function createUserAndRespond(
 
   const redirectUrl = role === 'artista'
     ? (process.env.ARTIST_APP_URL || 'http://localhost:3001')
-    : (process.env.CLIENT_APP_URL || 'http://localhost:3002');
+    : (process.env.CLIENT_APP_URL || 'http://localhost:3000');
 
   const { passwordHash: _, ...userResponse } = user;
 
@@ -240,12 +267,42 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     logger.info("Login exitoso", "AUTH_CONTROLLER", { userId: user.id, email });
 
+    // Dual-role support: honor requested role (from the frontend that called
+    // login) so a user can sign into either client or artist dashboard.
+    const requestedRole = typeof (req.body as any)?.role === 'string' ? (req.body as any).role : undefined;
+    const effectiveRole = requestedRole || user.role;
+
+    // Ensure artist profile exists when logging into the artist dashboard.
+    if (effectiveRole === 'artista') {
+      try {
+        const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+        if (internalSecret) {
+          await fetch(`${artistsUrl}/artists/internal/bootstrap`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': internalSecret,
+            },
+            body: JSON.stringify({
+              authId: user.id,
+              email: user.email,
+              nombre: user.nombre,
+              avatar: user.avatar ?? undefined,
+            }),
+          });
+        }
+      } catch (bootstrapErr: any) {
+        logger.warn(`Artist bootstrap on login failed: ${bootstrapErr.message}`, 'AUTH_CONTROLLER');
+      }
+    }
+
     // Generar tokens JWT
     const jti = crypto.randomUUID();
     const token = tokenService.signAccessToken({
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: effectiveRole,
       jti,
     });
     const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
@@ -280,12 +337,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       },
     });
 
-    // Determinar URL de redirección basada en el rol del usuario
+    // Determinar URL de redirección basada en el rol efectivo
     let redirectUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
-    
-    if (user.role === 'artist') {
+
+    if (effectiveRole === 'artista') {
       redirectUrl = process.env.ARTIST_APP_URL || 'http://localhost:3001';
-    } else if (user.role === 'admin') {
+    } else if (effectiveRole === 'admin') {
       redirectUrl = process.env.ADMIN_APP_URL || 'http://localhost:3002';
     }
 
@@ -299,7 +356,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         email: user.email,
         emailVerified: user.emailVerified,
         status: user.status,
-        role: user.role,
+        role: effectiveRole,
       }
     });
   } catch (error: any) {
@@ -444,8 +501,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 
 export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // @ts-ignore - userId viene del middleware de autenticación
-    const userId = req.userId;
+    const userId = (req as any).user?.id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -454,6 +510,10 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 
     if (newPassword.length < 8) {
       throw new AppError(400, "La contraseña debe tener al menos 8 caracteres");
+    }
+
+    if (currentPassword === newPassword) {
+      throw new AppError(400, "La nueva contraseña debe ser diferente a la actual");
     }
 
     const result = await passwordService.changePassword(
@@ -622,6 +682,33 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
       },
     });
 
+    // If all identity documents are present and the user is an artist, notify
+    // artists-service so the artist can be (auto-)verified and surface in search.
+    const hasDocs = Boolean(
+      user.documentType &&
+        user.documentNumber &&
+        user.documentFrontUrl &&
+        user.documentSelfieUrl
+    );
+    if (hasDocs && user.role === 'artista') {
+      try {
+        const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+        if (internalSecret) {
+          await fetch(`${artistsUrl}/artists/internal/by-auth/${user.id}/verification`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': internalSecret,
+            },
+            body: JSON.stringify({}),
+          });
+        }
+      } catch (err: any) {
+        logger.warn(`Failed to notify artist verification: ${err.message}`, 'AUTH_CONTROLLER');
+      }
+    }
+
     res.json({ user });
   } catch (error: any) {
     next(error);
@@ -630,14 +717,34 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
 
 // ─────────────────────────────────────────────────────────────────────────
 // POST /auth/firebase  — exchange Firebase ID token for a PIUMS JWT
+//
+// Nota: verificamos el token contra la Identity Toolkit REST API de Google
+// (https://identitytoolkit.googleapis.com/v1/accounts:lookup) en lugar de
+// usar firebase-admin. Ambos caminos verifican la firma del JWT contra el
+// proyecto de Firebase de PIUMS; la REST API no requiere service account
+// (solo FIREBASE_API_KEY pública), pesa ~0 MB adicionales y no necesita
+// distribuir la clave privada del service account en los secrets del
+// contenedor. Google la considera segura para intercambiar ID tokens.
 // ─────────────────────────────────────────────────────────────────────────
+const ALLOWED_FIREBASE_ROLES = ['cliente', 'artista'] as const;
+type FirebaseRole = typeof ALLOWED_FIREBASE_ROLES[number];
+
 export const firebaseLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { idToken, role = 'artista' } = req.body;
+    const { idToken, role: rawRole = 'artista' } = req.body ?? {};
 
     if (!idToken || typeof idToken !== 'string') {
       throw new AppError(400, 'Firebase ID token requerido');
     }
+
+    // Validar role antes de hacer cualquier otro trabajo
+    if (typeof rawRole !== 'string' || !ALLOWED_FIREBASE_ROLES.includes(rawRole as FirebaseRole)) {
+      throw new AppError(
+        400,
+        `Role inválido. Valores permitidos: ${ALLOWED_FIREBASE_ROLES.join(', ')}`
+      );
+    }
+    const role: FirebaseRole = rawRole as FirebaseRole;
 
     // Verify the Firebase ID token using the Identity Toolkit REST API
     const firebaseApiKey = process.env.FIREBASE_API_KEY;
@@ -665,6 +772,11 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
         displayName?: string;
         photoUrl?: string;
         emailVerified?: boolean;
+        providerUserInfo?: Array<{
+          providerId: string;
+          photoUrl?: string;
+          displayName?: string;
+        }>;
       }>;
     };
 
@@ -673,7 +785,15 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
       throw new AppError(401, 'Token de Google inválido o expirado');
     }
 
-    const { localId: googleId, email, displayName: name, photoUrl: picture } = firebaseUser;
+    const { localId: googleId, email, displayName: name } = firebaseUser;
+
+    // Obtener foto de perfil: preferir provider-specific (Google) sobre top-level
+    const googleProviderInfo = firebaseUser.providerUserInfo?.find(
+      (p) => p.providerId === 'google.com'
+    );
+    const rawPicture = googleProviderInfo?.photoUrl || firebaseUser.photoUrl;
+    // Google devuelve fotos con tamaño =s96-c; pedir tamaño mayor para mejor calidad
+    const picture = rawPicture?.replace(/=s\d+-c$/, '=s400-c');
 
     if (!email) {
       throw new AppError(400, 'No se pudo obtener el email desde Google');
@@ -685,14 +805,22 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
     });
 
     if (user) {
-      // Update googleId if not set, and avatar if we have one
-      if (!user.googleId || (picture && !user.avatar)) {
+      // Actualizar googleId y avatar desde Google en cada login
+      const needsUpdate =
+        !user.googleId ||
+        (picture && user.avatar !== picture) ||
+        (name && (!user.nombre || user.nombre === user.email.split('@')[0]));
+      if (needsUpdate) {
         user = await prisma.user.update({
           where: { id: user.id },
           data: {
             googleId: user.googleId ?? googleId,
             provider: user.provider ?? 'google',
-            avatar: user.avatar ?? picture ?? undefined,
+            avatar: picture ?? user.avatar ?? undefined,
+            nombre:
+              name && (!user.nombre || user.nombre === user.email.split('@')[0])
+                ? name
+                : user.nombre,
           },
         });
       }
@@ -705,7 +833,7 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
         throw new AppError(403, 'Esta cuenta está suspendida temporalmente');
       }
     } else {
-      // Create new artist account automatically via Google
+      // Create new account automatically via Google (role from request context)
       user = await prisma.user.create({
         data: {
           nombre: name ?? email.split('@')[0],
@@ -722,9 +850,52 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
       logger.info('New user via Firebase Google', 'AUTH_CONTROLLER', { userId: user.id, email });
     }
 
-    // Issue PIUMS tokens
+    // Dual-role support: if this login is for the artist site (role='artista'),
+    // ensure an artist profile exists — regardless of whether the user was just
+    // created, or already existed as a client logging in to the artist app.
+    // The bootstrap endpoint is idempotent (returns existing if found).
+    if (role === 'artista') {
+      try {
+        const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+        if (internalSecret) {
+          const bootstrapRes = await fetch(`${artistsUrl}/artists/internal/bootstrap`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': internalSecret,
+            },
+            body: JSON.stringify({
+              authId: user.id,
+              email: user.email,
+              nombre: user.nombre,
+              avatar: user.avatar ?? undefined,
+            }),
+          });
+          if (!bootstrapRes.ok) {
+            logger.warn(
+              `Artist bootstrap failed: ${bootstrapRes.status}`,
+              'AUTH_CONTROLLER',
+              { userId: user.id }
+            );
+          }
+        } else {
+          logger.warn('INTERNAL_SERVICE_SECRET missing; skipping artist bootstrap', 'AUTH_CONTROLLER');
+        }
+      } catch (bootstrapErr: any) {
+        logger.error(
+          `Artist bootstrap error: ${bootstrapErr.message}`,
+          'AUTH_CONTROLLER',
+          { userId: user.id }
+        );
+      }
+    }
+
+    // Issue PIUMS tokens — use the REQUESTED role so a user registered as
+    // 'cliente' can also log into the artist app (and vice versa).
+    const effectiveRole = role || user.role;
     const jti = crypto.randomUUID();
-    const token = tokenService.signAccessToken({ id: user.id, email: user.email, role: user.role, jti });
+    const token = tokenService.signAccessToken({ id: user.id, email: user.email, role: effectiveRole, jti });
     const refreshToken = tokenService.signRefreshToken({ id: user.id, jti });
 
     await tokenService.createRefreshToken(user.id, refreshToken, req.ip, req.get('user-agent'));
@@ -734,9 +905,13 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
 
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), lastLoginIp: req.ip } });
 
-    const { passwordHash: _, ...userResponse } = user;
+    const { passwordHash: _, ...userBase } = user;
+    // Expose the effective role in the response so the frontend opens the
+    // correct dashboard even when the user's stored role differs.
+    // Also expose `_id` (alias de `id`) for iOS/mobile clients que lo esperan.
+    const userResponse = { ...userBase, _id: user.id, role: effectiveRole };
 
-    logger.info('Firebase Google login success', 'AUTH_CONTROLLER', { userId: user.id });
+    logger.info('Firebase Google login success', 'AUTH_CONTROLLER', { userId: user.id, role: effectiveRole });
 
     return res.json({ user: userResponse, token, refreshToken, isNewUser: !user.lastLoginAt || user.lastLoginAt.getTime() === user.createdAt.getTime() });
   } catch (error: any) {
@@ -762,5 +937,4 @@ export const completeOnboarding = async (req: Request, res: Response, next: Next
   } catch (error: any) {
     next(error);
   }
-};
 };

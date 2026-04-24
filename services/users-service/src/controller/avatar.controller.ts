@@ -7,6 +7,24 @@ import { logger } from '../utils/logger';
 
 const usersService = new UsersService();
 
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
+
+async function syncAvatarToAuthService(authId: string, avatarUrl: string | null) {
+  try {
+    await fetch(`${AUTH_SERVICE_URL}/internal/users/${authId}/avatar`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': INTERNAL_SECRET,
+      },
+      body: JSON.stringify({ avatarUrl }),
+    });
+  } catch (err: any) {
+    logger.warn('Could not sync avatar to auth-service', 'AVATAR_CONTROLLER', { authId, error: err.message });
+  }
+}
+
 /**
  * POST /api/users/me/avatar - Subir avatar
  */
@@ -44,6 +62,9 @@ export const uploadAvatar = async (
     const updatedUser = await usersService.updateUser(user.id, {
       avatar: avatarUrl,
     });
+
+    // Sync to auth-service so /auth/verify returns the updated avatar
+    syncAvatarToAuthService(authId, avatarUrl);
 
     logger.info('Avatar uploaded successfully', 'AVATAR_CONTROLLER', {
       userId: user.id,
@@ -88,6 +109,9 @@ export const deleteAvatar = async (
     const updatedUser = await usersService.updateUser(user.id, {
       avatar: null,
     });
+
+    // Sync removal to auth-service
+    syncAvatarToAuthService(authId, null);
 
     logger.info('Avatar deleted successfully', 'AVATAR_CONTROLLER', {
       userId: user.id,

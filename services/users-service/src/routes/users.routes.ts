@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { PrismaClient } from "@prisma/client";
 import {
   createUser,
   getUserProfile,
@@ -23,6 +24,25 @@ const router = Router();
 
 // Rutas públicas/internas
 router.post("/", createUser); // Solo para uso interno
+
+// Internal endpoint: delete a user profile by authId (called from auth-service admin)
+router.delete("/internal/by-auth/:authId", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const providedSecret = req.headers['x-internal-secret'];
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { authId } = req.params;
+    const prisma = new PrismaClient();
+    const existing = await prisma.user.findUnique({ where: { authId } });
+    if (!existing) return res.json({ ok: true, deleted: false });
+    await prisma.user.delete({ where: { authId } });
+    res.json({ ok: true, deleted: true });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Subida de documentos de identidad (sin auth – se usa durante el registro)
 router.post("/documents/upload", upload.single('file'), handleMulterError, uploadDocument);

@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - develop
+    paths:
+      - 'services/**'
+      - 'packages/**'
+      - 'apps/gateway/**'
+      - 'infra/docker/docker-compose.staging.yml'
+      - '.github/workflows/deploy-staging.yml'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -201,11 +207,8 @@ jobs:
       - name: Test Booking Service
         run: curl -f https://staging.piums.com/api/bookings/health
 
-      - name: Test Web Client App
-        run: curl -f https://staging.piums.com/
-
-      - name: Test Web Artist App
-        run: curl -f https://artist-staging.piums.com/
+      - name: Test Payments Service
+        run: curl -f https://staging.piums.com/api/payments/health
 
   # ============================================================================
   # Rollback (on failure)

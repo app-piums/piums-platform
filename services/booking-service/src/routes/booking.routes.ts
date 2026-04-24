@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { bookingController } from "../controller/booking.controller";
-import { authenticateToken } from "../middleware/auth.middleware";
+import { authenticateToken, requireAdmin, internalAuth } from "../middleware/auth.middleware";
 import {
   createBookingLimiter,
   updateLimiter,
@@ -115,12 +115,12 @@ router.patch(
 
 /**
  * PATCH /api/bookings/:id/status
- * Cambiar estado de reserva
- * Requiere autenticación (artista)
+ * Cambiar estado de reserva — solo admin
  */
 router.patch(
   "/bookings/:id/status",
   authenticateToken,
+  requireAdmin,
   bookingController.changeStatus.bind(bookingController)
 );
 
@@ -232,7 +232,7 @@ router.put(
 // ==================== ESTADÍSTICAS ====================
 
 router.get(
-  "/stats",
+  "/bookings/stats",
   authenticateToken,
   bookingController.getBookingStats.bind(bookingController)
 );
@@ -242,12 +242,14 @@ router.get(
  * Obtener estadísticas de un usuario específico
  */
 router.get(
-  "/users/:userId/stats",
+  "/bookings/users/:userId/stats",
   bookingController.getUserStats.bind(bookingController)
 );
 
 router.post(
-  "/admin/batch-stats",
+  "/bookings/admin/batch-stats",
+  authenticateToken,
+  requireAdmin,
   bookingController.getBatchStats.bind(bookingController)
 );
 
@@ -256,17 +258,10 @@ router.post(
  * Obtener estadísticas globales para el admin
  */
 router.get(
-  "/stats/admin",
+  "/bookings/stats/admin",
+  authenticateToken,
+  requireAdmin,
   bookingController.getAdminStats.bind(bookingController)
-);
-
-/**
- * GET /api/admin/bookings/:id
- * Obtener detalle de una reserva (llamada interna desde auth-service)
- */
-router.get(
-  "/admin/bookings/:id",
-  bookingController.adminGetBookingById.bind(bookingController)
 );
 
 /**
@@ -274,8 +269,21 @@ router.get(
  * Buscar en TODAS las reservas (admin)
  */
 router.get(
-  "/admin/search",
+  "/bookings/admin/search",
+  authenticateToken,
+  requireAdmin,
   bookingController.adminSearchBookings.bind(bookingController)
+);
+
+/**
+ * GET /api/bookings/admin/:id
+ * Obtener detalle de una reserva (solo admin)
+ */
+router.get(
+  "/bookings/admin/:id",
+  authenticateToken,
+  requireAdmin,
+  bookingController.adminGetBookingById.bind(bookingController)
 );
 
 /**
@@ -287,6 +295,63 @@ router.get(
   "/bookings/:id/pdf",
   authenticateToken,
   bookingController.downloadBookingPDF.bind(bookingController)
+);
+
+// ==================== SOLICITUDES DE CAMBIO DE FECHA ====================
+
+/**
+ * POST /api/bookings/:id/reschedule-request
+ * Cliente solicita cambio de fecha
+ */
+router.post(
+  "/bookings/:id/reschedule-request",
+  authenticateToken,
+  createBookingLimiter,
+  bookingController.createRescheduleRequest.bind(bookingController)
+);
+
+/**
+ * POST /api/reschedule-requests/:requestId/respond
+ * Artista acepta o rechaza la solicitud
+ */
+router.post(
+  "/reschedule-requests/:requestId/respond",
+  authenticateToken,
+  updateLimiter,
+  bookingController.respondToReschedule.bind(bookingController)
+);
+
+/**
+ * GET /api/reschedule-requests/confirm?token=xxx
+ * Cliente confirma el cambio de fecha (público, viene del email)
+ */
+router.get(
+  "/reschedule-requests/confirm",
+  bookingController.confirmRescheduleByToken.bind(bookingController)
+);
+
+/**
+ * GET /api/bookings/:id/reschedule-requests
+ * Listar historial de solicitudes de cambio de fecha
+ */
+router.get(
+  "/bookings/:id/reschedule-requests",
+  authenticateToken,
+  bookingController.listRescheduleRequests.bind(bookingController)
+);
+
+// ==================== RUTAS INTERNAS (solo inter-servicio) ====================
+
+router.get(
+  "/bookings/internal/:id",
+  internalAuth,
+  bookingController.internalGetBooking.bind(bookingController)
+);
+
+router.post(
+  "/bookings/internal/:id/mark-payment",
+  internalAuth,
+  bookingController.internalMarkPayment.bind(bookingController)
 );
 
 export default router;

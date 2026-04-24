@@ -13,6 +13,7 @@ export class UsersClient {
     email: string;
     nombre: string;
     ciudad?: string;
+    avatar?: string;
   }) {
     try {
       await axios.post(`${USERS_SERVICE_URL}/api/users`, {
@@ -20,6 +21,7 @@ export class UsersClient {
         email: data.email,
         nombre: data.nombre,
         ciudad: data.ciudad,
+        avatar: data.avatar,
         pais: 'Guatemala',
       }, {
         timeout: 5000,

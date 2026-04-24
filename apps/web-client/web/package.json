@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@piums/sdk": "workspace:*",
+    "@stripe/react-stripe-js": "^6.2.0",
+    "@stripe/stripe-js": "^9.2.0",
     "firebase": "^12.11.0",
     "i18next": "^23.11.5",
     "lucide-react": "^0.577.0",

@@ -131,6 +131,11 @@ export const usersApi = {
     request<{ message: string; isBlocked: boolean }>(`/admin/users/${id}/block`, {
       method: "PATCH",
     }),
+
+  delete: (id: string) =>
+    request<{ message: string; id: string }>(`/admin/users/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // ─── Artists ─────────────────────────────────────────────────────────────────

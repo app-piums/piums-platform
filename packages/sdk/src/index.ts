@@ -2287,6 +2287,59 @@ class PiumsSDK {
     }
   }
 
+  // ==================== NOTIFICATION METHODS ====================
+
+  /**
+   * Obtiene las notificaciones del usuario autenticado
+   */
+  async getNotifications(filters?: { status?: string; page?: number; limit?: number }): Promise<{ notifications: any[]; total: number; page: number; totalPages: number }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.page) params.append('page', String(filters.page));
+      if (filters?.limit) params.append('limit', String(filters.limit));
+      const qs = params.toString();
+      const response = await fetch(
+        `${this.baseUrl}/notifications${qs ? `?${qs}` : ''}`,
+        this.withAuth({ credentials: 'include' })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca las notificaciones indicadas como leídas
+   */
+  async markNotificationsAsRead(notificationIds: string[]): Promise<void> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/notifications/read`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ notificationIds }),
+        })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+      throw error;
+    }
+  }
+
   // ==================== ADMIN METHODS ====================
 
   /**

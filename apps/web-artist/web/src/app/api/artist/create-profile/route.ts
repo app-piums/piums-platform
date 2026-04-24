@@ -36,18 +36,37 @@ export async function POST(request: NextRequest) {
       equipment: body.equipment || [],
       hourlyRateMin: body.hourlyRateMin ?? undefined,
       hourlyRateMax: body.hourlyRateMax ?? undefined,
-      currency: body.currency || 'GTQ',
+      currency: body.currency || 'USD',
       requiresDeposit: body.requiresDeposit ?? false,
       depositPercentage: body.depositPercentage ?? undefined,
     };
 
-    const res = await fetch(`${ARTISTS_SERVICE_URL}/artists`, {
+    let res = await fetch(`${ARTISTS_SERVICE_URL}/artists`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
     });
+    let data = await res.json().catch(() => ({}));
 
-    const data = await res.json();
+    // If the artist already exists (bootstrap stub from Google signup), update instead.
+    if (res.status === 409) {
+      const meRes = await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (meRes.ok) {
+        const meData = await meRes.json().catch(() => ({}));
+        const artistId = meData?.artist?.id ?? meData?.id;
+        if (artistId) {
+          res = await fetch(`${ARTISTS_SERVICE_URL}/artists/${artistId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          });
+          data = await res.json().catch(() => ({}));
+        }
+      }
+    }
+
     if (!res.ok) {
       return NextResponse.json({ message: data.message || 'Error al crear perfil' }, { status: res.status });
     }

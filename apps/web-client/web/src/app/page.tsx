@@ -116,9 +116,9 @@ export default function Home() {
           <div className="flex flex-col items-center text-center max-w-3xl">
             <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/5 px-4 py-1.5 text-xs font-medium text-[#FF6A00]">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
               </svg>
-              🎨 Economía Naranja — Guatemala • CI/CD funcionando
+              Economía Naranja — Guatemala | Deploy 14-abr-2026 ✓
             </span>
 
             <h1 className="text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
@@ -158,7 +158,7 @@ export default function Home() {
                 <svg className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Pagos seguros en GTQ
+                Pagos seguros en USD
               </div>
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,4 +1,5 @@
-import { PrismaClient, BookingStatus, PaymentStatus } from "@prisma/client";
+import { PrismaClient, BookingStatus, PaymentStatus, RescheduleStatus } from "@prisma/client";
+import crypto from "crypto";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { notificationsClient } from "../clients/notifications.client";
@@ -1533,6 +1534,317 @@ export class BookingService {
 
     // IDs únicos de artistas ocupados
     return [...new Set(bookings.map((b) => b.artistId))];
+  }
+
+  // ==================== SOLICITUDES DE CAMBIO DE FECHA ====================
+
+  /**
+   * Cliente solicita cambio de fecha.
+   * Crea un RescheduleRequest PENDING_ARTIST y notifica al artista.
+   */
+  async createRescheduleRequest(
+    bookingId: string,
+    clientId: string,
+    proposedDate: Date,
+    reason?: string
+  ) {
+    const booking = await this.getBookingById(bookingId);
+
+    if (booking.clientId !== clientId) {
+      throw new AppError(403, "No tienes permiso para solicitar cambio de fecha en esta reserva");
+    }
+
+    if (!["PENDING", "CONFIRMED", "PAYMENT_PENDING", "PAYMENT_COMPLETED"].includes(booking.status)) {
+      throw new AppError(400, "Solo puedes solicitar cambio de fecha en reservas activas");
+    }
+
+    if (proposedDate <= new Date()) {
+      throw new AppError(400, "La fecha propuesta debe ser en el futuro");
+    }
+
+    const hoursUntilBooking = (booking.scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilBooking < 24) {
+      throw new AppError(400, "No puedes solicitar cambio de fecha con menos de 24 horas de anticipación");
+    }
+
+    const rescheduleCount = booking.rescheduleCount || 0;
+    if (rescheduleCount >= 2) {
+      throw new AppError(400, "Has alcanzado el límite de cambios de fecha para esta reserva");
+    }
+
+    // Cancel any existing pending request for this booking
+    await prisma.rescheduleRequest.updateMany({
+      where: {
+        bookingId,
+        status: { in: ["PENDING_ARTIST", "PENDING_CLIENT"] },
+      },
+      data: { status: "EXPIRED" },
+    });
+
+    const request = await prisma.rescheduleRequest.create({
+      data: {
+        bookingId,
+        requestedBy: clientId,
+        proposedDate,
+        reason,
+        status: "PENDING_ARTIST",
+      },
+    });
+
+    // Update booking status
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "RESCHEDULE_PENDING_ARTIST" },
+    });
+
+    await this.recordStatusChange(bookingId, booking.status as BookingStatus, "RESCHEDULE_PENDING_ARTIST", clientId, reason || "Solicitud de cambio de fecha");
+
+    // Notify artist IN_APP
+    notificationsClient.sendNotification({
+      userId: booking.artistId,
+      type: "RESCHEDULE_REQUESTED",
+      channel: "IN_APP",
+      title: "Solicitud de cambio de fecha",
+      message: `El cliente solicita cambiar la fecha de la reserva ${booking.code || bookingId.slice(0, 8)} al ${proposedDate.toLocaleDateString("es-GT")}`,
+      data: { bookingId, rescheduleRequestId: request.id, proposedDate: proposedDate.toISOString(), reason },
+      priority: "high",
+      category: "booking",
+    }).catch(() => null);
+
+    return request;
+  }
+
+  /**
+   * Artista acepta o rechaza la solicitud de cambio de fecha.
+   * Si acepta: genera token de confirmación y lo envía al cliente por email.
+   * Si rechaza: cierra la solicitud y restaura el estado original del booking.
+   */
+  async respondToReschedule(
+    requestId: string,
+    artistId: string,
+    accept: boolean,
+    rejectionReason?: string
+  ) {
+    const request = await prisma.rescheduleRequest.findUnique({
+      where: { id: requestId },
+      include: { booking: true },
+    });
+
+    if (!request) {
+      throw new AppError(404, "Solicitud de cambio de fecha no encontrada");
+    }
+
+    if (request.booking.artistId !== artistId) {
+      throw new AppError(403, "No tienes permiso para responder esta solicitud");
+    }
+
+    if (request.status !== "PENDING_ARTIST") {
+      throw new AppError(400, "Esta solicitud ya fue respondida");
+    }
+
+    if (!accept) {
+      // Reject: restore booking to original status
+      const previousStatus = request.booking.status === "RESCHEDULE_PENDING_ARTIST"
+        ? "CONFIRMED"
+        : request.booking.status;
+
+      await prisma.rescheduleRequest.update({
+        where: { id: requestId },
+        data: {
+          status: "REJECTED",
+          artistRespondedAt: new Date(),
+          artistRejectionReason: rejectionReason,
+        },
+      });
+
+      await prisma.booking.update({
+        where: { id: request.bookingId },
+        data: { status: previousStatus as BookingStatus },
+      });
+
+      await this.recordStatusChange(
+        request.bookingId,
+        "RESCHEDULE_PENDING_ARTIST",
+        previousStatus as BookingStatus,
+        artistId,
+        rejectionReason || "Artista rechazó el cambio de fecha"
+      );
+
+      notificationsClient.sendNotification({
+        userId: request.booking.clientId,
+        type: "RESCHEDULE_REJECTED",
+        channel: "IN_APP",
+        title: "Cambio de fecha rechazado",
+        message: `El artista no puede atenderte en la fecha propuesta.${rejectionReason ? ` Motivo: ${rejectionReason}` : ""}`,
+        data: { bookingId: request.bookingId, rescheduleRequestId: requestId, reason: rejectionReason },
+        priority: "high",
+        category: "booking",
+      }).catch(() => null);
+
+      return { accepted: false, request };
+    }
+
+    // Accept: generate confirmation token valid 24h
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const updated = await prisma.rescheduleRequest.update({
+      where: { id: requestId },
+      data: {
+        status: "PENDING_CLIENT",
+        artistRespondedAt: new Date(),
+        confirmationToken: token,
+        tokenExpiresAt,
+      },
+    });
+
+    await prisma.booking.update({
+      where: { id: request.bookingId },
+      data: { status: "RESCHEDULE_PENDING_CLIENT" },
+    });
+
+    await this.recordStatusChange(
+      request.bookingId,
+      "RESCHEDULE_PENDING_ARTIST",
+      "RESCHEDULE_PENDING_CLIENT",
+      artistId,
+      "Artista aceptó el cambio de fecha, esperando confirmación del cliente"
+    );
+
+    // Build confirmation URL
+    const clientBaseUrl = process.env.CLIENT_APP_URL || "http://localhost:3000";
+    const confirmUrl = `${clientBaseUrl}/booking/reschedule/confirm?token=${token}`;
+
+    notificationsClient.sendNotification({
+      userId: request.booking.clientId,
+      type: "RESCHEDULE_ACCEPTED",
+      channel: "IN_APP",
+      title: "Artista aceptó el cambio de fecha",
+      message: `El artista aceptó tu solicitud. Confirma el cambio antes de ${tokenExpiresAt.toLocaleDateString("es-GT")}.`,
+      data: { bookingId: request.bookingId, rescheduleRequestId: requestId, confirmUrl, proposedDate: request.proposedDate.toISOString() },
+      priority: "urgent",
+      category: "booking",
+    }).catch(() => null);
+
+    // Email with confirmation link
+    notificationsClient.sendNotification({
+      userId: request.booking.clientId,
+      type: "RESCHEDULE_ACCEPTED",
+      channel: "EMAIL",
+      title: "Confirma el cambio de fecha de tu reserva",
+      message: `El artista aceptó tu solicitud de cambio de fecha. Haz clic en el enlace para confirmar.`,
+      data: { bookingId: request.bookingId, confirmUrl },
+      priority: "urgent",
+      category: "booking",
+      emailSubject: "Confirma el cambio de fecha de tu reserva",
+      emailHtml: `
+        <h2>El artista aceptó tu cambio de fecha</h2>
+        <p>Tu solicitud para cambiar la reserva <strong>${request.booking.code || request.bookingId.slice(0, 8)}</strong> al <strong>${request.proposedDate.toLocaleDateString("es-GT")}</strong> fue aceptada.</p>
+        <p>Tienes <strong>24 horas</strong> para confirmar el cambio haciendo clic en el siguiente enlace:</p>
+        <p><a href="${confirmUrl}" style="background:#000;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Confirmar cambio de fecha</a></p>
+        <p style="color:#666;font-size:14px;">Este enlace expira el ${tokenExpiresAt.toLocaleString("es-GT")}. Si no confirmas, la solicitud se cancelará automáticamente.</p>
+      `,
+    }).catch(() => null);
+
+    return { accepted: true, request: updated, confirmUrl };
+  }
+
+  /**
+   * Cliente confirma el cambio de fecha a través del token recibido por email.
+   * Aplica la nueva fecha al booking y actualiza el estado a RESCHEDULED.
+   */
+  async confirmRescheduleByToken(token: string) {
+    const request = await prisma.rescheduleRequest.findUnique({
+      where: { confirmationToken: token },
+      include: { booking: true },
+    });
+
+    if (!request) {
+      throw new AppError(404, "Enlace de confirmación inválido");
+    }
+
+    if (request.status !== "PENDING_CLIENT") {
+      if (request.status === "CONFIRMED") {
+        throw new AppError(400, "Este cambio de fecha ya fue confirmado");
+      }
+      throw new AppError(400, "Este enlace ya no es válido");
+    }
+
+    if (request.tokenExpiresAt && request.tokenExpiresAt < new Date()) {
+      await prisma.rescheduleRequest.update({
+        where: { id: request.id },
+        data: { status: "EXPIRED" },
+      });
+      throw new AppError(410, "El enlace de confirmación ha expirado. Por favor solicita un nuevo cambio de fecha.");
+    }
+
+    // Apply the new date and mark as rescheduled
+    await prisma.rescheduleRequest.update({
+      where: { id: request.id },
+      data: { status: "CONFIRMED", clientConfirmedAt: new Date(), confirmationToken: null },
+    });
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: request.bookingId },
+      data: {
+        scheduledDate: request.proposedDate,
+        status: "RESCHEDULED",
+        rescheduledAt: new Date(),
+        rescheduledBy: request.requestedBy,
+        rescheduleReason: request.reason,
+        rescheduleCount: { increment: 1 },
+      },
+    });
+
+    await this.recordStatusChange(
+      request.bookingId,
+      "RESCHEDULE_PENDING_CLIENT",
+      "RESCHEDULED",
+      request.requestedBy,
+      "Cliente confirmó el cambio de fecha"
+    );
+
+    // Update availability reservation
+    removeAvailabilityReservation(request.bookingId).catch(() => null);
+    const endAt = new Date(request.proposedDate);
+    endAt.setMinutes(endAt.getMinutes() + request.booking.durationMinutes);
+    createAvailabilityReservation({
+      artistId: request.booking.artistId,
+      bookingId: request.bookingId,
+      startAt: request.proposedDate,
+      endAt,
+    }).catch(() => null);
+
+    // Notify artist
+    notificationsClient.sendNotification({
+      userId: request.booking.artistId,
+      type: "RESCHEDULE_CONFIRMED",
+      channel: "IN_APP",
+      title: "Cambio de fecha confirmado",
+      message: `El cliente confirmó el cambio de fecha para la reserva ${request.booking.code || request.bookingId.slice(0, 8)} al ${request.proposedDate.toLocaleDateString("es-GT")}.`,
+      data: { bookingId: request.bookingId, newDate: request.proposedDate.toISOString() },
+      priority: "high",
+      category: "booking",
+    }).catch(() => null);
+
+    return { booking: updatedBooking, request };
+  }
+
+  /**
+   * Lista las solicitudes de cambio de fecha de una reserva.
+   * Solo el cliente o el artista pueden verlas.
+   */
+  async listRescheduleRequests(bookingId: string, userId: string) {
+    const booking = await this.getBookingById(bookingId);
+
+    if (booking.clientId !== userId && booking.artistId !== userId) {
+      throw new AppError(403, "No tienes permiso para ver estas solicitudes");
+    }
+
+    return prisma.rescheduleRequest.findMany({
+      where: { bookingId },
+      orderBy: { createdAt: "desc" },
+    });
   }
 }
 

@@ -15,7 +15,6 @@ const adminOnly = requireAdmin as RequestHandler;
 
 // ==================== REVIEWS ====================
 
-// Crear reseña (requiere autenticación)
 router.post(
   "/reviews",
   auth,
@@ -23,35 +22,31 @@ router.post(
   asHandler(reviewController.createReview.bind(reviewController))
 );
 
-// Obtener reseña por ID (público)
 router.get(
   "/reviews/:id",
   asHandler(reviewController.getReviewById.bind(reviewController))
 );
 
-// Listar reseñas con filtros (público)
 router.get(
   "/reviews",
   asHandler(reviewController.getReviews.bind(reviewController))
 );
 
-// Actualizar reseña (requiere autenticación)
 router.patch(
   "/reviews/:id",
   auth,
   asHandler(reviewController.updateReview.bind(reviewController))
 );
 
-// Eliminar reseña (requiere autenticación)
 router.delete(
   "/reviews/:id",
   auth,
+  adminOnly,
   asHandler(reviewController.deleteReview.bind(reviewController))
 );
 
 // ==================== RESPONSES ====================
 
-// Responder a reseña (artistas)
 router.post(
   "/reviews/:id/respond",
   auth,
@@ -59,23 +54,20 @@ router.post(
   asHandler(reviewController.respondToReview.bind(reviewController))
 );
 
-// Actualizar respuesta
 router.patch(
-  "/responses/:id",
+  "/reviews/responses/:id",
   auth,
   asHandler(reviewController.updateResponse.bind(reviewController))
 );
 
-// Eliminar respuesta
 router.delete(
-  "/responses/:id",
+  "/reviews/responses/:id",
   auth,
   asHandler(reviewController.deleteResponse.bind(reviewController))
 );
 
 // ==================== HELPFUL VOTES ====================
 
-// Marcar reseña como útil/no útil
 router.post(
   "/reviews/:id/helpful",
   auth,
@@ -85,7 +77,6 @@ router.post(
 
 // ==================== REPORTS ====================
 
-// Reportar reseña
 router.post(
   "/reviews/:id/report",
   auth,
@@ -93,70 +84,64 @@ router.post(
   asHandler(reviewController.reportReview.bind(reviewController))
 );
 
-// Obtener reportes pendientes (admin)
+// Specific paths before parameterized ones
 router.get(
-  "/admin/reports/pending",
+  "/reviews/admin/reports/pending",
   auth,
   adminOnly,
   asHandler(reviewController.getPendingReports.bind(reviewController))
 );
 
-// Resolver reporte (admin)
-router.patch(
-  "/admin/reports/:id/resolve",
-  auth,
-  adminOnly,
-  asHandler(reviewController.resolveReport.bind(reviewController))
-);
-
-// Mensajes de seguimiento de un reporte (admin)
 router.get(
-  "/admin/reports/:id/messages",
-  auth,
-  adminOnly,
-  asHandler(reviewController.getReportMessages.bind(reviewController))
-);
-
-router.post(
-  "/admin/reports/:id/messages",
-  auth,
-  adminOnly,
-  asHandler(reviewController.addReportMessage.bind(reviewController))
-);
-
-// Obtener estadísticas de reportes para el dashboard (admin)
-router.get(
-  "/admin/stats",
+  "/reviews/admin/stats",
   auth,
   adminOnly,
   asHandler(reviewController.getAdminStats.bind(reviewController))
 );
 
 router.post(
-  "/admin/batch-ratings",
+  "/reviews/admin/batch-ratings",
   auth,
   adminOnly,
   asHandler(reviewController.getBatchRatings.bind(reviewController))
 );
 
+router.patch(
+  "/reviews/admin/reports/:id/resolve",
+  auth,
+  adminOnly,
+  asHandler(reviewController.resolveReport.bind(reviewController))
+);
+
+router.get(
+  "/reviews/admin/reports/:id/messages",
+  auth,
+  adminOnly,
+  asHandler(reviewController.getReportMessages.bind(reviewController))
+);
+
+router.post(
+  "/reviews/admin/reports/:id/messages",
+  auth,
+  adminOnly,
+  asHandler(reviewController.addReportMessage.bind(reviewController))
+);
+
 // ==================== ARTIST RATINGS ====================
 
-// Obtener estadísticas de artista (público)
 router.get(
-  "/artists/:artistId/rating",
+  "/reviews/artists/:artistId/rating",
   asHandler(reviewController.getArtistRating.bind(reviewController))
 );
 
-// Obtener estadísticas de un usuario específico (requiere autenticación)
 router.get(
-  "/users/:userId/stats",
+  "/reviews/users/:userId/stats",
   auth,
   asHandler(reviewController.getUserStats.bind(reviewController))
 );
 
-// Recalcular estadísticas de artista (admin/internal)
 router.post(
-  "/artists/:artistId/rating/update",
+  "/reviews/artists/:artistId/rating/update",
   auth,
   adminOnly,
   asHandler(reviewController.updateArtistRating.bind(reviewController))

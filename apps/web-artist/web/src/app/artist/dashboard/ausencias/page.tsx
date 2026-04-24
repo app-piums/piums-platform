@@ -234,20 +234,30 @@ export default function AusenciasPage() {
               </div>
 
               {formType === 'WORKING_ABROAD' && (
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">País destino</span>
-                  <select
-                    value={formDest}
-                    onChange={(e) => setFormDest(e.target.value)}
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    {COUNTRY_OPTIONS.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <>
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-700">País destino</span>
+                    <select
+                      value={formDest}
+                      onChange={(e) => setFormDest(e.target.value)}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      {COUNTRY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+                    <svg className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>
+                      Durante esta ausencia, <strong>solo serás visible para clientes en {countryLabel(formDest)}</strong>. Los clientes en tu país de origen no podrán encontrarte en búsquedas hasta que finalice la ausencia.
+                    </span>
+                  </div>
+                </>
               )}
 
               <label className="block">

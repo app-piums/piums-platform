@@ -81,6 +81,7 @@ export const smartSearchSchema = z.object({
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   minGuests: z.coerce.number().min(1).optional(),
+  isVerified: z.coerce.boolean().optional(),
 });
 
 export type SmartSearchInput = z.infer<typeof smartSearchSchema>;

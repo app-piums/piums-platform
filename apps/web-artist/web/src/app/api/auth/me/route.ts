@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         id: data.id || data.userId,
         nombre: data.nombre,
         email: data.email,
+        role: data.role,
         avatar: data.avatar,
         ciudad: data.ciudad ?? null,
         birthDate: data.birthDate ?? null,
