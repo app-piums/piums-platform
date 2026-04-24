@@ -11,7 +11,7 @@ import {
   deleteAddress,
 } from "../controller/users.controller";
 import { uploadAvatar, deleteAvatar } from "../controller/avatar.controller";
-import { uploadDocument } from "../controller/document.controller";
+import { uploadDocument, deleteDocument } from "../controller/document.controller";
 import {
   getNotificationSettings,
   updateNotificationSettings,
@@ -46,6 +46,8 @@ router.delete("/internal/by-auth/:authId", async (req, res, next) => {
 
 // Subida de documentos de identidad (sin auth – se usa durante el registro)
 router.post("/documents/upload", upload.single('file'), handleMulterError, uploadDocument);
+// Eliminación de documento propio (requiere auth)
+router.delete("/me/documents", authenticateToken, deleteDocument);
 
 // Rutas protegidas
 router.get("/me", authenticateToken, getMyProfile);

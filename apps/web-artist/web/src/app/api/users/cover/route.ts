@@ -7,11 +7,21 @@ export async function POST(request: NextRequest) {
   if (!token) return NextResponse.json({ message: 'No autenticado' }, { status: 401 });
 
   try {
-    const formData = await request.formData();
-    const res = await fetch(`${USERS_SERVICE_URL}/users/me/profile/cover`, {
+    // Re-create FormData to fix multipart boundary in proxy chain (same reason as avatar proxy).
+    const incoming = await request.formData();
+    const file = incoming.get('cover') as File | null;
+
+    if (!file) {
+      return NextResponse.json({ message: 'No se encontró el archivo' }, { status: 400 });
+    }
+
+    const outgoing = new FormData();
+    outgoing.append('cover', file, file.name);
+
+    const res = await fetch(`${USERS_SERVICE_URL}/api/users/me/profile/cover`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
-      body: formData,
+      body: outgoing,
     });
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });

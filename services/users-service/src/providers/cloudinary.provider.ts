@@ -24,7 +24,6 @@ export class CloudinaryProvider {
               { width: 400, height: 400, crop: 'fill', gravity: 'face' },
               { quality: 'auto', fetch_format: 'auto' },
             ],
-            overwrite: true,
           },
           (error, result) => {
             if (error) {
@@ -97,6 +96,25 @@ export class CloudinaryProvider {
     } catch (error: any) {
       logger.error('Failed to upload document', 'CLOUDINARY_PROVIDER', error);
       throw new Error(`Error al subir documento: ${error.message}`);
+    }
+  }
+
+  /**
+   * Eliminar documento de identidad de Cloudinary
+   */
+  async deleteDocument(url: string): Promise<void> {
+    try {
+      const match = url.match(/piums\/documents\/([^/]+)\/([^/.]+)/);
+      if (!match) {
+        logger.warn('Could not extract public_id from document URL', 'CLOUDINARY_PROVIDER', { url });
+        return;
+      }
+      const [, folder, filename] = match;
+      const publicId = `piums/documents/${folder}/${filename}`;
+      await cloudinary.uploader.destroy(publicId);
+      logger.info('Document deleted', 'CLOUDINARY_PROVIDER', { publicId });
+    } catch (error: any) {
+      logger.error('Failed to delete document', 'CLOUDINARY_PROVIDER', error);
     }
   }
 

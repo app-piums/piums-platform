@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
 import { CloudinaryProvider } from '../providers/cloudinary.provider';
 import { logger } from '../utils/logger';
@@ -28,6 +29,33 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
     logger.info('Document uploaded', 'DOCUMENT_CONTROLLER', { folder, size: req.file.size });
 
     res.json({ url });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/users/me/documents - Eliminar documento de identidad de Cloudinary
+ */
+export const deleteDocument = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, 'No autenticado');
+
+    const { url } = req.body;
+    if (!url || typeof url !== 'string') {
+      throw new AppError(400, 'URL requerida');
+    }
+
+    if (!url.includes('res.cloudinary.com') || !url.includes('piums/documents/')) {
+      throw new AppError(400, 'URL de documento inválida');
+    }
+
+    await cloudinaryProvider.deleteDocument(url);
+
+    logger.info('Document deleted by user', 'DOCUMENT_CONTROLLER', { authId });
+
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }

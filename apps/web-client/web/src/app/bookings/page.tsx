@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
-import Image from 'next/image';
 import Link from 'next/link';
+import { cImg } from '@/lib/cloudinaryImg';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ClientSidebar from '@/components/ClientSidebar';
@@ -72,11 +72,9 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
     >
       <div className="flex flex-col sm:flex-row">
         <div className="relative sm:w-40 h-36 sm:h-auto shrink-0 bg-gray-100">
-          <Image
-            src={b.imageUrl}
+          <img
+            src={cImg(b.imageUrl)}
             alt={b.title}
-            width={320}
-            height={192}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <span className={`absolute top-2 left-2 text-[11px] font-bold px-2.5 py-1 rounded-full ${cfg?.className || 'bg-gray-100 text-gray-600'}`}>

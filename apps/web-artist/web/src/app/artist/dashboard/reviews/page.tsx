@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
-import Image from 'next/image';
+import { cImg } from '@/lib/cloudinaryImg';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
@@ -188,14 +188,11 @@ export default function ArtistReviewsPage() {
                       {review.photos && review.photos.length > 0 && (
                         <div className="flex gap-2 mb-4">
                           {review.photos.map((photo) => (
-                            <Image
+                            <img
                               key={photo.id}
-                              src={photo.url}
+                              src={cImg(photo.url)}
                               alt={photo.caption || 'Foto de la reseña'}
-                              width={80}
-                              height={80}
                               className="w-20 h-20 object-cover rounded"
-                              sizes="80px"
                             />
                           ))}
                         </div>

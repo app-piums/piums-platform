@@ -1,5 +1,5 @@
-import React from 'react';
-import Image from 'next/image';
+import React, { useState } from 'react';
+import { cImg } from '@/lib/cloudinaryImg';
 
 interface AvatarProps {
   src?: string;
@@ -16,6 +16,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   fallback,
   className = '',
 }) => {
+  const [imgError, setImgError] = useState(false);
+
   const sizes = {
     xs: 'h-6 w-6 text-xs',
     sm: 'h-8 w-8 text-sm',
@@ -30,12 +32,12 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   return (
     <div className={`relative inline-flex items-center justify-center rounded-full bg-gray-200 overflow-hidden ${sizes[size]} ${className}`}>
-      {src ? (
-        <Image
-          src={src}
+      {src && !imgError ? (
+        <img
+          src={cImg(src)}
           alt={alt}
-          fill
-          className="object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={() => setImgError(true)}
         />
       ) : (
         <span className="font-medium text-gray-600">{initials}</span>

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
-import Image from 'next/image';
+import { cImg } from '@/lib/cloudinaryImg';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
@@ -323,12 +323,23 @@ export default function ArtistSettingsPage() {
   ) => {
     setVerifyUploading((prev) => ({ ...prev, [folder]: true }));
     try {
+      const urlKey = folder === 'front' ? 'documentFrontUrl' : folder === 'back' ? 'documentBackUrl' : 'documentSelfieUrl';
+      const existingUrl = verifyData[urlKey];
+
+      // Delete the previous Cloudinary asset before uploading the replacement
+      if (existingUrl) {
+        await fetch('/api/users/documents/upload', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: existingUrl }),
+        });
+      }
+
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch(`/api/users/documents/upload?folder=${folder}`, { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Error al subir imagen');
       const data = await res.json();
-      const urlKey = folder === 'front' ? 'documentFrontUrl' : folder === 'back' ? 'documentBackUrl' : 'documentSelfieUrl';
       setVerifyData((prev) => ({ ...prev, [urlKey]: data.url }));
       setVerifyPreviews((prev) => ({ ...prev, [folder]: URL.createObjectURL(file) }));
     } catch (err: unknown) {
@@ -1110,7 +1121,7 @@ export default function ArtistSettingsPage() {
                   <div className="flex items-center gap-6">
                     <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
                       {(localAvatar || artist?.avatar) ? (
-                        <Image src={localAvatar || artist!.avatar!} alt="Avatar" width={80} height={80} className="object-cover w-full h-full" unoptimized />
+                        <img src={cImg(localAvatar || artist!.avatar!)} alt="Avatar" className="object-cover w-full h-full" />
                       ) : (
                         <span className="text-white text-3xl font-bold">{(artist?.nombre || 'A').charAt(0).toUpperCase()}</span>
                       )}
@@ -1138,12 +1149,10 @@ export default function ArtistSettingsPage() {
                   <label className={`block cursor-pointer ${coverUploading ? 'opacity-60 pointer-events-none' : ''}`}>
                     {artist?.coverPhoto ? (
                       <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
-                        <Image
-                          src={artist.coverPhoto}
+                        <img
+                          src={cImg(artist.coverPhoto)}
                           alt="Foto de portada"
-                          fill
-                          sizes="600px"
-                          className="object-cover"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                           <span className="text-white text-sm font-semibold">Cambiar portada</span>

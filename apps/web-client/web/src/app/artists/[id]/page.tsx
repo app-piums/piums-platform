@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import { cImg } from '@/lib/cloudinaryImg';
 import { useParams, useRouter } from 'next/navigation';
 import { Lightbox } from '@/components/Lightbox';
 import { Loading } from '@/components/Loading';
@@ -284,7 +284,7 @@ export default function ArtistProfilePage() {
   };
 
   const portfolioImages = artist.portfolio?.map(item => ({
-    url: item.imageUrl || '/placeholder-image.jpg',
+    url: cImg(item.imageUrl) || '/placeholder-image.jpg',
     title: item.title,
     description: item.description
   })) || [];
@@ -325,11 +325,9 @@ export default function ArtistProfilePage() {
         {/* Cover Photo */}
         <div className="relative h-48 lg:h-64 bg-gradient-to-br from-violet-400 via-purple-500 to-pink-500 rounded-none lg:rounded-2xl overflow-hidden mb-8">
           {artist.coverPhoto && (
-            <Image
-              src={artist.coverPhoto}
+            <img
+              src={cImg(artist.coverPhoto)}
               alt={artist.nombre}
-              width={1200}
-              height={512}
               className="w-full h-full object-cover"
             />
           )}
@@ -562,11 +560,9 @@ export default function ArtistProfilePage() {
                     >
                       <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
                         {item.imageUrl ? (
-                          <Image
-                            src={item.imageUrl}
+                          <img
+                            src={cImg(item.imageUrl)}
                             alt={item.title}
-                            width={600}
-                            height={384}
                             className="w-full h-full object-cover"
                           />
                         ) : (

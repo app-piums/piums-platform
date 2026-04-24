@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 const usersService = new UsersService();
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+const ARTISTS_SERVICE_URL = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
 const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
 
 async function syncAvatarToAuthService(authId: string, avatarUrl: string | null) {
@@ -22,6 +23,22 @@ async function syncAvatarToAuthService(authId: string, avatarUrl: string | null)
     });
   } catch (err: any) {
     logger.warn('Could not sync avatar to auth-service', 'AVATAR_CONTROLLER', { authId, error: err.message });
+  }
+}
+
+// Sync avatar to artists-service so the web dashboard reads it from artist.avatar
+async function syncAvatarToArtistsService(token: string, avatarUrl: string | null) {
+  try {
+    await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ avatar: avatarUrl }),
+    });
+  } catch (err: any) {
+    logger.warn('Could not sync avatar to artists-service', 'AVATAR_CONTROLLER', { error: err.message });
   }
 }
 
@@ -46,13 +63,9 @@ export const uploadAvatar = async (
 
     // Obtener usuario
     const user = await usersService.getUserByAuthId(authId);
+    const previousAvatar = user.avatar;
 
-    // Si ya tiene avatar, eliminarlo de Cloudinary
-    if (user.avatar) {
-      await cloudinaryProvider.deleteAvatar(user.avatar);
-    }
-
-    // Subir nuevo avatar a Cloudinary
+    // Subir nuevo avatar a Cloudinary antes de borrar el anterior
     const avatarUrl = await cloudinaryProvider.uploadAvatar(
       req.file.buffer,
       user.id
@@ -63,8 +76,15 @@ export const uploadAvatar = async (
       avatar: avatarUrl,
     });
 
-    // Sync to auth-service so /auth/verify returns the updated avatar
+    // Borrar el avatar anterior solo si el upload y la DB actualizaron bien
+    if (previousAvatar) {
+      await cloudinaryProvider.deleteAvatar(previousAvatar);
+    }
+
+    // Sync to auth-service and artists-service (fire-and-forget)
+    const token = req.headers.authorization?.substring(7) || '';
     syncAvatarToAuthService(authId, avatarUrl);
+    syncAvatarToArtistsService(token, avatarUrl);
 
     logger.info('Avatar uploaded successfully', 'AVATAR_CONTROLLER', {
       userId: user.id,
@@ -110,8 +130,10 @@ export const deleteAvatar = async (
       avatar: null,
     });
 
-    // Sync removal to auth-service
+    // Sync removal to auth-service and artists-service
+    const token = req.headers.authorization?.substring(7) || '';
     syncAvatarToAuthService(authId, null);
+    syncAvatarToArtistsService(token, null);
 
     logger.info('Avatar deleted successfully', 'AVATAR_CONTROLLER', {
       userId: user.id,

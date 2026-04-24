@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { cImg } from '@/lib/cloudinaryImg';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -598,11 +598,9 @@ export default function ServiceDetailPage() {
 
             {/* Hero image */}
             <div className="relative w-full aspect-[16/9] lg:aspect-[2/1] rounded-2xl overflow-hidden bg-gray-200">
-              <Image
-                src={service.images[0]}
+              <img
+                src={cImg(service.images[0])}
                 alt={service.title}
-                width={1200}
-                height={675}
                 className="w-full h-full object-cover"
               />
               {/* Overlay tags */}

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { cImg } from '@/lib/cloudinaryImg';
 import { Map, Marker } from 'pigeon-maps';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
@@ -296,11 +296,10 @@ function ArtistResultCard({
       {/* Cover */}
       <div className="relative h-36 bg-gradient-to-br from-violet-400 via-purple-400 to-pink-400">
         {artist.coverPhoto && (
-          <Image
-            src={artist.coverPhoto}
+          <img
+            src={cImg(artist.coverPhoto)}
             alt={artist.nombre}
-            fill
-            className="object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         )}
         {/* Availability badge */}
@@ -332,11 +331,9 @@ function ArtistResultCard({
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
             {artist.avatar || artist.imagenPerfil ? (
-              <Image
-                src={(artist.avatar || artist.imagenPerfil)!}
+              <img
+                src={cImg(artist.avatar || artist.imagenPerfil)}
                 alt={artist.nombre}
-                width={40}
-                height={40}
                 className="object-cover w-full h-full"
               />
             ) : (

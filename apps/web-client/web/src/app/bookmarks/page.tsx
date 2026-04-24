@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { cImg } from '@/lib/cloudinaryImg';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import Link from 'next/link';
-import Image from 'next/image';
 import ClientSidebar from '@/components/ClientSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
@@ -78,12 +78,10 @@ export default function BookmarksPage() {
                 <div key={artist.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
                   <div className="relative h-40 bg-gradient-to-br from-gray-200 to-gray-300">
                     {artist.coverPhoto ? (
-                      <Image
-                        src={artist.coverPhoto}
+                      <img
+                        src={cImg(artist.coverPhoto)}
                         alt={artist.nombre}
-                        fill
-                        sizes="(min-width: 768px) 320px, 100vw"
-                        className="object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center text-4xl font-bold text-gray-300">
