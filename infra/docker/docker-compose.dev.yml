@@ -13,13 +13,13 @@ services:
       POSTGRES_PASSWORD: piums_dev_password
       POSTGRES_DB: piums_dev
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - piums-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U piums"]
+      test: ["CMD-SHELL", "pg_isready -U piums -d piums_dev"]
       interval: 10s
       timeout: 5s
       retries: 5

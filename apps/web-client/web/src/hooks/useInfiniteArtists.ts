@@ -97,8 +97,10 @@ const fetchArtistsPage = async (
 
     const params: ArtistsQueryParams = { page, limit: ITEMS_PER_PAGE };
     if (resolved.category) params.category = resolved.category;
-    if (resolved.cityId) params.city = resolved.cityId;
+    // cityId holds a department/state value — send as state for correct matching
+    if (resolved.cityId) params.state = resolved.cityId;
     if (resolved.q) params.q = resolved.q;
+    if (filters.guests != null) params.minGuests = filters.guests;
     const result = await sdk.getArtists(params);
     return {
       artists: result.artists,

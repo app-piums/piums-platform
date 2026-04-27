@@ -159,8 +159,10 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'ingeniero de sonido': ['ingeniero de sonido', 'técnico de sonido', 'audiovisual', 'audio live'],
 
   // ── Instrumentistas ─────────────────────────────────────────────────────────
-  bajista:      ['bajista', 'bajo eléctrico', 'bajo', 'musica', 'música'],
-  bajo:         ['bajo', 'bajista', 'bajo eléctrico', 'bajo acústico', 'musica'],
+  // NOTE: 'bajo' (4 chars) omitted from ILIKE expansions — it appears as substring
+  // in common Spanish words like "trabajo", "debajo", "abajo" causing false positives.
+  bajista:      ['bajista', 'bajo eléctrico', 'musica', 'música'],
+  bajo:         ['bajista', 'bajo eléctrico', 'bajo acústico', 'musica'],
   trompetista:  ['trompetista', 'trompeta', 'viento', 'jazz', 'musica', 'música'],
   trompeta:     ['trompeta', 'trompetista', 'viento metal', 'musica'],
   flautista:    ['flautista', 'flauta', 'flauta traversa', 'viento madera', 'musica'],

@@ -39,7 +39,6 @@ export default function ArtistBookingsPage() {
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [quejaBooking, setQuejaBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [clientInfo, setClientInfo] = useState<{ nombre: string; avatar?: string; email?: string } | null>(null);
   const [statusCounts, setStatusCounts] = useState<Record<string, number | null>>({
     PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null, REJECTED: null,
   });
@@ -98,17 +97,6 @@ export default function ArtistBookingsPage() {
     void loadStatusCounts();
   }, [loadStatusCounts]);
 
-  useEffect(() => {
-    if (!selectedBooking) { setClientInfo(null); return; }
-    const clientId = (selectedBooking as any).clientId;
-    if (!clientId) return;
-    fetch(`/api/users/client?userId=${clientId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) setClientInfo({ nombre: data.nombre || data.fullName || data.firstName || 'Cliente', avatar: data.avatar, email: data.email });
-      })
-      .catch(() => {});
-  }, [selectedBooking]);
 
   const handleAccept = async (bookingId: string) => {
     if (!confirm('¿Confirmar aceptar esta reserva?')) return;
@@ -369,6 +357,25 @@ export default function ArtistBookingsPage() {
 
                       {/* Card Body */}
                       <div className="px-4 py-3 space-y-2.5">
+                        {/* Client */}
+                        {(booking as any).clientName && (
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-7 w-7 rounded-full overflow-hidden bg-orange-100 shrink-0">
+                              {(booking as any).clientAvatar ? (
+                                <img src={cImg((booking as any).clientAvatar)} alt={(booking as any).clientName} className="absolute inset-0 w-full h-full object-cover" />
+                              ) : (
+                                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-orange-600">
+                                  {((booking as any).clientName as string).charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs text-gray-400 leading-none">Cliente</p>
+                              <p className="text-sm font-semibold text-gray-900 truncate">{(booking as any).clientName}</p>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Date */}
                         <div className="flex items-start gap-2.5">
                           <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,48 +637,53 @@ export default function ArtistBookingsPage() {
             <div className="px-5 py-4 space-y-4">
 
               {/* Participantes */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Artista (tú) */}
-                <div className="flex flex-col items-center gap-2 bg-purple-50 rounded-xl px-3 py-3 text-center">
-                  <div className="relative h-12 w-12 rounded-full overflow-hidden bg-purple-200 shrink-0">
-                    {user && (user as any).avatar ? (
-                      <img src={cImg((user as any).avatar)} alt={userName} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-purple-700">
-                        {userName.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0 w-full">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-0.5">Artista</p>
-                    <p className="text-xs font-semibold text-gray-900 truncate">{userName}</p>
-                  </div>
-                </div>
+              {(() => {
+                const b = selectedBooking as any;
+                const clientName: string = b.clientName || b.clientEmail || 'Cliente';
+                const clientAvatar: string | undefined = b.clientAvatar;
+                const clientEmail: string | undefined = b.clientEmail;
+                const artistAvatar: string | undefined = (user as any)?.avatar;
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Artista (tú) */}
+                    <div className="flex flex-col items-center gap-2 bg-purple-50 rounded-xl px-3 py-3 text-center">
+                      <div className="relative h-12 w-12 rounded-full overflow-hidden bg-purple-200 shrink-0">
+                        {artistAvatar ? (
+                          <img src={cImg(artistAvatar)} alt={userName} className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-purple-700">
+                            {userName.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 w-full">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-0.5">Artista</p>
+                        <p className="text-xs font-semibold text-gray-900 truncate">{userName}</p>
+                      </div>
+                    </div>
 
-                {/* Cliente */}
-                <div className="flex flex-col items-center gap-2 bg-orange-50 rounded-xl px-3 py-3 text-center">
-                  <div className="relative h-12 w-12 rounded-full overflow-hidden bg-orange-200 shrink-0">
-                    {clientInfo?.avatar ? (
-                      <img src={cImg(clientInfo.avatar)} alt={clientInfo.nombre} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-orange-700">
-                        {clientInfo ? clientInfo.nombre.charAt(0).toUpperCase() : '?'}
-                      </span>
-                    )}
+                    {/* Cliente */}
+                    <div className="flex flex-col items-center gap-2 bg-orange-50 rounded-xl px-3 py-3 text-center">
+                      <div className="relative h-12 w-12 rounded-full overflow-hidden bg-orange-200 shrink-0">
+                        {clientAvatar ? (
+                          <img src={cImg(clientAvatar)} alt={clientName} className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-orange-700">
+                            {clientName.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 w-full">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-500 mb-0.5">Cliente</p>
+                        <p className="text-xs font-semibold text-gray-900 truncate">{clientName}</p>
+                        {clientEmail && clientEmail !== clientName && (
+                          <p className="text-[10px] text-gray-400 truncate">{clientEmail}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 w-full">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-500 mb-0.5">Cliente</p>
-                    {clientInfo ? (
-                      <p className="text-xs font-semibold text-gray-900 truncate">{clientInfo.nombre}</p>
-                    ) : (
-                      <span className="inline-block h-3 w-16 bg-orange-100 rounded animate-pulse" />
-                    )}
-                    {clientInfo?.email && (
-                      <p className="text-[10px] text-gray-400 truncate">{clientInfo.email}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Price */}
               <div className="flex items-center justify-between bg-orange-50 rounded-xl px-4 py-3">

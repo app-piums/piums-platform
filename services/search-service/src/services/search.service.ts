@@ -23,6 +23,7 @@ export class SearchService {
     const {
       q,
       query: queryParam,
+      category,
       city,
       state,
       country,
@@ -30,6 +31,7 @@ export class SearchService {
       minRating,
       minPrice,
       maxPrice,
+      minGuests,
       isVerified,
       isAvailable,
       sortBy,
@@ -40,12 +42,20 @@ export class SearchService {
     const skip = (page! - 1) * limit!;
     const query = q || queryParam;
 
+    // Merge explicit category into specialties filter (ArtistIndex stores the
+    // category value inside the specialties array, e.g. ['MUSICO', 'Guitarrista'])
+    const allSpecialties = [
+      ...(specialties ?? []),
+      ...(category ? [category] : []),
+    ];
+
     // Build where clause
     // By default (unless explicitly set to false) only verified artists are
     // shown in search results — an unverified profile is hidden.
     const verifiedFilter = isVerified === false ? undefined : true;
     const where: any = {
       isActive: true,
+      servicesCount: { gt: 0 },
       ...(city && { city: { contains: city, mode: 'insensitive' } }),
       ...(state && { state: { contains: state, mode: 'insensitive' } }),
       ...(country && {country}),
@@ -54,9 +64,10 @@ export class SearchService {
       ...(maxPrice && { hourlyRateMax: { lte: maxPrice } }),
       ...(verifiedFilter !== undefined && { isVerified: verifiedFilter }),
       ...(isAvailable !== undefined && { isAvailable }),
-      ...(specialties && specialties.length > 0 && {
+      // category is merged into allSpecialties above; minGuests has no ArtistIndex-level capacity field
+      ...(allSpecialties.length > 0 && {
         specialties: {
-          hasSome: specialties
+          hasSome: allSpecialties
         }
       })
     };

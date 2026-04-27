@@ -23,7 +23,9 @@ class UsersClient {
         signal: AbortSignal.timeout(4000),
       });
       if (!res.ok) return null;
-      return await res.json() as UserProfile;
+      const data = await res.json();
+      // users-service wraps the response as { user: {...} }
+      return (data.user ?? data) as UserProfile;
     } catch (error: any) {
       logger.warn('Error fetching user from users-service', 'USERS_CLIENT', {
         userId,

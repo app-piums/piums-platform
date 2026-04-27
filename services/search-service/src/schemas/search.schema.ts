@@ -4,6 +4,7 @@ import { z } from 'zod';
 export const searchArtistsSchema = z.object({
   q: z.string().optional(),
   query: z.string().optional(),
+  category: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional(),
@@ -11,6 +12,7 @@ export const searchArtistsSchema = z.object({
   minRating: z.coerce.number().min(0).max(5).optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
+  minGuests: z.coerce.number().min(1).optional(),
   isVerified: z.coerce.boolean().optional(),
   isAvailable: z.coerce.boolean().optional(),
   sortBy: z.enum(['relevance', 'rating', 'reviews', 'price_low', 'price_high', 'recent']).optional().default('relevance'),

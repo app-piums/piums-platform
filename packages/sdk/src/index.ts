@@ -301,6 +301,7 @@ export interface GetArtistsParams {
   limit?: number;
   category?: string;
   city?: string;
+  state?: string;
   q?: string;
   minGuests?: number;
 }
@@ -765,7 +766,9 @@ class PiumsSDK {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.category) queryParams.append('category', params.category);
       if (params?.city) queryParams.append('city', params.city);
+      if (params?.state) queryParams.append('state', params.state);
       if (params?.q) queryParams.append('query', params.q);
+      if (params?.minGuests != null) queryParams.append('minGuests', params.minGuests.toString());
 
       const response = await fetch(`${this.baseUrl}/search/artists?${queryParams.toString()}`);
 

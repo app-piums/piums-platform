@@ -123,7 +123,7 @@ export const getMyBookings = async (
     // Enrich bookings with client name/email from users-service in parallel
     const enrichedBookings = await Promise.all(
       bookingsData.bookings.map(async (booking) => {
-        const user = await usersClient.getUser(booking.clientId);
+        const user = await usersClient.getUser(booking.clientId, authToken);
         if (!user) return booking;
         const parts = [user.firstName, user.lastName].filter(Boolean);
         const clientName = parts.length > 0
