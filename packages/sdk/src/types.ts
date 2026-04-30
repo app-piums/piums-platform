@@ -60,6 +60,11 @@ export interface ArtistProfile extends Artist {
   certifications?: Certification[];
   services?: Service[];
   reviews?: Review[];
+  instagram?: string;
+  facebook?: string;
+  youtube?: string;
+  tiktok?: string;
+  website?: string;
 }
 
 export interface PortfolioItem {

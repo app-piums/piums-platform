@@ -119,6 +119,35 @@ export class CloudinaryProvider {
   }
 
   /**
+   * Subir imagen de portafolio a Cloudinary
+   * Usa piums/portfolio en vez de piums/avatars y sin crop de cara
+   */
+  async uploadPortfolio(buffer: Buffer, publicId: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'piums/portfolio',
+          public_id: publicId,
+          transformation: [
+            { width: 1200, height: 900, crop: 'limit' },
+            { quality: 'auto', fetch_format: 'auto' },
+          ],
+        },
+        (error, result) => {
+          if (error) {
+            logger.error('Error uploading portfolio image to Cloudinary', 'CLOUDINARY_PROVIDER', error);
+            reject(error);
+          } else {
+            logger.info('Portfolio image uploaded', 'CLOUDINARY_PROVIDER', { publicId, url: result?.secure_url });
+            resolve(result!.secure_url);
+          }
+        }
+      );
+      streamifier.createReadStream(buffer).pipe(uploadStream);
+    });
+  }
+
+  /**
    * Verificar conexión con Cloudinary
    */
   async checkConnection(): Promise<boolean> {

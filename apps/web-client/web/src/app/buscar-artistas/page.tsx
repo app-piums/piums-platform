@@ -39,6 +39,21 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   CATEGORY_OPTIONS.filter(o => o.value).map(o => [o.value, o.label])
 );
 
+const CITY_OPTIONS = [
+  { value: '', label: 'Todas las ciudades' },
+  { value: 'Ciudad de Guatemala', label: 'Ciudad de Guatemala' },
+  { value: 'Antigua Guatemala', label: 'Antigua Guatemala' },
+  { value: 'Quetzaltenango', label: 'Quetzaltenango (Xela)' },
+  { value: 'Mixco', label: 'Mixco' },
+  { value: 'Villa Nueva', label: 'Villa Nueva' },
+  { value: 'Escuintla', label: 'Escuintla' },
+  { value: 'Chimaltenango', label: 'Chimaltenango' },
+  { value: 'Cobán', label: 'Cobán' },
+  { value: 'Huehuetenango', label: 'Huehuetenango' },
+  { value: 'San Marcos', label: 'San Marcos' },
+  { value: 'Puerto Barrios', label: 'Puerto Barrios' },
+];
+
 // Synonym map: query terms → category enum values they should match
 const CATEGORY_SYNONYMS: Record<string, string[]> = {
   'musica':    ['MUSICO'],
@@ -137,6 +152,16 @@ const CITY_COORDS: Record<string, [number, number]> = {
   'puerto barrios':       [15.7291, -88.5910],
   'livingston':           [15.8280, -88.7462],
 };
+
+function getImpliedCategories(query: string): string[] {
+  const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const implied = new Set<string>();
+  for (const [term, cats] of Object.entries(CATEGORY_SYNONYMS)) {
+    const normTerm = term.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (q.includes(normTerm)) cats.forEach(c => implied.add(c));
+  }
+  return Array.from(implied);
+}
 
 function getCityCoords(cityName?: string | null): [number, number] | null {
   if (!cityName) return null;
@@ -277,6 +302,27 @@ function CalendarSelector({ selectedDate, onSelectDate }: CalendarSelectorProps)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Artist Result Card
+const CATEGORY_GRADIENTS_BS: Record<string, [string, string]> = {
+  MUSICO:     ['#FF6A00', '#F59E0B'],
+  DJ:         ['#FF6A00', '#C026D3'],
+  FOTOGRAFO:  ['#00AEEF', '#1D4ED8'],
+  VIDEOGRAFO: ['#4F46E5', '#C026D3'],
+  DISENADOR:  ['#00AEEF', '#10B981'],
+  BAILARIN:   ['#FF6A00', '#EF4444'],
+  ANIMADOR:   ['#F59E0B', '#FF6A00'],
+  TATUADOR:   ['#1E1B4B', '#7C3AED'],
+  MAQUILLADOR:['#EC4899', '#9D174D'],
+  PINTOR:     ['#0891B2', '#059669'],
+  ESCULTOR:   ['#475569', '#1E293B'],
+  ESCRITOR:   ['#4F46E5', '#00AEEF'],
+  MAGO:       ['#7C3AED', '#4F46E5'],
+  ACROBATA:   ['#FF6A00', '#F59E0B'],
+};
+function bsCoverGradient(category?: string): string {
+  const [a, b] = CATEGORY_GRADIENTS_BS[category ?? ''] ?? ['#FF6A00', '#00AEEF'];
+  return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 function ArtistResultCard({
   artist,
@@ -294,7 +340,17 @@ function ArtistResultCard({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
       {/* Cover */}
-      <div className="relative h-36 bg-gradient-to-br from-violet-400 via-purple-400 to-pink-400">
+      <div className="relative h-36 overflow-hidden" style={{ background: bsCoverGradient(artist.category) }}>
+        {!artist.coverPhoto && (
+          <>
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+              <span className="text-white font-black" style={{ fontSize: '6rem', lineHeight: 1, opacity: 0.12 }}>
+                {(artist.nombre?.[0] ?? '?').toUpperCase()}
+              </span>
+            </div>
+          </>
+        )}
         {artist.coverPhoto && (
           <img
             src={cImg(artist.coverPhoto)}
@@ -436,6 +492,33 @@ function ChevronRight({ className }: { className?: string }) {
   );
 }
 
+function StarRatingFilter({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hovered, setHovered] = React.useState(0);
+  const active = hovered > 0 ? hovered : value;
+  return (
+    <div className="flex items-center gap-1.5">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star === value ? 0 : star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          className="transition-transform hover:scale-125 focus:outline-none"
+          aria-label={`${star} estrella${star !== 1 ? 's' : ''}`}
+        >
+          <svg className="h-7 w-7 drop-shadow-sm" viewBox="0 0 20 20"
+            fill={star <= active ? '#00AEEF' : 'none'}
+            stroke={star <= active ? '#00AEEF' : '#D1D5DB'}
+            strokeWidth={1.2}>
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main content (wrapped to use useSearchParams inside Suspense)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -449,6 +532,7 @@ function BuscarArtistasContent() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingMe, setLocatingMe] = useState(false);
   const [artists, setArtists] = useState<ArtistWithMeta[]>([]);
+  const artistsRef = React.useRef<ArtistWithMeta[]>([]);
   const [loadingArtists, setLoadingArtists] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -456,6 +540,13 @@ function BuscarArtistasContent() {
   const [smartPriceMap, setSmartPriceMap] = useState<Record<string, { name: string; price: number; currency: string }>>({});
   const [smartArtists, setSmartArtists] = useState<ArtistWithMeta[]>([]);
   const [smartSearchLoading, setSmartSearchLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'relevance' | 'rating' | 'price_low' | 'price_high'>('relevance');
+  const [minRating, setMinRating] = useState(0);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [citySearchFilter, setCitySearchFilter] = useState('');
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -489,12 +580,9 @@ function BuscarArtistasContent() {
             available: (a as any).isAvailable ?? (a as any).available ?? true,
           } as ArtistWithMeta);
         }
-        // Enrich with calendar/distance data already loaded for the selected date
-        setArtists(prev => {
-          const byId = new Map(prev.map(p => [p.id, p]));
-          setSmartArtists(smartList.map(sa => byId.get(sa.id) ?? sa));
-          return prev;
-        });
+        // Enrich smart results with calendar/distance data already loaded for the selected date
+        const byId = new Map(artistsRef.current.map(p => [p.id, p]));
+        setSmartArtists(smartList.map(sa => byId.get(sa.id) ?? sa));
         setSmartPriceMap(map);
       } catch { /* ignore */ }
       finally { setSmartSearchLoading(false); }
@@ -572,6 +660,7 @@ function BuscarArtistasContent() {
         return 0;
       });
 
+      artistsRef.current = enriched;
       setArtists(enriched);
     } catch (err) {
       console.error('Error loading artists:', err);
@@ -609,6 +698,7 @@ function BuscarArtistasContent() {
         if (b.distance !== null) return 1;
         return 0;
       });
+      artistsRef.current = updated;
       return updated;
     });
   }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -630,32 +720,67 @@ function BuscarArtistasContent() {
   // ── Filtered artists ──────────────────────────────────────────────────────
   // When search is active, use smartSearch results (correct service matching).
   // Fall back to client-side filter only while smartSearch is still loading.
+  const activeFilterCount = [minRating > 0, minPrice !== '', maxPrice !== '', citySearchFilter !== '', showVerifiedOnly].filter(Boolean).length;
+
   const displayed = (() => {
     const useSmartResults = searchQuery.trim() && smartArtists.length > 0;
     const base = useSmartResults ? smartArtists : artists;
 
-    return base.filter(a => {
+    // Infer category from query synonyms \u2014 applied to smart results too, fixing cross-category bleed
+    const impliedCats = searchQuery.trim() && !categoryFilter ? getImpliedCategories(searchQuery) : [];
+
+    let filtered = base.filter(a => {
       if (showOnlyAvailable && !a.available) return false;
+
+      const cat = (a.category || a.categoria || '').toUpperCase();
       if (categoryFilter) {
-        const cat = (a.category || a.categoria || '').toUpperCase();
         if (cat !== categoryFilter.toUpperCase()) return false;
+      } else if (impliedCats.length > 0) {
+        if (!impliedCats.includes(cat)) return false;
       }
+
+      if (showVerifiedOnly) {
+        const verified = (a as any).verificationStatus === 'VERIFIED' || a.isVerified === true;
+        if (!verified) return false;
+      }
+      if (minRating > 0 && (a.rating ?? 0) < minRating) return false;
+
+      const artistPrice = (a as any).mainServicePrice ?? a.precioDesde ?? null;
+      if (minPrice && artistPrice !== null && artistPrice < parseFloat(minPrice)) return false;
+      if (maxPrice && artistPrice !== null && artistPrice > parseFloat(maxPrice)) return false;
+
+      if (citySearchFilter) {
+        const artistCity = ((a as any).city || a.ciudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const fCity = citySearchFilter.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (!artistCity.includes(fCity)) return false;
+      }
+
       // Client-side text filter only as fallback while smartSearch hasn't returned yet
       if (searchQuery.trim() && !useSmartResults) {
         const q = searchQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const name = a.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const bio = (a.bio || (a as any).descripcion || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const city = ((a as any).city || a.ciudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const catEnum = (a.category || a.categoria || '').toUpperCase();
-        const catLabel = (CATEGORY_LABEL[catEnum] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const catLabel = (CATEGORY_LABEL[cat] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const specialties = ((a as any).specialties as string[] || []).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const synonymMatched = Object.entries(CATEGORY_SYNONYMS).some(([term, cats]) =>
-          q.includes(term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) && cats.includes(catEnum)
+          q.includes(term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) && cats.includes(cat)
         );
         if (!name.includes(q) && !bio.includes(q) && !city.includes(q) && !catLabel.includes(q) && !specialties.includes(q) && !synonymMatched) return false;
       }
       return true;
     });
+
+    if (sortBy !== 'relevance') {
+      filtered = [...filtered].sort((a, b) => {
+        if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
+        const pa = (a as any).mainServicePrice ?? a.precioDesde ?? (sortBy === 'price_low' ? Infinity : 0);
+        const pb = (b as any).mainServicePrice ?? b.precioDesde ?? (sortBy === 'price_low' ? Infinity : 0);
+        return sortBy === 'price_low' ? pa - pb : pb - pa;
+      });
+    }
+
+    return filtered;
   })();
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -831,70 +956,185 @@ function BuscarArtistasContent() {
               {selectedDate && (
                 <>
                   {/* Results header + filters */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">
-                        {loadingArtists
-                          ? 'Buscando artistas…'
-                          : `${displayed.length} artista${displayed.length !== 1 ? 's' : ''} encontrado${displayed.length !== 1 ? 's' : ''}`}
-                      </p>
-                      {!location && !loadingArtists && (
-                        <p className="text-[10px] text-gray-400 mt-0">
-                          Agrega tu ubicación para ordenar por distancia
-                        </p>
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
+                    {/* Search bar — full width, prominent */}
+                    <div className="relative mb-3">
+                      <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Busca por nombre, estilo o especialidad…"
+                        className="w-full pl-12 pr-10 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition"
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+                          aria-label="Limpiar búsqueda"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       )}
                     </div>
 
-                    <div className="sm:ml-auto flex items-center gap-2 flex-wrap">
-                      {/* Search input */}
-                      <div className="relative">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={e => setSearchQuery(e.target.value)}
-                          placeholder="Nombre, ciudad, estilo…"
-                          className="pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] w-80"
-                        />
-                        {searchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
-                            aria-label="Limpiar búsqueda"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+                    {/* Controls row */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Count */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-700">
+                          {loadingArtists ? (
+                            <span className="text-gray-400">Buscando artistas…</span>
+                          ) : (
+                            <><span className="text-[#FF6A00]">{displayed.length}</span> {displayed.length !== 1 ? 'artistas encontrados' : 'artista encontrado'}</>
+                          )}
+                        </p>
+                        {!location && !loadingArtists && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">Agrega ubicación para ordenar por distancia</p>
                         )}
                       </div>
 
-                      {/* Category filter */}
+                      {/* Category */}
                       <select
                         value={categoryFilter}
                         onChange={e => setCategoryFilter(e.target.value)}
-                        className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30"
+                        className="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition"
                       >
                         {CATEGORY_OPTIONS.map(c => (
                           <option key={c.value} value={c.value}>{c.label}</option>
                         ))}
                       </select>
 
+                      {/* Sort */}
+                      <select
+                        value={sortBy}
+                        onChange={e => setSortBy(e.target.value as typeof sortBy)}
+                        className="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition"
+                      >
+                        <option value="relevance">Relevancia</option>
+                        <option value="rating">Mejor valorados</option>
+                        <option value="price_low">Precio: menor a mayor</option>
+                        <option value="price_high">Precio: mayor a menor</option>
+                      </select>
+
                       {/* Available toggle */}
                       <button
                         onClick={() => setShowOnlyAvailable(v => !v)}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium ${
+                        className={`text-xs px-3 py-2 rounded-lg border transition-colors font-medium flex items-center gap-1.5 ${
                           showOnlyAvailable
                             ? 'bg-green-50 border-green-200 text-green-700'
-                            : 'bg-white border-gray-200 text-gray-500'
+                            : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                         }`}
                       >
-                        {showOnlyAvailable ? '✓ Solo disponibles' : 'Todos'}
+                        <span className={`h-1.5 w-1.5 rounded-full ${showOnlyAvailable ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        {showOnlyAvailable ? 'Disponibles' : 'Todos'}
+                      </button>
+
+                      {/* Advanced filters */}
+                      <button
+                        onClick={() => setShowFilters(v => !v)}
+                        className={`relative text-xs px-3 py-2 rounded-lg border transition-colors font-medium flex items-center gap-1.5 ${
+                          showFilters || activeFilterCount > 0
+                            ? 'bg-[#FF6A00] border-[#FF6A00] text-white shadow-sm shadow-orange-200'
+                            : 'bg-white border-gray-200 text-gray-600 hover:border-[#FF6A00] hover:text-[#FF6A00]'
+                        }`}
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                        Filtros
+                        {activeFilterCount > 0 && (
+                          <span className="ml-0.5 h-4 w-4 rounded-full bg-white text-[#FF6A00] text-[10px] font-bold flex items-center justify-center">
+                            {activeFilterCount}
+                          </span>
+                        )}
                       </button>
                     </div>
+
+                    {/* Expanded filter panel */}
+                    {showFilters && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {/* City */}
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Ciudad</label>
+                            <select
+                              value={citySearchFilter}
+                              onChange={e => setCitySearchFilter(e.target.value)}
+                              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition"
+                            >
+                              {CITY_OPTIONS.map(c => (
+                                <option key={c.value} value={c.value}>{c.label}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Rating */}
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Calificación mínima</label>
+                            <StarRatingFilter value={minRating} onChange={setMinRating} />
+                          </div>
+
+                          {/* Price range */}
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Precio (USD)</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                value={minPrice}
+                                onChange={e => setMinPrice(e.target.value)}
+                                placeholder="Mín"
+                                min={0}
+                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition"
+                              />
+                              <span className="text-gray-300 font-medium shrink-0">—</span>
+                              <input
+                                type="number"
+                                value={maxPrice}
+                                onChange={e => setMaxPrice(e.target.value)}
+                                placeholder="Máx"
+                                min={0}
+                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Verified */}
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Verificación</label>
+                            <button
+                              onClick={() => setShowVerifiedOnly(v => !v)}
+                              className={`w-full text-sm py-2.5 rounded-xl border transition-all font-semibold flex items-center gap-2 justify-center ${
+                                showVerifiedOnly
+                                  ? 'bg-[#FF6A00] border-[#FF6A00] text-white shadow-sm shadow-orange-200'
+                                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-[#FF6A00] hover:text-[#FF6A00]'
+                              }`}
+                            >
+                              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Solo verificados
+                            </button>
+                          </div>
+                        </div>
+
+                        {activeFilterCount > 0 && (
+                          <div className="mt-3 flex justify-end">
+                            <button
+                              onClick={() => { setMinRating(0); setMinPrice(''); setMaxPrice(''); setCitySearchFilter(''); setShowVerifiedOnly(false); }}
+                              className="text-xs text-gray-400 hover:text-[#FF6A00] transition-colors font-medium"
+                            >
+                              Limpiar filtros avanzados
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Loading skeleton */}

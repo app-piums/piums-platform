@@ -7,6 +7,7 @@ import {
   uploadCoverPhoto,
   deleteCoverPhoto,
   checkSlugAvailability,
+  uploadPortfolioImage,
 } from "../controller/profile.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { updateLimiter } from "../middleware/rateLimiter";
@@ -34,5 +35,14 @@ router.post(
   uploadCoverPhoto
 );
 router.delete("/cover", authenticateToken, deleteCoverPhoto);
+
+// Portfolio image upload (returns Cloudinary URL, does not write to DB)
+router.post(
+  "/portfolio-upload",
+  authenticateToken,
+  upload.single("image"),
+  handleMulterError,
+  uploadPortfolioImage
+);
 
 export default router;

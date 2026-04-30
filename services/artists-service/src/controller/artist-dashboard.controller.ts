@@ -69,7 +69,8 @@ export const updateMyProfile = async (
     const ALLOWED_FIELDS = [
       'bio', 'displayName', 'nombre', 'phone', 'location', 'cityId',
       'category', 'socialLinks', 'imageUrl', 'basePrice', 'experienceYears',
-      'availability', 'languages', 'tags', 'portfolioItems', 'avatar',
+      'availability', 'languages', 'tags', 'portfolioItems', 'avatar', 'coverPhoto',
+      'instagram', 'facebook', 'youtube', 'tiktok', 'website',
     ];
     const safeBody = Object.fromEntries(
       Object.entries(req.body).filter(([k]) => ALLOWED_FIELDS.includes(k))

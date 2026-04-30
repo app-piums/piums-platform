@@ -155,6 +155,30 @@ export const uploadCoverPhoto = async (
 };
 
 /**
+ * POST /api/users/me/profile/portfolio-upload - Subir imagen de portafolio a Cloudinary
+ */
+export const uploadPortfolioImage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, "No autenticado");
+    if (!req.file) throw new AppError(400, "No se proporcionó ningún archivo");
+
+    const user = await usersService.getUserByAuthId(authId);
+    const timestamp = Date.now();
+    const url = await cloudinaryProvider.uploadPortfolio(req.file.buffer, `portfolio_${user.id}_${timestamp}`);
+
+    logger.info("Portfolio image uploaded", "PROFILE_CONTROLLER", { userId: user.id, url });
+    res.json({ url });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * DELETE /api/users/me/profile/cover - Eliminar foto de portada
  */
 export const deleteCoverPhoto = async (

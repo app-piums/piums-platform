@@ -75,39 +75,22 @@ const fetchArtistsPage = async (
     const { sdk } = await import('@piums/sdk');
     const resolved = resolveFilters(filters);
 
-    // When a free-text query is present (and no explicit category override),
-    // use the smart semantic search endpoint for synonym expansion + scoring.
-    if (resolved.q && !resolved.category) {
-      const params: SmartSearchParams = {
-        q: resolved.q,
-        page,
-        limit: ITEMS_PER_PAGE,
-        ...(resolved.cityId && { city: resolved.cityId }),
-        ...(filters.guests != null && { minGuests: filters.guests }),
-      };
-      const result = await sdk.smartSearch(params);
-      return {
-        artists: result.artists,
-        total: result.pagination.total,
-        page: result.pagination.page,
-        totalPages: result.pagination.totalPages,
-        hasNextPage: result.pagination.page < result.pagination.totalPages,
-      };
-    }
+    // Use artists-service (/artists/search) — always has all artists indexed.
+    // The search-service index (/search/artists) may lag behind so we avoid it here.
+    const result = await sdk.searchArtists({
+      query: resolved.q,
+      categoria: resolved.category,
+      ciudad: resolved.cityId,
+      page,
+      limit: ITEMS_PER_PAGE,
+    });
 
-    const params: ArtistsQueryParams = { page, limit: ITEMS_PER_PAGE };
-    if (resolved.category) params.category = resolved.category;
-    // cityId holds a department/state value — send as state for correct matching
-    if (resolved.cityId) params.state = resolved.cityId;
-    if (resolved.q) params.q = resolved.q;
-    if (filters.guests != null) params.minGuests = filters.guests;
-    const result = await sdk.getArtists(params);
     return {
       artists: result.artists,
       total: result.total || result.artists.length,
       page: result.page || page,
-      totalPages: result.totalPages,
-      hasNextPage: page < result.totalPages,
+      totalPages: result.totalPages ?? Math.ceil((result.total || result.artists.length) / ITEMS_PER_PAGE),
+      hasNextPage: page < (result.totalPages ?? 1),
     };
   } catch {
     return getMockPage(page, filters);

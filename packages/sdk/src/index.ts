@@ -79,6 +79,11 @@ export interface ArtistProfile extends Artist {
   depositPercentage?: number;
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
+  instagram?: string;
+  facebook?: string;
+  youtube?: string;
+  tiktok?: string;
+  website?: string;
 }
 
 export interface ServiceAddon {
@@ -380,6 +385,12 @@ export interface CreateAbsencePayload {
   type: 'VACATION' | 'WORKING_ABROAD';
   destinationCountry?: string; // Required when type = WORKING_ABROAD
   reason?: string;
+}
+
+export interface WeeklyAvailabilityRule {
+  dayOfWeek: 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES' | 'SABADO' | 'DOMINGO';
+  startTime: string; // HH:MM
+  endTime: string;   // HH:MM
 }
 
 // ==================== PAYMENT TYPES ====================
@@ -1258,6 +1269,42 @@ class PiumsSDK {
       const err = await response.json().catch(() => ({}));
       throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
     }
+  }
+
+  /**
+   * Obtiene la disponibilidad semanal recurrente del artista autenticado
+   */
+  async getMyWeeklyAvailability(): Promise<{ availability: WeeklyAvailabilityRule[] }> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/availability`,
+      this.withAuth({ credentials: 'include' })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Guarda la disponibilidad semanal recurrente del artista autenticado.
+   * Reemplaza completamente los horarios existentes.
+   */
+  async setMyWeeklyAvailability(availability: WeeklyAvailabilityRule[]): Promise<{ availability: WeeklyAvailabilityRule[] }> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/availability`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ availability }),
+      })
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
   }
 
   /**

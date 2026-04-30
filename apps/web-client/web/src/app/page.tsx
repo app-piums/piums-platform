@@ -118,7 +118,7 @@ export default function Home() {
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
               </svg>
-              Economía Naranja — Guatemala | Deploy 14-abr-2026 ✓
+              Economía Naranja — Guatemala
             </span>
 
             <h1 className="text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">

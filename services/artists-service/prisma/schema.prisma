@@ -57,6 +57,7 @@ model Artist {
   nombre    String
   artistName String? // Nombre artístico
   avatar    String?
+  coverPhoto String?
   bio       String?
   
   // Categoría y especialidades

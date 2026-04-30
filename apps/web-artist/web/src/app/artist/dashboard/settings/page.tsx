@@ -123,6 +123,18 @@ export default function ArtistSettingsPage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+  const [localCoverPhoto, setLocalCoverPhoto] = useState<string | null>(null);
+  const [socialData, setSocialData] = useState({
+    instagram: '',
+    facebook: '',
+    youtube: '',
+    tiktok: '',
+    website: '',
+  });
+  const [isSavingSocial, setIsSavingSocial] = useState(false);
+  const [portfolioItems, setPortfolioItems] = useState<any[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [portfolioUploading, setPortfolioUploading] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -154,7 +166,17 @@ export default function ArtistSettingsPage() {
       setIsLoading(true);
       setError(null);
 
-      const artistProfile = await sdk.getArtistProfile();
+      const [artistProfile] = await Promise.all([
+        sdk.getArtistProfile(),
+        // Fetch cover photo from users-service (not stored in artists-service)
+        fetch('/api/users/me', { credentials: 'include' })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            const cover = data?.profile?.coverPhoto;
+            if (cover) setLocalCoverPhoto(cover);
+          })
+          .catch(() => {}),
+      ]);
       setArtist(artistProfile);
 
       setFormData({
@@ -168,6 +190,13 @@ export default function ArtistSettingsPage() {
         baseLocationLng: artistProfile.baseLocationLng ?? null,
         category: artistProfile.category || '',
         secondaryCategory: artistProfile.specialties?.[0] || '',
+      });
+      setSocialData({
+        instagram: artistProfile.instagram || '',
+        facebook: artistProfile.facebook || '',
+        youtube: artistProfile.youtube || '',
+        tiktok: artistProfile.tiktok || '',
+        website: artistProfile.website || '',
       });
       setCoverageData({
         coverageRadius: artistProfile.coverageRadius ?? 10,
@@ -232,6 +261,18 @@ export default function ArtistSettingsPage() {
       toast.error(getErrorMessage(err) || 'Error al guardar');
     } finally {
       setIsSavingCoverage(false);
+    }
+  };
+
+  const handleSaveSocial = async () => {
+    try {
+      setIsSavingSocial(true);
+      await sdk.updateArtistProfile(socialData);
+      toast.success('Redes sociales actualizadas');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || 'Error al guardar');
+    } finally {
+      setIsSavingSocial(false);
     }
   };
 
@@ -401,6 +442,12 @@ export default function ArtistSettingsPage() {
       fd.append('avatar', file);
       const res = await fetch('/api/users/avatar', { method: 'POST', body: fd, credentials: 'include' });
       if (!res.ok) throw new Error();
+      const data = await res.json();
+      const avatarUrl: string | undefined = data?.avatar;
+      // Persist directly to artists-service — don't rely on fire-and-forget background sync
+      if (avatarUrl) {
+        await sdk.updateArtistProfile({ avatar: avatarUrl });
+      }
       toast.success('Foto actualizada');
       await loadProfile();
     } catch {
@@ -413,6 +460,7 @@ export default function ArtistSettingsPage() {
     setAvatarUploading(true);
     try {
       await fetch('/api/users/avatar', { method: 'DELETE', credentials: 'include' });
+      await sdk.updateArtistProfile({ avatar: '' });
       setLocalAvatar(null);
       toast.success('Foto eliminada');
       await loadProfile();
@@ -430,6 +478,12 @@ export default function ArtistSettingsPage() {
       fd.append('cover', file);
       const res = await fetch('/api/users/cover', { method: 'POST', body: fd, credentials: 'include' });
       if (!res.ok) throw new Error();
+      const data = await res.json();
+      const coverUrl: string | undefined = data?.coverPhoto;
+      if (coverUrl) {
+        setLocalCoverPhoto(coverUrl);
+        await sdk.updateArtistProfile({ coverPhoto: coverUrl });
+      }
       toast.success('Portada actualizada');
       await loadProfile();
     } catch {
@@ -437,11 +491,64 @@ export default function ArtistSettingsPage() {
     } finally { setCoverUploading(false); }
   };
 
+  const loadPortfolio = useCallback(async () => {
+    setPortfolioLoading(true);
+    try {
+      const res = await fetch('/api/portafolio/items', { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setPortfolioItems(data.portfolio ?? data.items ?? []);
+    } catch { /* ignore */ }
+    finally { setPortfolioLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (currentTab === 'portfolio') void loadPortfolio();
+  }, [currentTab, loadPortfolio]);
+
+  const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setPortfolioUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append('image', file);
+        const uploadRes = await fetch('/api/portafolio/upload', { method: 'POST', body: fd, credentials: 'include' });
+        if (!uploadRes.ok) throw new Error('Error al subir imagen');
+        const { url } = await uploadRes.json();
+        const addRes = await fetch('/api/portafolio/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ url, title: file.name.replace(/\.[^/.]+$/, ''), type: 'image' }),
+        });
+        if (!addRes.ok) throw new Error('Error al guardar en portafolio');
+      }
+      toast.success('Foto(s) añadida(s) al portafolio');
+      await loadPortfolio();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al subir');
+    } finally { setPortfolioUploading(false); }
+  };
+
+  const handlePortfolioDelete = async (itemId: string) => {
+    try {
+      const res = await fetch(`/api/portafolio/items/${itemId}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error();
+      setPortfolioItems(prev => prev.filter((i: any) => i.id !== itemId));
+      toast.success('Foto eliminada');
+    } catch {
+      toast.error('Error al eliminar');
+    }
+  };
+
   const tabs = [
     { id: 'personal',      label: 'Datos Personales',    icon: <ArtistUserIcon className="h-4 w-4" /> },
     { id: 'verificar',     label: 'Verificar identidad', icon: <ArtistShieldIcon className="h-4 w-4" />, badge: needsVerification },
     { id: 'coverage',      label: 'Cobertura',           icon: <ArtistMapPinIcon className="h-4 w-4" /> },
     { id: 'profile',       label: 'Perfil Público',      icon: <ArtistPencilIcon className="h-4 w-4" /> },
+    { id: 'portfolio',     label: 'Portafolio',          icon: <ArtistPhotoIcon className="h-4 w-4" /> },
     { id: 'notifications', label: 'Notificaciones',      icon: <ArtistBellIcon className="h-4 w-4" /> },
     { id: 'payments',      label: 'Pagos',               icon: <ArtistCardIcon className="h-4 w-4" /> },
     { id: 'legal',         label: 'Legal',               icon: <ArtistScaleIcon className="h-4 w-4" /> },
@@ -1147,10 +1254,10 @@ export default function ArtistSettingsPage() {
                 <div className="border border-gray-200 rounded-xl p-6 space-y-4">
                   <h3 className="font-semibold text-gray-900">Foto de portada</h3>
                   <label className={`block cursor-pointer ${coverUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                    {artist?.coverPhoto ? (
+                    {(localCoverPhoto || artist?.coverPhoto) ? (
                       <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
                         <img
-                          src={cImg(artist.coverPhoto)}
+                          src={cImg(localCoverPhoto || artist!.coverPhoto!)}
                           alt="Foto de portada"
                           className="absolute inset-0 w-full h-full object-cover"
                         />
@@ -1165,6 +1272,43 @@ export default function ArtistSettingsPage() {
                     )}
                     <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={coverUploading} />
                   </label>
+                </div>
+
+                {/* Social links */}
+                <div className="border border-gray-200 rounded-xl p-6 space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Redes sociales</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Aparecerán en tu perfil público para que los clientes puedan seguirte.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {([
+                      { key: 'instagram' as const, label: 'Instagram', placeholder: '@tuusuario o https://instagram.com/...' },
+                      { key: 'facebook' as const, label: 'Facebook', placeholder: 'https://facebook.com/...' },
+                      { key: 'youtube' as const, label: 'YouTube', placeholder: 'https://youtube.com/...' },
+                      { key: 'tiktok' as const, label: 'TikTok', placeholder: '@tuusuario o https://tiktok.com/...' },
+                      { key: 'website' as const, label: 'Sitio web', placeholder: 'https://tuweb.com' },
+                    ] as const).map(({ key, label, placeholder }) => (
+                      <div key={key}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                        <input
+                          type="text"
+                          value={socialData[key]}
+                          onChange={(e) => setSocialData((prev) => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={placeholder}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={handleSaveSocial}
+                      disabled={isSavingSocial}
+                      className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#e05e00] transition-colors text-sm font-semibold disabled:opacity-60"
+                    >
+                      {isSavingSocial ? 'Guardando...' : 'Guardar redes sociales'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Category & specialties */}
@@ -1225,6 +1369,87 @@ export default function ArtistSettingsPage() {
                     {isSaving ? 'Guardando...' : 'Guardar cambios'}
                   </button>
                 </div>
+              </div>
+            )}
+
+            {currentTab === 'portfolio' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Portafolio</h2>
+                  <p className="text-sm text-gray-500">Sube fotos de tu trabajo para que los clientes puedan ver tu estilo.</p>
+                </div>
+
+                {/* Upload button */}
+                <label className={`flex items-center justify-center gap-3 w-full py-4 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${portfolioUploading ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-[#FF6A00]/40 hover:border-[#FF6A00] hover:bg-orange-50'}`}>
+                  {portfolioUploading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-[#FF6A00]" />
+                  ) : (
+                    <svg className="h-5 w-5 text-[#FF6A00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  )}
+                  <span className="text-sm font-semibold text-[#FF6A00]">
+                    {portfolioUploading ? 'Subiendo...' : 'Añadir fotos'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePortfolioUpload}
+                    disabled={portfolioUploading}
+                  />
+                </label>
+
+                {/* Grid */}
+                {portfolioLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="aspect-square rounded-xl bg-gray-100 animate-pulse" />
+                    ))}
+                  </div>
+                ) : portfolioItems.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="h-16 w-16 rounded-full bg-orange-50 flex items-center justify-center mb-4">
+                      <ArtistPhotoIcon className="h-8 w-8 text-[#FF6A00]" />
+                    </div>
+                    <p className="text-gray-700 font-medium mb-1">Sin fotos aún</p>
+                    <p className="text-sm text-gray-400">Sube fotos de tu trabajo para destacar tu talento</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {portfolioItems.map((item: any) => (
+                      <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
+                        <img
+                          src={item.url ?? item.imageUrl}
+                          alt={item.title ?? 'Portfolio'}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => handlePortfolioDelete(item.id)}
+                            className="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
+                            aria-label="Eliminar foto"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                        {item.title && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
+                            <p className="text-white text-xs font-medium truncate">{item.title}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-400">
+                  {portfolioItems.length} foto{portfolioItems.length !== 1 ? 's' : ''} en tu portafolio
+                </p>
               </div>
             )}
 
@@ -1483,4 +1708,7 @@ function ArtistCardIcon({ className }: { className?: string }) {
 }
 function ArtistScaleIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>;
+}
+function ArtistPhotoIcon({ className }: { className?: string }) {
+  return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 }

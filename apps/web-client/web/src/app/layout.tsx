@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   description: "Conecta con artistas profesionales para tus eventos. Reserva músicos, DJs, fotógrafos y más.",
   keywords: "artistas, eventos, reservas, música, entretenimiento",
   manifest: "/manifest.json",
+  other: {
+    'tiktok-developers-site-verification': 'N0gsVgRuu2gFzosWOzjbgTcl7vtYOPGP',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -47,6 +50,8 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        {/* TikTok domain verification */}
+        <meta name="tiktok-developers-site-verification" content="N0gsVgRuu2gFzosWOzjbgTcl7vtYOPGP" />
         <meta name="theme-color" content="#FF6A00" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -69,6 +74,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <span style={{ display: 'none' }}>tiktok-developers-site-verification=N0gsVgRuu2gFzosWOzjbgTcl7vtYOPGP</span>
         <ThemeProvider>
           <I18nProvider>
             <QueryProvider>
