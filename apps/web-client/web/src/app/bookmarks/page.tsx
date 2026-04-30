@@ -22,6 +22,27 @@ export default function BookmarksPage() {
 
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
 
+  const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
+    MUSICO:      ['#FF6A00', '#F59E0B'],
+    DJ:          ['#FF6A00', '#C026D3'],
+    FOTOGRAFO:   ['#00AEEF', '#1D4ED8'],
+    VIDEOGRAFO:  ['#4F46E5', '#C026D3'],
+    DISENADOR:   ['#00AEEF', '#10B981'],
+    BAILARIN:    ['#FF6A00', '#EF4444'],
+    ANIMADOR:    ['#F59E0B', '#FF6A00'],
+    TATUADOR:    ['#1E1B4B', '#7C3AED'],
+    MAQUILLADOR: ['#EC4899', '#9D174D'],
+    PINTOR:      ['#0891B2', '#059669'],
+    ESCULTOR:    ['#475569', '#1E293B'],
+    ESCRITOR:    ['#4F46E5', '#00AEEF'],
+    MAGO:        ['#7C3AED', '#4F46E5'],
+    ACROBATA:    ['#FF6A00', '#F59E0B'],
+  };
+  const getCoverGradient = (category?: string | null) => {
+    const [a, b] = CATEGORY_GRADIENTS[category ?? ''] ?? ['#FF6A00', '#00AEEF'];
+    return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
+  };
+
   const formatCurrency = (amount?: number | null) => {
     if (!amount) return null;
     return new Intl.NumberFormat('en-US', {
@@ -76,17 +97,22 @@ export default function BookmarksPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {favorites.map((artist) => (
                 <div key={artist.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                  <div className="relative h-40 bg-gradient-to-br from-gray-200 to-gray-300">
+                  <div className="relative h-48 overflow-hidden" style={{ background: getCoverGradient(artist.category) }}>
                     {artist.coverPhoto ? (
                       <img
                         src={cImg(artist.coverPhoto)}
                         alt={artist.nombre}
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-4xl font-bold text-gray-300">
-                        {artist.nombre.charAt(0)}
-                      </div>
+                      <>
+                        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                          <span className="text-white font-black" style={{ fontSize: '7rem', lineHeight: 1, opacity: 0.12 }}>
+                            {(artist.nombre?.[0] ?? '?').toUpperCase()}
+                          </span>
+                        </div>
+                      </>
                     )}
                     <button
                       type="button"

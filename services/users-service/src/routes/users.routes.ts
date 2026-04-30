@@ -18,7 +18,7 @@ import {
 } from "../controller/notificationSettings.controller";
 import { authenticateToken, authorizeOwner } from "../middleware/auth.middleware";
 import { updateLimiter, deleteLimiter } from "../middleware/rateLimiter";
-import { upload, handleMulterError } from "../middleware/upload.middleware";
+import { upload, handleMulterError, verifyMagicBytes } from "../middleware/upload.middleware";
 
 const router = Router();
 
@@ -56,7 +56,7 @@ router.put("/:id", authenticateToken, authorizeOwner, updateLimiter as any, upda
 router.delete("/:id", authenticateToken, authorizeOwner, deleteLimiter as any, deleteUserAccount);
 
 // Avatar
-router.post("/me/avatar", authenticateToken, upload.single('avatar'), handleMulterError, uploadAvatar);
+router.post("/me/avatar", authenticateToken, upload.single('avatar'), handleMulterError, verifyMagicBytes, uploadAvatar);
 router.delete("/me/avatar", authenticateToken, deleteAvatar);
 
 // Notification Settings

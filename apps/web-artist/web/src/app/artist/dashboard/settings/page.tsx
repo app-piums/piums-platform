@@ -1671,16 +1671,6 @@ export default function ArtistSettingsPage() {
             </div>
           </div>
 
-          {/* Artist ID Info (for developers) */}
-          {artist && (
-            <div className="mt-6 bg-gray-100 rounded-lg p-4 text-xs text-gray-600 font-mono">
-              <p>Artist ID: {artist.id}</p>
-              <p>User ID: {artist.userId || 'N/A'}</p>
-              <p>Slug: {artist.slug || 'N/A'}</p>
-              <p>Verified: {artist.isVerified ? '✓' : '✗'}</p>
-              <p>Active: {artist.isActive ? '✓' : '✗'}</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

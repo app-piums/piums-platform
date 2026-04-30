@@ -24,7 +24,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-only-secret-not-for-production') as any;
     let userId = decoded.id || decoded.userId;
 
     if (decoded.role === 'artista' || decoded.role === 'artist') {
@@ -50,7 +50,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 // Verificar token de WebSocket
 export const verifySocketToken = async (token: string): Promise<{ id: string; email: string; role?: string } | null> => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-only-secret-not-for-production') as any;
     let userId = decoded.id || decoded.userId;
 
     if (decoded.role === 'artista' || decoded.role === 'artist') {

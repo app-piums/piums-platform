@@ -48,6 +48,5 @@ export const errorHandler = (
   console.error('Unexpected error:', err);
   return res.status(500).json({
     error: 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { details: err.message }),
   });
 };

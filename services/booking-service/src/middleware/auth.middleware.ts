@@ -3,7 +3,11 @@ import jwt from "jsonwebtoken";
 import { AppError } from "./errorHandler";
 import { logger } from "../utils/logger";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default-secret-change-me";
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: JWT_SECRET no definido en producción');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-not-for-production';
 const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || "";
 
 export interface AuthRequest extends Request {

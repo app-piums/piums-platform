@@ -20,7 +20,7 @@ export const loginLimiter = rateLimit({
 // Rate limiter para registro: Límite estricto (relajado en development para seed/testing)
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
-  max: process.env.NODE_ENV === "development" ? 200 : 3,
+  max: process.env.NODE_ENV === "development" ? 50 : 3,
   message: {
     status: "error",
     message: "Demasiados intentos de registro. Por favor intenta nuevamente en 1 hora.",
@@ -32,7 +32,7 @@ export const registerLimiter = rateLimit({
 // Rate limiter general para la API
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === "development" ? 10000 : 100,
+  max: process.env.NODE_ENV === "development" ? 500 : 100,
   message: {
     status: "error",
     message: "Demasiadas solicitudes desde esta IP. Por favor intenta nuevamente más tarde.",

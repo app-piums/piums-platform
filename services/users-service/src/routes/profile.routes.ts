@@ -11,7 +11,7 @@ import {
 } from "../controller/profile.controller";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { updateLimiter } from "../middleware/rateLimiter";
-import { upload, handleMulterError } from "../middleware/upload.middleware";
+import { upload, handleMulterError, verifyMagicBytes } from "../middleware/upload.middleware";
 
 const router = Router();
 
@@ -32,6 +32,7 @@ router.post(
   authenticateToken,
   upload.single("cover"),
   handleMulterError,
+  verifyMagicBytes,
   uploadCoverPhoto
 );
 router.delete("/cover", authenticateToken, deleteCoverPhoto);
@@ -42,6 +43,7 @@ router.post(
   authenticateToken,
   upload.single("image"),
   handleMulterError,
+  verifyMagicBytes,
   uploadPortfolioImage
 );
 

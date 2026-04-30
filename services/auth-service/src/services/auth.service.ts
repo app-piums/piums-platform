@@ -18,7 +18,7 @@ const JWT_SECRET_FINAL = JWT_SECRET || "dev_secret_CHANGE_ME";
 const REFRESH_SECRET_FINAL = REFRESH_SECRET || "refresh_dev_secret_CHANGE_ME";
 
 export const hashPassword = (password: string) =>
-  bcrypt.hash(password, 10);
+  bcrypt.hash(password, 12);
 
 export const comparePassword = (password: string, hash: string) =>
   bcrypt.compare(password, hash);

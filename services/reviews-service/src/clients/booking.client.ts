@@ -5,7 +5,7 @@
 import jwt from "jsonwebtoken";
 
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4005';
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-not-for-production';
 
 const generateServiceToken = (userId: string): string => {
   return jwt.sign({ userId, email: 'service@internal', isService: true }, JWT_SECRET, { expiresIn: '5m' });

@@ -15,11 +15,17 @@ const router: Router = Router();
 
 /**
  * POST /api/notifications/send-template-email
- * Send email from template (internal use, no auth required)
- * Used by other microservices like auth-service
+ * Send email from template (internal use only — requires x-internal-secret header)
  */
 router.post(
   '/send-template-email',
+  (req, res, next) => {
+    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!secret || req.headers['x-internal-secret'] !== secret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  },
   notificationController.sendTemplateEmail.bind(notificationController)
 );
 
