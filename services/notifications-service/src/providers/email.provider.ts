@@ -1,5 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 import { logger } from '../utils/logger';
 
 interface EmailOptions {
@@ -16,53 +17,61 @@ interface EmailOptions {
   }>;
 }
 
-type EmailProviderType = 'sendgrid' | 'nodemailer' | 'disabled';
+type EmailProviderType = 'resend' | 'sendgrid' | 'nodemailer' | 'disabled';
 
 class EmailProvider {
   private transporter: Transporter | null = null;
+  private resendClient: Resend | null = null;
   private enabled: boolean;
   private providerType: EmailProviderType;
   private fromEmail: string;
+  private fromName: string;
 
   constructor() {
     this.enabled = process.env.ENABLE_EMAIL === 'true';
-    this.providerType = this.enabled ? (process.env.EMAIL_PROVIDER as EmailProviderType || 'nodemailer') : 'disabled';
-    this.fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@piums.com';
-    
+    this.fromEmail = process.env.EMAIL_FROM || 'noreply@piums.io';
+    this.fromName = process.env.EMAIL_FROM_NAME || 'Piums';
+
     if (this.enabled) {
+      // Auto-detect provider: Resend takes priority if key is present
+      if (process.env.RESEND_API_KEY) {
+        this.providerType = 'resend';
+      } else {
+        this.providerType = (process.env.EMAIL_PROVIDER as EmailProviderType) || 'nodemailer';
+      }
       this.initialize();
     } else {
-      logger.info('Email provider disabled');
+      this.providerType = 'disabled';
+      logger.info('Email provider disabled (ENABLE_EMAIL != true)', 'EMAIL_PROVIDER');
     }
   }
 
   private initialize() {
-    if (this.providerType === 'sendgrid') {
-      this.initializeSendGrid();
-    } else if (this.providerType === 'nodemailer') {
-      this.initializeNodemailer();
-    } else {
-      logger.warn('Unknown email provider type, email disabled');
-      this.enabled = false;
+    switch (this.providerType) {
+      case 'resend':    return this.initializeResend();
+      case 'sendgrid':  return this.initializeSendGrid();
+      case 'nodemailer': return this.initializeNodemailer();
+      default:
+        logger.warn('Unknown email provider, disabling', 'EMAIL_PROVIDER');
+        this.enabled = false;
     }
+  }
+
+  private initializeResend() {
+    const apiKey = process.env.RESEND_API_KEY!;
+    this.resendClient = new Resend(apiKey);
+    logger.info('Resend email provider initialized', 'EMAIL_PROVIDER');
   }
 
   private initializeSendGrid() {
     const apiKey = process.env.SENDGRID_API_KEY;
-
     if (!apiKey) {
-      logger.warn('SendGrid API key missing, email provider disabled');
+      logger.warn('SendGrid API key missing, email disabled', 'EMAIL_PROVIDER');
       this.enabled = false;
       return;
     }
-
-    try {
-      sgMail.setApiKey(apiKey);
-      logger.info('SendGrid email provider initialized successfully', 'EMAIL_PROVIDER');
-    } catch (error) {
-      logger.error('Failed to initialize SendGrid', 'EMAIL_PROVIDER', error);
-      this.enabled = false;
-    }
+    sgMail.setApiKey(apiKey);
+    logger.info('SendGrid email provider initialized', 'EMAIL_PROVIDER');
   }
 
   private initializeNodemailer() {
@@ -73,51 +82,63 @@ class EmailProvider {
     const password = process.env.EMAIL_PASSWORD;
 
     if (!host || !user || !password) {
-      logger.warn('Email configuration incomplete, email provider disabled');
+      logger.warn('Nodemailer config incomplete, email disabled', 'EMAIL_PROVIDER');
       this.enabled = false;
       return;
     }
 
-    try {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure,
-        auth: {
-          user,
-          pass: password,
-        },
-      });
-
-      logger.info('Nodemailer email provider initialized successfully', 'EMAIL_PROVIDER', {
-        host,
-        port,
-        secure,
-      });
-    } catch (error) {
-      logger.error('Failed to initialize nodemailer', 'EMAIL_PROVIDER', error);
-      this.enabled = false;
-    }
+    this.transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass: password } });
+    logger.info('Nodemailer email provider initialized', 'EMAIL_PROVIDER', { host, port });
   }
 
   async sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (!this.enabled) {
-      return {
-        success: false,
-        error: 'Email provider not enabled or configured',
+      logger.info('Email skipped (provider disabled)', 'EMAIL_PROVIDER', { to: options.to, subject: options.subject });
+      return { success: false, error: 'Email provider not enabled or configured' };
+    }
+
+    switch (this.providerType) {
+      case 'resend':     return this.sendWithResend(options);
+      case 'sendgrid':   return this.sendWithSendGrid(options);
+      case 'nodemailer': return this.sendWithNodemailer(options);
+      default:           return { success: false, error: 'No valid email provider configured' };
+    }
+  }
+
+  private fromAddress(override?: string): string {
+    const email = override || this.fromEmail;
+    return `${this.fromName} <${email}>`;
+  }
+
+  private async sendWithResend(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const payload: any = {
+        from: this.fromAddress(options.from),
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
       };
-    }
+      if (options.replyTo) payload.replyTo = options.replyTo;
+      if (options.attachments) {
+        payload.attachments = options.attachments.map(a => ({
+          filename: a.filename,
+          content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content),
+        }));
+      }
+      const { data, error } = await this.resendClient!.emails.send(payload);
 
-    if (this.providerType === 'sendgrid') {
-      return this.sendWithSendGrid(options);
-    } else if (this.providerType === 'nodemailer') {
-      return this.sendWithNodemailer(options);
-    }
+      if (error) {
+        logger.error('Resend error', 'EMAIL_PROVIDER', { to: options.to, error });
+        return { success: false, error: error.message };
+      }
 
-    return {
-      success: false,
-      error: 'No valid email provider configured',
-    };
+      logger.info('Email sent via Resend', 'EMAIL_PROVIDER', { to: options.to, subject: options.subject, id: data?.id });
+      return { success: true, messageId: data?.id };
+    } catch (err: any) {
+      logger.error('Resend exception', 'EMAIL_PROVIDER', { to: options.to, error: err.message });
+      return { success: false, error: err.message };
+    }
   }
 
   private async sendWithSendGrid(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
@@ -129,125 +150,55 @@ class EmailProvider {
         text: options.text,
         html: options.html,
       };
-
-      if (options.replyTo) {
-        msg.replyTo = options.replyTo;
-      }
-
+      if (options.replyTo) msg.replyTo = options.replyTo;
       if (options.attachments) {
-        msg.attachments = options.attachments.map((att) => ({
+        msg.attachments = options.attachments.map(att => ({
           filename: att.filename,
           content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
           type: att.contentType,
           disposition: 'attachment',
         }));
       }
-
       const [response] = await sgMail.send(msg);
-
-      logger.info('Email sent successfully via SendGrid', 'EMAIL_PROVIDER', {
-        to: options.to,
-        subject: options.subject,
-        statusCode: response.statusCode,
-      });
-
-      return {
-        success: true,
-        messageId: response.headers['x-message-id'] as string,
-      };
-    } catch (error: any) {
-      logger.error('Failed to send email via SendGrid', 'EMAIL_PROVIDER', {
-        to: options.to,
-        error: error.message,
-        response: error.response?.body,
-      });
-
-      return {
-        success: false,
-        error: error.message,
-      };
+      logger.info('Email sent via SendGrid', 'EMAIL_PROVIDER', { to: options.to, statusCode: response.statusCode });
+      return { success: true, messageId: response.headers['x-message-id'] as string };
+    } catch (err: any) {
+      logger.error('SendGrid error', 'EMAIL_PROVIDER', { to: options.to, error: err.message });
+      return { success: false, error: err.message };
     }
   }
 
   private async sendWithNodemailer(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    if (!this.transporter) {
-      return {
-        success: false,
-        error: 'Nodemailer not initialized',
-      };
-    }
-
+    if (!this.transporter) return { success: false, error: 'Nodemailer not initialized' };
     try {
-      const mailOptions: any = {
+      const info = await this.transporter.sendMail({
         from: options.from || this.fromEmail,
         to: options.to,
         subject: options.subject,
         text: options.text,
         html: options.html,
-      };
-
-      if (options.replyTo) {
-        mailOptions.replyTo = options.replyTo;
-      }
-
-      if (options.attachments) {
-        mailOptions.attachments = options.attachments;
-      }
-
-      const info = await this.transporter.sendMail(mailOptions);
-
-      logger.info('Email sent successfully via Nodemailer', 'EMAIL_PROVIDER', {
-        to: options.to,
-        subject: options.subject,
-        messageId: info.messageId,
+        replyTo: options.replyTo,
+        attachments: options.attachments,
       });
-
-      return {
-        success: true,
-        messageId: info.messageId,
-      };
-    } catch (error: any) {
-      logger.error('Failed to send email via Nodemailer', 'EMAIL_PROVIDER', {
-        to: options.to,
-        error: error.message,
-      });
-
-      return {
-        success: false,
-        error: error.message,
-      };
+      logger.info('Email sent via Nodemailer', 'EMAIL_PROVIDER', { to: options.to, messageId: info.messageId });
+      return { success: true, messageId: info.messageId };
+    } catch (err: any) {
+      logger.error('Nodemailer error', 'EMAIL_PROVIDER', { to: options.to, error: err.message });
+      return { success: false, error: err.message };
     }
   }
 
   async verifyConnection(): Promise<boolean> {
-    if (!this.enabled) {
-      return false;
+    if (!this.enabled) return false;
+    if (this.providerType === 'resend' || this.providerType === 'sendgrid') return true;
+    if (this.providerType === 'nodemailer' && this.transporter) {
+      try { await this.transporter.verify(); return true; } catch { return false; }
     }
-
-    if (this.providerType === 'sendgrid') {
-      // SendGrid no tiene verify, asumimos que está ok si la API key está configurada
-      return true;
-    } else if (this.providerType === 'nodemailer' && this.transporter) {
-      try {
-        await this.transporter.verify();
-        logger.info('Email provider connection verified');
-        return true;
-      } catch (error) {
-        logger.error('Email provider connection failed', 'EMAIL_PROVIDER', error);
-        return false;
-      }
-    }
-
     return false;
   }
 
-  isEnabled(): boolean {
-    return this.enabled;
-  }
-
-  getProviderType(): EmailProviderType {
-    return this.providerType;
-  }
+  isEnabled(): boolean { return this.enabled; }
+  getProviderType(): EmailProviderType { return this.providerType; }
 }
 
 export const emailProvider = new EmailProvider();

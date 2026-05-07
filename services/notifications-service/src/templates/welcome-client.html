@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>¡Bienvenido a Piums!</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#FF4500 0%,#FF6A00 60%,#ff8c42 100%);padding:40px 40px 36px;text-align:center;">
+            <img src="https://client.piums.io/logo-white.png"
+                 alt="Piums"
+                 width="140"
+                 style="display:block;margin:0 auto;height:auto;" />
+            <p style="margin:14px 0 0;color:rgba(255,255,255,.90);font-size:14px;letter-spacing:0.3px;">Plataforma de servicios artísticos</p>
+          </td>
+        </tr>
+
+        <!-- Hero text -->
+        <tr>
+          <td style="padding:40px 40px 8px;">
+            <h2 style="margin:0 0 12px;color:#111827;font-size:26px;font-weight:800;line-height:1.25;">
+              ¡Hola, {{userName}}! 👋
+            </h2>
+            <p style="margin:0;color:#4b5563;font-size:16px;line-height:1.7;">
+              Nos alegra tenerte en <strong style="color:#FF6A00;">Piums</strong>. Ya puedes explorar y contratar a los mejores artistas de Guatemala para tu próximo evento. ¡Todo en un solo lugar, seguro y fácil!
+            </p>
+          </td>
+        </tr>
+
+        <!-- Divider -->
+        <tr><td style="padding:24px 40px 0;"><div style="height:1px;background:#f3f4f6;"></div></td></tr>
+
+        <!-- Features -->
+        <tr>
+          <td style="padding:28px 40px 8px;">
+            <p style="margin:0 0 16px;color:#111827;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">¿Qué puedes hacer?</p>
+
+            <!-- Feature 1 -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+              <tr>
+                <td width="44" valign="top" style="padding-top:2px;">
+                  <div style="width:36px;height:36px;background:#fff7ed;border-radius:10px;text-align:center;line-height:36px;font-size:18px;">🎵</div>
+                </td>
+                <td style="padding-left:14px;">
+                  <p style="margin:0;color:#111827;font-size:15px;font-weight:700;">Explora artistas</p>
+                  <p style="margin:3px 0 0;color:#6b7280;font-size:13px;line-height:1.5;">Fotografía, DJ, bandas en vivo, maquillaje artístico, circo y mucho más.</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Feature 2 -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+              <tr>
+                <td width="44" valign="top" style="padding-top:2px;">
+                  <div style="width:36px;height:36px;background:#fff7ed;border-radius:10px;text-align:center;line-height:36px;font-size:18px;">📅</div>
+                </td>
+                <td style="padding-left:14px;">
+                  <p style="margin:0;color:#111827;font-size:15px;font-weight:700;">Reservas 100% seguras</p>
+                  <p style="margin:3px 0 0;color:#6b7280;font-size:13px;line-height:1.5;">Pago protegido, confirmación instantánea y cancelación gratuita hasta 48h antes.</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Feature 3 -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="44" valign="top" style="padding-top:2px;">
+                  <div style="width:36px;height:36px;background:#fff7ed;border-radius:10px;text-align:center;line-height:36px;font-size:18px;">⭐</div>
+                </td>
+                <td style="padding-left:14px;">
+                  <p style="margin:0;color:#111827;font-size:15px;font-weight:700;">Reseñas reales</p>
+                  <p style="margin:3px 0 0;color:#6b7280;font-size:13px;line-height:1.5;">Contrata con confianza gracias a las opiniones verificadas de otros clientes.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:36px 40px 40px;text-align:center;">
+            <a href="{{clientAppUrl}}/artists"
+               style="display:inline-block;background:linear-gradient(135deg,#FF4500,#FF6A00);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 48px;border-radius:10px;letter-spacing:0.2px;">
+              Explorar artistas ahora →
+            </a>
+            <p style="margin:16px 0 0;color:#9ca3af;font-size:13px;">
+              O visítanos en <a href="{{clientAppUrl}}" style="color:#FF6A00;text-decoration:none;font-weight:600;">piums.io</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:24px 40px;background:#f9fafb;border-top:1px solid #f3f4f6;text-align:center;">
+            <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
+              Recibiste este correo porque creaste una cuenta en Piums.
+            </p>
+            <p style="margin:0;color:#9ca3af;font-size:12px;">
+              © {{currentYear}} Piums · Guatemala ·
+              <a href="{{clientAppUrl}}" style="color:#FF6A00;text-decoration:none;">piums.io</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

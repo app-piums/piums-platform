@@ -191,6 +191,15 @@ export class NotificationService {
         'email-verification': 'email-verification.html',
         'payment-confirmation': 'payment-confirmation.html',
         'review-request': 'review-request.html',
+        'welcome-client': 'welcome-client.html',
+        'welcome-artist': 'welcome-artist.html',
+        'document-review-alert': 'document-review-alert.html',
+        'booking-created-client': 'booking-created-client.html',
+        'booking-created-artist': 'booking-created-artist.html',
+        'booking-confirmed': 'booking-confirmed.html',
+        'booking-confirmed-artist': 'booking-confirmed-artist.html',
+        'booking-reminder-24h': 'booking-reminder-24h.html',
+        'booking-reminder-2h': 'booking-reminder-2h.html',
       };
 
       const templateFile = templateFiles[template];
@@ -206,10 +215,17 @@ export class NotificationService {
 
       let htmlContent = fs.readFileSync(templatePath, 'utf-8');
 
-      // Reemplazar variables
+      // Resolve {{#if var}}...{{/if}} blocks before variable substitution
+      htmlContent = htmlContent.replace(
+        /\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g,
+        (_match: string, varName: string, block: string) =>
+          variables[varName] ? block : ''
+      );
+
+      // Reemplazar variables simples
       Object.keys(variables).forEach(key => {
         const regex = new RegExp(`{{${key}}}`, 'g');
-        htmlContent = htmlContent.replace(regex, variables[key] || '');
+        htmlContent = htmlContent.replace(regex, String(variables[key] ?? ''));
       });
 
       // Determinar subject según template
@@ -218,6 +234,9 @@ export class NotificationService {
         'email-verification': '¡Bienvenido a Piums! Verifica tu email',
         'payment-confirmation': 'Confirmación de pago - Piums',
         'review-request': '¿Cómo fue tu experiencia? Comparte tu opinión',
+        'welcome-client': '¡Bienvenido a Piums! 🎉',
+        'welcome-artist': '¡Bienvenido a Piums! Tu perfil de artista está listo 🎨',
+        'document-review-alert': 'Documentos pendientes de revisión - Piums',
       };
 
       const subject = subjects[template] || 'Notificación - Piums';

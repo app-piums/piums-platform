@@ -2,6 +2,9 @@ import axios from 'axios';
 import { logger } from '../utils/logger';
 
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4008';
+const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
+
+const internalHeaders = () => INTERNAL_SECRET ? { 'x-internal-secret': INTERNAL_SECRET } : {};
 
 export interface BookingStats {
   total: number;
@@ -13,15 +16,18 @@ export interface BookingStats {
   bookingsThisMonth?: number;
   revenueThisMonth?: number;
   bookingsByMonth?: Array<{ month: string; count: number }>;
+  revenueByMonth?: Array<{ month: string; amount: number }>;
+  topArtists?: Array<{ artistId: string; bookings: number; revenue: number }>;
 }
 
 export class BookingClient {
   /**
    * Obtiene estadísticas generales de reservas
    */
-  async getStats(): Promise<BookingStats> {
+  async getStats(months: number = 6): Promise<BookingStats> {
     try {
-      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/stats/admin`, {
+      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/bookings/stats/admin?months=${months}`, {
+        headers: internalHeaders(),
         timeout: 5000,
       });
       return response.data;
@@ -44,8 +50,9 @@ export class BookingClient {
    */
   async listBookings(params: any = {}) {
     try {
-      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/admin/search`, {
+      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/bookings/admin/search`, {
         params,
+        headers: internalHeaders(),
         timeout: 5000,
       });
       return response.data;
@@ -60,7 +67,8 @@ export class BookingClient {
    */
   async getBookingDetail(bookingId: string) {
     try {
-      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/admin/bookings/${bookingId}`, {
+      const response = await axios.get(`${BOOKING_SERVICE_URL}/api/bookings/${bookingId}`, {
+        headers: internalHeaders(),
         timeout: 5000,
       });
       return response.data;
@@ -91,9 +99,9 @@ export class BookingClient {
   async getBatchStats(artistIds: string[]) {
     try {
       if (artistIds.length === 0) return {};
-      const response = await axios.post(`${BOOKING_SERVICE_URL}/api/admin/batch-stats`, {
+      const response = await axios.post(`${BOOKING_SERVICE_URL}/api/bookings/admin/batch-stats`, {
         artistIds,
-      }, { timeout: 3000 });
+      }, { headers: internalHeaders(), timeout: 3000 });
       return response.data;
     } catch (error: any) {
       logger.error('Error fetching batch booking stats', 'BOOKING_CLIENT', error.message);

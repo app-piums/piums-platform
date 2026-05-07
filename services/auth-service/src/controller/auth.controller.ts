@@ -27,6 +27,7 @@ async function createUserAndRespond(
   extra?: {
     ciudad?: string;
     birthDate?: string;
+    avatarUrl?: string;
     documentType?: string;
     documentNumber?: string;
     documentFrontUrl?: string;
@@ -40,6 +41,21 @@ async function createUserAndRespond(
     throw new AppError(409, "Este correo electrónico ya está registrado");
   }
 
+  // Bloquear re-registro si el documento ya está vinculado a una cuenta baneada/bloqueada
+  if (extra?.documentType && extra?.documentNumber) {
+    const bannedDoc = await prisma.user.findFirst({
+      where: {
+        documentType: extra.documentType,
+        documentNumber: extra.documentNumber,
+        OR: [{ status: 'BANNED' }, { isBlocked: true }],
+      },
+      select: { id: true },
+    });
+    if (bannedDoc) {
+      throw new AppError(403, 'No es posible crear una cuenta con este documento de identidad');
+    }
+  }
+
   const passwordHash = await hashPassword(password);
   const isDev = process.env.NODE_ENV !== 'production';
   const userStatus = isDev ? 'ACTIVE' : 'PENDING_EMAIL';
@@ -49,9 +65,11 @@ async function createUserAndRespond(
       nombre,
       email,
       passwordHash,
-      role,             // ✅ Guardar rol correcto (artista / cliente)
+      provider: 'email',
+      role,
       emailVerified: isDev,
       status: userStatus,
+      avatar: extra?.avatarUrl,
       ciudad: extra?.ciudad,
       birthDate: extra?.birthDate ? new Date(extra.birthDate) : undefined,
       documentType: extra?.documentType,
@@ -71,6 +89,9 @@ async function createUserAndRespond(
     nombre: user.nombre,
     ciudad: extra?.ciudad,
   });
+
+  // Correo de bienvenida (fire-and-forget — no bloquea el registro)
+  notificationsClient.sendWelcomeEmail(user.email, user.nombre, role as any).catch(() => {});
 
   // For artists, also bootstrap an artist profile and trigger verification when
   // KYC documents were supplied (required for password-based artist registration).
@@ -162,9 +183,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 // ─────────────────────────────────────────────────────────────────────────
 export const registerArtist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password, ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = registerArtistSchema.parse(req.body);
+    const { nombre, email, password, ciudad, birthDate, avatarUrl, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = registerArtistSchema.parse(req.body);
     await createUserAndRespond(req, res, nombre, email, password, 'artista', {
-      ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl,
+      ciudad, birthDate, avatarUrl, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl,
     });
   } catch (error: any) {
     logger.error("Error en registro de artista", "AUTH_CONTROLLER", { message: error.message });
@@ -270,7 +291,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Dual-role support: honor requested role (from the frontend that called
     // login) so a user can sign into either client or artist dashboard.
     const requestedRole = typeof (req.body as any)?.role === 'string' ? (req.body as any).role : undefined;
-    const effectiveRole = requestedRole || user.role;
+    let effectiveRole = requestedRole || user.role;
 
     // Ensure artist profile exists when logging into the artist dashboard.
     if (effectiveRole === 'artista') {
@@ -291,6 +312,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
               avatar: user.avatar ?? undefined,
             }),
           });
+
+          // If user was a pure "cliente" logging into the artist app, upgrade to dual role.
+          if (user.role === 'cliente') {
+            await prisma.user.update({ where: { id: user.id }, data: { role: 'ambos' } });
+            effectiveRole = 'ambos';
+          }
         }
       } catch (bootstrapErr: any) {
         logger.warn(`Artist bootstrap on login failed: ${bootstrapErr.message}`, 'AUTH_CONTROLLER');
@@ -340,7 +367,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Determinar URL de redirección basada en el rol efectivo
     let redirectUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
 
-    if (effectiveRole === 'artista') {
+    if (effectiveRole === 'artista' || effectiveRole === 'ambos') {
       redirectUrl = process.env.ARTIST_APP_URL || 'http://localhost:3001';
     } else if (effectiveRole === 'admin') {
       redirectUrl = process.env.ADMIN_APP_URL || 'http://localhost:3002';
@@ -655,6 +682,20 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const { id } = (req as any).user;
     const { ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = req.body;
 
+    // Snapshot before update — used to detect first-time document submission
+    const before = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        nombre: true,
+        email: true,
+        role: true,
+        documentType: true,
+        documentFrontUrl: true,
+        documentSelfieUrl: true,
+      },
+    });
+    const hadDocsBefore = !!(before?.documentType && before?.documentFrontUrl && before?.documentSelfieUrl);
+
     const updateData: Record<string, unknown> = {};
     if (ciudad !== undefined) updateData.ciudad = ciudad;
     if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
@@ -707,6 +748,18 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
       } catch (err: any) {
         logger.warn(`Failed to notify artist verification: ${err.message}`, 'AUTH_CONTROLLER');
       }
+    }
+
+    // First-time document submission → alert the team for manual review
+    if (hasDocs && !hadDocsBefore && before) {
+      notificationsClient.notifyDocumentPendingReview({
+        userId: user.id,
+        userName: before.nombre || user.email,
+        userEmail: user.email,
+        userRole: user.role,
+        documentType: user.documentType!,
+        documentNumber: user.documentNumber!,
+      }).catch(() => {});
     }
 
     res.json({ user });

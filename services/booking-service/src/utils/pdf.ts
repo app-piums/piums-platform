@@ -262,7 +262,7 @@ export function generateBookingPDF(booking: PDFBookingData): PDFKit.PDFDocument 
   yPos += 40;
 
   // Depósito (si aplica)
-  if (booking.depositRequired && booking.depositAmount) {
+  if (booking.anticipoRequired && booking.anticipoAmount) {
     doc
       .roundedRect(50, yPos, doc.page.width - 100, 40, 5)
       .fillAndStroke('#fff9e6', '#ffd966');
@@ -272,7 +272,7 @@ export function generateBookingPDF(booking: PDFBookingData): PDFKit.PDFDocument 
       .fillColor('#92400e')
       .font('Helvetica')
       .text(
-        `⚠️ Se requiere un depósito de $${(booking.depositAmount / 100).toLocaleString('es-MX')} ${booking.currency}`,
+        `⚠️ Se requiere un anticipo de $${(booking.anticipoAmount / 100).toLocaleString('es-MX')} ${booking.currency}`,
         70,
         yPos + 12,
         { width: doc.page.width - 140 }

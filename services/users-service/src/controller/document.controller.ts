@@ -19,12 +19,14 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
     }
 
     const folder = (req.query.folder as string) || 'misc';
-    const validFolders = ['front', 'back', 'selfie'];
+    const validFolders = ['front', 'back', 'selfie', 'avatar'];
     if (!validFolders.includes(folder)) {
       throw new AppError(400, `Carpeta inválida. Usa: ${validFolders.join(', ')}`);
     }
 
-    const url = await cloudinaryProvider.uploadDocument(req.file.buffer, folder);
+    const url = folder === 'avatar'
+      ? await cloudinaryProvider.uploadAvatarTemp(req.file.buffer)
+      : await cloudinaryProvider.uploadDocument(req.file.buffer, folder);
 
     logger.info('Document uploaded', 'DOCUMENT_CONTROLLER', { folder, size: req.file.size });
 

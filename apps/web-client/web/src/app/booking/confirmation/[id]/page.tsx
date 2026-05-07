@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +15,7 @@ import { toast } from '@/lib/toast';
 export default function BookingConfirmationPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const userName = (user as any)?.name || (user as any)?.nombre || (user as any)?.email?.split('@')[0] || 'Cliente';
   const bookingId = params.id as string;
@@ -24,12 +25,37 @@ export default function BookingConfirmationPage() {
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paymentDeclined, setPaymentDeclined] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/booking/confirmation/' + bookingId);
     }
   }, [authLoading, isAuthenticated, router, bookingId]);
+
+  // Procesar resultado del redirect de Tilopay si hay query params
+  useEffect(() => {
+    const responseCode = searchParams.get('responseCode');
+    const orderNumber = searchParams.get('orderNumber');
+    const amount = searchParams.get('amount');
+    const auth = searchParams.get('auth') || undefined;
+    const currency = searchParams.get('currency') || 'USD';
+    const orderHash = searchParams.get('orderHash') || undefined;
+
+    if (!responseCode || !orderNumber) return;
+
+    if (responseCode !== '00') {
+      setPaymentDeclined(true);
+      toast.error(`Pago no aprobado (código ${responseCode}). Intenta de nuevo.`);
+      return;
+    }
+
+    // Confirmar el pago en el backend (idempotente)
+    sdk.confirmTilopayRedirect({ bookingId, responseCode, orderNumber: orderNumber!, amount: amount!, auth, currency, orderHash })
+      .catch(() => {
+        // No bloquear la UI si falla — el admin puede confirmar manualmente
+      });
+  }, [bookingId, searchParams]);
 
   const loadBookingData = useCallback(async () => {
     try {
@@ -230,6 +256,22 @@ END:VCALENDAR`;
         </header>
 
         <div className="flex-1 px-4 lg:px-6 py-6">
+
+        {/* Banner pago rechazado */}
+        {paymentDeclined && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <svg className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <p className="font-medium text-red-800">Pago no procesado</p>
+              <p className="text-sm text-red-600 mt-1">Tu reserva está guardada pero el pago fue rechazado. Puedes intentarlo de nuevo desde el detalle de la reserva.</p>
+              <Button className="mt-3" variant="outline" onClick={() => router.push(`/bookings/${bookingId}`)}>
+                Ir a la reserva
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Success Header */}
         <Card className="mb-6">
@@ -438,12 +480,12 @@ END:VCALENDAR`;
                     </div>
                   </div>
 
-                  {booking.depositRequired && booking.depositAmount && (
+                  {booking.anticipoRequired && booking.anticipoAmount != null && (
                     <div className="pt-3 border-t border-gray-200">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Depósito requerido</span>
+                        <span className="text-gray-600">Anticipo pagado</span>
                         <span className="font-medium text-orange-600">
-                          ${(booking.depositAmount / 100).toLocaleString('en-US')}
+                          ${(booking.anticipoAmount / 100).toLocaleString('en-US')}
                         </span>
                       </div>
                     </div>

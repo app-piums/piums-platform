@@ -89,21 +89,30 @@ export const setupRoutes = (app: Express) => {
                 logger.debug(`[GATEWAY] Auth body received: ${bodyStr.substring(0, 100)}...`, "GATEWAY");
                 const data = JSON.parse(bodyStr);
                 
-                if (data.user && data.user.role === 'artista') {
-                  logger.info(`[GATEWAY] Artist detected: ${data.user.email}. Starting translation...`, "GATEWAY");
+                const isArtistRole = data.user && (data.user.role === 'artista' || data.user.role === 'ambos');
+                if (isArtistRole) {
+                  logger.info(`[GATEWAY] Artist detected (role=${data.user.role}): ${data.user.email}. Fetching artist profile...`, "GATEWAY");
                   const token = req.headers.authorization?.substring(7);
                   if (token) {
                     const ARTISTS_SERVICE_URL = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
                     const profileRes = await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
                       headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    
+
                     if (profileRes.ok) {
                       const profileData = await profileRes.json() as any;
                       if (profileData.artist?.id) {
                         data.user.authId = data.user.id;
-                        data.user.id = profileData.artist.id;
-                        logger.info(`[GATEWAY] IDENTITY TRANSLATED: ${data.user.authId} -> ${data.user.id}`, "GATEWAY");
+                        if (data.user.role === 'ambos') {
+                          // Dual-role: keep auth user ID as main id (for client ops),
+                          // add artistId as a separate field (for artist ops).
+                          data.user.artistId = profileData.artist.id;
+                          logger.info(`[GATEWAY] DUAL-ROLE: authId=${data.user.authId}, artistId=${data.user.artistId}`, "GATEWAY");
+                        } else {
+                          // Pure artist: replace id with artist profile id (existing behavior).
+                          data.user.id = profileData.artist.id;
+                          logger.info(`[GATEWAY] IDENTITY TRANSLATED: ${data.user.authId} -> ${data.user.id}`, "GATEWAY");
+                        }
                       } else {
                         logger.warn(`[GATEWAY] Artist profile ID not found in response`, "GATEWAY");
                       }
@@ -150,6 +159,7 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.USERS_SERVICE_URL || "http://localhost:4002",
       changeOrigin: true,
+      pathRewrite: { "^/": "/api/users/documents/upload" },
     })
   );
 
@@ -285,7 +295,7 @@ export const setupRoutes = (app: Express) => {
   // ============================================================================
   // Payments Service (PROTEGIDO)
   // ============================================================================
-  
+
   app.use(
     "/api/payments",
     authMiddleware,
@@ -293,6 +303,18 @@ export const setupRoutes = (app: Express) => {
       target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
       changeOrigin: true,
       pathRewrite: { "^": "/api/payments" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // Credits — montados en /api/credits dentro de payments-service
+  app.use(
+    "/api/credits",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/credits" },
       on: { proxyReq: fixRequestBody },
     })
   );
@@ -362,6 +384,19 @@ export const setupRoutes = (app: Express) => {
       target: process.env.AUTH_SERVICE_URL || "http://localhost:4001",
       changeOrigin: true,
       pathRewrite: { "^": "/admin" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // ============================================================================
+  // Tilopay Callbacks (PUBLIC — no auth, llamado por Tilopay server-to-server)
+  // ============================================================================
+  app.use(
+    "/callbacks",
+    createProxyMiddleware({
+      target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
+      changeOrigin: true,
+      pathRewrite: { "^": "/callbacks" },
       on: { proxyReq: fixRequestBody },
     })
   );

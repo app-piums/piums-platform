@@ -1,4 +1,4 @@
-import { PrismaClient, PaymentStatus, PaymentType, PaymentIntentStatus, RefundStatus } from "@prisma/client";
+import { PrismaClient, PaymentStatus, PaymentType, PaymentIntentStatus, RefundStatus, CreditStatus } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { stripeProvider } from "../providers/stripe.provider";
@@ -22,7 +22,7 @@ export class PaymentService {
     paymentMethods?: string[];
     metadata?: Record<string, any>;
   }) {
-    const currency = data.currency || process.env.DEFAULT_CURRENCY || "GTQ";
+    const currency = data.currency || process.env.DEFAULT_CURRENCY || "USD";
 
     // Si hay bookingId, validar que exista y pertenezca al usuario
     if (data.bookingId) {
@@ -525,6 +525,162 @@ export class PaymentService {
     };
   }
 
+  // ==================== CREDITS ====================
+
+  async createCredit(data: {
+    userId: string;
+    bookingId?: string;
+    paidAmount: number;
+    reason: string;
+  }) {
+    const PLATFORM_FEE = parseFloat(process.env.PLATFORM_FEE_PERCENTAGE || "18");
+    const platformFee = Math.round(data.paidAmount * (PLATFORM_FEE / 100));
+    const creditAmount = Math.max(platformFee, 2000); // mínimo $20.00 USD
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 90);
+
+    const credit = await prisma.credit.create({
+      data: {
+        userId: data.userId,
+        bookingId: data.bookingId,
+        amount: creditAmount,
+        currency: "USD",
+        status: CreditStatus.ACTIVE,
+        reason: data.reason,
+        expiresAt,
+      },
+    });
+
+    logger.info(`Credit created: ${credit.id}`, "CREDIT", {
+      userId: data.userId,
+      bookingId: data.bookingId,
+      amount: creditAmount,
+      expiresAt,
+    });
+
+    notificationsClient.sendNotification({
+      userId: data.userId,
+      type: "CREDIT_ISSUED",
+      channel: "IN_APP",
+      title: "Crédito disponible",
+      message: `Tienes un crédito de $${(creditAmount / 100).toFixed(2)} USD disponible por 90 días.`,
+      data: { creditId: credit.id, amount: creditAmount },
+    }).catch((err) => logger.error("Error sending credit notification", "CREDIT", err));
+
+    return credit;
+  }
+
+  async getActiveCredits(userId: string) {
+    const now = new Date();
+    return prisma.credit.findMany({
+      where: {
+        userId,
+        status: CreditStatus.ACTIVE,
+        expiresAt: { gt: now },
+        deletedAt: null,
+      },
+      orderBy: { expiresAt: "asc" },
+    });
+  }
+
+  async expireCredits() {
+    const now = new Date();
+    const result = await prisma.credit.updateMany({
+      where: {
+        status: CreditStatus.ACTIVE,
+        expiresAt: { lt: now },
+        deletedAt: null,
+      },
+      data: { status: CreditStatus.EXPIRED },
+    });
+
+    if (result.count > 0) {
+      logger.info(`Expired ${result.count} credits`, "CREDIT_CRON");
+    }
+
+    return result.count;
+  }
+
+  // ==================== CHECKOUT UNIFICADO ====================
+
+  /**
+   * Inicia un checkout con el proveedor correcto según el país del cliente.
+   * Devuelve: clientSecret (Stripe) | redirectUrl (Tilopay 3DS) + providerRef.
+   */
+  async initCheckout(data: {
+    userId: string;
+    userEmail?: string;
+    bookingId: string;
+    amount: number;
+    currency?: string;
+    countryCode?: string;
+    description?: string;
+    returnUrl?: string;
+    metadata?: Record<string, string>;
+  }) {
+    const currency = data.currency || process.env.DEFAULT_CURRENCY || "USD";
+
+    // Validate booking belongs to user
+    if (data.bookingId) {
+      const booking = await bookingClient.getBooking(data.bookingId);
+      if (!booking) throw new AppError(404, "Reserva no encontrada");
+      if (booking.clientId !== data.userId) {
+        throw new AppError(403, "No tienes permiso para pagar esta reserva");
+      }
+    }
+
+    const { getProvider } = await import("../utils/payment-router");
+    const provider = await getProvider(data.countryCode);
+
+    const result = await provider.createCheckout({
+      bookingId: data.bookingId,
+      amount: data.amount,
+      currency,
+      description: data.description,
+      userId: data.userId,
+      userEmail: data.userEmail,
+      returnUrl: data.returnUrl,
+      metadata: {
+        bookingId: data.bookingId,
+        userId: data.userId,
+        ...data.metadata,
+      },
+    });
+
+    // Persist in DB
+    const intentStatus = result.status === "succeeded"
+      ? "SUCCEEDED"
+      : result.requiresAction
+      ? "REQUIRES_ACTION"
+      : "CREATED";
+
+    await (prisma as any).paymentIntent.create({
+      data: {
+        stripePaymentIntentId: result.providerRef,
+        userId: data.userId,
+        bookingId: data.bookingId,
+        amount: data.amount,
+        currency,
+        status: intentStatus,
+        clientSecret: result.clientSecret,
+        description: data.description,
+        metadata: { provider: result.provider, ...data.metadata },
+      },
+    }).catch((err: any) => {
+      logger.error("Error guardando paymentIntent en DB", "PAYMENT_SERVICE", { error: err.message });
+    });
+
+    logger.info("Checkout iniciado", "PAYMENT_SERVICE", {
+      bookingId: data.bookingId,
+      provider: result.provider,
+      providerRef: result.providerRef,
+      requiresAction: result.requiresAction,
+    });
+
+    return result;
+  }
+
   // ==================== HELPERS ====================
 
   private mapStripeStatusToPaymentIntentStatus(stripeStatus: string): PaymentIntentStatus {
@@ -550,6 +706,72 @@ export class PaymentService {
     };
 
     return statusMap[stripeStatus] || "PENDING";
+  }
+
+  async confirmTilopayRedirect(data: {
+    bookingId: string;
+    responseCode: string;
+    orderNumber: string;
+    auth?: string;
+    amount: string;
+    currency: string;
+    orderHash?: string;
+    external_orden_id?: string;
+    userId: string;
+  }) {
+    const approved = data.responseCode === '00';
+
+    if (!approved) {
+      logger.warn("Tilopay redirect: pago no aprobado", "PAYMENT_SERVICE", {
+        bookingId: data.bookingId,
+        responseCode: data.responseCode,
+      });
+      return { success: false, responseCode: data.responseCode };
+    }
+
+    const amountCents = Math.round(parseFloat(data.amount) * 100);
+
+    // Verificar que no se haya procesado ya este orderNumber
+    const existing = await (prisma as any).paymentIntent.findFirst({
+      where: { stripePaymentIntentId: data.orderNumber },
+    }).catch(() => null);
+
+    if (!existing) {
+      await (prisma as any).paymentIntent.create({
+        data: {
+          stripePaymentIntentId: data.orderNumber,
+          userId: data.userId,
+          bookingId: data.bookingId,
+          amount: amountCents,
+          currency: data.currency,
+          status: "SUCCEEDED",
+          metadata: { provider: "TILOPAY", auth: data.auth },
+        },
+      }).catch((err: any) =>
+        logger.error("Error guardando paymentIntent Tilopay", "PAYMENT_SERVICE", { error: err.message })
+      );
+
+      await bookingClient.markPayment(
+        data.bookingId,
+        amountCents,
+        "TILOPAY",
+        data.orderNumber,
+        "FULL_PAYMENT",
+      );
+
+      logger.info("Tilopay redirect: pago confirmado", "PAYMENT_SERVICE", {
+        bookingId: data.bookingId,
+        orderNumber: data.orderNumber,
+        amountCents,
+      });
+    } else {
+      logger.info("Tilopay redirect: pago ya procesado (idempotente)", "PAYMENT_SERVICE", {
+        bookingId: data.bookingId,
+        orderNumber: data.orderNumber,
+      });
+    }
+
+    return { success: true, responseCode: data.responseCode };
   }
 }
 

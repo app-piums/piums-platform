@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk } from '@piums/sdk';
@@ -14,6 +15,7 @@ type Notification = {
   status?: string;
   isRead?: boolean;
   createdAt?: string;
+  metadata?: { disputeId?: string; bookingId?: string };
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -25,12 +27,17 @@ const TYPE_ICONS: Record<string, string> = {
   NEW_REVIEW: '⭐',
   NEW_MESSAGE: '💬',
   RESCHEDULE_REQUEST: '📅',
+  BOOKING_NO_SHOW: '🚨',
   SYSTEM: 'ℹ️',
 };
+
+const NO_SHOW_TYPES = new Set(['BOOKING_NO_SHOW', 'ARTIST_NO_SHOW']);
 
 function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id: string) => void }) {
   const icon = TYPE_ICONS[n.type ?? ''] ?? '🔔';
   const isUnread = n.status === 'PENDING' || n.isRead === false;
+  const isNoShow = NO_SHOW_TYPES.has(n.type ?? '');
+  const disputeId = n.metadata?.disputeId;
   const date = n.createdAt
     ? new Date(n.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '';
@@ -38,16 +45,34 @@ function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id:
   return (
     <div
       className={`flex gap-4 p-4 rounded-xl border transition-colors ${
-        isUnread ? 'bg-orange-50 border-orange-100' : 'bg-white border-gray-100'
+        isNoShow
+          ? 'bg-red-50 border-red-200'
+          : isUnread
+          ? 'bg-orange-50 border-orange-100'
+          : 'bg-white border-gray-100'
       }`}
     >
       <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+        <p className={`text-sm font-semibold ${isNoShow ? 'text-red-900' : isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
           {n.title || n.type || 'Notificación'}
         </p>
         {n.message && (
-          <p className="text-sm text-gray-500 mt-0.5 leading-snug">{n.message}</p>
+          <p className={`text-sm mt-0.5 leading-snug ${isNoShow ? 'text-red-700' : 'text-gray-500'}`}>{n.message}</p>
+        )}
+        {isNoShow && (
+          <div className="mt-2">
+            <Link
+              href={disputeId ? `/artist/dashboard/quejas/${disputeId}` : '/artist/dashboard/quejas'}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Ver queja y responder
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <p className="text-xs text-red-600 mt-1.5">Tienes 24h para responder antes de que se procesen acciones automáticas.</p>
+          </div>
         )}
         {date && <p className="text-xs text-gray-400 mt-1.5">{date}</p>}
       </div>

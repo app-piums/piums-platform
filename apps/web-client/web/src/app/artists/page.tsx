@@ -241,8 +241,8 @@ function ArtistsPageContent() {
 
   const activeFilterCount = [minRating > 0, minPrice !== '', maxPrice !== '', showVerifiedOnly].filter(Boolean).length;
 
-  // hourlyRateMin is stored in cents in the artists-service DB → divide by 100 to get GTQ
-  const artistPriceGTQ = (a: any): number | null => {
+  // hourlyRateMin is stored in cents in the artists-service DB → divide by 100 to get USD
+  const artistPriceUSD = (a: any): number | null => {
     if (a.hourlyRateMin != null) return a.hourlyRateMin / 100;
     if (a.mainServicePrice != null) return a.mainServicePrice;
     return null;
@@ -255,7 +255,7 @@ function ArtistsPageContent() {
         if (!verified) return false;
       }
       if (minRating > 0 && ((a as any).rating ?? 0) < minRating) return false;
-      const price = artistPriceGTQ(a as any);
+      const price = artistPriceUSD(a as any);
       if (minPrice && price !== null && price < parseFloat(minPrice)) return false;
       if (maxPrice && price !== null && price > parseFloat(maxPrice)) return false;
       return true;
@@ -263,8 +263,8 @@ function ArtistsPageContent() {
     if (sortBy !== 'relevance') {
       result = [...result].sort((a, b) => {
         if (sortBy === 'rating') return ((b as any).rating ?? 0) - ((a as any).rating ?? 0);
-        const pa = artistPriceGTQ(a as any) ?? (sortBy === 'price_low' ? Infinity : 0);
-        const pb = artistPriceGTQ(b as any) ?? (sortBy === 'price_low' ? Infinity : 0);
+        const pa = artistPriceUSD(a as any) ?? (sortBy === 'price_low' ? Infinity : 0);
+        const pb = artistPriceUSD(b as any) ?? (sortBy === 'price_low' ? Infinity : 0);
         return sortBy === 'price_low' ? pa - pb : pb - pa;
       });
     }

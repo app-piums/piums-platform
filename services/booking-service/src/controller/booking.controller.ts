@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { bookingService } from "../services/booking.service";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { AppError } from "../middleware/errorHandler";
-import { notifyBookingCreated } from "../utils/notifications";
 import { generateBookingPDF } from "../utils/pdf";
 import {
   createBookingSchema,
@@ -47,46 +46,16 @@ export class BookingController {
 
       // Always use the authenticated user's ID as clientId — never trust the body
       const clientId = req.user!.id;
-      
+
+      const identity = await usersClient.checkClientIdentity(clientId);
+      if (!identity.hasDocuments) {
+        throw new AppError(403, 'Debes verificar tu identidad antes de realizar una reserva. Completa tu perfil con tu documento de identidad.');
+      }
+
       const { booking } = await bookingService.createBooking({
         ...validatedData,
         clientId,
         scheduledDate: new Date(validatedData.scheduledDate),
-      });
-
-      // Obtener datos reales de forma asíncrona para las notificaciones
-      Promise.all([
-        usersClient.getUser(booking.clientId),
-        artistsClient.getArtist(booking.artistId),
-        catalogClient.getService(booking.serviceId)
-      ]).then(([user, artist, service]) => {
-        notifyBookingCreated({
-          bookingId: booking.id,
-          bookingCode: booking.code || `PIU-${new Date().getFullYear()}-${booking.id.slice(0, 6)}`,
-          clientId: booking.clientId,
-          clientName: user?.fullName || user?.firstName || 'Cliente',
-          clientEmail: user?.email || 'client@example.com',
-          artistId: booking.artistId,
-          artistName: artist?.artistName || 'Artista',
-          artistEmail: artist?.email || 'artist@example.com',
-          artistCategory: artist?.category || 'Categoría',
-          artistImage: artist?.avatar || '',
-          serviceName: service?.name || 'Servicio',
-          scheduledDate: booking.scheduledDate.toISOString(),
-          durationMinutes: booking.durationMinutes,
-          location: booking.location || 'Sin ubicación',
-          servicePrice: booking.servicePrice,
-          addonsPrice: booking.addonsPrice,
-          totalPrice: booking.totalPrice,
-          currency: booking.currency,
-          depositRequired: booking.depositRequired,
-          depositAmount: booking.depositAmount ?? undefined,
-          clientNotes: booking.clientNotes ?? undefined,
-        }).catch(err => {
-          console.error('Error sending booking notifications:', err);
-        });
-      }).catch(err => {
-        console.error('Error fetching data for notifications:', err);
       });
 
       res.status(201).json(booking);
@@ -151,7 +120,7 @@ export class BookingController {
     try {
       const userId = req.user!.id;
       const isAdmin = req.user?.role === 'admin';
-      const isArtist = req.user?.role === 'artista';
+      const isArtist = req.user?.role === 'artista' || req.user?.role === 'ambos';
 
       // Artists filter by artistId only; clients see their own bookings; admins can filter freely
       const clientId = isAdmin
@@ -243,6 +212,18 @@ export class BookingController {
 
       const booking = await bookingService.cancelBooking(id, userId, reason);
       res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async reportNoShow(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const { reason } = req.body as { reason?: string };
+      const userId = req.user!.id;
+      const result = await bookingService.reportNoShow(id, userId, reason);
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -481,8 +462,8 @@ export class BookingController {
 
   async getAdminStats(req: Request, res: Response, next: NextFunction) {
     try {
-      // TODO: Verificar que el usuario es admin (podría hacerse vía middleware)
-      const stats = await bookingService.getAdminStats();
+      const months = req.query.months ? parseInt(req.query.months as string, 10) : 6;
+      const stats = await bookingService.getAdminStats(months);
       res.json(stats);
     } catch (error) {
       next(error);

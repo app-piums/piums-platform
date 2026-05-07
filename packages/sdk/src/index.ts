@@ -77,6 +77,8 @@ export interface ArtistProfile extends Artist {
   hourlyRateMax?: number;      // precio máximo por hora en centavos
   requiresDeposit?: boolean;
   depositPercentage?: number;
+  allowSameDayBooking?: boolean;
+  shadowBannedAt?: string;
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
   instagram?: string;
@@ -197,18 +199,27 @@ export interface Booking {
   addonsPrice: number;
   totalPrice: number;
   currency: string;
-  depositRequired: boolean;
-  depositAmount?: number;
-  depositPaidAt?: string;
+  anticipoRequired: boolean;
+  anticipoAmount?: number;
+  anticipoPaidAt?: string;
+  amount?: number;
   paymentStatus: string;
+  eventId?: string;
   selectedAddons?: string[];
   clientNotes?: string;
   artistNotes?: string;
   cancellationReason?: string;
   cancelReason?: string;
   reviewId?: string | null;
-  serviceName?: string;   // name of the booked service
-  artistName?: string;    // name of the artist
+  serviceName?: string;
+  artistName?: string;
+  noShowAt?: string;
+  noShowReason?: string;
+  clientLat?: number;
+  clientLng?: number;
+  distanceKm?: number;
+  sameDayBookingApplied?: boolean;
+  minAdvanceHours?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -222,6 +233,8 @@ export interface CreateBookingPayload {
   location?: string;
   locationLat?: number;
   locationLng?: number;
+  clientLat?: number;
+  clientLng?: number;
   selectedAddons?: string[];
   clientNotes?: string;
   eventId?: string;
@@ -398,12 +411,15 @@ export interface WeeklyAvailabilityRule {
 export interface PaymentIntent {
   id: string;
   stripePaymentIntentId: string;
+  providerRef?: string;
   userId: string;
   bookingId?: string;
   amount: number;
   currency: string;
   status: string;
   clientSecret?: string;
+  redirectUrl?: string;
+  provider?: 'STRIPE' | 'TILOPAY';
   paymentMethods: string[];
   description?: string;
   metadata?: Record<string, any>;
@@ -415,6 +431,7 @@ export interface Payment {
   id: string;
   paymentIntentId: string;
   stripePaymentId: string;
+  providerPaymentId?: string;
   userId: string;
   bookingId?: string;
   amount: number;
@@ -429,6 +446,7 @@ export interface Refund {
   id: string;
   paymentId: string;
   stripeRefundId: string;
+  providerRefundId?: string;
   amount: number;
   currency: string;
   reason?: string;
@@ -455,6 +473,73 @@ export interface CreateRefundPayload {
   amount?: number;
   reason?: string;
   metadata?: Record<string, any>;
+}
+
+// ==================== CREDIT TYPES ====================
+
+export type CreditStatus = 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED';
+
+export interface Credit {
+  id: string;
+  userId: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: CreditStatus;
+  reason: string;
+  expiresAt: string;
+  usedAt?: string;
+  usedInBookingId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MyCreditsResponse {
+  credits: Credit[];
+  totalAmount: number;
+  currency: string;
+}
+
+// ==================== COMMISSION TYPES ====================
+
+export type CommissionRuleType = 'RATE_OVERRIDE' | 'FIXED_PENALTY';
+
+export interface CommissionRule {
+  id: string;
+  artistId: string;
+  type: CommissionRuleType;
+  rate?: number;
+  fixedAmount?: number;
+  currency: string;
+  reason: string;
+  startDate: string;
+  endDate?: string;
+  isActive: boolean;
+  createdByAdminId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==================== PAYOUT TYPES ====================
+
+export interface Payout {
+  id: string;
+  artistId: string;
+  bookingId?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payoutType?: string;
+  description?: string;
+  commissionRate?: number;
+  platformFee?: number;
+  netAmount?: number;
+  transferReference?: string;
+  completedByAdmin?: string;
+  completedAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ==================== REVIEW TYPES ====================
@@ -1459,6 +1544,48 @@ class PiumsSDK {
     }
   }
 
+  async reportNoShow(bookingId: string, reason?: string): Promise<{ success: boolean; booking: Booking; dispute: any }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/bookings/${bookingId}/no-show`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ reason }),
+        })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error reporting no-show:', error);
+      throw error;
+    }
+  }
+
+  async getMyCredits(): Promise<MyCreditsResponse> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/credits/my`,
+        this.withAuth({ credentials: 'include' })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      const data = await response.json();
+      return data.data ?? data;
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+      throw error;
+    }
+  }
+
   /**
    * Actualiza la fecha de una reserva
    * @param bookingId ID de la reserva
@@ -1548,6 +1675,68 @@ class PiumsSDK {
       return await response.json();
     } catch (error) {
       console.error('Error confirming payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Inicia un checkout con el proveedor de pago apropiado (Tilopay o Stripe según país)
+   */
+  async initCheckout(
+    bookingId: string,
+    amount: number,
+    currency: string,
+    countryCode?: string,
+    description?: string,
+  ): Promise<PaymentIntent> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/checkout`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId, amount, currency, countryCode, description }),
+        })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error initiating checkout:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirma el resultado de un pago Tilopay tras el redirect
+   */
+  async confirmTilopayRedirect(params: {
+    bookingId: string;
+    responseCode: string;
+    orderNumber: string;
+    amount: string;
+    auth?: string;
+    currency?: string;
+    orderHash?: string;
+  }): Promise<{ success: boolean; responseCode: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/tilopay/confirm`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error confirming Tilopay redirect:', error);
       throw error;
     }
   }
@@ -1971,6 +2160,68 @@ class PiumsSDK {
       return result.stats;
     } catch (error) {
       console.error('Error fetching artist stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene los payouts (cobros) del artista autenticado
+   */
+  async getMyPayouts(params?: { status?: string; page?: number; limit?: number }): Promise<{
+    payouts: Payout[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const qs = new URLSearchParams(
+        Object.entries(params ?? {})
+          .filter(([, v]) => v !== undefined && v !== '')
+          .map(([k, v]) => [k, String(v)])
+      ).toString();
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/payouts${qs ? `?${qs}` : ''}`,
+        this.withAuth({ credentials: 'include' })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      const data = await response.json();
+      return (data.data ?? data) as { payouts: Payout[]; total: number; page: number; totalPages: number };
+    } catch (error) {
+      console.error('Error fetching payouts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene las estadísticas de ganancias del artista autenticado
+   */
+  async getMyPayoutStats(): Promise<{
+    totalEarnings: number;
+    pendingAmount: number;
+    completedAmount: number;
+    currency: string;
+    totalPayouts: number;
+    pendingCount: number;
+    completedCount: number;
+  }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/artists/dashboard/me/payouts/stats`,
+        this.withAuth({ credentials: 'include' })
+      );
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      const data = await response.json();
+      return (data.data ?? data);
+    } catch (error) {
+      console.error('Error fetching payout stats:', error);
       throw error;
     }
   }

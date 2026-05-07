@@ -1,6 +1,9 @@
 import { PrismaClient, DisputeType, DisputeStatus, DisputeResolution } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { paymentsClient } from "../clients/payments.client";
+import { artistsClient } from "../clients/artists.client";
+import { bookingService } from "./booking.service";
 
 const prisma = new PrismaClient();
 
@@ -256,6 +259,40 @@ export class DisputeService {
       refundAmount: data.refundAmount,
       resolvedBy: data.resolvedBy,
     });
+
+    // Ejecutar acciones según la resolución
+    if (dispute.disputeType === "ARTIST_NO_SHOW") {
+      if (data.resolution === "FULL_REFUND") {
+        bookingService.executeNoShowActions(dispute.bookingId, data.disputeId)
+          .catch(err => logger.error("Error ejecutando acciones de no-show tras resolución", "DISPUTE_SERVICE", { error: err.message }));
+      } else if (data.resolution === "NO_ACTION") {
+        // Admin resolvió a favor del artista — no hay acciones financieras
+        logger.info("No-show resuelto a favor del artista (NO_ACTION)", "DISPUTE_SERVICE", { bookingId: dispute.bookingId });
+      }
+    } else if (data.resolution === "FULL_REFUND" && data.refundAmount) {
+      const booking = await prisma.booking.findUnique({ where: { id: dispute.bookingId }, select: { clientId: true } });
+      if (booking) {
+        paymentsClient.createRefundInternal({
+          bookingId: dispute.bookingId,
+          userId: booking.clientId,
+          reason: "dispute_resolved_full_refund",
+          amount: data.refundAmount,
+        }).catch(err => logger.error("Error creando reembolso tras disputa", "DISPUTE_SERVICE", { error: err.message }));
+      }
+    } else if (data.resolution === "CREDIT" && data.refundAmount) {
+      const booking = await prisma.booking.findUnique({ where: { id: dispute.bookingId }, select: { clientId: true } });
+      if (booking) {
+        paymentsClient.createCredit({
+          userId: booking.clientId,
+          bookingId: dispute.bookingId,
+          paidAmount: data.refundAmount,
+          reason: "DISPUTE_CREDIT",
+        }).catch(err => logger.error("Error creando crédito tras disputa", "DISPUTE_SERVICE", { error: err.message }));
+      }
+    } else if (data.resolution === "SUSPENSION" || data.resolution === "BAN") {
+      artistsClient.shadowBan(dispute.reportedAgainst || "", `Disputa resuelta: ${data.resolution}`)
+        .catch(err => logger.error("Error aplicando shadow ban tras disputa", "DISPUTE_SERVICE", { error: err.message }));
+    }
 
     return resolved;
   }

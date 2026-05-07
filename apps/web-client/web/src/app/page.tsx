@@ -71,7 +71,7 @@ const STEPS = [
   {
     num: "02",
     title: "Reserva con un clic",
-    desc: "Elige fecha, hora y servicio. El pago en Quetzales queda protegido hasta que confirmen.",
+    desc: "Elige fecha, hora y servicio. El pago en USD queda protegido hasta que confirmen.",
   },
   {
     num: "03",
@@ -128,7 +128,7 @@ export default function Home() {
 
             <p className="mt-6 max-w-md text-lg text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Contrata artistas verificados para tu boda, evento, empresa o proyecto personal.
-              Todo en Quetzales, todo con garantía.
+              Todo en USD, todo con garantía.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4">

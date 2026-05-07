@@ -425,16 +425,25 @@ function ReportesSection() {
 
 // ─── Sección Quejas ───────────────────────────────────────────────────────────
 
+const DISPUTE_TYPE_FILTERS = [
+  { value: "", label: "Todos los tipos" },
+  { value: "ARTIST_NO_SHOW", label: "Artista no se presentó" },
+  { value: "CANCELLATION", label: "Cancelación" },
+  { value: "REFUND", label: "Reembolso" },
+  { value: "QUALITY", label: "Calidad" },
+];
+
 function QuejasSection() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("OPEN");
+  const [typeFilter, setTypeFilter] = useState("");
   const [resolving, setResolving] = useState<DisputeRow | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<{ dispute: DisputeRow; newStatus: string } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-disputes", page, statusFilter],
-    queryFn: () => disputesApi.list({ page, limit: 20, status: statusFilter }),
+    queryKey: ["admin-disputes", page, statusFilter, typeFilter],
+    queryFn: () => disputesApi.list({ page, limit: 20, status: statusFilter, disputeType: typeFilter || undefined }),
   });
 
   const resolveMutation = useMutation({
@@ -457,8 +466,8 @@ function QuejasSection() {
 
   return (
     <>
-      {/* Filter tabs */}
-      <div className="mb-5 flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100 p-1 w-fit dark:border-zinc-800 dark:bg-zinc-900">
+      {/* Status filter tabs */}
+      <div className="mb-3 flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100 p-1 w-fit dark:border-zinc-800 dark:bg-zinc-900">
         {DISPUTE_FILTER_TABS.map((opt) => (
           <button
             key={opt.value}
@@ -469,6 +478,28 @@ function QuejasSection() {
                 : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             }`}
           >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Type filter chips */}
+      <div className="mb-5 flex flex-wrap gap-2">
+        {DISPUTE_TYPE_FILTERS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => { setTypeFilter(opt.value); setPage(1); }}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              typeFilter === opt.value
+                ? opt.value === "ARTIST_NO_SHOW"
+                  ? "border-red-400 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-400"
+                  : "border-[#FF6A00] bg-[#FF6A00]/10 text-[#FF6A00]"
+                : "border-zinc-200 text-zinc-500 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+            }`}
+          >
+            {opt.value === "ARTIST_NO_SHOW" && (
+              <span className="mr-1">⚠</span>
+            )}
             {opt.label}
           </button>
         ))}

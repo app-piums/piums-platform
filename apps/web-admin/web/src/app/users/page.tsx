@@ -6,6 +6,32 @@ import { usersApi, type AdminUserRow } from "@/lib/api";
 import { AdminGuard } from "@/components/AdminGuard";
 
 const ROLES = ["", "cliente", "artista", "admin"];
+const PROVIDERS = ["", "email", "google", "facebook", "tiktok"];
+const PROVIDER_LABELS: Record<string, string> = {
+  "": "Todos los orígenes",
+  email: "Email / Contraseña",
+  google: "Google",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+};
+
+const CATEGORIES = ["", "MUSICO", "FOTOGRAFO", "TATUADOR", "MAQUILLADOR", "DJ", "PINTOR", "BAILARIN", "VIDEOGRAFO", "DISENADOR", "ANIMADOR", "MAGO", "ACROBATA", "OTRO"];
+const CATEGORY_LABELS: Record<string, string> = {
+  "": "Todas las categorías",
+  MUSICO: "Músico",
+  FOTOGRAFO: "Fotógrafo",
+  TATUADOR: "Tatuador",
+  MAQUILLADOR: "Maquillador",
+  DJ: "DJ",
+  PINTOR: "Pintor",
+  BAILARIN: "Bailarín",
+  VIDEOGRAFO: "Videógrafo",
+  DISENADOR: "Diseñador",
+  ANIMADOR: "Animador",
+  MAGO: "Mago",
+  ACROBATA: "Acróbata",
+  OTRO: "Otro",
+};
 
 function StatusBadge({ blocked }: { blocked: boolean }) {
   return (
@@ -45,12 +71,26 @@ function UsersContent() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [role, setRole] = useState("");
+  const [provider, setProvider] = useState("");
+  const [category, setCategory] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState<AdminUserRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AdminUserRow | null>(null);
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await usersApi.exportCSV({ role, provider, search, category });
+    } catch (err) {
+      console.error("Error exportando CSV:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-users", page, search, role],
-    queryFn: () => usersApi.list({ page, limit: 20, search, role }),
+    queryKey: ["admin-users", page, search, role, provider, category],
+    queryFn: () => usersApi.list({ page, limit: 20, search, role, provider, category }),
   });
 
   const blockMutation = useMutation({
@@ -103,7 +143,7 @@ function UsersContent() {
         </form>
         <select
           value={role}
-          onChange={(e) => { setRole(e.target.value); setPage(1); }}
+          onChange={(e) => { setRole(e.target.value); setPage(1); if (e.target.value !== "artista") setCategory(""); }}
           className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
         >
           {ROLES.map((r) => (
@@ -112,6 +152,44 @@ function UsersContent() {
             </option>
           ))}
         </select>
+        <select
+          value={provider}
+          onChange={(e) => { setProvider(e.target.value); setPage(1); }}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+        >
+          {PROVIDERS.map((p) => (
+            <option key={p} value={p}>
+              {PROVIDER_LABELS[p]}
+            </option>
+          ))}
+        </select>
+        {role === "artista" && (
+          <select
+            value={category}
+            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className="flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        >
+          {isExporting ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" />
+          ) : (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          )}
+          {isExporting ? "Exportando…" : "Exportar CSV"}
+        </button>
       </div>
 
       {/* Mobile cards */}
@@ -189,6 +267,9 @@ function UsersContent() {
                   Registrado
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Último acceso
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Acción
                 </th>
               </tr>
@@ -212,6 +293,11 @@ function UsersContent() {
                   </td>
                   <td className="px-5 py-3.5 text-xs text-zinc-400">
                     {new Date(u.createdAt).toLocaleDateString("es-MX")}
+                  </td>
+                  <td className="px-5 py-3.5 text-xs text-zinc-400">
+                    {u.lastLoginAt
+                      ? new Date(u.lastLoginAt).toLocaleDateString("es-MX")
+                      : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
                   </td>
                   <td className="px-5 py-3.5">
                     {u.role !== "admin" && (
@@ -239,7 +325,7 @@ function UsersContent() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-sm text-zinc-400">
+                  <td colSpan={6} className="py-12 text-center text-sm text-zinc-400">
                     No se encontraron usuarios
                   </td>
                 </tr>

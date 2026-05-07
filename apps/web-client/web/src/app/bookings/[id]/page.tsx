@@ -26,6 +26,10 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: React.Ele
   completed: { label: 'Completada', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircleIcon },
   cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
   rejected: { label: 'Rechazada', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
+  no_show: { label: 'No se presentó', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
+  in_progress: { label: 'En curso', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: ClockIcon },
+  anticipo_paid: { label: 'Anticipo pagado', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircleIcon },
+  payment_completed: { label: 'Pago completo', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircleIcon },
 };
 
 function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
@@ -53,6 +57,10 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const [reviewed, setReviewed] = useState(false);
   const [isModifyDateOpen, setIsModifyDateOpen] = useState(false);
   const [rescheduleRequestSent, setRescheduleRequestSent] = useState(false);
+  const [noShowModalOpen, setNoShowModalOpen] = useState(false);
+  const [noShowReason, setNoShowReason] = useState('');
+  const [noShowSubmitting, setNoShowSubmitting] = useState(false);
+  const [noShowDone, setNoShowDone] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -136,6 +144,29 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const canAddToEvent = booking.status?.toUpperCase() === 'PENDING' && !booking.eventId;
   const canRequestReschedule = ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(booking.status?.toUpperCase() || '') && !rescheduleRequestSent;
   const hasPendingReschedule = ['RESCHEDULE_PENDING_ARTIST', 'RESCHEDULE_PENDING_CLIENT'].includes(booking.status?.toUpperCase() || '');
+
+  const NO_SHOW_ELIGIBLE = ['CONFIRMED', 'IN_PROGRESS', 'ANTICIPO_PAID', 'PAYMENT_COMPLETED'];
+  const eventPassed = dateObj ? dateObj < new Date() : false;
+  const canReportNoShow =
+    eventPassed &&
+    NO_SHOW_ELIGIBLE.includes(booking.status?.toUpperCase() || '') &&
+    !noShowDone &&
+    booking.status?.toUpperCase() !== 'NO_SHOW';
+
+  const handleReportNoShow = async () => {
+    setNoShowSubmitting(true);
+    try {
+      await sdk.reportNoShow(booking.id, noShowReason || undefined);
+      setNoShowDone(true);
+      setNoShowModalOpen(false);
+      setBooking((prev) => prev ? { ...prev, status: 'NO_SHOW' } : prev);
+      toast.success('No-show reportado. El equipo de Piums procesará tu caso.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al reportar el no-show');
+    } finally {
+      setNoShowSubmitting(false);
+    }
+  };
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
     try {
@@ -241,6 +272,22 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
               </section>
             )}
 
+            {/* No-show banner */}
+            {(booking.status?.toUpperCase() === 'NO_SHOW' || noShowDone) && (
+              <section className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start gap-3">
+                <XCircleIcon className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-700 mb-1">No-show reportado</p>
+                  <p className="text-sm text-red-600 leading-relaxed">
+                    El artista no se presentó. Estamos procesando tu reembolso y un crédito de compensación. Recibirás una notificación cuando esté listo.
+                  </p>
+                  {booking.noShowReason && (
+                    <p className="text-xs text-red-500 mt-2">"{booking.noShowReason}"</p>
+                  )}
+                </div>
+              </section>
+            )}
+
             {/* Motivo de cancelación */}
             {cancelReason && (
               <section className="bg-red-50 border border-red-100 rounded-2xl p-5 flex items-start gap-3">
@@ -343,6 +390,19 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                        Ver Evento asociado
                      </Link>
                    )}
+                   {canReportNoShow && (
+                     <button
+                       onClick={() => setNoShowModalOpen(true)}
+                       className="w-full py-2.5 bg-red-50 border border-red-200 text-red-700 font-semibold rounded-xl text-sm hover:bg-red-100 transition"
+                     >
+                       Reportar No-Show
+                     </button>
+                   )}
+                   {(noShowDone || booking.status?.toUpperCase() === 'NO_SHOW') && (
+                     <div className="w-full py-2.5 bg-red-50 border border-red-200 text-red-700 font-semibold rounded-xl text-sm text-center">
+                       No-show reportado — en revisión
+                     </div>
+                   )}
                    <button onClick={() => window.print()} className="w-full py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition">
                      Descargar Recibo (PDF)
                    </button>
@@ -420,6 +480,56 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
 
         </div>
       </main>
+
+      {noShowModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <XCircleIcon className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900">Reportar No-Show</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  El artista no se presentó al evento. Una vez reportado, el equipo de Piums procesará el reembolso y crédito de compensación.
+                </p>
+              </div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-800">
+              El artista tendrá 24h para responder antes de que se ejecuten las acciones automáticas.
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Motivo (opcional)</label>
+              <textarea
+                rows={3}
+                value={noShowReason}
+                onChange={(e) => setNoShowReason(e.target.value.slice(0, 300))}
+                placeholder="Describe brevemente lo que ocurrió..."
+                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition placeholder:text-gray-300"
+              />
+              <p className="text-right text-xs text-gray-300 mt-1">{noShowReason.length}/300</p>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setNoShowModalOpen(false)}
+                disabled={noShowSubmitting}
+                className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleReportNoShow}
+                disabled={noShowSubmitting}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2"
+              >
+                {noShowSubmitting ? (
+                  <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Enviando...</>
+                ) : 'Confirmar reporte'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ReviewModal
         isOpen={isReviewModalOpen}

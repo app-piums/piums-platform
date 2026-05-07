@@ -5,9 +5,19 @@ import { createPaymentLimiter, refundLimiter } from "../middleware/rateLimiter";
 
 const router: Router = Router();
 
+// ==================== CHECKOUT UNIFICADO (Tilopay / Stripe) ====================
+
+// Inicia checkout enrutando al proveedor correcto según país del usuario
+router.post(
+  "/checkout",
+  authenticateToken,
+  createPaymentLimiter,
+  paymentController.initCheckout.bind(paymentController)
+);
+
 // ==================== PAYMENT INTENTS ====================
 
-// Crear payment intent
+// Crear payment intent (Stripe legacy)
 router.post(
   "/payment-intents",
   authenticateToken,
@@ -57,6 +67,15 @@ router.get(
   "/payments/stats",
   authenticateToken,
   paymentController.getPaymentStats.bind(paymentController)
+);
+
+// ==================== TILOPAY REDIRECT CONFIRM ====================
+
+// Confirmar pago Tilopay recibido via redirect (frontend llama tras volver de Tilopay)
+router.post(
+  "/tilopay/confirm",
+  authenticateToken,
+  paymentController.confirmTilopayRedirect.bind(paymentController)
 );
 
 // ==================== REFUNDS ====================

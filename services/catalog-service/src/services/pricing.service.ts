@@ -82,7 +82,7 @@ export const calculateServicePrice = async (
   if (!pricing) {
     // Fallback: usar basePrice del servicio cuando no hay pricing avanzado configurado
     basePriceCents = service.basePrice || 0;
-    currency = service.currency || 'GTQ';
+    currency = service.currency || 'USD';
 
     items.push({
       type: 'BASE',

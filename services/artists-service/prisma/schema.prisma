@@ -118,6 +118,13 @@ model Artist {
   reviewCount   Int      @default(0)
   bookingCount  Int      @default(0)
 
+  // Shadow ban (no-show u otras infracciones — levantado por admin)
+  shadowBannedAt   DateTime?
+  shadowBanReason  String?
+
+  // Reservas el mismo día (regla de 60km)
+  allowSameDayBooking Boolean @default(true)
+
   // Geolocalización en tiempo real (GPS del artista desde la app)
   geoCountry          String?   @db.VarChar(10)  // Código ISO del país detectado por GPS
   geoCountryUpdatedAt DateTime?                    // Última actualización de la ubicación

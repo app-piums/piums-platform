@@ -105,6 +105,9 @@ services:
       ARTISTS_SERVICE_URL: http://artists-service:4003
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
+      CLIENT_APP_URL: https://client.piums.io
+      ARTIST_APP_URL: https://artist.piums.io
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       FIREBASE_API_KEY: AIzaSyChoNjHVlq3iW3lWfoa9iObrQmFOLgRvPo
       TIKTOK_CLIENT_KEY: awux3plhoxtgp6o0
       TIKTOK_CLIENT_SECRET: yfegVNVBisOrTAuRMUoZ3J2aKi1qmDen
@@ -132,6 +135,7 @@ services:
       PORT: 4002
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       CLOUDINARY_CLOUD_NAME: dumqooqjv
       CLOUDINARY_API_KEY: 179725519298881
       CLOUDINARY_API_SECRET: jTmfpOxPMU3MGpcMgxOs7apWW44
@@ -201,6 +205,13 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_changeme}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_changeme}
+      TILOPAY_API_KEY: 2642-8042-9400-8913-7001
+      TILOPAY_API_SECRET: 9oR8Gb
+      TILOPAY_API_USER: GHSjvq
+      TILOPAY_API_URL: https://app.tilopay.com/api/v1
+      CLIENT_APP_URL: https://client.piums.io
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
+      BOOKING_SERVICE_URL: http://booking-service:4008
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
     depends_on:
       postgres:
@@ -248,16 +259,21 @@ services:
       REDIS_URL: redis://redis:6379
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
       FRONTEND_URL: https://client.piums.io
-      # Email config — set ENABLE_EMAIL=true and fill credentials to activate transactional emails
-      ENABLE_EMAIL: "false"
-      EMAIL_PROVIDER: nodemailer  # or sendgrid
+      # Email config — Resend (set RESEND_API_KEY to activate)
+      ENABLE_EMAIL: "true"
+      RESEND_API_KEY: "re_12S1fuyc_GW4CzFYACENmn13hcKs2HS9v"
+      EMAIL_FROM: noreply@piums.io
+      EMAIL_FROM_NAME: Piums
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
+      CLIENT_APP_URL: https://client.piums.io
+      ARTIST_APP_URL: https://artist.piums.io
+      # Fallback providers (used only if RESEND_API_KEY is empty)
+      EMAIL_PROVIDER: nodemailer
       EMAIL_HOST: ""
       EMAIL_PORT: "587"
       EMAIL_SECURE: "false"
       EMAIL_USER: ""
       EMAIL_PASSWORD: ""
-      EMAIL_FROM: noreply@piums.com
-      # SENDGRID_API_KEY: ""   # Uncomment and set when using SendGrid
     depends_on:
       postgres:
         condition: service_healthy
@@ -286,6 +302,8 @@ services:
       ARTISTS_SERVICE_URL: http://artists-service:4003
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
+      CLIENT_APP_URL: https://client.piums.io
+      ARTIST_APP_URL: https://artist.piums.io
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
     depends_on:
       postgres:

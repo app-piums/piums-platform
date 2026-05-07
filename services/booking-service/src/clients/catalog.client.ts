@@ -86,7 +86,7 @@ export class CatalogClient {
   async getService(serviceId: string): Promise<any | null> {
     try {
       const response = await axios.get(
-        `${this.baseUrl}/api/catalog/services/${serviceId}`,
+        `${this.baseUrl}/api/services/${serviceId}`,
         {
           timeout: 5000,
         }

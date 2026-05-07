@@ -32,6 +32,7 @@
     "ioredis": "^5.9.3",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.17",
+    "resend": "^6.12.3",
     "twilio": "^5.4.0",
     "zod": "^3.24.1"
   },

@@ -327,7 +327,7 @@ patches:
                   - name: PORT
                     value: "4008"
 
-  # ── Fix gateway health probe: path is /api/health, not /health ───────────
+  # ── Fix gateway health probe: use /ping to avoid cascade failures ────────
   - target:
       kind: Deployment
       name: gateway
@@ -343,9 +343,9 @@ patches:
               - name: gateway
                 livenessProbe:
                   httpGet:
-                    path: /api/health
+                    path: /api/health/ping
                     port: 3000
                 readinessProbe:
                   httpGet:
-                    path: /api/health
+                    path: /api/health/ping
                     port: 3000

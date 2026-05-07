@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentos pendientes de revisión — Piums</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f4f4f5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .wrapper { max-width: 560px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .header { background: #7c3aed; padding: 32px 40px; text-align: center; }
+    .header h1 { margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; }
+    .body { padding: 32px 40px; }
+    .body p { margin: 0 0 16px; color: #374151; font-size: 15px; line-height: 1.6; }
+    .badge { display: inline-block; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 6px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+    .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #6b7280; }
+    .detail-row span:last-child { color: #111827; font-weight: 500; }
+    .cta { display: block; margin: 28px 0 0; text-align: center; }
+    .cta a { background: #7c3aed; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block; }
+    .footer { padding: 20px 40px; background: #f9fafb; text-align: center; color: #9ca3af; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>📋 Documentos pendientes de revisión</h1>
+    </div>
+    <div class="body">
+      <p>Un usuario ha completado su verificación de identidad y está esperando revisión manual.</p>
+      <div style="margin: 24px 0;">
+        <div class="detail-row"><span>Usuario</span><span>{{userName}}</span></div>
+        <div class="detail-row"><span>Email</span><span>{{userEmail}}</span></div>
+        <div class="detail-row"><span>Rol</span><span>{{userRole}}</span></div>
+        <div class="detail-row"><span>Tipo de documento</span><span>{{documentType}}</span></div>
+        <div class="detail-row"><span>Número de documento</span><span>{{documentNumber}}</span></div>
+        <div class="detail-row"><span>Fecha de envío</span><span>{{submittedAt}}</span></div>
+      </div>
+      <p style="margin-top:24px;">Ingresa al panel de administración para revisar las imágenes y aprobar o rechazar la verificación.</p>
+      <div class="cta">
+        <a href="{{adminUrl}}">Ver en el panel de admin</a>
+      </div>
+    </div>
+    <div class="footer">
+      &copy; {{currentYear}} Piums · Este email es una alerta interna automática.
+    </div>
+  </div>
+</body>
+</html>

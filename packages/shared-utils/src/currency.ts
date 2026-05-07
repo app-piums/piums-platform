@@ -1,48 +1,60 @@
 // ============================================================================
-// @piums/shared-utils — GTQ currency formatters
+// @piums/shared-utils — USD currency formatters
 // ============================================================================
 
-const GTQ_LOCALE = 'es-GT';
-const GTQ_CURRENCY = 'GTQ';
+const USD_LOCALE = 'en-US';
+const USD_CURRENCY = 'USD';
 
 /**
- * Formats an amount (in centavos) as "Q 1,234.56"
+ * Formats an amount (in cents) as "$1,234.56"
  */
-export function formatGTQ(centavos: number): string {
-  const quetzales = centavos / 100;
-  return new Intl.NumberFormat(GTQ_LOCALE, {
+export function formatUSD(cents: number): string {
+  const dollars = cents / 100;
+  return new Intl.NumberFormat(USD_LOCALE, {
     style: 'currency',
-    currency: GTQ_CURRENCY,
+    currency: USD_CURRENCY,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(quetzales);
+  }).format(dollars);
 }
 
+/** @deprecated Use formatUSD instead */
+export const formatGTQ = formatUSD;
+
 /**
- * Formats quetzales amount directly (not centavos)
+ * Formats a dollar amount directly (not cents)
  */
-export function formatGTQFromQuetzales(quetzales: number): string {
-  return new Intl.NumberFormat(GTQ_LOCALE, {
+export function formatUSDFromDollars(dollars: number): string {
+  return new Intl.NumberFormat(USD_LOCALE, {
     style: 'currency',
-    currency: GTQ_CURRENCY,
+    currency: USD_CURRENCY,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(quetzales);
+  }).format(dollars);
 }
 
-/**
- * Converts centavos to quetzales
- */
-export function centavosToQuetzales(centavos: number): number {
-  return centavos / 100;
-}
+/** @deprecated Use formatUSDFromDollars instead */
+export const formatGTQFromQuetzales = formatUSDFromDollars;
 
 /**
- * Converts quetzales to centavos (safe integer math)
+ * Converts cents to dollars
  */
-export function quetzalesToCentavos(quetzales: number): number {
-  return Math.round(quetzales * 100);
+export function centsToDollars(cents: number): number {
+  return cents / 100;
 }
+
+/** @deprecated Use centsToDollars instead */
+export const centavosToQuetzales = centsToDollars;
+
+/**
+ * Converts dollars to cents (safe integer math)
+ */
+export function dollarsToCents(dollars: number): number {
+  return Math.round(dollars * 100);
+}
+
+/** @deprecated Use dollarsToCents instead */
+export const quetzalesToCentavos = dollarsToCents;
 
 /**
  * Calculates platform fee (default 10%)

@@ -91,6 +91,8 @@ interface ConfirmModalProps {
   variant?: 'danger' | 'warning' | 'info';
   details?: React.ReactNode;
   confirmClassName?: string;
+  hideActions?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export function ConfirmModal({
@@ -105,6 +107,8 @@ export function ConfirmModal({
   variant = 'info',
   details,
   confirmClassName,
+  hideActions = false,
+  size = 'sm',
 }: ConfirmModalProps) {
   const iconColors = {
     danger: 'bg-red-100 text-red-600',
@@ -125,21 +129,23 @@ export function ConfirmModal({
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      size="sm"
+      size={size}
       footer={
-        <div className="flex gap-3 justify-end">
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            {cancelLabel}
-          </Button>
-          <Button
-            onClick={onConfirm}
-            loading={isLoading}
-            disabled={isLoading}
-            className={finalConfirmClass}
-          >
-            {confirmLabel}
-          </Button>
-        </div>
+        hideActions ? undefined : (
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={onClose} disabled={isLoading}>
+              {cancelLabel}
+            </Button>
+            <Button
+              onClick={onConfirm}
+              loading={isLoading}
+              disabled={isLoading}
+              className={finalConfirmClass}
+            >
+              {confirmLabel}
+            </Button>
+          </div>
+        )
       }
     >
       {details ? (

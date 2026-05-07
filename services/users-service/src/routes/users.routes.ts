@@ -25,6 +25,24 @@ const router = Router();
 // Rutas públicas/internas
 router.post("/", createUser); // Solo para uso interno
 
+// Internal endpoint: get user by authId (called from other services)
+router.get("/internal/by-auth/:authId", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const providedSecret = req.headers['x-internal-secret'];
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { authId } = req.params;
+    const prisma = new PrismaClient();
+    const user = await prisma.user.findUnique({ where: { authId } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ id: user.id, authId: user.authId, email: user.email, nombre: user.nombre, fullName: user.nombre, avatar: user.avatar });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Internal endpoint: delete a user profile by authId (called from auth-service admin)
 router.delete("/internal/by-auth/:authId", async (req, res, next) => {
   try {

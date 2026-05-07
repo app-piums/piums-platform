@@ -60,7 +60,7 @@ export class PaymentsClient {
         body: JSON.stringify({
           bookingId: payload.bookingId,
           amount: payload.amount,
-          currency: payload.currency || 'GTQ',
+          currency: payload.currency || 'USD',
           paymentType: payload.paymentType,
         }),
       });
@@ -138,6 +138,72 @@ export class PaymentsClient {
       return await response.json();
     } catch (error) {
       console.error('[PaymentsClient] Error de conexión con payments-service:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Crear crédito de compensación para un cliente (llamada interna)
+   */
+  async createCredit(payload: {
+    userId: string;
+    bookingId?: string;
+    paidAmount: number;
+    reason: string;
+  }): Promise<any | null> {
+    try {
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+      const response = await fetch(`${this.baseUrl}/api/credits/internal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': internalSecret || '',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        console.error('[PaymentsClient] Error creando crédito:', error);
+        return null;
+      }
+
+      return (await response.json() as any).data ?? null;
+    } catch (error) {
+      console.error('[PaymentsClient] Error de conexión al crear crédito:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Crear reembolso para un booking (llamada interna)
+   */
+  async createRefundInternal(payload: {
+    bookingId: string;
+    userId: string;
+    reason: string;
+    amount?: number;
+  }): Promise<any | null> {
+    try {
+      const serviceToken = generateServiceToken(payload.userId);
+      const response = await fetch(`${this.baseUrl}/api/payments/refunds`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        console.error('[PaymentsClient] Error creando reembolso:', error);
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('[PaymentsClient] Error de conexión al crear reembolso:', error);
       return null;
     }
   }

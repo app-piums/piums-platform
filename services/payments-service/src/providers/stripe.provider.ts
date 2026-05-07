@@ -1,9 +1,12 @@
-/**
- * Stripe Provider - Integración con Stripe API
- */
-
 import Stripe from "stripe";
 import { logger } from "../utils/logger";
+import type {
+  IPaymentProvider,
+  CheckoutParams,
+  CheckoutResult,
+  RefundPaymentParams,
+  RefundPaymentResult,
+} from "./payment-provider.interface";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -17,7 +20,7 @@ export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
 });
 
-export class StripeProvider {
+export class StripeProvider implements IPaymentProvider {
   /**
    * Crear Payment Intent
    */
@@ -35,10 +38,6 @@ export class StripeProvider {
         description: params.description,
         metadata: params.metadata || {},
         payment_method_types: params.paymentMethodTypes || ["card"],
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: "never",
-        },
       });
 
       logger.info("Payment Intent creado", "STRIPE_PROVIDER", {
@@ -443,6 +442,50 @@ export class StripeProvider {
       });
       throw error;
     }
+  }
+
+  // ==================== IPaymentProvider ====================
+
+  async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
+    const intent = await this.createPaymentIntent({
+      amount: params.amount,
+      currency: params.currency,
+      description: params.description,
+      metadata: {
+        bookingId: params.bookingId,
+        userId: params.userId,
+        ...params.metadata,
+      },
+      paymentMethodTypes: ["card"],
+    });
+
+    return {
+      providerRef: intent.id,
+      clientSecret: intent.client_secret ?? undefined,
+      requiresAction: intent.status === "requires_action",
+      status:
+        intent.status === "succeeded"
+          ? "succeeded"
+          : intent.status === "requires_action"
+          ? "requires_action"
+          : "pending",
+      provider: "STRIPE",
+    };
+  }
+
+  async refundPayment(params: RefundPaymentParams): Promise<RefundPaymentResult> {
+    const refund = await this.createRefund({
+      paymentIntentId: params.providerRef,
+      amount: params.amount,
+      reason: (params.reason as Stripe.RefundCreateParams.Reason) || "requested_by_customer",
+      metadata: params.metadata,
+    });
+
+    return {
+      refundId: refund.id,
+      status: refund.status ?? "pending",
+      amount: refund.amount,
+    };
   }
 }
 

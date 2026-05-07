@@ -55,6 +55,41 @@ export class PaymentController {
     }
   }
 
+  // ==================== INIT CHECKOUT (Tilopay / Stripe) ====================
+
+  async initCheckout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id;
+      const { bookingId, amount, currency, countryCode, description, returnUrl } = req.body as {
+        bookingId: string;
+        amount: number;
+        currency?: string;
+        countryCode?: string;
+        description?: string;
+        returnUrl?: string;
+      };
+
+      if (!bookingId) return res.status(400).json({ error: 'bookingId es requerido' });
+      if (!amount || amount <= 0) return res.status(400).json({ error: 'amount debe ser mayor a 0' });
+
+      const result = await paymentService.initCheckout({
+        bookingId,
+        userId,
+        userEmail: req.user!.email,
+        amount,
+        currency: currency || 'USD',
+        countryCode,
+        description,
+        returnUrl,
+      });
+
+      res.status(201).json(result);
+      return;
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async cancelPaymentIntent(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.id;
@@ -128,7 +163,44 @@ export class PaymentController {
 
       const refund = await paymentService.getRefundById(id);
 
-      res.json(refund);
+      return res.json(refund);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==================== TILOPAY REDIRECT CONFIRM ====================
+
+  async confirmTilopayRedirect(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { bookingId, responseCode, orderNumber, auth, amount, currency, orderHash, external_orden_id } = req.body as {
+        bookingId: string;
+        responseCode: string;
+        orderNumber: string;
+        auth?: string;
+        amount: string;
+        currency?: string;
+        orderHash?: string;
+        external_orden_id?: string;
+      };
+
+      if (!bookingId || !responseCode || !orderNumber) {
+        return res.status(400).json({ error: 'Faltan parámetros requeridos' });
+      }
+
+      const result = await paymentService.confirmTilopayRedirect({
+        bookingId,
+        responseCode,
+        orderNumber,
+        auth,
+        amount,
+        currency: currency || 'USD',
+        orderHash,
+        external_orden_id,
+        userId: req.user!.id,
+      });
+
+      return res.json(result);
     } catch (error) {
       next(error);
     }

@@ -431,9 +431,9 @@ function ArtistResultCard({
         {(() => {
           const price = matchedServicePrice ?? (
             (artist.mainServicePrice != null && artist.mainServicePrice > 0)
-              ? { name: (artist.mainServiceName as string | undefined) ?? 'Servicio principal', price: artist.mainServicePrice, currency: 'GTQ' }
+              ? { name: (artist.mainServiceName as string | undefined) ?? 'Servicio principal', price: artist.mainServicePrice, currency: 'USD' }
               : (artist.precioDesde != null && artist.precioDesde > 0)
-              ? { name: 'Servicio principal', price: artist.precioDesde, currency: 'GTQ' }
+              ? { name: 'Servicio principal', price: artist.precioDesde, currency: 'USD' }
               : null
           );
           if (!price) return null;
@@ -626,7 +626,7 @@ function BuscarArtistasContent() {
         const svcRes = serviceResults[idx];
         if (svcRes.status === 'fulfilled' && svcRes.value.length > 0) {
           const main = svcRes.value.find(s => (s as any).isMainService) ?? svcRes.value[0];
-          mainServicePrice = main.basePrice / 100; // convert cents → display units (GTQ)
+          mainServicePrice = main.basePrice / 100; // convert cents → display units (USD)
           mainServiceName = main.name;
         }
 

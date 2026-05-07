@@ -3,22 +3,30 @@ import { logger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
 import { bookingClient } from '../clients/booking.client';
 import { reviewsClient } from '../clients/reviews.client';
+import { artistsClient } from '../clients/artists.client';
 
 // GET /api/admin/stats - Métricas generales
 export const getStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Obtener stats de diferentes servicios
-    // Nota: En producción, estos datos vendrían de los microservicios correspondientes
-    
+    const period = (req.query.period as string) || '6m';
+    const months =
+      period === '7d' ? 1 :
+      period === '30d' ? 1 :
+      period === '3m' ? 3 :
+      period === '1y' ? 12 : 6;
+
     const [
-      totalUsers, 
-      totalArtists, 
+      totalUsers,
+      totalArtists,
+      verifiedArtists,
       recentUsers,
       bookingStats,
-      reportStats
+      reportStats,
+      categoryStats,
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { role: 'artista' } }),
+      prisma.user.count({ where: { role: { in: ['artista', 'ambos'] } } }),
+      prisma.user.count({ where: { role: { in: ['artista', 'ambos'] }, isVerified: true } }),
       prisma.user.count({
         where: {
           createdAt: {
@@ -26,20 +34,58 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
           }
         }
       }),
-      bookingClient.getStats(),
-      reviewsClient.getStats(req.headers.authorization)
+      bookingClient.getStats(months),
+      reviewsClient.getStats(req.headers.authorization),
+      artistsClient.getCategoryStats(),
     ]);
+
+    // usersByMonth
+    const now = new Date();
+    const usersByMonthArr = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const count = await prisma.user.count({ where: { createdAt: { gte: d, lt: nextD } } });
+      usersByMonthArr.push({ month: d.toLocaleString('es-ES', { month: 'short' }), count });
+    }
+
+    // topArtists con nombres
+    const topArtistsRaw = bookingStats.topArtists ?? [];
+    let topArtists: any[] = [];
+    if (topArtistsRaw.length > 0) {
+      // Buscar nombre del artista en artists-service por su artistId
+      const artistInfoList = await artistsClient.getByIds(topArtistsRaw.map((a) => a.artistId));
+      const artistInfoMap = new Map(artistInfoList.map((a) => [a.id, a]));
+      topArtists = topArtistsRaw.map((a) => {
+        const info = artistInfoMap.get(a.artistId);
+        return {
+          artistId: a.artistId,
+          nombre: info?.nombre ?? a.artistId.slice(0, 8),
+          bookings: a.bookings,
+          revenue: a.revenue / 100,
+        };
+      });
+    }
+
+    const artistsByCategory = Object.entries(categoryStats)
+      .map(([category, count]) => ({ category, count: count as number }))
+      .sort((a, b) => b.count - a.count);
 
     const stats = {
       totalUsers,
       totalArtists,
       totalBookings: bookingStats.total,
-      totalRevenue: bookingStats.totalRevenue / 100, // Convertir de centavos a moneda
+      totalRevenue: bookingStats.totalRevenue / 100,
       recentUsers,
       bookingsThisMonth: bookingStats.bookingsThisMonth || 0,
       revenueThisMonth: (bookingStats.revenueThisMonth || 0) / 100,
       pendingReports: reportStats.pendingCount,
-      bookingsByMonth: bookingStats.bookingsByMonth || []
+      bookingsByMonth: bookingStats.bookingsByMonth || [],
+      revenueByMonth: (bookingStats.revenueByMonth ?? []).map((r) => ({ ...r, amount: r.amount / 100 })),
+      usersByMonth: usersByMonthArr,
+      artistsByCategory,
+      topArtists,
+      conversionFunnel: { totalUsers, totalArtists, verifiedArtists },
     };
 
     logger.info('Admin stats retrieved', 'ADMIN_CONTROLLER', { adminId: (req as any).user?.id });
@@ -53,23 +99,46 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
 // GET /api/admin/users - Lista usuarios
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20', search = '', role = '' } = req.query;
-    
+    const { page = '1', limit = '20', search = '', role = '', provider = '', category = '' } = req.query;
+
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const take = parseInt(limit as string);
 
     const where: any = {};
-    
-    if (search) {
-      where.OR = [
-        { email: { contains: search as string, mode: 'insensitive' } },
-        { name: { contains: search as string, mode: 'insensitive' } }
-      ];
-    }
-    
+    const andConditions: any[] = [];
+
     if (role) {
-      where.role = role === 'user' ? 'cliente' : (role === 'artist' ? 'artista' : role);
+      where.role = role === 'user' ? 'cliente' : role === 'artist' ? { in: ['artista', 'ambos'] } : role as string;
     }
+
+    if (search) {
+      andConditions.push({
+        OR: [
+          { email: { contains: search as string, mode: 'insensitive' } },
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { nombre: { contains: search as string, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (provider) {
+      if (provider === 'email') {
+        andConditions.push({ OR: [{ provider: 'email' }, { provider: null }] });
+      } else {
+        andConditions.push({ provider: provider as string });
+      }
+    }
+
+    if (category) {
+      const authIds = await artistsClient.getAuthIdsByCategory(category as string);
+      if (authIds.length === 0) {
+        return res.json({ users: [], total: 0, page: parseInt(page as string), totalPages: 0 });
+      }
+      andConditions.push({ id: { in: authIds } });
+      if (!where.role) where.role = { in: ['artista', 'ambos'] };
+    }
+
+    if (andConditions.length > 0) where.AND = andConditions;
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -82,6 +151,7 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
           email: true,
           name: true,
           role: true,
+          provider: true,
           isBlocked: true,
           isVerified: true,
           createdAt: true,
@@ -101,8 +171,10 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
       nombre: u.name ?? u.nombre ?? u.email.split('@')[0],
       email: u.email,
       role: u.role,
+      provider: u.provider ?? 'email',
       isBlocked: u.isBlocked ?? false,
       createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt ?? null,
     }));
 
     const totalPages = Math.ceil(total / take);
@@ -121,13 +193,21 @@ export const toggleBlockUser = async (req: Request, res: Response, next: NextFun
 
     const user = await prisma.user.update({
       where: { id },
-      data: { isBlocked }
+      data: {
+        isBlocked,
+        status: isBlocked ? 'BANNED' : 'ACTIVE',
+      },
     });
+
+    // Si es artista, propagar el estado a artists-service para sacarlo/meterlo de búsquedas
+    if (user.role === 'artista') {
+      artistsClient.setActive(id, !isBlocked).catch(() => {});
+    }
 
     logger.info(`User ${isBlocked ? 'blocked' : 'unblocked'}`, 'ADMIN_CONTROLLER', {
       adminId: (req as any).user?.id,
       userId: id,
-      reason
+      reason,
     });
 
     res.json({ message: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully`, user });
@@ -176,26 +256,149 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+// GET /api/admin/users/export - Exportar usuarios como CSV
+export const exportUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search = '', role = '', provider = '', category = '' } = req.query;
+
+    const where: any = { deletedAt: null };
+    const andConditions: any[] = [];
+
+    if (role) {
+      where.role = role === 'user' ? 'cliente' : role === 'artist' ? { in: ['artista', 'ambos'] } : role as string;
+    }
+
+    if (search) {
+      andConditions.push({
+        OR: [
+          { email: { contains: search as string, mode: 'insensitive' } },
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { nombre: { contains: search as string, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (provider) {
+      if (provider === 'email') {
+        andConditions.push({ OR: [{ provider: 'email' }, { provider: null }] });
+      } else {
+        andConditions.push({ provider: provider as string });
+      }
+    }
+
+    if (category) {
+      const authIds = await artistsClient.getAuthIdsByCategory(category as string);
+      if (authIds.length === 0) {
+        const csv = '\uFEFF' + 'ID,Nombre,Email,Rol,Origen,Estado,Verificado,Ciudad,Fecha registro,Último acceso\r\n';
+        const date = new Date().toISOString().slice(0, 10);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="usuarios-piums-${date}.csv"`);
+        return res.send(csv);
+      }
+      andConditions.push({ id: { in: authIds } });
+      if (!where.role) where.role = { in: ['artista', 'ambos'] };
+    }
+
+    if (andConditions.length > 0) where.AND = andConditions;
+
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        nombre: true,
+        role: true,
+        provider: true,
+        isBlocked: true,
+        isVerified: true,
+        ciudad: true,
+        createdAt: true,
+        lastLoginAt: true,
+      },
+    });
+
+    // BOM UTF-8 para compatibilidad con Excel
+    const BOM = '\uFEFF';
+    const headers = ['ID', 'Nombre', 'Email', 'Rol', 'Origen', 'Estado', 'Verificado', 'Ciudad', 'Fecha registro', 'Último acceso'];
+
+    const escapeCell = (val: unknown): string => {
+      const str = val == null ? '' : String(val);
+      // Wrap in quotes if contains comma, newline or quote
+      if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = users.map((u: any) => [
+      escapeCell(u.id),
+      escapeCell(u.name ?? u.nombre ?? ''),
+      escapeCell(u.email),
+      escapeCell(u.role),
+      escapeCell(u.provider ?? 'email'),
+      escapeCell(u.isBlocked ? 'Bloqueado' : 'Activo'),
+      escapeCell(u.isVerified ? 'Sí' : 'No'),
+      escapeCell(u.ciudad ?? ''),
+      escapeCell(u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : ''),
+      escapeCell(u.lastLoginAt ? new Date(u.lastLoginAt).toISOString().slice(0, 10) : ''),
+    ].join(','));
+
+    const csv = BOM + [headers.join(','), ...rows].join('\r\n');
+
+    const date = new Date().toISOString().slice(0, 10);
+    const filename = `usuarios-piums-${date}.csv`;
+
+    logger.info('Admin exported users CSV', 'ADMIN_CONTROLLER', {
+      adminId: (req as any).user?.id,
+      count: users.length,
+      filters: { role, provider, search },
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (error: any) {
+    logger.error(`Error exporting users CSV: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
 // GET /api/admin/artists - Lista artistas
 export const getArtists = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20', search = '', verified = '' } = req.query;
+    const { page = '1', limit = '20', search = '', verified = '', category = '' } = req.query;
     
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const take = parseInt(limit as string);
 
-    const where: any = { role: 'artista' };
+    const where: any = { role: { in: ['artista', 'ambos'] } };
+    const andConditions: any[] = [];
     
     if (search) {
-      where.OR = [
-        { email: { contains: search as string, mode: 'insensitive' } },
-        { name: { contains: search as string, mode: 'insensitive' } }
-      ];
+      andConditions.push({
+        OR: [
+          { email: { contains: search as string, mode: 'insensitive' } },
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { nombre: { contains: search as string, mode: 'insensitive' } },
+        ]
+      });
     }
     
     if (verified !== '') {
       where.isVerified = verified === 'true';
     }
+
+    if (category) {
+      const authIds = await artistsClient.getAuthIdsByCategory(category as string);
+      if (authIds.length === 0) {
+        return res.json({ artists: [], total: 0, page: parseInt(page as string), totalPages: 0 });
+      }
+      andConditions.push({ id: { in: authIds } });
+    }
+
+    if (andConditions.length > 0) where.AND = andConditions;
 
     const [artists, total] = await Promise.all([
       prisma.user.findMany({
@@ -266,7 +469,7 @@ export const verifyArtist = async (req: Request, res: Response, next: NextFuncti
     if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
 
     const artist = await prisma.user.update({
-      where: { id, role: 'artista' },
+      where: { id },
       data: updateData,
     });
 
@@ -289,7 +492,7 @@ export const getArtistDetail = async (req: Request, res: Response, next: NextFun
     const { id } = req.params;
 
     const artist = await prisma.user.findUnique({
-      where: { id, role: 'artista' },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -420,8 +623,8 @@ export const getBookingDetail = async (req: Request, res: Response, next: NextFu
 // GET /api/admin/bookings - Lista todas las reservas
 export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20', search = '', status = '' } = req.query;
-    logger.info(`ADMIN_GET_BOOKINGS_DIAG: page=${page}, search=${search}, status=${status}`, 'ADMIN_CONTROLLER');
+    const { page = '1', limit = '20', search = '', status = '', dateFrom = '', dateTo = '' } = req.query;
+    logger.info(`ADMIN_GET_BOOKINGS_DIAG: page=${page}, search=${search}, status=${status}, dateFrom=${dateFrom}, dateTo=${dateTo}`, 'ADMIN_CONTROLLER');
     
     // Mapear estado de español (frontend) a inglés (backend/DB)
     const STATUS_MAP: Record<string, string> = {
@@ -451,7 +654,9 @@ export const getBookings = async (req: Request, res: Response, next: NextFunctio
       page,
       limit,
       search: effectiveSearch,
-      status: mappedStatus
+      status: mappedStatus,
+      ...(dateFrom ? { dateFrom: dateFrom as string } : {}),
+      ...(dateTo ? { dateTo: dateTo as string } : {}),
     });
 
     // Obtener nombres de usuarios y artistas de una vez
@@ -604,7 +809,12 @@ export const getUserDetail = async (req: Request, res: Response, next: NextFunct
         createdAt: true,
         updatedAt: true,
         lastLoginAt: true,
-        provider: true
+        provider: true,
+        documentType: true,
+        documentNumber: true,
+        documentFrontUrl: true,
+        documentBackUrl: true,
+        documentSelfieUrl: true,
       }
     });
 
@@ -624,7 +834,7 @@ export const getUserDetail = async (req: Request, res: Response, next: NextFunct
       reportsCount: reviewStats.totalReports
     };
 
-    logger.info('Admin retrieved user detail', 'ADMIN_CONTROLLER', { 
+    logger.info('Admin retrieved user detail', 'ADMIN_CONTROLLER', {
       adminId: (req as any).user?.id,
       targetUserId: id
     });
@@ -632,6 +842,204 @@ export const getUserDetail = async (req: Request, res: Response, next: NextFunct
     res.json(userDetail);
   } catch (error: any) {
     logger.error(`Error getting user detail: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
+// ==================== USER IDENTITY VERIFICATION ====================
+
+// GET /api/admin/users/pending-verification
+export const getPendingVerifications = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(String(req.query.page || '1'), 10);
+    const limit = parseInt(String(req.query.limit || '20'), 10);
+    const skip = (page - 1) * limit;
+
+    const where = {
+      isVerified: false,
+      documentFrontUrl: { not: null },
+      documentSelfieUrl: { not: null },
+    };
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          nombre: true,
+          name: true,
+          email: true,
+          role: true,
+          provider: true,
+          createdAt: true,
+          documentType: true,
+          documentNumber: true,
+          documentFrontUrl: true,
+          documentBackUrl: true,
+          documentSelfieUrl: true,
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    const normalized = users.map((u: any) => ({
+      ...u,
+      nombre: u.nombre ?? u.name ?? u.email.split('@')[0],
+    }));
+
+    res.json({ users: normalized, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+// PATCH /api/admin/users/:id/verify
+export const verifyUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { approved, rejectionReason } = req.body as { approved: boolean; rejectionReason?: string };
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    const updateData: any = { isVerified: approved };
+    if (!approved && rejectionReason) updateData.rejectionReason = rejectionReason.trim();
+    if (approved) updateData.rejectionReason = null;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      select: { id: true, isVerified: true, email: true },
+    });
+
+    logger.info(`User identity ${approved ? 'approved' : 'rejected'}`, 'ADMIN_CONTROLLER', {
+      adminId: (req as any).user?.id,
+      targetUserId: id,
+      approved,
+    });
+
+    res.json({ success: true, isVerified: updated.isVerified });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+// ==================== SHADOW BAN ====================
+
+// PATCH /api/admin/artists/:id/shadow-ban
+export const shadowBanArtist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params; // authId of the artist
+    const { banned, reason } = req.body as { banned: boolean; reason?: string };
+
+    const ok = await artistsClient.shadowBan(id, banned, reason);
+    if (!ok) {
+      return res.status(502).json({ message: 'No se pudo actualizar el estado del artista' });
+    }
+
+    logger.info(`Admin ${banned ? 'shadow-banned' : 'unbanned'} artist ${id}`, 'ADMIN_CONTROLLER', {
+      adminId: (req as any).user?.id,
+      authId: id,
+      banned,
+    });
+
+    res.json({ success: true, banned });
+  } catch (error: any) {
+    logger.error(`Error shadow-banning artist: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
+// ==================== COMMISSION RULES (PROXY) ====================
+
+const PAYMENTS_SERVICE_URL = process.env.PAYMENTS_SERVICE_URL || 'http://payments-service:4007';
+
+// GET /api/admin/commission-rules
+export const listCommissionRules = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+    const adminToken = req.headers.authorization;
+    const response = await fetch(
+      `${PAYMENTS_SERVICE_URL}/api/commission-rules${qs ? `?${qs}` : ''}`,
+      { headers: { Authorization: adminToken ?? '' } }
+    );
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    logger.error(`Error listing commission rules: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
+// POST /api/admin/commission-rules
+export const createCommissionRule = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const adminId = (req as any).user?.id;
+    const body = { ...req.body, createdByAdminId: adminId };
+
+    const response = await fetch(`${PAYMENTS_SERVICE_URL}/api/commission-rules/internal`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': internalSecret ?? '',
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    logger.error(`Error creating commission rule: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
+// ==================== PAYOUTS (PROXY) ====================
+
+// GET /api/admin/payouts
+export const listPayouts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+    const adminToken = req.headers.authorization;
+    const response = await fetch(
+      `${PAYMENTS_SERVICE_URL}/api/payouts${qs ? `?${qs}` : ''}`,
+      { headers: { Authorization: adminToken ?? '' } }
+    );
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    logger.error(`Error listing payouts: ${error.message}`, 'ADMIN_CONTROLLER');
+    next(error);
+  }
+};
+
+// PATCH /api/admin/payouts/:id/complete
+export const completePayout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { transferReference } = req.body as { transferReference: string };
+    const adminId = (req as any).user?.id;
+
+    if (!transferReference?.trim()) {
+      return res.status(400).json({ message: 'transferReference es requerido' });
+    }
+
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const response = await fetch(`${PAYMENTS_SERVICE_URL}/api/payouts/${id}/complete-manual`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': internalSecret ?? '',
+      },
+      body: JSON.stringify({ transferReference, completedByAdmin: adminId }),
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    logger.error(`Error completing payout: ${error.message}`, 'ADMIN_CONTROLLER');
     next(error);
   }
 };

@@ -166,7 +166,7 @@ export default function LoginPage() {
 
             {/* Stats */}
             <div className="mt-8 flex gap-8">
-              {[['500+', 'Artistas GT'], ['Q 1,200', 'Precio típico'], ['4.9★', 'Valoración']].map(([val, label]) => (
+              {[['500+', 'Artistas'], ['$120', 'Precio típico'], ['4.9★', 'Valoración']].map(([val, label]) => (
                 <div key={label}>
                   <p className="text-2xl font-bold text-white">{val}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{label}</p>
@@ -192,7 +192,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Pagos seguros en Quetzales.<br />
+              Pagos seguros en USD.<br />
               <span className="text-gray-300">Artistas verificados por PIUMS.</span>
             </p>
           </div>

@@ -85,10 +85,16 @@ export interface AdminStats {
   revenueThisMonth: number;
   pendingReports: number;
   bookingsByMonth: { month: string; count: number }[];
+  revenueByMonth: { month: string; amount: number }[];
+  usersByMonth: { month: string; count: number }[];
+  artistsByCategory: { category: string; count: number }[];
+  topArtists: { artistId: string; nombre: string; bookings: number; revenue: number }[];
+  conversionFunnel: { totalUsers: number; totalArtists: number; verifiedArtists: number };
 }
 
 export const statsApi = {
-  get: () => request<AdminStats>("/admin/stats"),
+  get: (period?: string) =>
+    request<AdminStats>(`/admin/stats${period ? `?period=${period}` : ""}`),
 };
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -98,8 +104,10 @@ export interface AdminUserRow {
   nombre: string;
   email: string;
   role: string;
+  provider?: string;
   isBlocked: boolean;
   createdAt: string;
+  lastLoginAt?: string | null;
   pais?: string;
 }
 
@@ -116,7 +124,7 @@ export interface AdminUserDetail extends AdminUserRow {
 }
 
 export const usersApi = {
-  list: (params: { page?: number; limit?: number; search?: string; role?: string }) => {
+  list: (params: { page?: number; limit?: number; search?: string; role?: string; provider?: string; category?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
@@ -136,6 +144,36 @@ export const usersApi = {
     request<{ message: string; id: string }>(`/admin/users/${id}`, {
       method: "DELETE",
     }),
+
+  exportCSV: async (params: { role?: string; provider?: string; search?: string; category?: string }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== "")
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("admin_token") : null;
+    const res = await fetch(`${API_BASE}/admin/users/export${qs ? `?${qs}` : ""}`, {
+      credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `usuarios-piums-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 };
 
 // ─── Artists ─────────────────────────────────────────────────────────────────
@@ -165,7 +203,7 @@ export interface AdminArtistDetail extends AdminArtistRow {
   reviewsCount?: number;
   // Identity & OAuth
   emailVerified?: boolean;
-  provider?: string;           // 'email' | 'google' | 'facebook' | 'tiktok'
+  provider?: string;
   hasGoogleId?: boolean;
   hasFacebookId?: boolean;
   hasTiktokId?: boolean;
@@ -180,6 +218,45 @@ export interface AdminArtistDetail extends AdminArtistRow {
   documentFrontUrl?: string;
   documentBackUrl?: string;
   documentSelfieUrl?: string;
+  // Shadow ban
+  shadowBannedAt?: string | null;
+  shadowBanReason?: string | null;
+  authId?: string;
+}
+
+export interface CommissionRule {
+  id: string;
+  artistId: string;
+  type: "RATE_OVERRIDE" | "FIXED_PENALTY";
+  rate?: number | null;
+  fixedAmount?: number | null;
+  currency: string;
+  reason: string;
+  startDate: string;
+  endDate?: string | null;
+  isActive: boolean;
+  createdByAdminId: string;
+  createdAt: string;
+}
+
+export interface AdminPayout {
+  id: string;
+  artistId: string;
+  bookingId?: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  commissionRate?: number | null;
+  platformFee?: number | null;
+  netAmount?: number | null;
+  transferReference?: string | null;
+  completedByAdmin?: string | null;
+  completedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  // enriched by backend
+  artistName?: string;
+  bookingCode?: string;
 }
 
 export interface PaginatedArtists {
@@ -190,7 +267,7 @@ export interface PaginatedArtists {
 }
 
 export const artistsApi = {
-  list: (params: { page?: number; limit?: number; verified?: string }) => {
+  list: (params: { page?: number; limit?: number; verified?: string; search?: string; category?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
@@ -209,6 +286,99 @@ export const artistsApi = {
         ...(opts?.rejectionReason ? { rejectionReason: opts.rejectionReason } : {}),
         ...(opts?.adminNotes !== undefined ? { adminNotes: opts.adminNotes } : {}),
       }),
+    }),
+
+  shadowBan: (authId: string, banned: boolean, reason?: string) =>
+    request<{ success: boolean; banned: boolean }>(`/admin/artists/${authId}/shadow-ban`, {
+      method: "PATCH",
+      body: JSON.stringify({ banned, reason }),
+    }),
+};
+
+// ─── User Identity Verification ──────────────────────────────────────────────
+
+export interface PendingVerificationUser {
+  id: string;
+  nombre: string;
+  email: string;
+  role: string;
+  provider?: string;
+  createdAt: string;
+  documentType?: string;
+  documentNumber?: string;
+  documentFrontUrl?: string;
+  documentBackUrl?: string;
+  documentSelfieUrl?: string;
+}
+
+export interface PendingVerificationsResponse {
+  users: PendingVerificationUser[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export const verificationsApi = {
+  listPending: (params?: { page?: number; limit?: number }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params ?? {})
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return request<PendingVerificationsResponse>(`/admin/users/pending-verification${qs ? `?${qs}` : ""}`);
+  },
+
+  verify: (id: string, approved: boolean, rejectionReason?: string) =>
+    request<{ success: boolean; isVerified: boolean }>(`/admin/users/${id}/verify`, {
+      method: "PATCH",
+      body: JSON.stringify({ approved, rejectionReason }),
+    }),
+};
+
+// ─── Commission Rules ─────────────────────────────────────────────────────────
+
+export const commissionsApi = {
+  list: (params?: { artistId?: string; isActive?: boolean }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params ?? {})
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return request<{ success: boolean; data: CommissionRule[] }>(`/admin/commission-rules${qs ? `?${qs}` : ""}`);
+  },
+
+  create: (data: {
+    artistId: string;
+    type: "RATE_OVERRIDE" | "FIXED_PENALTY";
+    rate?: number;
+    fixedAmount?: number;
+    currency?: string;
+    reason: string;
+    startDate: string;
+    endDate?: string;
+  }) =>
+    request<{ success: boolean; data: CommissionRule }>("/admin/commission-rules", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── Payouts ─────────────────────────────────────────────────────────────────
+
+export const payoutsApi = {
+  list: (params?: { status?: string; artistId?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params ?? {})
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return request<{ payouts?: AdminPayout[]; data?: AdminPayout[]; total?: number }>(`/admin/payouts${qs ? `?${qs}` : ""}`);
+  },
+
+  complete: (id: string, transferReference: string) =>
+    request<{ success: boolean; data: AdminPayout }>(`/admin/payouts/${id}/complete`, {
+      method: "PATCH",
+      body: JSON.stringify({ transferReference }),
     }),
 };
 
@@ -259,7 +429,7 @@ export interface PaginatedBookings {
 }
 
 export const bookingsApi = {
-  list: (params: { page?: number; limit?: number; estado?: string; search?: string }) => {
+  list: (params: { page?: number; limit?: number; estado?: string; search?: string; dateFrom?: string; dateTo?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
@@ -328,6 +498,45 @@ export const reportsApi = {
     ),
 };
 
+// ─── Credits ─────────────────────────────────────────────────────────────────
+
+export interface AdminCreditRow {
+  id: string;
+  userId: string;
+  bookingId?: string | null;
+  amount: number;
+  currency: string;
+  status: "ACTIVE" | "USED" | "EXPIRED" | "CANCELLED";
+  reason: string;
+  expiresAt: string;
+  usedAt?: string | null;
+  usedInBookingId?: string | null;
+  createdAt: string;
+}
+
+export interface PaginatedCredits {
+  credits: AdminCreditRow[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export const creditsApi = {
+  list: (params?: { status?: string; userId?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params ?? {})
+        .filter(([, v]) => v !== undefined && v !== "")
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return request<{ success: boolean; data: PaginatedCredits }>(`/credits/admin${qs ? `?${qs}` : ""}`);
+  },
+
+  cancel: (id: string) =>
+    request<{ success: boolean; data: AdminCreditRow }>(`/credits/admin/cancel/${id}`, {
+      method: "POST",
+    }),
+};
+
 // ─── Disputes (Quejas) ────────────────────────────────────────────────────────
 
 export interface DisputeRow {
@@ -356,7 +565,13 @@ export interface PaginatedDisputes {
 }
 
 export const disputesApi = {
-  list: (params: { page?: number; limit?: number; status?: string }) => {
+  list: (params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    disputeType?: string;
+    reportedAgainst?: string;
+  }) => {
     const qs = new URLSearchParams(
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")

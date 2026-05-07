@@ -13,9 +13,10 @@ datasource db {
 enum BookingStatus {
   PENDING                    // Esperando confirmación del artista
   CONFIRMED                  // Confirmada por el artista
-  PAYMENT_PENDING            // Esperando pago del depósito
+  PAYMENT_PENDING            // Esperando pago del anticipo
   PAYMENT_COMPLETED          // Pago completado
   IN_PROGRESS                // En progreso (día de la cita)
+  DELIVERED                  // Artista marcó el servicio como entregado
   COMPLETED                  // Completada exitosamente
   RESCHEDULED                // Reprogramada
   RESCHEDULE_PENDING_ARTIST  // Solicitud de cambio esperando respuesta del artista
@@ -23,7 +24,9 @@ enum BookingStatus {
   CANCELLED_CLIENT           // Cancelada por el cliente
   CANCELLED_ARTIST           // Cancelada por el artista
   REJECTED                   // Rechazada por el artista
-  NO_SHOW                    // Cliente no se presentó
+  NO_SHOW                    // Artista no se presentó (reportado por cliente)
+  DISPUTE_OPEN               // Disputa abierta por el cliente
+  DISPUTE_RESOLVED           // Disputa resuelta por admin
 }
 
 enum RescheduleStatus {
@@ -36,9 +39,12 @@ enum RescheduleStatus {
 
 enum PaymentStatus {
   PENDING
-  DEPOSIT_PAID      // Depósito pagado
-  FULLY_PAID        // Totalmente pagado
-  REFUNDED          // Reembolsado
+  ANTICIPO_PAID      // Anticipo pagado, saldo restante pendiente
+  DEPOSIT_PAID       // Legacy — usar ANTICIPO_PAID
+  FULLY_PAID         // Totalmente pagado
+  CHARGING_REMAINING // Cobrando el saldo restante (estado transitorio)
+  FROZEN             // Pago congelado por disputa activa
+  REFUNDED           // Reembolsado
   PARTIALLY_REFUNDED
 }
 
@@ -109,21 +115,22 @@ model Booking {
   servicePrice   Int          // Precio del servicio en centavos
   addonsPrice    Int          @default(0) // Precio de addons en centavos
   totalPrice     Int          // Precio total en centavos
-  currency       String       @default("GTQ")
-  
+  currency       String       @default("USD")
+
   // Snapshot del quote completo al momento de la reserva (inmutable)
   quoteSnapshot  Json?        // Incluye: items[], breakdown, totales
-  
-  depositRequired Boolean     @default(false)
-  depositAmount   Int?        // Monto del depósito en centavos
-  depositPaidAt   DateTime?
-  
+
+  anticipoRequired Boolean    @default(false)
+  anticipoAmount   Int?       // Monto del anticipo en centavos
+  anticipoPaidAt   DateTime?
+
   paymentStatus   PaymentStatus @default(PENDING)
-  paymentIntentId String?     // ID del Payment Intent de Stripe (payments-service)
+  providerPaymentId String?   // ID del Payment Intent del proveedor (payments-service)
   paymentId       String?     // Referencia al Payment completado (payments-service)
   paidAmount      Int          @default(0)
   paidAt          DateTime?
   paymentMethod   String?
+  savedCardToken  String?     // Token de tarjeta guardada para cobro automático del saldo
   
   // Add-ons contratados (array de IDs)
   selectedAddons  String[]
@@ -138,7 +145,25 @@ model Booking {
   cancelledBy     String?      // userId que canceló
   cancellationReason String?   @db.Text
   refundAmount    Int?         // Monto reembolsado en centavos
-  
+
+  // No-show (artista no se presentó)
+  noShowAt         DateTime?
+  noShowReportedBy String?     // auth ID de quien reportó el no-show
+  noShowReason     String?     @db.Text
+
+  // Entrega del servicio (flujo post-evento)
+  estimatedDuration  Int?      // Duración estimada del servicio en minutos (default: 120)
+  deliveredAt        DateTime? // Cuándo el artista marcó como entregado
+  autoCompleteAt     DateTime? // Programado = deliveredAt + 24h (auto-complete si cliente no responde)
+  disputeReason      String?   @db.Text
+  disputeResolvedAt  DateTime?
+  disputeResolvedBy  String?   // ID del admin que resolvió
+
+  // Ubicación del cliente (para regla de 60km mismo día)
+  clientLat    Float?          // Latitud ingresada por el cliente al reservar
+  clientLng    Float?          // Longitud ingresada por el cliente al reservar
+  distanceKm   Float?          // Distancia artista↔cliente calculada (Haversine)
+
   // Reprogramación
   rescheduledAt   DateTime?
   rescheduledBy   String?      // userId que reprogramó

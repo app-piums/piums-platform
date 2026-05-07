@@ -283,8 +283,16 @@ model Payout {
   // Fees y cálculos
   originalAmount    Int?     // Monto original antes de fees
   platformFee       Int?     // Fee de la plataforma
-  stripeFee         Int?     // Fee de Stripe
-  
+  stripeFee         Int?     // Fee de Stripe (legacy)
+
+  // Comisión aplicada
+  commissionRate    Float?   // Tasa efectiva usada (ej: 18.0)
+  commissionRuleId  String?  // CommissionRule que se aplicó (si hubo override)
+
+  // Payout manual por admin
+  transferReference String?  // Referencia de la transferencia bancaria
+  completedByAdmin  String?  // auth ID del admin que marcó como completado
+
   // Programación
   scheduledFor      DateTime? // Fecha programada para el pago
   processedAt       DateTime? // Cuándo se procesó realmente
@@ -373,4 +381,82 @@ enum PayoutType {
   ADJUSTMENT        // Ajuste de saldo
   BONUS             // Bono o incentivo
   REFUND_REVERSAL   // Reversión de reembolso
+}
+
+// ============================================================================
+// Credit Model (compensaciones a clientes)
+// ============================================================================
+
+enum CreditStatus {
+  ACTIVE    // Disponible para usar
+  USED      // Aplicado en una reserva
+  EXPIRED   // Venció sin ser usado
+  CANCELLED // Cancelado manualmente
+}
+
+model Credit {
+  id              String       @id @default(uuid())
+
+  userId          String       // auth ID del cliente beneficiario
+  bookingId       String?      // Reserva origen que generó el crédito
+
+  amount          Int          // En centavos USD
+  currency        String       @default("USD")
+
+  status          CreditStatus @default(ACTIVE)
+  reason          String       // "NO_SHOW_COMPENSATION", etc.
+
+  expiresAt       DateTime     // now + 90 días
+  usedAt          DateTime?
+  usedInBookingId String?      // Reserva donde se aplicó
+
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("credits")
+}
+
+// ============================================================================
+// CommissionRule Model (reglas de comisión por artista)
+// ============================================================================
+
+enum CommissionRuleType {
+  RATE_OVERRIDE  // Tasa personalizada temporal o permanente
+  FIXED_PENALTY  // Deducción fija del próximo payout
+}
+
+model CommissionRule {
+  id                String             @id @default(uuid())
+
+  artistId          String             // auth ID del artista
+  type              CommissionRuleType
+
+  rate              Float?             // Para RATE_OVERRIDE: 0.0–100.0
+  fixedAmount       Int?               // Para FIXED_PENALTY: monto en centavos USD
+  currency          String?
+
+  reason            String             @db.Text
+  startDate         DateTime
+  endDate           DateTime?          // null = indefinido (ajuste permanente)
+
+  isActive          Boolean            @default(true)
+
+  // Solo para FIXED_PENALTY
+  appliedAt         DateTime?
+  appliedToPayoutId String?
+
+  createdByAdminId  String
+
+  deletedAt         DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([artistId])
+  @@index([type])
+  @@index([isActive])
+  @@map("commission_rules")
 }

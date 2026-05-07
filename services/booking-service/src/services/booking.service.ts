@@ -9,7 +9,7 @@ import { chatClient } from "../clients/chat.client";
 import { generateBookingCode } from "./booking-code.service";
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
-import { notifyBookingConfirmed } from "../utils/notifications";
+import { notifyBookingCreated, notifyBookingConfirmed } from "../utils/notifications";
 import { createAvailabilityReservation, removeAvailabilityReservation } from "./availability.service";
 
 const prisma = new PrismaClient();
@@ -100,6 +100,7 @@ export class BookingService {
     }
 
     let distanceKm = 0;
+    let sameDayBookingApplied = false;
     if (artist && artist.baseLocationLat && artist.baseLocationLng && data.locationLat && data.locationLng) {
       distanceKm = this.getDistance(
         artist.baseLocationLat,
@@ -108,6 +109,23 @@ export class BookingService {
         data.locationLng
       );
       logger.info(`Distancia calculada para reserva: ${distanceKm.toFixed(2)} km`, "BOOKING_SERVICE");
+
+      // Regla 60km: si artista y cliente están a ≤60km y allowSameDayBooking=true → minAdvanceHours=3
+      if (distanceKm <= 60 && (artist as any)?.allowSameDayBooking !== false) {
+        config.minAdvanceHours = 3;
+        sameDayBookingApplied = true;
+        logger.info(`Regla 60km aplicada: minAdvanceHours=3`, "BOOKING_SERVICE", { distanceKm });
+      }
+    }
+
+    // Re-validar tiempo de anticipación con minAdvanceHours posiblemente actualizado
+    if (hoursUntilBooking < config.minAdvanceHours) {
+      throw new AppError(
+        400,
+        sameDayBookingApplied
+          ? `Para reservas el mismo día debes reservar con al menos ${config.minAdvanceHours} horas de anticipación`
+          : `Debes reservar con al menos ${config.minAdvanceHours} horas de anticipación`
+      );
     }
 
     // Obtener precio del servicio desde catalog-service
@@ -145,16 +163,19 @@ export class BookingService {
         location: data.location,
         locationLat: data.locationLat,
         locationLng: data.locationLng,
+        clientLat: data.locationLat,
+        clientLng: data.locationLng,
+        distanceKm: distanceKm || null,
         status: initialStatus,
         servicePrice,
         addonsPrice,
         totalPrice,
         quoteSnapshot: priceQuote as any, // Guardar quote completo
-        depositRequired,
-        depositAmount,
+        anticipoRequired: depositRequired,
+        anticipoAmount: depositAmount,
         selectedAddons: data.selectedAddons || [],
         clientNotes: data.clientNotes,
-        paymentStatus: depositRequired ? "PENDING" : "DEPOSIT_PAID",
+        paymentStatus: depositRequired ? "PENDING" : "ANTICIPO_PAID",
         eventId: data.eventId || null,
       },
     });
@@ -194,7 +215,7 @@ export class BookingService {
       const paymentIntentResponse = await paymentsClient.createPaymentIntent({
         bookingId: booking.id,
         amount: depositAmount,
-        currency: 'GTQ',
+        currency: 'USD',
         paymentType: 'DEPOSIT',
         userId: data.clientId,
       });
@@ -205,7 +226,7 @@ export class BookingService {
         // Actualizar booking con el paymentIntentId
         await prisma.booking.update({
           where: { id: booking.id },
-          data: { paymentIntentId: paymentIntent.id },
+          data: { providerPaymentId: paymentIntent.id },
         });
 
         logger.info("Payment Intent creado para booking", "BOOKING_SERVICE", {
@@ -242,37 +263,40 @@ export class BookingService {
       }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
     }
 
-    // Enviar notificación de reserva creada
-    notificationsClient.sendNotification({
-      userId: data.clientId,
-      type: 'BOOKING_CREATED',
-      channel: 'IN_APP',
-      title: 'Reserva Creada',
-      message: `Tu reserva ha sido creada y está ${initialStatus === 'CONFIRMED' ? 'confirmada' : 'pendiente de confirmación'}`,
-      data: {
-        bookingId: booking.id,
-        scheduledDate: booking.scheduledDate.toISOString(),
-        status: booking.status,
-      },
-      priority: 'high',
-      category: 'booking',
-    }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
-
-    // Notificar al artista
-    notificationsClient.sendNotification({
-      userId: data.artistId,
-      type: 'BOOKING_CREATED',
-      channel: 'IN_APP',
-      title: 'Nueva Reserva',
-      message: `Tienes una nueva reserva ${initialStatus === 'CONFIRMED' ? 'confirmada automáticamente' : 'pendiente de confirmación'}`,
-      data: {
-        bookingId: booking.id,
-        scheduledDate: booking.scheduledDate.toISOString(),
-        status: booking.status,
-      },
-      priority: 'high',
-      category: 'booking',
-    }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+    // Enviar emails de reserva creada (cliente + artista)
+    ;(async () => {
+      try {
+        const [user, artist, service] = await Promise.all([
+          usersClient.getUser(booking.clientId),
+          artistsClient.getArtist(booking.artistId),
+          catalogClient.getService(booking.serviceId),
+        ]);
+        await notifyBookingCreated({
+          bookingId: booking.id,
+          bookingCode: booking.code || booking.id.slice(0, 8).toUpperCase(),
+          clientId: booking.clientId,
+          clientName: user?.fullName || user?.firstName || 'Cliente',
+          clientEmail: user?.email || '',
+          clientNotes: booking.clientNotes || '',
+          artistId: booking.artistId,
+          artistName: artist?.artistName || 'Artista',
+          artistEmail: artist?.email || '',
+          artistCategory: artist?.category || '',
+          artistImage: artist?.avatar || '',
+          serviceName: service?.name || 'Servicio',
+          scheduledDate: booking.scheduledDate.toISOString(),
+          durationMinutes: booking.durationMinutes,
+          location: booking.location || '',
+          servicePrice: Number(booking.totalPrice),
+          totalPrice: Number(booking.totalPrice),
+          currency: booking.currency,
+          anticipoRequired: booking.anticipoRequired,
+          anticipoAmount: Number(booking.anticipoAmount),
+        });
+      } catch (err: any) {
+        logger.error('Error enviando notificación de reserva creada', 'BOOKING_SERVICE', { error: err.message });
+      }
+    })();
 
     // Crear conversación para el chat
     chatClient.createConversation(data.clientId, data.artistId, booking.id)
@@ -292,6 +316,8 @@ export class BookingService {
         currency: paymentIntent.currency,
         status: paymentIntent.status,
       } : null,
+      sameDayBookingApplied,
+      minAdvanceHours: config.minAdvanceHours,
     };
   }
 
@@ -545,8 +571,8 @@ export class BookingService {
           servicePrice: Number(booking.totalPrice),
           totalPrice: Number(booking.totalPrice),
           currency: booking.currency,
-          depositRequired: booking.depositRequired,
-          depositAmount: Number(booking.depositAmount),
+          anticipoRequired: booking.anticipoRequired,
+          anticipoAmount: Number(booking.anticipoAmount),
         };
 
         await notifyBookingConfirmed(notificationData);
@@ -647,22 +673,46 @@ export class BookingService {
       throw new AppError(400, "Esta reserva ya está cerrada");
     }
 
-    // Calcular fee de cancelación si aplica
-    const config = await this.getArtistConfig(booking.artistId);
-    const hoursUntilBooking =
-      (booking.scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60);
-
+    const hoursSinceCreation = (Date.now() - booking.createdAt.getTime()) / (1000 * 60 * 60);
     let refundAmount = 0;
-    if (booking.depositAmount && booking.depositPaidAt) {
-      if (hoursUntilBooking >= config.cancellationHours) {
-        // Reembolso completo
-        refundAmount = booking.depositAmount;
-      } else {
-        // Aplicar fee de cancelación
-        const feePercent = config.cancellationFee;
-        refundAmount = Math.floor(
-          booking.depositAmount * (1 - feePercent / 100)
-        );
+
+    if (isClient) {
+      // Cliente solo puede cancelar dentro de las 48h desde la creación
+      if (hoursSinceCreation > 48) {
+        throw new AppError(400, "El plazo de cancelación de 48 horas desde la creación de la reserva ya venció");
+      }
+      // Reembolso del 50% de lo pagado
+      refundAmount = Math.floor(booking.paidAmount * 0.5);
+    } else {
+      // Artista cancela: reembolso 100% al cliente
+      refundAmount = booking.paidAmount;
+
+      // Penalización al artista si cancela una reserva CONFIRMED: 9% del totalPrice
+      if (booking.status === "CONFIRMED" || booking.status === "PAYMENT_PENDING" || booking.status === "PAYMENT_COMPLETED") {
+        const penaltyAmount = Math.round(booking.totalPrice * 0.09);
+
+        // Crear CommissionRule de tipo FIXED_PENALTY en payments-service (fire-and-forget)
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+        const paymentsUrl = process.env.PAYMENTS_SERVICE_URL || 'http://payments-service:4007';
+        fetch(`${paymentsUrl}/api/commission-rules/internal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret || '' },
+          body: JSON.stringify({
+            artistId: booking.artistId,
+            type: 'FIXED_PENALTY',
+            fixedAmount: penaltyAmount,
+            currency: 'USD',
+            reason: `Cancelación de reserva confirmada #${booking.code || booking.id}`,
+            startDate: new Date().toISOString(),
+            createdByAdminId: 'system',
+          }),
+        }).catch(err => logger.error('Error creando penalización por cancelación', 'BOOKING_SERVICE', { error: err.message }));
+
+        logger.info("Penalización por cancelación de artista programada", "BOOKING_SERVICE", {
+          bookingId: id,
+          artistId: booking.artistId,
+          penaltyAmount,
+        });
       }
     }
 
@@ -679,13 +729,7 @@ export class BookingService {
       },
     });
 
-    await this.recordStatusChange(
-      id,
-      booking.status,
-      newStatus,
-      userId,
-      reason
-    );
+    await this.recordStatusChange(id, booking.status, newStatus, userId, reason);
 
     logger.info("Reserva cancelada", "BOOKING_SERVICE", {
       bookingId: id,
@@ -698,44 +742,189 @@ export class BookingService {
     removeAvailabilityReservation(id)
       .catch(() => { /* puede no existir si nunca fue CONFIRMED */ });
 
+    // Iniciar reembolso si hay monto a devolver
+    if (refundAmount > 0 && booking.paidAmount > 0) {
+      paymentsClient.createRefundInternal({
+        bookingId: id,
+        userId: booking.clientId,
+        reason: isClient ? 'client_cancelled' : 'artist_cancelled',
+        amount: refundAmount,
+      }).catch(err => logger.error('Error iniciando reembolso', 'BOOKING_SERVICE', { error: err.message }));
+    }
+
     // Enviar notificaciones de cancelación
     if (isClient) {
-      // Notificar al artista que el cliente canceló
       notificationsClient.sendNotification({
         userId: booking.artistId,
         type: 'BOOKING_CANCELLED',
         channel: 'IN_APP',
         title: 'Reserva Cancelada',
         message: `El cliente ha cancelado una reserva: ${reason}`,
-        data: {
-          bookingId: id,
-          scheduledDate: booking.scheduledDate.toISOString(),
-          reason,
-          refundAmount,
-        },
+        data: { bookingId: id, scheduledDate: booking.scheduledDate.toISOString(), reason, refundAmount },
         priority: 'high',
         category: 'booking',
       }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
     } else {
-      // Notificar al cliente que el artista canceló
       notificationsClient.sendNotification({
         userId: booking.clientId,
         type: 'BOOKING_CANCELLED',
         channel: 'IN_APP',
         title: 'Reserva Cancelada',
         message: `El artista ha cancelado tu reserva: ${reason}`,
-        data: {
-          bookingId: id,
-          scheduledDate: booking.scheduledDate.toISOString(),
-          reason,
-          refundAmount,
-        },
+        data: { bookingId: id, scheduledDate: booking.scheduledDate.toISOString(), reason, refundAmount },
         priority: 'high',
         category: 'booking',
       }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
     }
 
     return updated;
+  }
+
+  // ==================== NO-SHOW ====================
+
+  async reportNoShow(id: string, reportedByUserId: string, reason?: string) {
+    const booking = await this.getBookingById(id);
+
+    const isClient = booking.clientId === reportedByUserId;
+    if (!isClient) {
+      throw new AppError(403, "Solo el cliente puede reportar un no-show");
+    }
+
+    const validStatuses: string[] = ["CONFIRMED", "PAYMENT_PENDING", "PAYMENT_COMPLETED", "IN_PROGRESS", "DELIVERED"];
+    if (!validStatuses.includes(booking.status)) {
+      throw new AppError(400, `No se puede reportar no-show en estado: ${booking.status}`);
+    }
+
+    if (booking.scheduledDate > new Date()) {
+      throw new AppError(400, "No puedes reportar un no-show antes de la fecha de la reserva");
+    }
+
+    // Actualizar estado del booking
+    await prisma.booking.update({
+      where: { id },
+      data: {
+        status: "NO_SHOW",
+        noShowAt: new Date(),
+        noShowReportedBy: reportedByUserId,
+        noShowReason: reason || null,
+      },
+    });
+
+    await this.recordStatusChange(id, booking.status as any, "NO_SHOW", reportedByUserId, reason || "No-show reportado por cliente");
+
+    // Crear disputa automáticamente
+    const dispute = await prisma.dispute.create({
+      data: {
+        bookingId: id,
+        reportedBy: reportedByUserId,
+        reportedAgainst: booking.artistId,
+        disputeType: "ARTIST_NO_SHOW",
+        status: "OPEN",
+        subject: `No-show en reserva #${booking.code || id}`,
+        description: reason || "El artista no se presentó a la cita.",
+        priority: 1,
+      },
+    });
+
+    logger.info("No-show reportado", "BOOKING_SERVICE", { bookingId: id, disputeId: dispute.id });
+
+    // Notificar al artista (tiene 24h para responder)
+    notificationsClient.sendNotification({
+      userId: booking.artistId,
+      type: "BOOKING_NO_SHOW_ARTIST",
+      channel: "IN_APP",
+      title: "No-show reportado",
+      message: `Se reportó un no-show en tu reserva #${booking.code || id}. Tienes 24 horas para responder antes de que se procesen las acciones.`,
+      data: { bookingId: id, disputeId: dispute.id },
+      priority: "high",
+      category: "booking",
+    }).catch(err => logger.error("Error enviando notificación no-show artista", "BOOKING_SERVICE", { error: err.message }));
+
+    // Notificar a admin
+    notificationsClient.sendNotification({
+      userId: "admin",
+      type: "BOOKING_NO_SHOW_ADMIN",
+      channel: "IN_APP",
+      title: "No-show reportado — revisión requerida",
+      message: `Reserva #${booking.code || id}: cliente reportó no-show del artista.`,
+      data: { bookingId: id, disputeId: dispute.id },
+      priority: "high",
+      category: "admin",
+    }).catch(err => logger.error("Error enviando notificación no-show admin", "BOOKING_SERVICE", { error: err.message }));
+
+    return { booking: await this.getBookingById(id), dispute };
+  }
+
+  async executeNoShowActions(bookingId: string, disputeId: string) {
+    const booking = await this.getBookingById(bookingId);
+
+    logger.info("Ejecutando acciones de no-show", "BOOKING_SERVICE", { bookingId, disputeId });
+
+    // 1. Reembolso 100% de lo pagado
+    if (booking.paidAmount > 0) {
+      await paymentsClient.createRefundInternal({
+        bookingId,
+        userId: booking.clientId,
+        reason: "artist_no_show",
+        amount: booking.paidAmount,
+      });
+    }
+
+    // 2. Crédito de compensación: max(18% × paidAmount, $20 USD)
+    await paymentsClient.createCredit({
+      userId: booking.clientId,
+      bookingId,
+      paidAmount: booking.paidAmount,
+      reason: "NO_SHOW_COMPENSATION",
+    });
+
+    // 3. Shadow ban al artista
+    await artistsClient.shadowBan(booking.artistId, `No-show en reserva #${booking.code || bookingId}`);
+
+    // 4. Liberar disponibilidad
+    removeAvailabilityReservation(bookingId)
+      .catch(() => { /* puede no existir */ });
+
+    // 5. Resolver la disputa
+    await prisma.dispute.update({
+      where: { id: disputeId },
+      data: {
+        status: "RESOLVED",
+        resolution: "FULL_REFUND",
+        resolutionNotes: "Acciones automáticas ejecutadas: reembolso completo + crédito de compensación + cuenta restringida.",
+        resolvedAt: new Date(),
+        resolvedBy: "system",
+        refundAmount: booking.paidAmount,
+        refundIssued: true,
+        refundIssuedAt: new Date(),
+      },
+    });
+
+    // 6. Notificar al cliente
+    notificationsClient.sendNotification({
+      userId: booking.clientId,
+      type: "BOOKING_NO_SHOW_RESOLVED",
+      channel: "IN_APP",
+      title: "Reembolso y crédito procesados",
+      message: "Tu reembolso ha sido procesado y tienes un crédito de compensación disponible por 90 días.",
+      data: { bookingId },
+      priority: "high",
+      category: "booking",
+    }).catch(err => logger.error("Error enviando notificación resolución no-show", "BOOKING_SERVICE", { error: err.message }));
+
+    // 7. Notificar al artista
+    notificationsClient.sendNotification({
+      userId: booking.artistId,
+      type: "BOOKING_NO_SHOW_ARTIST_ACTION",
+      channel: "IN_APP",
+      title: "Cuenta restringida",
+      message: "Tu cuenta ha sido restringida por no-show. Contacta soporte para reactivarla.",
+      data: { bookingId },
+      priority: "high",
+      category: "booking",
+    }).catch(err => logger.error("Error enviando notificación shadow ban artista", "BOOKING_SERVICE", { error: err.message }));
+
+    logger.info("Acciones de no-show completadas", "BOOKING_SERVICE", { bookingId, disputeId });
   }
 
   /**
@@ -980,14 +1169,14 @@ export class BookingService {
 
     // Determinar el nuevo status de pago basado en el tipo de pago
     if (paymentType === 'DEPOSIT') {
-      newPaymentStatus = "DEPOSIT_PAID";
+      newPaymentStatus = "ANTICIPO_PAID";
     } else if (paymentType === 'FULL_PAYMENT' || newPaidAmount >= booking.totalPrice) {
       newPaymentStatus = "FULLY_PAID";
-    } else if (booking.depositRequired && booking.depositAmount) {
+    } else if (booking.anticipoRequired && booking.anticipoAmount) {
       if (newPaidAmount >= booking.totalPrice) {
         newPaymentStatus = "FULLY_PAID";
-      } else if (newPaidAmount >= booking.depositAmount) {
-        newPaymentStatus = "DEPOSIT_PAID";
+      } else if (newPaidAmount >= booking.anticipoAmount) {
+        newPaymentStatus = "ANTICIPO_PAID";
       }
     } else {
       if (newPaidAmount >= booking.totalPrice) {
@@ -1001,12 +1190,12 @@ export class BookingService {
         paidAmount: newPaidAmount,
         paymentStatus: newPaymentStatus,
         paymentMethod: paymentMethod || booking.paymentMethod,
-        paymentIntentId: paymentIntentId || booking.paymentIntentId,
+        providerPaymentId: paymentIntentId || booking.providerPaymentId,
         paidAt: newPaymentStatus === "FULLY_PAID" ? new Date() : booking.paidAt,
-        depositPaidAt:
-          newPaymentStatus === "DEPOSIT_PAID" && !booking.depositPaidAt
+        anticipoPaidAt:
+          newPaymentStatus === "ANTICIPO_PAID" && !booking.anticipoPaidAt
             ? new Date()
-            : booking.depositPaidAt,
+            : booking.anticipoPaidAt,
       },
     });
 
@@ -1346,7 +1535,7 @@ export class BookingService {
         },
       }),
       prisma.booking.aggregate({
-        where: { ...where, paymentStatus: "FULLY_PAID" },
+        where: { ...where, status: { notIn: ["CANCELLED_CLIENT", "CANCELLED_ARTIST", "REJECTED"] } },
         _sum: { totalPrice: true },
       }),
     ]);
@@ -1366,7 +1555,7 @@ export class BookingService {
   /**
    * Obtiene estadísticas globales para el admin
    */
-  async getAdminStats() {
+  async getAdminStats(months: number = 6) {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
@@ -1374,27 +1563,33 @@ export class BookingService {
       stats,
       revenueThisMonth,
       bookingsThisMonth,
-      bookingsByMonth
+      bookingsByMonth,
+      revenueByMonth,
+      topArtists,
     ] = await Promise.all([
       this.getBookingStats(),
       prisma.booking.aggregate({
         where: {
-          paymentStatus: "FULLY_PAID",
-          paidAt: { gte: startOfMonth }
+          status: { notIn: ["CANCELLED_CLIENT", "CANCELLED_ARTIST", "REJECTED"] },
+          scheduledDate: { gte: startOfMonth }
         },
         _sum: { totalPrice: true }
       }),
       prisma.booking.count({
         where: { createdAt: { gte: startOfMonth } }
       }),
-      this.getBookingsByMonth(6)
+      this.getBookingsByMonth(months),
+      this.getRevenueByMonth(months),
+      this.getTopArtistsByBookings(months, 5),
     ]);
 
     return {
       ...stats,
       revenueThisMonth: revenueThisMonth._sum.totalPrice || 0,
       bookingsThisMonth,
-      bookingsByMonth
+      bookingsByMonth,
+      revenueByMonth,
+      topArtists,
     };
   }
 
@@ -1423,6 +1618,49 @@ export class BookingService {
     }
     
     return result;
+  }
+
+  private async getRevenueByMonth(monthsCount: number) {
+    const result = [];
+    const now = new Date();
+
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+      const agg = await prisma.booking.aggregate({
+        where: { status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_ARTIST', 'REJECTED'] }, scheduledDate: { gte: d, lt: nextD } },
+        _sum: { totalPrice: true },
+      });
+
+      const monthName = d.toLocaleString('es-ES', { month: 'short' });
+      result.push({ month: monthName, amount: Number(agg._sum.totalPrice ?? 0) });
+    }
+
+    return result;
+  }
+
+  private async getTopArtistsByBookings(monthsCount: number, limit: number) {
+    const periodStart = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth() - monthsCount + 1,
+      1
+    );
+
+    const grouped = await prisma.booking.groupBy({
+      by: ['artistId'],
+      where: { createdAt: { gte: periodStart } },
+      _count: { id: true },
+      _sum: { totalPrice: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: limit,
+    });
+
+    return grouped.map((g) => ({
+      artistId: g.artistId,
+      bookings: g._count.id,
+      revenue: Number(g._sum.totalPrice ?? 0),
+    }));
   }
 
   /**

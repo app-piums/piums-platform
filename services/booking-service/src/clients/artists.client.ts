@@ -12,6 +12,7 @@ export interface ArtistProfile {
   baseLocationLabel?: string;
   baseLocationLat?: number;
   baseLocationLng?: number;
+  allowSameDayBooking?: boolean;
 }
 
 export class ArtistsClient {
@@ -62,6 +63,24 @@ export class ArtistsClient {
         authId,
       });
       return null;
+    }
+  }
+
+  async shadowBan(authId: string, reason: string, banned = true): Promise<boolean> {
+    try {
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+      await axios.patch(
+        `${this.baseUrl}/artists/internal/by-auth/${authId}/shadow-ban`,
+        { banned, reason },
+        { timeout: 5000, headers: { 'x-internal-secret': internalSecret } }
+      );
+      return true;
+    } catch (error: any) {
+      logger.error('Error calling shadow-ban on artist', 'ARTISTS_CLIENT', {
+        error: error.message,
+        authId,
+      });
+      return false;
     }
   }
 }

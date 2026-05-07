@@ -28,6 +28,7 @@ interface CalendarPickerProps {
   isLoading?: boolean;
   isMonthLoading?: boolean;
   className?: string;
+  minAdvanceHours?: number;
 }
 
 export const CalendarPicker: React.FC<CalendarPickerProps> = ({
@@ -43,9 +44,18 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   isLoading = false,
   isMonthLoading = false,
   className = '',
+  minAdvanceHours,
 }) => {
   // Get available dates
   const availableDates = availability.map(a => new Date(a.date));
+
+  const isToday = selectedDate
+    ? selectedDate.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]
+    : false;
+
+  const cutoffTime = minAdvanceHours && isToday
+    ? new Date(Date.now() + minAdvanceHours * 3600000)
+    : null;
   
   // Get time slots for selected date
   const getTimeSlots = (): TimeSlot[] => {
@@ -136,8 +146,21 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
             {/* Quick time suggestions */}
             <div>
               <p className="text-xs font-medium text-gray-500 mb-2">Horarios sugeridos</p>
+              {cutoffTime && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2">
+                  Mínimo {minAdvanceHours}h de anticipación para hoy. Se muestran solo horarios disponibles.
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
-                {['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map((t) => (
+                {['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00']
+                  .filter(t => {
+                    if (!cutoffTime || !selectedDate) return true;
+                    const [h, m] = t.split(':').map(Number);
+                    const slotDate = new Date(selectedDate);
+                    slotDate.setHours(h, m, 0, 0);
+                    return slotDate >= cutoffTime;
+                  })
+                  .map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -151,6 +174,14 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     {t}
                   </button>
                 ))}
+                {cutoffTime && ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].every(t => {
+                  const [h, m] = t.split(':').map(Number);
+                  const slotDate = new Date(selectedDate!);
+                  slotDate.setHours(h, m, 0, 0);
+                  return slotDate < cutoffTime;
+                }) && (
+                  <p className="text-xs text-gray-400 py-1">No hay horarios sugeridos para hoy. Ingresa una hora manualmente.</p>
+                )}
               </div>
             </div>
           </div>

@@ -186,19 +186,8 @@ export class PayoutController {
 
   // ==================== SYNC STATUS ====================
 
-  async syncPayoutStatus(req: Request, res: Response, next: NextFunction) {
-    try {
-      const id = req.params['id'] as string;
-
-      const payout = await payoutService.syncPayoutStatus(id);
-
-      res.json({
-        message: "Estado sincronizado",
-        payout,
-      });
-    } catch (error) {
-      next(error);
-    }
+  async syncPayoutStatus(_req: Request, res: Response, _next: NextFunction) {
+    res.status(410).json({ message: "Stripe Connect removido — sincronización no disponible" });
   }
 }
 

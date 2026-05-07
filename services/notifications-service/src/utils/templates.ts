@@ -95,9 +95,9 @@ export function formatDuration(minutes: number): string {
 /**
  * Formatea un precio en centavos a moneda
  */
-export function formatPrice(cents: number, currency: string = 'GTQ'): string {
+export function formatPrice(cents: number, currency: string = 'USD'): string {
   const amount = cents / 100;
-  return new Intl.NumberFormat('es-GT', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
   }).format(amount);

@@ -33,6 +33,10 @@ interface MockBooking {
   artistId?: string;
   reviewId?: string;
   eventId?: string;
+  paymentStatus?: string;
+  anticipoAmount?: number;
+  totalPriceCents?: number;
+  currency?: string;
 }
 
 
@@ -129,6 +133,25 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
             <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
               <XCircleIcon className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
               <p className="text-xs text-red-600 leading-relaxed">{b.cancelReason}</p>
+            </div>
+          )}
+          {b.paymentStatus === 'ANTICIPO_PAID' && b.totalPriceCents != null && b.anticipoAmount != null && (
+            <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start gap-2">
+                <InfoIcon className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-800">Saldo restante pendiente</p>
+                  <p className="text-xs text-amber-700">
+                    {b.currency} {((b.totalPriceCents - b.anticipoAmount) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} se cobrará 72h antes del evento
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/booking/checkout?bookingId=${b.id}`}
+                className="shrink-0 text-xs font-bold text-amber-800 bg-amber-200 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+              >
+                Pagar ahora
+              </Link>
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-auto pt-1" onClick={e => e.stopPropagation()}>
@@ -443,6 +466,10 @@ export default function BookingsPage() {
               artistId: b.artistId,
               reviewId: b.reviewId || undefined,
               eventId: b.eventId || undefined,
+              paymentStatus: b.paymentStatus || undefined,
+              anticipoAmount: b.anticipoAmount != null ? Number(b.anticipoAmount) : undefined,
+              totalPriceCents: b.totalPrice != null ? Number(b.totalPrice) : undefined,
+              currency: b.currency || 'USD',
             };
           });
 

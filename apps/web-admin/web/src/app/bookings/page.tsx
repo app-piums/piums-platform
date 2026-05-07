@@ -8,35 +8,57 @@ import { AdminGuard } from "@/components/AdminGuard";
 
 const ESTADOS = [
   { value: "", label: "Todos" },
-  { value: "pendiente", label: "Pendiente" },
-  { value: "confirmado", label: "Confirmado" },
-  { value: "completado", label: "Completado" },
-  { value: "cancelado", label: "Cancelado" },
-  { value: "disputa", label: "En disputa" },
+  { value: "PENDING", label: "Pendiente" },
+  { value: "CONFIRMED", label: "Confirmado" },
+  { value: "ANTICIPO_PAID", label: "Anticipo pagado" },
+  { value: "PAYMENT_COMPLETED", label: "Pago completo" },
+  { value: "IN_PROGRESS", label: "En progreso" },
+  { value: "DELIVERED", label: "Entregado" },
+  { value: "COMPLETED", label: "Completado" },
+  { value: "NO_SHOW", label: "No-show" },
+  { value: "CANCELLED", label: "Cancelado" },
+  { value: "DISPUTE_OPEN", label: "En disputa" },
 ];
 
+const ESTADO_LABELS: Record<string, string> = {
+  PENDING:          "Pendiente",
+  CONFIRMED:        "Confirmado",
+  ANTICIPO_PAID:    "Anticipo pagado",
+  PAYMENT_COMPLETED:"Pago completo",
+  IN_PROGRESS:      "En progreso",
+  DELIVERED:        "Entregado",
+  COMPLETED:        "Completado",
+  NO_SHOW:          "No-show",
+  CANCELLED:        "Cancelado",
+  REJECTED:         "Rechazado",
+  DISPUTE_OPEN:     "En disputa",
+  DISPUTE_RESOLVED: "Disputa resuelta",
+};
+
 const ESTADO_STYLES: Record<string, string> = {
-  pendiente: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
-  confirmado: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  completado: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  cancelado:  "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-  disputa:    "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-  // backend capitalised statuses
-  pending:    "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
-  confirmed:  "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  completed:  "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  cancelled:  "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+  PENDING:          "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
+  CONFIRMED:        "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+  ANTICIPO_PAID:    "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
+  PAYMENT_COMPLETED:"bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  IN_PROGRESS:      "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
+  DELIVERED:        "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400",
+  COMPLETED:        "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  NO_SHOW:          "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
+  CANCELLED:        "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+  REJECTED:         "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+  DISPUTE_OPEN:     "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
+  DISPUTE_RESOLVED: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
 };
 
 function EstadoBadge({ estado }: { estado: string }) {
-  const key = estado.toLowerCase();
+  const key = estado.toUpperCase();
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
-        ESTADO_STYLES[key] ?? ESTADO_STYLES.cancelado
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        ESTADO_STYLES[key] ?? ESTADO_STYLES.CANCELLED
       }`}
     >
-      {estado}
+      {ESTADO_LABELS[key] ?? estado}
     </span>
   );
 }
@@ -67,6 +89,8 @@ function BookingsContent() {
   const [estado, setEstado] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // Debounce de la búsqueda (400ms)
   useEffect(() => {
@@ -84,9 +108,9 @@ function BookingsContent() {
   }, []);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-bookings", page, estado, debouncedSearch],
+    queryKey: ["admin-bookings", page, estado, debouncedSearch, dateFrom, dateTo],
     queryFn: () =>
-      bookingsApi.list({ page, limit: 20, estado, search: debouncedSearch }),
+      bookingsApi.list({ page, limit: 20, estado, search: debouncedSearch, dateFrom, dateTo }),
   });
 
   // Filtrado cliente-side adicional por código PIU (por si el backend no lo soporta aún)
@@ -113,31 +137,57 @@ function BookingsContent() {
       </div>
 
       {/* ── Search bar ───────────────────────────────────── */}
-      <div className="mb-5 relative">
-        <svg
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none"
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por código PIU (ej. PIU-XXXX), ID, cliente o artista..."
-          className="w-full sm:max-w-md pl-10 pr-10 py-2.5 text-sm border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] transition-colors"
-        />
-        {search && (
-          <button
-            onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            aria-label="Limpiar búsqueda"
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <svg
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por código PIU, cliente o artista..."
+            className="w-72 pl-10 pr-10 py-2.5 text-sm border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              aria-label="Limpiar búsqueda"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {/* Date range */}
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+          />
+          <span className="text-xs text-zinc-400">—</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+          />
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 underline"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Filter tabs ──────────────────────────────────── */}

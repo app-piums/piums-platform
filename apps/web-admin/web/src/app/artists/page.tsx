@@ -2,13 +2,30 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { artistsApi, type AdminArtistRow, type AdminArtistDetail } from "@/lib/api";
+import { artistsApi, commissionsApi, disputesApi, type AdminArtistRow, type AdminArtistDetail, type CommissionRule } from "@/lib/api";
 import { AdminGuard } from "@/components/AdminGuard";
 
 const FILTER_OPTIONS = [
   { value: "", label: "Todos" },
   { value: "false", label: "Pendientes" },
   { value: "true", label: "Verificados" },
+];
+
+const ARTIST_CATEGORIES = [
+  { value: "", label: "Todas las categorías" },
+  { value: "MUSICO", label: "Músico" },
+  { value: "FOTOGRAFO", label: "Fotógrafo" },
+  { value: "TATUADOR", label: "Tatuador" },
+  { value: "MAQUILLADOR", label: "Maquillador" },
+  { value: "DJ", label: "DJ" },
+  { value: "PINTOR", label: "Pintor" },
+  { value: "BAILARIN", label: "Bailarín" },
+  { value: "VIDEOGRAFO", label: "Videógrafo" },
+  { value: "DISENADOR", label: "Diseñador" },
+  { value: "ANIMADOR", label: "Animador" },
+  { value: "MAGO", label: "Mago" },
+  { value: "ACROBATA", label: "Acróbata" },
+  { value: "OTRO", label: "Otro" },
 ];
 
 function VerifiedBadge({ verified }: { verified: boolean }) {
@@ -71,7 +88,7 @@ function CheckItem({
 }
 
 // ─── Artist Detail Drawer ──────────────────────────────────────────────────────
-type Tab = "perfil" | "documentos" | "decision";
+type Tab = "perfil" | "documentos" | "decision" | "comisiones" | "no-shows";
 
 function ArtistDetailDrawer({
   artistId,
@@ -84,9 +101,23 @@ function ArtistDetailDrawer({
   onVerify: (id: string, approved: boolean, reason?: string, notes?: string) => void;
   onReject: (id: string) => void;
 }) {
+  const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery<AdminArtistDetail>({
     queryKey: ["admin-artist-detail", artistId],
     queryFn: () => artistsApi.detail(artistId),
+  });
+
+  const { data: commissionsData } = useQuery({
+    queryKey: ["admin-commissions", artistId],
+    queryFn: () => commissionsApi.list({ artistId }),
+    enabled: !!artistId,
+  });
+
+  const { data: noShowsData } = useQuery({
+    queryKey: ["admin-artist-no-shows", data?.authId],
+    queryFn: () => disputesApi.list({ disputeType: "ARTIST_NO_SHOW", reportedAgainst: data!.authId }),
+    enabled: !!data?.authId,
   });
 
   const [tab, setTab] = useState<Tab>("perfil");
@@ -95,12 +126,34 @@ function ArtistDetailDrawer({
   const [checks, setChecks] = useState({ identity: false, notExpired: false, selfie: false, readable: false });
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
 
+  // Commission form state
+  const [commissionType, setCommissionType] = useState<"RATE_OVERRIDE" | "FIXED_PENALTY">("RATE_OVERRIDE");
+  const [commissionRate, setCommissionRate] = useState("");
+  const [commissionFixed, setCommissionFixed] = useState("");
+  const [commissionReason, setCommissionReason] = useState("");
+  const [commissionStartDate, setCommissionStartDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [creatingCommission, setCreatingCommission] = useState(false);
+
+  const shadowBanMutation = useMutation({
+    mutationFn: ({ banned, reason }: { banned: boolean; reason?: string }) =>
+      artistsApi.shadowBan(data!.authId ?? data!.id, banned, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-artist-detail", artistId] });
+    },
+  });
+
   const hasDocuments = !!(data?.documentFrontUrl || data?.documentBackUrl || data?.documentSelfieUrl || data?.documentType);
   const allChecked = Object.values(checks).every(Boolean);
+
+  const rules: CommissionRule[] = commissionsData?.data ?? [];
+  const activeRules = rules.filter((r) => r.isActive);
+  const noShowCount = noShowsData?.disputes.length ?? 0;
 
   const tabs: { key: Tab; label: string; dot?: boolean }[] = [
     { key: "perfil", label: "Perfil" },
     { key: "documentos", label: "Documentos", dot: hasDocuments },
+    { key: "comisiones", label: "Comisiones", dot: activeRules.length > 0 },
+    { key: "no-shows", label: "No-shows", dot: noShowCount > 0 },
     { key: "decision", label: "Decisión" },
   ];
 
@@ -226,6 +279,30 @@ function ArtistDetailDrawer({
             <p className="p-6 text-sm text-zinc-400">No se pudo cargar el perfil.</p>
           ) : tab === "perfil" ? (
             <div className="space-y-px">
+
+              {/* Shadow ban banner */}
+              {data.shadowBannedAt && (
+                <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Cuenta restringida (Shadow ban)</p>
+                      {data.shadowBanReason && (
+                        <p className="mt-1 text-sm text-red-700 dark:text-red-400">{data.shadowBanReason}</p>
+                      )}
+                      <p className="mt-1 text-xs text-red-500">
+                        Desde: {new Date(data.shadowBannedAt).toLocaleDateString("es-GT")}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => shadowBanMutation.mutate({ banned: false })}
+                      disabled={shadowBanMutation.isPending}
+                      className="shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    >
+                      {shadowBanMutation.isPending ? "…" : "Levantar restricción"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Prior rejection banner */}
               {!data.isVerified && data.rejectionReason && (
@@ -384,6 +461,187 @@ function ArtistDetailDrawer({
               )}
             </div>
 
+          ) : tab === "comisiones" ? (
+            /* ── Comisiones tab ── */
+            <div className="p-5 space-y-5">
+
+              {/* Active rules list */}
+              {rules.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Reglas activas</p>
+                  {rules.map((r) => (
+                    <div key={r.id} className={`rounded-xl border p-3.5 ${r.isActive ? "border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20" : "border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className={`inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${r.type === "RATE_OVERRIDE" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
+                            {r.type === "RATE_OVERRIDE" ? "Tasa especial" : "Penalización"}
+                          </span>
+                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{r.reason}</p>
+                          {r.rate != null && (
+                            <p className="text-xs text-zinc-500 mt-0.5">Tasa: {r.rate}%</p>
+                          )}
+                          {r.fixedAmount != null && (
+                            <p className="text-xs text-zinc-500 mt-0.5">
+                              Monto fijo: {r.currency} {(r.fixedAmount / 100).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${r.isActive ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"}`}>
+                          {r.isActive ? "Activa" : "Inactiva"}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 mt-1.5">
+                        Desde {new Date(r.startDate).toLocaleDateString("es-GT")}{r.endDate ? ` · Hasta ${new Date(r.endDate).toLocaleDateString("es-GT")}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-400 text-center py-4">Sin reglas de comisión para este artista.</p>
+              )}
+
+              {/* New rule form */}
+              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-5 space-y-4">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Nueva regla</p>
+
+                <div className="flex gap-2">
+                  {(["RATE_OVERRIDE", "FIXED_PENALTY"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setCommissionType(t)}
+                      className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition-colors ${commissionType === t ? "border-[#FF6A00] bg-[#FF6A00]/10 text-[#FF6A00]" : "border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700"}`}
+                    >
+                      {t === "RATE_OVERRIDE" ? "Tasa especial" : "Penalización fija"}
+                    </button>
+                  ))}
+                </div>
+
+                {commissionType === "RATE_OVERRIDE" ? (
+                  <div>
+                    <label className="block text-xs text-zinc-500 mb-1">Tasa (%)</label>
+                    <input
+                      type="number" min="0" max="100" step="0.5"
+                      value={commissionRate}
+                      onChange={(e) => setCommissionRate(e.target.value)}
+                      placeholder="Ej: 9"
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs text-zinc-500 mb-1">Monto fijo (centavos USD)</label>
+                    <input
+                      type="number" min="0"
+                      value={commissionFixed}
+                      onChange={(e) => setCommissionFixed(e.target.value)}
+                      placeholder="Ej: 1800 = $18.00"
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Motivo *</label>
+                  <textarea
+                    rows={2}
+                    value={commissionReason}
+                    onChange={(e) => setCommissionReason(e.target.value)}
+                    placeholder="Explica brevemente el motivo..."
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm resize-none focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Fecha de inicio</label>
+                  <input
+                    type="date"
+                    value={commissionStartDate}
+                    onChange={(e) => setCommissionStartDate(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                  />
+                </div>
+
+                <button
+                  disabled={creatingCommission || !commissionReason.trim() || (!commissionRate && !commissionFixed)}
+                  onClick={async () => {
+                    if (!data) return;
+                    setCreatingCommission(true);
+                    try {
+                      await commissionsApi.create({
+                        artistId: data.id,
+                        type: commissionType,
+                        rate: commissionType === "RATE_OVERRIDE" && commissionRate ? parseFloat(commissionRate) : undefined,
+                        fixedAmount: commissionType === "FIXED_PENALTY" && commissionFixed ? parseInt(commissionFixed) : undefined,
+                        reason: commissionReason,
+                        startDate: new Date(commissionStartDate).toISOString(),
+                      });
+                      setCommissionRate(""); setCommissionFixed(""); setCommissionReason("");
+                      queryClient.invalidateQueries({ queryKey: ["admin-commissions", artistId] });
+                    } catch { /* non-critical */ } finally {
+                      setCreatingCommission(false);
+                    }
+                  }}
+                  className="w-full rounded-xl bg-[#FF6A00] py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {creatingCommission ? "Creando…" : "Crear regla"}
+                </button>
+              </div>
+            </div>
+
+          ) : tab === "no-shows" ? (
+            /* ── No-shows tab ── */
+            <div className="p-5 space-y-4">
+              {noShowCount === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <svg className="h-7 w-7 text-zinc-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Sin no-shows registrados</p>
+                  <p className="mt-1 text-xs text-zinc-400">Este artista no tiene disputas por no presentarse.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-400">
+                      {noShowCount} {noShowCount === 1 ? "caso" : "casos"}
+                    </span>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Historial de no-shows</p>
+                  </div>
+                  <div className="space-y-3">
+                    {noShowsData?.disputes.map((d) => (
+                      <div key={d.id} className="rounded-xl border border-red-100 bg-red-50/50 p-3.5 dark:border-red-900/50 dark:bg-red-950/20">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{d.subject}</p>
+                            <p className="mt-1 text-xs text-zinc-500 line-clamp-2">{d.description}</p>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-zinc-400">
+                              <span>Reserva: <span className="font-mono">{d.bookingId.slice(0, 8)}</span></span>
+                              <span>·</span>
+                              <span>{new Date(d.createdAt).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                            </div>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            d.status === "RESOLVED" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+                            : d.status === "OPEN" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
+                          }`}>
+                            {d.status === "RESOLVED" ? "Resuelto" : d.status === "OPEN" ? "Abierto" : d.status}
+                          </span>
+                        </div>
+                        {d.resolution && (
+                          <p className="mt-2 text-[10px] text-zinc-400">
+                            Resolución: <span className="font-medium text-zinc-600 dark:text-zinc-300">{d.resolution}</span>
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
           ) : (
             /* ── Decisión tab ── */
             <div className="p-5 space-y-5">
@@ -505,12 +763,34 @@ function ArtistDetailDrawer({
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => { setDecision("reject"); setTab("decision"); }}
-                  className="w-full rounded-xl bg-zinc-100 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                >
-                  Revocar verificación
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setDecision("reject"); setTab("decision"); }}
+                    className="flex-1 rounded-xl bg-zinc-100 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
+                    Revocar verificación
+                  </button>
+                  {!data.shadowBannedAt ? (
+                    <button
+                      onClick={() => {
+                        const reason = prompt("Motivo del shadow ban (opcional):") ?? "";
+                        shadowBanMutation.mutate({ banned: true, reason: reason || undefined });
+                      }}
+                      disabled={shadowBanMutation.isPending}
+                      className="rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 disabled:opacity-50"
+                    >
+                      Shadow ban
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => shadowBanMutation.mutate({ banned: false })}
+                      disabled={shadowBanMutation.isPending}
+                      className="rounded-xl bg-red-100 border border-red-200 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
+                    >
+                      Levantar ban
+                    </button>
+                  )}
+                </div>
               )
             ) : (
               /* From decision tab: execute */
@@ -568,6 +848,9 @@ function ArtistsContent() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [verified, setVerified] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [category, setCategory] = useState("");
   const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     artist: AdminArtistRow;
@@ -577,8 +860,8 @@ function ArtistsContent() {
   } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-artists", page, verified],
-    queryFn: () => artistsApi.list({ page, limit: 20, verified }),
+    queryKey: ["admin-artists", page, verified, search, category],
+    queryFn: () => artistsApi.list({ page, limit: 20, verified, search, category }),
   });
 
   const verifyMutation = useMutation({
@@ -617,20 +900,43 @@ function ArtistsContent() {
       </div>
 
       {/* Filter tabs */}
-      <div className="mb-5 flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-800 dark:bg-zinc-900 sm:w-fit">
-        {FILTER_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => { setVerified(opt.value); setPage(1); }}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-              verified === opt.value
-                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-50"
-                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-            }`}
-          >
-            {opt.label}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-800 dark:bg-zinc-900">
+          {FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { setVerified(opt.value); setPage(1); }}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                verified === opt.value
+                  ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-50"
+                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }} className="flex gap-2">
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Buscar por nombre o email…"
+            className="w-64 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          />
+          <button type="submit" className="rounded-lg bg-[#FF6A00] px-4 py-2 text-sm font-medium text-white hover:bg-[#E65F00]">
+            Buscar
           </button>
-        ))}
+        </form>
+        <select
+          value={category}
+          onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-[#FF6A00] focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+        >
+          {ARTIST_CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Mobile cards */}

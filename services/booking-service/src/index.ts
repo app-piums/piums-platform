@@ -6,6 +6,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
 import healthRoutes from "./routes/health.routes";
 import bookingRoutes from "./routes/booking.routes";
+import { startCronJobs } from "./services/cron.service";
 import availabilityRoutes from "./routes/availability.routes";
 import disputeRoutes from "./routes/dispute.routes";
 import eventRoutes from "./routes/event.routes";
@@ -76,6 +77,8 @@ app.listen(PORT, () => {
     port: PORT,
     nodeEnv: process.env.NODE_ENV || "development",
   });
+
+  startCronJobs();
 });
 
 // Manejo de errores no capturados

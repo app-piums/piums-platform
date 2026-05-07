@@ -189,6 +189,38 @@ export default function ArtistDashboardPage() {
             </div>
           </div>
 
+          {/* Shadow ban alert */}
+          {!isLoading && artistProfile?.shadowBannedAt && (
+            <div className="mb-6 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-red-900">Tu cuenta está restringida temporalmente</p>
+                <p className="mt-1 text-sm text-red-700">
+                  Tu perfil no aparece en las búsquedas de clientes. Esto ocurrió porque se reportó un no-show en una de tus reservas.
+                  Si crees que es un error, responde la queja activa o contacta al soporte.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => router.push('/artist/dashboard/quejas')}
+                    className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+                  >
+                    Ver mis quejas
+                  </button>
+                  <a
+                    href="mailto:soporte@piums.io"
+                    className="rounded-lg border border-red-300 px-4 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    Contactar soporte
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* No-services alert */}
           {!isLoading && artistProfile && artistServices.length === 0 && (
             <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">

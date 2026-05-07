@@ -472,7 +472,7 @@ export default function ArtistServicesPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Precio base (Q) <span className="text-red-500">*</span>
+                    Precio base (USD) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"

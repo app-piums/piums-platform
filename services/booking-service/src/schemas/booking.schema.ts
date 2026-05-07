@@ -16,10 +16,13 @@ export const BookingStatusEnum = z.enum([
 
 export const PaymentStatusEnum = z.enum([
   "PENDING",
-  "DEPOSIT_PAID",
+  "ANTICIPO_PAID",
+  "DEPOSIT_PAID", // legacy — alias
   "FULLY_PAID",
   "REFUNDED",
   "PARTIALLY_REFUNDED",
+  "CHARGING_REMAINING",
+  "FROZEN",
 ]);
 
 // Schema para crear reserva

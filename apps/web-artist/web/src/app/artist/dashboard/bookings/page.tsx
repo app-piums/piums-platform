@@ -5,13 +5,14 @@ import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
+import Link from 'next/link';
 import { sdk, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 import { cImg } from '@/lib/cloudinaryImg';
 
-type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'RESCHEDULE_PENDING_ARTIST' | 'ALL';
+type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'RESCHEDULE_PENDING_ARTIST' | 'NO_SHOW' | 'ALL';
 
 type ArtistBookingsFilters = {
   status?: BookingStatus;
@@ -200,25 +201,40 @@ export default function ArtistBookingsPage() {
     RESCHEDULE_PENDING_ARTIST: 'Cambio de fecha',
     RESCHEDULE_PENDING_CLIENT: 'Esperando cliente',
     RESCHEDULED: 'Reprogramada',
+    NO_SHOW: 'No se presentó',
+    IN_PROGRESS: 'En progreso',
+    ANTICIPO_PAID: 'Anticipo pagado',
+    PAYMENT_COMPLETED: 'Pago completado',
+    DELIVERED: 'Entregada',
   };
 
   const STATUS_STYLES: Record<string, string> = {
-    PENDING:   'bg-amber-100 text-amber-700 border border-amber-200',
-    CONFIRMED: 'bg-green-100 text-green-700 border border-green-200',
-    COMPLETED: 'bg-blue-100  text-blue-700  border border-blue-200',
-    CANCELLED: 'bg-gray-100  text-gray-600  border border-gray-200',
-    REJECTED:  'bg-red-100   text-red-600   border border-red-200',
+    PENDING:          'bg-amber-100 text-amber-700 border border-amber-200',
+    CONFIRMED:        'bg-green-100 text-green-700 border border-green-200',
+    COMPLETED:        'bg-blue-100  text-blue-700  border border-blue-200',
+    CANCELLED:        'bg-gray-100  text-gray-600  border border-gray-200',
+    REJECTED:         'bg-red-100   text-red-600   border border-red-200',
+    NO_SHOW:          'bg-red-100   text-red-700   border border-red-200',
+    IN_PROGRESS:      'bg-teal-100  text-teal-700  border border-teal-200',
+    ANTICIPO_PAID:    'bg-violet-100 text-violet-700 border border-violet-200',
+    PAYMENT_COMPLETED:'bg-green-100 text-green-700 border border-green-200',
+    DELIVERED:        'bg-blue-100  text-blue-700  border border-blue-200',
   };
 
   const BORDER_ACCENT: Record<string, string> = {
-    PENDING:   'border-l-amber-400',
-    CONFIRMED: 'border-l-green-500',
-    COMPLETED: 'border-l-blue-500',
-    CANCELLED: 'border-l-gray-400',
-    REJECTED:  'border-l-red-400',
+    PENDING:                   'border-l-amber-400',
+    CONFIRMED:                 'border-l-green-500',
+    COMPLETED:                 'border-l-blue-500',
+    CANCELLED:                 'border-l-gray-400',
+    REJECTED:                  'border-l-red-400',
     RESCHEDULE_PENDING_ARTIST: 'border-l-purple-400',
     RESCHEDULE_PENDING_CLIENT: 'border-l-purple-300',
-    RESCHEDULED: 'border-l-teal-400',
+    RESCHEDULED:               'border-l-teal-400',
+    NO_SHOW:                   'border-l-red-500',
+    IN_PROGRESS:               'border-l-teal-500',
+    ANTICIPO_PAID:             'border-l-violet-400',
+    PAYMENT_COMPLETED:         'border-l-green-500',
+    DELIVERED:                 'border-l-blue-500',
   };
 
   const statusCountValues = Object.values(statusCounts);
@@ -238,6 +254,7 @@ export default function ArtistBookingsPage() {
     { value: 'COMPLETED',                label: 'Completadas'   },
     { value: 'CANCELLED',                label: 'Canceladas'    },
     { value: 'REJECTED',                 label: 'Rechazadas'    },
+    { value: 'NO_SHOW',                  label: 'No-show'       },
     { value: 'ALL',                      label: 'Todas'          },
   ];
 
@@ -539,6 +556,18 @@ export default function ArtistBookingsPage() {
                           </button>
                         </div>
                       )}
+                      {booking.status === 'NO_SHOW' && (
+                        <div className="px-4 pb-4 pt-1">
+                          <Link
+                            href="/artist/dashboard/quejas"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-2 w-full justify-center py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            Ver disputa abierta
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -741,6 +770,33 @@ export default function ArtistBookingsPage() {
                   </div>
                 )}
               </div>
+
+              {/* No-show banner */}
+              {selectedBooking.status === 'NO_SHOW' && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950/30">
+                  <div className="flex items-start gap-3">
+                    <svg className="mt-0.5 h-5 w-5 shrink-0 text-red-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-700">No-show reportado</p>
+                      <p className="mt-0.5 text-xs text-red-600">
+                        El cliente reportó que no te presentaste a esta reserva. Si crees que hay un error, responde la disputa abierta.
+                      </p>
+                      <Link
+                        href="/artist/dashboard/quejas"
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors"
+                        onClick={() => setSelectedBooking(null)}
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Ver mis quejas
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Status Actions */}
               <div className="border-t border-gray-100 pt-4 space-y-2">

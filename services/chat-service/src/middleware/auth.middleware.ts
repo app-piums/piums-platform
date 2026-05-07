@@ -27,7 +27,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-only-secret-not-for-production') as any;
     let userId = decoded.id || decoded.userId;
 
-    if (decoded.role === 'artista' || decoded.role === 'artist') {
+    if (decoded.role === 'artista' || decoded.role === 'artist' || decoded.role === 'ambos') {
       const profileId = await resolveArtistId(token);
       if (profileId) {
         userId = profileId;
@@ -53,7 +53,7 @@ export const verifySocketToken = async (token: string): Promise<{ id: string; em
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-only-secret-not-for-production') as any;
     let userId = decoded.id || decoded.userId;
 
-    if (decoded.role === 'artista' || decoded.role === 'artist') {
+    if (decoded.role === 'artista' || decoded.role === 'artist' || decoded.role === 'ambos') {
       const profileId = await resolveArtistId(token);
       if (profileId) {
         userId = profileId;

@@ -1,5 +1,6 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { payoutController } from "../controller/payout.controller";
+import { payoutService } from "../services/payout.service";
 import { authenticateToken } from "../middleware/auth.middleware";
 
 const router: Router = Router();
@@ -26,6 +27,30 @@ router.get(
   "/payouts",
   authenticateToken,
   payoutController.listPayouts.bind(payoutController)
+);
+
+/**
+ * GET /api/payouts/pending
+ * Listar payouts pendientes — solo admin (x-internal-secret)
+ * DEBE ir ANTES de /payouts/:id para evitar que Express lo capture como id="pending"
+ */
+router.get(
+  "/payouts/pending",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const secret = req.headers["x-internal-secret"];
+      if (!secret || secret !== process.env.INTERNAL_SERVICE_SECRET) {
+        res.status(403).json({ message: "Acceso denegado" });
+        return;
+      }
+      const page = parseInt(String(req.query.page || "1"), 10);
+      const limit = parseInt(String(req.query.limit || "50"), 10);
+      const result = await payoutService.getPendingPayouts(page, limit);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  }
 );
 
 /**
@@ -57,6 +82,39 @@ router.post(
   "/payouts/:id/cancel",
   authenticateToken,
   payoutController.cancelPayout.bind(payoutController)
+);
+
+/**
+ * PATCH /api/payouts/:id/complete-manual
+ * Marcar un payout como completado manualmente por admin (x-internal-secret)
+ * Body: { transferReference, completedByAdmin }
+ */
+router.patch(
+  "/payouts/:id/complete-manual",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const secret = req.headers["x-internal-secret"];
+      if (!secret || secret !== process.env.INTERNAL_SERVICE_SECRET) {
+        res.status(403).json({ message: "Acceso denegado" });
+        return;
+      }
+      const { id } = req.params;
+      const { transferReference, completedByAdmin } = req.body as {
+        transferReference: string;
+        completedByAdmin?: string;
+      };
+
+      if (!transferReference?.trim()) {
+        res.status(400).json({ message: "transferReference es requerido" });
+        return;
+      }
+
+      const payout = await payoutService.completePayout(id, transferReference, completedByAdmin);
+      res.json({ success: true, data: payout });
+    } catch (err) {
+      next(err);
+    }
+  }
 );
 
 /**

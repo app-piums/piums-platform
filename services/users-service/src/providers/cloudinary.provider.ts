@@ -69,6 +69,33 @@ export class CloudinaryProvider {
   }
 
   /**
+   * Subir avatar durante registro (sin userId aún) a piums/avatars/temp/
+   */
+  async uploadAvatarTemp(buffer: Buffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'piums/avatars',
+          public_id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          transformation: [
+            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+            { quality: 'auto', fetch_format: 'auto' },
+          ],
+        },
+        (error, result) => {
+          if (error) {
+            logger.error('Error uploading temp avatar to Cloudinary', 'CLOUDINARY_PROVIDER', error);
+            reject(error);
+          } else {
+            resolve(result!.secure_url);
+          }
+        }
+      );
+      streamifier.createReadStream(buffer).pipe(uploadStream);
+    });
+  }
+
+  /**
    * Subir documento de identidad a Cloudinary
    */
   async uploadDocument(buffer: Buffer, folder: string): Promise<string> {

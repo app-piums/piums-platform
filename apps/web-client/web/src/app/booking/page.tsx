@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ClientSidebar from '@/components/ClientSidebar';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -230,6 +230,13 @@ function BookingContent() {
     }
     return calculateDistanceKm(artistBaseCoords, clientCoords);
   }, [artistBaseCoords, clientCoords]);
+
+  const minAdvanceHours = useMemo(() => {
+    if (travelDistanceKm !== null && travelDistanceKm <= 60 && artist?.allowSameDayBooking !== false) {
+      return 3;
+    }
+    return 24;
+  }, [travelDistanceKm, artist?.allowSameDayBooking]);
   const [locationMode, setLocationMode] = useState<'manual' | 'auto'>('manual');
   const [requestingLocation, setRequestingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -729,11 +736,50 @@ function BookingContent() {
     );
   };
 
+  const [submitStage, setSubmitStage] = useState<'idle' | 'creating' | 'checkout' | 'waiting'>('idle');
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+  const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, []);
+
+  const startPaymentPolling = (bookingId: string) => {
+    setPendingBookingId(bookingId);
+    setSubmitStage('waiting');
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const booking = await sdk.getBooking(bookingId).catch(() => null);
+        const paymentStatus = (booking as any)?.paymentStatus;
+
+        if (paymentStatus === 'FULLY_PAID' || paymentStatus === 'DEPOSIT_PAID') {
+          clearInterval(pollIntervalRef.current!);
+          pollIntervalRef.current = null;
+          setPaymentIframeUrl(null);
+          setShowConfirmModal(false);
+          setSubmitStage('idle');
+          setSubmitting(false);
+          setPendingBookingId(null);
+          router.push(`/booking/confirmation/${bookingId}?responseCode=00`);
+        }
+      } catch {
+        // ignore polling errors
+      }
+    }, 3000);
+  };
+
   const handleConfirmBooking = async () => {
     if (!selectedService || !artist || !user || !selectedTimeSlot) return;
 
     try {
       setSubmitting(true);
+      setSubmitStage('creating');
+
       const effectiveArtistId = resolvedArtistId || selectedService.artistId;
       const payload = {
         clientId: user.id,
@@ -744,21 +790,49 @@ function BookingContent() {
         location: location || undefined,
         locationLat: clientCoords?.lat,
         locationLng: clientCoords?.lng,
+        clientLat: clientCoords?.lat,
+        clientLng: clientCoords?.lng,
         clientNotes: notes || undefined,
         selectedAddons: selectedAddons.length ? selectedAddons : undefined,
         eventId: selectedEventId || undefined,
       };
 
       const booking = await sdk.createBooking(payload);
-      setShowConfirmModal(false);
-      router.push(`/booking/checkout?bookingId=${booking.id}`);
+
+      const amountForIntent = (booking as any).anticipoRequired && (booking as any).anticipoAmount != null
+        ? (booking as any).anticipoAmount
+        : booking.totalPrice;
+
+      setSubmitStage('checkout');
+      let pi;
+      try {
+        pi = await sdk.initCheckout(
+          booking.id,
+          amountForIntent,
+          (booking as any).currency || 'USD',
+          (booking as any).clientCountryCode,
+        );
+      } catch (checkoutError) {
+        try { await sdk.cancelBooking(booking.id, 'Error al iniciar el pago'); } catch {}
+        throw checkoutError;
+      }
+
+      if (pi.redirectUrl) {
+        // Embed Tilopay inside the modal so the user never leaves piums.io
+        setPaymentIframeUrl(pi.redirectUrl);
+        startPaymentPolling(booking.id);
+      } else if (pi.clientSecret) {
+        // Stripe fallback — use dedicated checkout page
+        setShowConfirmModal(false);
+        router.push(`/booking/checkout?bookingId=${booking.id}`);
+      }
     } catch (error) {
       console.error('Error creating booking:', error);
       setShowConfirmModal(false);
+      setSubmitStage('idle');
+      setSubmitting(false);
       const message = error instanceof Error ? error.message : 'Error al crear la reserva. Por favor intenta de nuevo.';
       toast.error(message);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -1018,6 +1092,7 @@ function BookingContent() {
                         disabledDates={disabledDates}
                         isLoading={slotsLoading}
                         isMonthLoading={calendarLoading}
+                        minAdvanceHours={minAdvanceHours}
                       />
 
                       {/* Selected range summary for multi-day */}
@@ -1152,6 +1227,21 @@ function BookingContent() {
                           </p>
                         </div>
                       </div>
+
+                      {/* 60km same-day alert */}
+                      {travelDistanceKm !== null && travelDistanceKm <= 60 && artist?.allowSameDayBooking !== false && (
+                        <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                          <svg className="h-5 w-5 text-green-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-semibold text-green-800">Reserva con solo 3h de anticipación</p>
+                            <p className="text-sm text-green-700 mt-0.5">
+                              Tu ubicación está a {travelDistanceKm.toFixed(1)} km del artista. Puedes reservar el mismo día con al menos 3 horas de anticipación.
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Addons */}
                       {addons.length > 0 && (
@@ -1520,20 +1610,62 @@ function BookingContent() {
         </div>
       </div>
 
-      {/* Modal de Confirmación */}
+      {/* Modal de Confirmación / Pago embebido */}
       <ConfirmModal
         isOpen={showConfirmModal}
-        onClose={() => !submitting && setShowConfirmModal(false)}
+        onClose={() => {
+          if (submitStage === 'waiting') {
+            if (window.confirm('¿Cancelar el pago? Tu reserva será eliminada.')) {
+              clearInterval(pollIntervalRef.current!);
+              pollIntervalRef.current = null;
+              if (pendingBookingId) sdk.cancelBooking(pendingBookingId, 'Usuario canceló el pago').catch(() => {});
+              setPaymentIframeUrl(null);
+              setShowConfirmModal(false);
+              setSubmitStage('idle');
+              setSubmitting(false);
+              setPendingBookingId(null);
+            }
+          } else if (!submitting) {
+            setShowConfirmModal(false);
+          }
+        }}
         onConfirm={handleConfirmBooking}
-        title="Confirmar Reserva"
+        title={submitStage === 'waiting' ? "Completa tu pago" : "Confirmar Reserva"}
         message=""
-        confirmLabel={submitting ? "Creando..." : "Sí, confirmar"}
-        cancelLabel="Cancelar"
+        confirmLabel={submitStage === 'creating' ? "Creando reserva..." : submitStage === 'checkout' ? "Iniciando pago..." : "Sí, confirmar"}
+        cancelLabel={submitStage === 'waiting' ? "Cancelar pago" : "Cancelar"}
         variant="info"
-        isLoading={submitting}
+        isLoading={submitting && submitStage !== 'waiting'}
+        hideActions={submitStage === 'waiting'}
+        size={submitStage === 'waiting' ? 'xl' : 'sm'}
         confirmClassName="bg-[#FF6A00] hover:bg-[#e55a00] text-white"
         details={
-          selectedService && selectedDate && selectedTime && artist ? (
+          submitStage === 'waiting' && paymentIframeUrl ? (
+            <div className="flex flex-col gap-0 -mx-6 -mb-4">
+              {/* Trusted payment bar */}
+              <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <svg className="h-3.5 w-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                  Procesado por <span className="font-semibold text-gray-700">Tilopay</span> · SSL encriptado
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                  <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                  Esperando pago...
+                </div>
+              </div>
+              {/* Tilopay iframe */}
+              <iframe
+                src={paymentIframeUrl}
+                className="w-full border-0"
+                style={{ height: 'clamp(420px, 62vh, 580px)' }}
+                title="Formulario de pago seguro"
+                allow="payment"
+                sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
+              />
+            </div>
+          ) : selectedService && selectedDate && selectedTime && artist ? (
             <div className="space-y-4">
               {/* Artist row */}
               <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl border border-orange-100">

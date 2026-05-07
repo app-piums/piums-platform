@@ -150,14 +150,32 @@ function BookingSummary({ booking }: { booking: Booking }) {
               <span className="font-medium">{booking.currency} {centsToDisplay(booking.addonsPrice)}</span>
             </div>
           )}
-          <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
-            <span>Total a pagar</span>
+          <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-gray-800 text-base">
+            <span>Total del servicio</span>
             <span>{booking.currency} {centsToDisplay(booking.totalPrice)}</span>
           </div>
+          {booking.anticipoRequired && booking.anticipoAmount != null && (
+            <>
+              <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
+                <span>Anticipo a pagar ahora</span>
+                <span>{booking.currency} {centsToDisplay(booking.anticipoAmount)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500 text-xs">
+                <span>Saldo restante (cobro 72h antes del evento)</span>
+                <span>{booking.currency} {centsToDisplay(booking.totalPrice - booking.anticipoAmount)}</span>
+              </div>
+            </>
+          )}
+          {!booking.anticipoRequired && (
+            <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
+              <span>A pagar ahora</span>
+              <span>{booking.currency} {centsToDisplay(booking.totalPrice)}</span>
+            </div>
+          )}
         </div>
         <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1.5">
           <ShieldIcon className="h-3.5 w-3.5 text-green-500" />
-          Cancelación gratuita hasta 24 horas antes
+          Cancelación gratuita dentro de las primeras 48 horas
         </p>
       </div>
     </div>
@@ -172,6 +190,10 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const amountDue = booking.anticipoRequired && booking.anticipoAmount != null
+    ? booking.anticipoAmount
+    : booking.totalPrice;
 
   const handleConfirm = async () => {
     setSubmitting(true);
@@ -219,6 +241,19 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
 
   return (
     <div className="space-y-5">
+      {booking.anticipoRequired && booking.anticipoAmount != null && (
+        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+          <InfoIcon className="h-5 w-5 text-[#FF6A00] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-orange-800">Pago en dos partes</p>
+            <p className="text-sm text-orange-700 mt-0.5">
+              Pagas el anticipo de <strong>{booking.currency} {centsToDisplay(booking.anticipoAmount)}</strong> ahora
+              para confirmar la reserva. El saldo restante (<strong>{booking.currency} {centsToDisplay(booking.totalPrice - booking.anticipoAmount)}</strong>) se cobrará automáticamente 72 horas antes del evento.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Notas para el Artista</h2>
         <textarea
@@ -269,7 +304,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
                 <div className="flex justify-between"><span className="text-gray-500">A nombre de</span><span className="font-medium text-gray-900">PIUMS S.A.</span></div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Monto</span>
-                  <span className="font-bold text-[#FF6A00]">{booking.currency} {centsToDisplay(booking.totalPrice)}</span>
+                  <span className="font-bold text-[#FF6A00]">{booking.currency} {centsToDisplay(amountDue)}</span>
                 </div>
               </div>
             </div>
@@ -308,7 +343,11 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
           {submitting ? (
             <><div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Procesando...</>
           ) : paymentMethod === 'card' ? (
-            <>Confirmar y Pagar {booking.currency} {centsToDisplay(booking.totalPrice)}<ArrowRightIcon className="h-5 w-5" /></>
+            <>
+              {booking.anticipoRequired ? 'Pagar Anticipo ' : 'Confirmar y Pagar '}
+              {booking.currency} {centsToDisplay(amountDue)}
+              <ArrowRightIcon className="h-5 w-5" />
+            </>
           ) : (
             <>Confirmar Reserva<ArrowRightIcon className="h-5 w-5" /></>
           )}
@@ -335,6 +374,8 @@ function CheckoutPageInner() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creditAmount, setCreditAmount] = useState<number | null>(null);
+  const [creditCurrency, setCreditCurrency] = useState('USD');
 
   useEffect(() => {
     if (!bookingId) {
@@ -342,6 +383,13 @@ function CheckoutPageInner() {
       setLoading(false);
       return;
     }
+
+    sdk.getMyCredits().then(res => {
+      if (res.totalAmount > 0) {
+        setCreditAmount(res.totalAmount);
+        setCreditCurrency(res.currency);
+      }
+    }).catch(() => {});
 
     const load = async () => {
       try {
@@ -357,13 +405,25 @@ function CheckoutPageInner() {
           return;
         }
 
-        const pi = await sdk.createPaymentIntent({
-          bookingId,
-          amount: bookingData.totalPrice,
-          currency: bookingData.currency || 'USD',
-          paymentMethods: ['card'],
-        });
+        const amountForIntent = bookingData.anticipoRequired && bookingData.anticipoAmount != null
+          ? bookingData.anticipoAmount
+          : bookingData.totalPrice;
 
+        // initCheckout enruta automáticamente a Tilopay (LATAM) o Stripe (internacional)
+        const pi = await sdk.initCheckout(
+          bookingId,
+          amountForIntent,
+          bookingData.currency || 'USD',
+          (bookingData as any).clientCountryCode,
+        );
+
+        // Tilopay: redirigir al usuario a la página de pago hosteada
+        if (pi.redirectUrl) {
+          window.location.href = pi.redirectUrl;
+          return;
+        }
+
+        // Stripe: usar clientSecret con Stripe Elements
         if (!pi.clientSecret) throw new Error('No se recibió el token de pago del servidor');
 
         setClientSecret(pi.clientSecret);
@@ -439,7 +499,24 @@ function CheckoutPageInner() {
           <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-24">
             <BookingSummary booking={booking} />
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 space-y-4">
+            {creditAmount !== null && creditAmount > 0 && (
+              <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <div className="h-9 w-9 shrink-0 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Tienes {creditCurrency} {centsToDisplay(creditAmount)} de crédito disponible
+                  </p>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Los créditos se aplicarán automáticamente al procesar el pago. Válidos por 90 días desde su emisión.
+                  </p>
+                </div>
+              </div>
+            )}
             <Elements stripe={stripePromise} options={stripeOptions}>
               <PaymentFormInner booking={booking} bookingId={bookingId!} />
             </Elements>

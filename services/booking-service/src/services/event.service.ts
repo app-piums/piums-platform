@@ -217,7 +217,7 @@ export const eventService = {
     }));
 
     const grandTotal = bookingTotals.reduce((sum, b) => sum + (b.totalPrice ?? 0), 0);
-    const currency = event.bookings[0]?.currency || 'GTQ';
+    const currency = event.bookings[0]?.currency || 'USD';
 
     return {
       eventId: event.id,

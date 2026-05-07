@@ -50,4 +50,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4008/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Comando para iniciar
-CMD ["sh", "-c", "if [ -f 'prisma/schema.prisma' ]; then npx prisma db push; fi && node dist/index.js"]
+CMD ["sh", "-c", "if [ -f 'prisma/schema.prisma' ]; then npx prisma db push --accept-data-loss; fi && node dist/index.js"]

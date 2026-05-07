@@ -1,21 +1,15 @@
 import { PrismaClient, PayoutStatus, PayoutType } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
-import { stripeProvider } from "../providers/stripe.provider";
-import { artistsClient } from "../clients/artists.client";
 import { bookingClient } from "../clients/booking.client";
 
 const prisma = new PrismaClient();
 
-// Configuración de fees (debería estar en variables de entorno o config)
-const PLATFORM_FEE_PERCENTAGE = parseFloat(process.env.PLATFORM_FEE_PERCENTAGE || "15"); // 15%
+const PLATFORM_FEE_PERCENTAGE = parseFloat(process.env.PLATFORM_FEE_PERCENTAGE || "18");
 
 export class PayoutService {
   // ==================== CREATE PAYOUT ====================
 
-  /**
-   * Crear un payout pendiente
-   */
   async createPayout(data: {
     artistId: string;
     bookingId?: string;
@@ -27,35 +21,49 @@ export class PayoutService {
     scheduledFor?: Date;
     metadata?: Record<string, any>;
   }) {
-    const currency = data.currency || process.env.DEFAULT_CURRENCY || "GTQ";
+    const currency = data.currency || process.env.DEFAULT_CURRENCY || "USD";
 
-    // Validar que el artista existe
-    const artist = await artistsClient.getArtist(data.artistId);
-    if (!artist) {
-      throw new AppError(404, "Artista no encontrado");
-    }
-
-    // Si hay bookingId, validar
     if (data.bookingId) {
       const booking = await bookingClient.getBooking(data.bookingId);
-      if (!booking) {
-        throw new AppError(404, "Reserva no encontrada");
-      }
+      if (!booking) throw new AppError(404, "Reserva no encontrada");
       if (booking.artistId !== data.artistId) {
         throw new AppError(400, "La reserva no pertenece a este artista");
       }
     }
 
-    // Calcular fees si es BOOKING_PAYMENT
+    // Calcular fee — busca CommissionRule específica del artista o del booking,
+    // cae al porcentaje global de la plataforma si no existe regla activa.
+    let platformFeePercentage = PLATFORM_FEE_PERCENTAGE;
     let platformFee = 0;
-    let originalAmount = data.amount;
 
     if (data.payoutType === "BOOKING_PAYMENT" || !data.payoutType) {
-      platformFee = Math.round((data.amount * PLATFORM_FEE_PERCENTAGE) / 100);
+      // Buscar regla de comisión activa para el artista
+      const commissionRule = await (prisma as any).commissionRule.findFirst({
+        where: {
+          artistId: data.artistId,
+          isActive: true,
+          deletedAt: null,
+        },
+        orderBy: { createdAt: "desc" },
+      }).catch(() => null);
+
+      if (commissionRule) {
+        if (commissionRule.ruleType === "FIXED_PENALTY") {
+          // Penalización fija en centavos
+          platformFee = commissionRule.fixedAmount ?? 0;
+        } else if (commissionRule.ruleType === "RATE_OVERRIDE") {
+          // Tasa personalizada (9% compensación por cancelación, etc.)
+          platformFeePercentage = commissionRule.percentage ?? platformFeePercentage;
+          platformFee = Math.round((data.amount * platformFeePercentage) / 100);
+        } else {
+          platformFee = Math.round((data.amount * platformFeePercentage) / 100);
+        }
+      } else {
+        platformFee = Math.round((data.amount * platformFeePercentage) / 100);
+      }
     }
 
-    // Crear payout en base de datos
-    const payout = await prisma.payout.create({
+    const payout = await (prisma as any).payout.create({
       data: {
         artistId: data.artistId,
         bookingId: data.bookingId,
@@ -64,7 +72,7 @@ export class PayoutService {
         currency,
         status: data.scheduledFor ? "SCHEDULED" : "PENDING",
         payoutType: data.payoutType || "BOOKING_PAYMENT",
-        originalAmount,
+        originalAmount: data.amount,
         platformFee,
         scheduledFor: data.scheduledFor,
         description: data.description,
@@ -76,6 +84,7 @@ export class PayoutService {
       payoutId: payout.id,
       artistId: data.artistId,
       amount: data.amount,
+      platformFee,
       status: payout.status,
     });
 
@@ -83,138 +92,79 @@ export class PayoutService {
   }
 
   // ==================== PROCESS PAYOUT ====================
+  // Los pagos a artistas se completan manualmente por el admin (sin Stripe Connect).
+  // Este método marca el payout como PROCESSING, luego el admin llama a completePayout().
 
-  /**
-   * Procesar un payout (hacer la transferencia a Stripe Connect)
-   */
   async processPayout(payoutId: string) {
-    const payout = await prisma.payout.findUnique({
-      where: { id: payoutId },
-    });
+    const payout = await (prisma as any).payout.findUnique({ where: { id: payoutId } });
 
-    if (!payout) {
-      throw new AppError(404, "Payout no encontrado");
-    }
+    if (!payout) throw new AppError(404, "Payout no encontrado");
 
     if (payout.status !== "PENDING" && payout.status !== "SCHEDULED") {
       throw new AppError(400, `No se puede procesar un payout con estado: ${payout.status}`);
     }
 
-    // Verificar si está programado para el futuro
     if (payout.scheduledFor && payout.scheduledFor > new Date()) {
       throw new AppError(400, "El payout está programado para una fecha futura");
     }
 
-    // Obtener cuenta Stripe Connect del artista
-    const stripeAccount = await artistsClient.getStripeConnectAccount(payout.artistId);
-    if (!stripeAccount || !stripeAccount.stripeAccountId) {
-      await prisma.payout.update({
-        where: { id: payoutId },
-        data: {
-          status: "FAILED",
-          failedAt: new Date(),
-          failureCode: "NO_STRIPE_ACCOUNT",
-          failureMessage: "El artista no tiene cuenta Stripe Connect configurada",
-        },
-      });
-      throw new AppError(400, "El artista no tiene cuenta Stripe Connect");
-    }
-
-    if (!stripeAccount.canReceivePayouts) {
-      await prisma.payout.update({
-        where: { id: payoutId },
-        data: {
-          status: "FAILED",
-          failedAt: new Date(),
-          failureCode: "ACCOUNT_NOT_READY",
-          failureMessage: "La cuenta Stripe Connect no está lista para recibir pagos",
-        },
-      });
-      throw new AppError(400, "La cuenta del artista no está lista para recibir pagos");
-    }
-
-    // Actualizar estado a PROCESSING
-    await prisma.payout.update({
+    const updated = await (prisma as any).payout.update({
       where: { id: payoutId },
       data: { status: "PROCESSING" },
     });
 
-    try {
-      // Crear transfer en Stripe
-      const transfer = await stripeProvider.createTransfer({
-        amount: payout.amount,
-        currency: payout.currency,
-        destination: stripeAccount.stripeAccountId,
-        description: payout.description || `Pago a artista - ${payout.id}`,
-        metadata: {
-          payoutId: payout.id,
-          artistId: payout.artistId,
-          ...(payout.bookingId && { bookingId: payout.bookingId }),
-          ...(payout.metadata as Record<string, string>),
-        },
-      });
+    logger.info("Payout marcado PROCESSING — requiere acción manual del admin", "PAYOUT_SERVICE", {
+      payoutId,
+    });
 
-      // Actualizar payout con información del transfer
-      const updatedPayout = await prisma.payout.update({
-        where: { id: payoutId },
-        data: {
-          status: "IN_TRANSIT",
-          stripeTransferId: transfer.id,
-          stripeAccountId: stripeAccount.stripeAccountId,
-          processedAt: new Date(),
-        },
-      });
+    return updated;
+  }
 
-      logger.info("Payout procesado", "PAYOUT_SERVICE", {
-        payoutId: payout.id,
-        transferId: transfer.id,
-        amount: payout.amount,
-      });
+  // ==================== COMPLETE PAYOUT (admin manual) ====================
 
-      return updatedPayout;
-    } catch (error: any) {
-      // Marcar como fallido
-      await prisma.payout.update({
-        where: { id: payoutId },
-        data: {
-          status: "FAILED",
-          failedAt: new Date(),
-          failureCode: error.code || "STRIPE_ERROR",
-          failureMessage: error.message || "Error al procesar payout",
-        },
-      });
+  async completePayout(
+    payoutId: string,
+    transferReference: string,
+    completedByAdmin?: string,
+  ) {
+    const payout = await (prisma as any).payout.findUnique({ where: { id: payoutId } });
 
-      logger.error("Error procesando payout", "PAYOUT_SERVICE", {
-        payoutId: payout.id,
-        error: error.message,
-      });
+    if (!payout) throw new AppError(404, "Payout no encontrado");
 
-      throw new AppError(500, `Error al procesar payout: ${error.message}`);
+    if (!["PENDING", "PROCESSING", "SCHEDULED"].includes(payout.status)) {
+      throw new AppError(400, `No se puede completar un payout con estado: ${payout.status}`);
     }
+
+    const updated = await (prisma as any).payout.update({
+      where: { id: payoutId },
+      data: {
+        status: "COMPLETED",
+        transferReference,
+        completedByAdmin: completedByAdmin ?? null,
+        completedAt: new Date(),
+        processedAt: new Date(),
+      },
+    });
+
+    logger.info("Payout completado manualmente", "PAYOUT_SERVICE", {
+      payoutId,
+      transferReference,
+      completedByAdmin,
+    });
+
+    return updated;
   }
 
   // ==================== GET PAYOUT ====================
 
-  /**
-   * Obtener payout por ID
-   */
   async getPayoutById(id: string) {
-    const payout = await prisma.payout.findUnique({
-      where: { id },
-    });
-
-    if (!payout) {
-      throw new AppError(404, "Payout no encontrado");
-    }
-
+    const payout = await (prisma as any).payout.findUnique({ where: { id } });
+    if (!payout) throw new AppError(404, "Payout no encontrado");
     return payout;
   }
 
   // ==================== LIST PAYOUTS ====================
 
-  /**
-   * Listar payouts con filtros
-   */
   async listPayouts(filters: {
     artistId?: string;
     bookingId?: string;
@@ -229,15 +179,12 @@ export class PayoutService {
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: null,
-    };
+    const where: any = { deletedAt: null };
 
     if (filters.artistId) where.artistId = filters.artistId;
     if (filters.bookingId) where.bookingId = filters.bookingId;
     if (filters.status) where.status = filters.status;
     if (filters.payoutType) where.payoutType = filters.payoutType;
-    
     if (filters.fromDate || filters.toDate) {
       where.createdAt = {};
       if (filters.fromDate) where.createdAt.gte = filters.fromDate;
@@ -245,140 +192,86 @@ export class PayoutService {
     }
 
     const [payouts, total] = await Promise.all([
-      prisma.payout.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.payout.count({ where }),
+      (prisma as any).payout.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" } }),
+      (prisma as any).payout.count({ where }),
     ]);
 
     return {
       payouts,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  // ==================== GET ARTIST PAYOUTS ====================
+  // ==================== PENDING PAYOUTS (admin) ====================
 
-  /**
-   * Obtener payouts de un artista
-   */
+  async getPendingPayouts(page = 1, limit = 50) {
+    return this.listPayouts({ status: "PENDING" as PayoutStatus, page, limit });
+  }
+
+  // ==================== ARTIST PAYOUTS ====================
+
   async getArtistPayouts(artistId: string, filters?: {
     status?: PayoutStatus;
     fromDate?: Date;
     toDate?: Date;
   }) {
-    return this.listPayouts({
-      artistId,
-      ...filters,
-    });
+    return this.listPayouts({ artistId, ...filters });
   }
 
   // ==================== CANCEL PAYOUT ====================
 
-  /**
-   * Cancelar un payout pendiente
-   */
   async cancelPayout(payoutId: string, reason?: string) {
-    const payout = await prisma.payout.findUnique({
-      where: { id: payoutId },
-    });
+    const payout = await (prisma as any).payout.findUnique({ where: { id: payoutId } });
 
-    if (!payout) {
-      throw new AppError(404, "Payout no encontrado");
-    }
+    if (!payout) throw new AppError(404, "Payout no encontrado");
 
     if (payout.status !== "PENDING" && payout.status !== "SCHEDULED") {
       throw new AppError(400, `No se puede cancelar un payout con estado: ${payout.status}`);
     }
 
-    const updatedPayout = await prisma.payout.update({
+    const updated = await (prisma as any).payout.update({
       where: { id: payoutId },
-      data: {
-        status: "CANCELLED",
-        internalNotes: reason,
-      },
+      data: { status: "CANCELLED", internalNotes: reason },
     });
 
-    logger.info("Payout cancelado", "PAYOUT_SERVICE", {
-      payoutId: payoutId,
-      reason,
-    });
-
-    return updatedPayout;
+    logger.info("Payout cancelado", "PAYOUT_SERVICE", { payoutId, reason });
+    return updated;
   }
 
   // ==================== CALCULATE PAYOUT ====================
 
-  /**
-   * Calcular monto de payout después de fees
-   */
   calculatePayoutAmount(originalAmount: number, payoutType: PayoutType = "BOOKING_PAYMENT") {
     let platformFee = 0;
-    let stripeFee = 0;
 
     if (payoutType === "BOOKING_PAYMENT") {
-      // Fee de plataforma
       platformFee = Math.round((originalAmount * PLATFORM_FEE_PERCENTAGE) / 100);
-      
-      // Fee de Stripe (aproximado: 2.9% + Q3 GTQ)
-      // Nota: Este es un ejemplo, los fees reales dependen del plan de Stripe
-      stripeFee = Math.round((originalAmount * 2.9) / 100 + 300);
     }
-
-    const netAmount = originalAmount - platformFee - stripeFee;
 
     return {
       originalAmount,
       platformFee,
-      stripeFee,
-      netAmount,
+      netAmount: originalAmount - platformFee,
       platformFeePercentage: PLATFORM_FEE_PERCENTAGE,
     };
   }
 
   // ==================== STATS ====================
 
-  /**
-   * Obtener estadísticas de payouts de un artista
-   */
   async getArtistPayoutStats(artistId: string) {
     const where = { artistId, deletedAt: null };
 
     const [
-      totalCount,
-      pendingCount,
-      processingCount,
-      completedCount,
-      failedCount,
-      totalAmount,
-      completedAmount,
+      totalCount, pendingCount, processingCount,
+      completedCount, failedCount,
+      totalAmount, completedAmount,
     ] = await Promise.all([
-      prisma.payout.count({ where }),
-      prisma.payout.count({ where: { ...where, status: "PENDING" } }),
-      prisma.payout.count({
-        where: {
-          ...where,
-          status: { in: ["PROCESSING", "IN_TRANSIT"] },
-        },
-      }),
-      prisma.payout.count({ where: { ...where, status: "COMPLETED" } }),
-      prisma.payout.count({ where: { ...where, status: "FAILED" } }),
-      prisma.payout.aggregate({
-        where,
-        _sum: { amount: true },
-      }),
-      prisma.payout.aggregate({
-        where: { ...where, status: "COMPLETED" },
-        _sum: { amount: true },
-      }),
+      (prisma as any).payout.count({ where }),
+      (prisma as any).payout.count({ where: { ...where, status: "PENDING" } }),
+      (prisma as any).payout.count({ where: { ...where, status: { in: ["PROCESSING", "IN_TRANSIT"] } } }),
+      (prisma as any).payout.count({ where: { ...where, status: "COMPLETED" } }),
+      (prisma as any).payout.count({ where: { ...where, status: "FAILED" } }),
+      (prisma as any).payout.aggregate({ where, _sum: { amount: true } }),
+      (prisma as any).payout.aggregate({ where: { ...where, status: "COMPLETED" }, _sum: { amount: true } }),
     ]);
 
     return {
@@ -387,56 +280,9 @@ export class PayoutService {
       processing: processingCount,
       completed: completedCount,
       failed: failedCount,
-      totalAmount: totalAmount._sum.amount || 0,
-      completedAmount: completedAmount._sum.amount || 0,
+      totalAmount: totalAmount._sum?.amount ?? 0,
+      completedAmount: completedAmount._sum?.amount ?? 0,
     };
-  }
-
-  // ==================== SYNC STRIPE STATUS ====================
-
-  /**
-   * Sincronizar estado de payout con Stripe
-   */
-  async syncPayoutStatus(payoutId: string) {
-    const payout = await prisma.payout.findUnique({
-      where: { id: payoutId },
-    });
-
-    if (!payout) {
-      throw new AppError(404, "Payout no encontrado");
-    }
-
-    if (!payout.stripeTransferId) {
-      throw new AppError(400, "Payout no tiene transfer en Stripe");
-    }
-
-    try {
-      const transfer = await stripeProvider.retrieveTransfer(
-        payout.stripeTransferId
-      );
-
-      // Mapear estado de Stripe a nuestro estado
-      let status: PayoutStatus = payout.status;
-      if (transfer.reversed) {
-        status = "REVERSED";
-      } else if (transfer.amount > 0) {
-        // Si el transfer tiene monto, asumimos que fue exitoso
-        status = "COMPLETED";
-      }
-
-      const updatedPayout = await prisma.payout.update({
-        where: { id: payoutId },
-        data: { status },
-      });
-
-      return updatedPayout;
-    } catch (error: any) {
-      logger.error("Error sincronizando payout con Stripe", "PAYOUT_SERVICE", {
-        payoutId,
-        error: error.message,
-      });
-      throw error;
-    }
   }
 }
 
