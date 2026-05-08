@@ -6,9 +6,15 @@ import { logger } from '../utils/logger';
 
 // ==================== SCHEMAS ====================
 
+const EventTypeEnum = z.enum([
+  'CUMPLEANOS', 'BODA', 'GRADUACION', 'QUINCEANERA', 'CORPORATIVO',
+  'CONCIERTO', 'FIESTA', 'BABY_SHOWER', 'BAUTIZO', 'ANIVERSARIO', 'OTRO',
+]);
+
 const createEventSchema = z.object({
   name: z.string().min(2).max(200),
   description: z.string().max(2000).optional(),
+  eventType: EventTypeEnum.optional(),
   location: z.string().max(500).optional(),
   locationLat: z.number().min(-90).max(90).optional(),
   locationLng: z.number().min(-180).max(180).optional(),
@@ -19,6 +25,7 @@ const createEventSchema = z.object({
 const updateEventSchema = z.object({
   name: z.string().min(2).max(200).optional(),
   description: z.string().max(2000).optional(),
+  eventType: EventTypeEnum.optional(),
   location: z.string().max(500).optional(),
   locationLat: z.number().min(-90).max(90).optional(),
   locationLng: z.number().min(-180).max(180).optional(),

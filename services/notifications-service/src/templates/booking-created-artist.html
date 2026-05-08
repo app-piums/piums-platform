@@ -269,6 +269,12 @@
                     <div class="detail-label">Ubicación</div>
                     <div class="detail-value">{{location}}</div>
                 </div>
+                {{#if hasEventType}}
+                <div class="detail-row">
+                    <div class="detail-label">Tipo de evento</div>
+                    <div class="detail-value">{{eventTypeIcon}} {{eventTypeLabel}}</div>
+                </div>
+                {{/if}}
             </div>
 
             <!-- Price -->

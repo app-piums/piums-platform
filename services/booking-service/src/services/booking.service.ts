@@ -30,6 +30,7 @@ export class BookingService {
     locationLat?: number;
     locationLng?: number;
     selectedAddons?: string[];
+    eventType?: string;
     clientNotes?: string;
     eventId?: string;
     couponCode?: string;
@@ -215,6 +216,7 @@ export class BookingService {
         anticipoRequired: depositRequired,
         anticipoAmount: depositAmount,
         selectedAddons: data.selectedAddons || [],
+        eventType: data.eventType as any || null,
         clientNotes: data.clientNotes,
         paymentStatus: depositRequired ? "PENDING" : "ANTICIPO_PAID",
         eventId: data.eventId || null,
@@ -331,7 +333,43 @@ export class BookingService {
       }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
     }
 
-    // Los emails de "reserva creada" se envían en markPaymentReceived() cuando el anticipo se confirma.
+    // Si no se requiere anticipo, enviar email de confirmación inmediatamente
+    if (!depositRequired) {
+      ;(async () => {
+        try {
+          const [user, artist, service] = await Promise.all([
+            usersClient.getUser(data.clientId),
+            artistsClient.getArtist(data.artistId),
+            catalogClient.getService(data.serviceId),
+          ]);
+          await notifyBookingCreated({
+            bookingId: booking.id,
+            bookingCode: booking.code || booking.id.slice(0, 8).toUpperCase(),
+            clientId: booking.clientId,
+            clientName: (user as any)?.fullName || (user as any)?.nombre || 'Cliente',
+            clientEmail: (user as any)?.email || '',
+            clientNotes: booking.clientNotes || '',
+            artistId: booking.artistId,
+            artistName: (artist as any)?.artistName || (artist as any)?.nombre || 'Artista',
+            artistEmail: (artist as any)?.email || '',
+            artistCategory: (artist as any)?.category || '',
+            artistImage: (artist as any)?.avatar || '',
+            serviceName: (service as any)?.name || 'Servicio',
+            scheduledDate: booking.scheduledDate.toISOString(),
+            durationMinutes: booking.durationMinutes,
+            location: booking.location || '',
+            servicePrice: Number(booking.totalPrice),
+            totalPrice: Number(booking.totalPrice),
+            currency: booking.currency,
+            anticipoRequired: false,
+            anticipoAmount: 0,
+            eventType: booking.eventType || undefined,
+          });
+        } catch (err: any) {
+          logger.error('Error enviando notificación de reserva sin anticipo', 'BOOKING_SERVICE', { error: err.message });
+        }
+      })();
+    }
 
     // Crear conversación para el chat
     chatClient.createConversation(data.clientId, data.artistId, booking.id)
@@ -1323,6 +1361,7 @@ export class BookingService {
             currency: updated.currency,
             anticipoRequired: updated.anticipoRequired,
             anticipoAmount: Number(updated.anticipoAmount),
+            eventType: (updated as any).eventType || undefined,
           });
         } catch (err: any) {
           logger.error('Error enviando notificación de reserva con pago confirmado', 'BOOKING_SERVICE', { error: err.message });

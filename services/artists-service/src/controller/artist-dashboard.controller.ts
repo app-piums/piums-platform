@@ -67,8 +67,8 @@ export const updateMyProfile = async (
 
     // Allowlist: only permit safe fields to prevent mass-assignment
     const ALLOWED_FIELDS = [
-      'bio', 'displayName', 'nombre', 'phone', 'location', 'cityId',
-      'category', 'socialLinks', 'imageUrl', 'basePrice', 'experienceYears',
+      'bio', 'displayName', 'nombre', 'telefono', 'location', 'cityId',
+      'category', 'socialLinks', 'imageUrl', 'basePrice', 'experienceYears', 'yearsExperience',
       'availability', 'languages', 'tags', 'portfolioItems', 'avatar', 'coverPhoto',
       'instagram', 'facebook', 'youtube', 'tiktok', 'website',
     ];

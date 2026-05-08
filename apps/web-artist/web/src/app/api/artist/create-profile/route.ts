@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       hourlyRateMin: body.hourlyRateMin ?? undefined,
       hourlyRateMax: body.hourlyRateMax ?? undefined,
       currency: body.currency || 'USD',
+      coverageRadius: body.coverageRadius ?? 30,
       requiresDeposit: body.requiresDeposit ?? false,
       depositPercentage: body.depositPercentage ?? undefined,
     };

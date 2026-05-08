@@ -12,20 +12,9 @@ datasource db {
 
 enum ArtistCategory {
   MUSICO
-  TATUADOR
   FOTOGRAFO
-  MAQUILLADOR
-  DJ
-  PINTOR
-  ESCULTOR
-  BAILARIN
   VIDEOGRAFO
-  DISENADOR
-  ESCRITOR
   ANIMADOR
-  MAGO
-  ACROBATA
-  OTRO
 }
 
 enum VerificationStatus {
@@ -105,6 +94,9 @@ model Artist {
   availabilityRules ArtistAvailabilityRule[]
   blackouts         ArtistBlackout[]
   
+  // Contacto
+  telefono      String?   // Número de contacto / WhatsApp
+
   // Redes sociales
   website       String?
   instagram     String?

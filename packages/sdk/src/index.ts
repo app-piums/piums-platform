@@ -81,6 +81,7 @@ export interface ArtistProfile extends Artist {
   shadowBannedAt?: string;
   portfolio?: PortfolioItem[];
   certifications?: Certification[];
+  telefono?: string;
   instagram?: string;
   facebook?: string;
   youtube?: string;

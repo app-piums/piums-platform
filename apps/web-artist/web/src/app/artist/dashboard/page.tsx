@@ -340,11 +340,11 @@ export default function ArtistDashboardPage() {
               <h3 className="text-lg font-bold mb-4">Fortaleza del Perfil</h3>
               {(() => {
                 const checks = [
-                  { label: 'Foto de perfil agregada', done: !!(artistProfile?.imageUrl || artistProfile?.profilePicture) },
-                  { label: 'Descripción de perfil', done: !!(artistProfile?.bio && artistProfile.bio.length > 10) },
-                  { label: 'Servicios publicados', done: artistServices.length > 0 },
-                  { label: 'Redes sociales vinculadas', done: !!(artistProfile?.socialLinks && Object.values(artistProfile.socialLinks).some((v: any) => !!v)) },
-                  { label: 'Primera reseña obtenida', done: !!(stats && (stats.rating?.totalReviews ?? 0) > 0) },
+                  { label: 'Foto de perfil agregada', done: !!(artistProfile?.imageUrl || artistProfile?.profilePicture), href: '/artist/dashboard/settings?tab=personal' },
+                  { label: 'Descripción de perfil', done: !!(artistProfile?.bio && artistProfile.bio.length > 10), href: '/artist/dashboard/settings?tab=personal' },
+                  { label: 'Servicios publicados', done: artistServices.length > 0, href: '/artist/dashboard/services' },
+                  { label: 'Redes sociales vinculadas', done: !!(artistProfile?.socialLinks && Object.values(artistProfile.socialLinks).some((v: any) => !!v)), href: '/artist/dashboard/settings?tab=social' },
+                  { label: 'Primera reseña obtenida', done: !!(stats && (stats.rating?.totalReviews ?? 0) > 0), href: '/artist/dashboard/reviews' },
                 ];
                 const pct = artistProfile
                   ? Math.round((checks.filter(c => c.done).length / checks.length) * 100)
@@ -364,8 +364,12 @@ export default function ArtistDashboardPage() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      {checks.map(({ label, done }) => (
-                        <div key={label} className="flex items-center gap-3">
+                      {checks.map(({ label, done, href }) => (
+                        <div
+                          key={label}
+                          onClick={() => !done && router.push(href)}
+                          className={`flex items-center gap-3 rounded-lg px-1 -mx-1 transition-colors ${!done ? 'cursor-pointer hover:bg-white/10' : ''}`}
+                        >
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-green-500' : 'bg-gray-600'}`}>
                             {done ? (
                               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -377,7 +381,12 @@ export default function ArtistDashboardPage() {
                               </svg>
                             )}
                           </div>
-                          <span className={`text-sm ${done ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
+                          <span className={`text-sm flex-1 ${done ? 'text-gray-300' : 'text-gray-200'}`}>{label}</span>
+                          {!done && (
+                            <svg className="w-4 h-4 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
                         </div>
                       ))}
                     </div>

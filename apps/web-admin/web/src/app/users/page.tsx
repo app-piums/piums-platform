@@ -15,22 +15,13 @@ const PROVIDER_LABELS: Record<string, string> = {
   tiktok: "TikTok",
 };
 
-const CATEGORIES = ["", "MUSICO", "FOTOGRAFO", "TATUADOR", "MAQUILLADOR", "DJ", "PINTOR", "BAILARIN", "VIDEOGRAFO", "DISENADOR", "ANIMADOR", "MAGO", "ACROBATA", "OTRO"];
+const CATEGORIES = ["", "MUSICO", "FOTOGRAFO", "VIDEOGRAFO", "ANIMADOR"];
 const CATEGORY_LABELS: Record<string, string> = {
   "": "Todas las categorías",
   MUSICO: "Músico",
   FOTOGRAFO: "Fotógrafo",
-  TATUADOR: "Tatuador",
-  MAQUILLADOR: "Maquillador",
-  DJ: "DJ",
-  PINTOR: "Pintor",
-  BAILARIN: "Bailarín",
   VIDEOGRAFO: "Videógrafo",
-  DISENADOR: "Diseñador",
   ANIMADOR: "Animador",
-  MAGO: "Mago",
-  ACROBATA: "Acróbata",
-  OTRO: "Otro",
 };
 
 function StatusBadge({ blocked }: { blocked: boolean }) {

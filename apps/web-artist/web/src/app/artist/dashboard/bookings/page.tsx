@@ -435,6 +435,18 @@ export default function ArtistBookingsPage() {
                           </div>
                         </div>
 
+                        {/* Event type */}
+                        {(booking as any).eventType && (
+                          <div className="flex items-center gap-2 bg-orange-50 rounded-lg px-3 py-2">
+                            <span className="text-base">
+                              {({'CUMPLEANOS':'🎂','BODA':'💍','GRADUACION':'🎓','QUINCEANERA':'👑','CORPORATIVO':'🏢','CONCIERTO':'🎵','FIESTA':'🎉','BABY_SHOWER':'🍼','BAUTIZO':'⛪','ANIVERSARIO':'🥂','OTRO':'✨'} as Record<string,string>)[(booking as any).eventType] ?? '📅'}
+                            </span>
+                            <p className="text-xs font-semibold text-orange-800">
+                              {({'CUMPLEANOS':'Cumpleaños','BODA':'Boda','GRADUACION':'Graduación','QUINCEANERA':'Quinceañera','CORPORATIVO':'Evento Corporativo','CONCIERTO':'Concierto / Festival','FIESTA':'Fiesta / Celebración','BABY_SHOWER':'Baby Shower','BAUTIZO':'Bautizo / Bienvenida','ANIVERSARIO':'Aniversario','OTRO':'Otro'} as Record<string,string>)[(booking as any).eventType] ?? (booking as any).eventType}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Client notes */}
                         {booking.clientNotes && (
                           <div className="flex items-start gap-2.5 bg-amber-50 rounded-lg px-3 py-2.5">

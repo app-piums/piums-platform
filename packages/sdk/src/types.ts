@@ -204,12 +204,40 @@ export interface Category {
 
 export type EventStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
+export type EventType =
+  | 'CUMPLEANOS'
+  | 'BODA'
+  | 'GRADUACION'
+  | 'QUINCEANERA'
+  | 'CORPORATIVO'
+  | 'CONCIERTO'
+  | 'FIESTA'
+  | 'BABY_SHOWER'
+  | 'BAUTIZO'
+  | 'ANIVERSARIO'
+  | 'OTRO';
+
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  CUMPLEANOS:  'Cumpleaños',
+  BODA:        'Boda',
+  GRADUACION:  'Graduación',
+  QUINCEANERA: 'Quinceañera',
+  CORPORATIVO: 'Evento Corporativo',
+  CONCIERTO:   'Concierto / Festival',
+  FIESTA:      'Fiesta / Celebración',
+  BABY_SHOWER: 'Baby Shower',
+  BAUTIZO:     'Bautizo / Bienvenida',
+  ANIVERSARIO: 'Aniversario',
+  OTRO:        'Otro',
+};
+
 export interface PiumsEvent {
   id: string;
   code: string;
   clientId: string;
   name: string;
   description?: string;
+  eventType?: EventType;
   location?: string;
   locationLat?: number;
   locationLng?: number;
@@ -234,6 +262,7 @@ export interface EventBookingRef {
 export interface CreateEventPayload {
   name: string;
   description?: string;
+  eventType?: EventType;
   location?: string;
   locationLat?: number;
   locationLng?: number;
@@ -243,6 +272,7 @@ export interface CreateEventPayload {
 export interface UpdateEventPayload {
   name?: string;
   description?: string;
+  eventType?: EventType;
   location?: string;
   locationLat?: number;
   locationLng?: number;

@@ -62,6 +62,20 @@ enum EventStatus {
   CANCELLED   // Cancelado
 }
 
+enum EventType {
+  CUMPLEANOS        // Cumpleaños
+  BODA              // Boda
+  GRADUACION        // Graduación
+  QUINCEANERA       // Quinceañera
+  CORPORATIVO       // Evento Corporativo
+  CONCIERTO         // Concierto / Festival
+  FIESTA            // Fiesta / Celebración
+  BABY_SHOWER       // Baby Shower
+  BAUTIZO           // Bautizo / Bienvenida
+  ANIVERSARIO       // Aniversario
+  OTRO              // Otro
+}
+
 // ==================== EVENTO ====================
 // Un Evento agrupa múltiples Bookings independientes bajo un mismo paraguas.
 // Cada booking mantiene su propia fecha/hora y artista.
@@ -72,6 +86,7 @@ model Event {
   clientId    String      // Dueño del evento (users-service)
   name        String      // Nombre del evento (ej: "Graduación Juan")
   description String?     @db.Text
+  eventType   EventType?  // Tipo de evento (cumpleaños, boda, etc.)
   location    String?     // Dirección del evento
   locationLat Float?
   locationLng Float?
@@ -138,6 +153,9 @@ model Booking {
   // Add-ons contratados (array de IDs)
   selectedAddons  String[]
   
+  // Tipo de evento (para que el artista sepa a qué va)
+  eventType       EventType?
+
   // Notas
   clientNotes     String?      @db.Text
   artistNotes     String?      @db.Text

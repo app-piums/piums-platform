@@ -3,13 +3,9 @@ import { z } from "zod";
 // Enums
 export const ArtistCategoryEnum = z.enum([
   "MUSICO",
-  "TATUADOR",
   "FOTOGRAFO",
-  "MAQUILLADOR",
-  "DJ",
-  "PINTOR",
-  "ESCULTOR",
-  "OTRO",
+  "VIDEOGRAFO",
+  "ANIMADOR",
 ]);
 
 export const VerificationStatusEnum = z.enum([

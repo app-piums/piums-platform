@@ -219,6 +219,7 @@ function BookingContent() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>(undefined);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [eventType, setEventType] = useState<string>('');
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [numDays, setNumDays] = useState(1);
 
@@ -836,6 +837,7 @@ function BookingContent() {
         locationLng: clientCoords?.lng,
         clientLat: clientCoords?.lat,
         clientLng: clientCoords?.lng,
+        eventType: eventType || undefined,
         clientNotes: notes || undefined,
         selectedAddons: selectedAddons.length ? selectedAddons : undefined,
         eventId: selectedEventId || undefined,
@@ -1357,6 +1359,42 @@ function BookingContent() {
                         </div>
                       )}
 
+                      {/* Tipo de Evento */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ¿Para qué es el evento? <span className="text-gray-400 font-normal">(Opcional)</span>
+                        </label>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {[
+                            { value: 'CUMPLEANOS',  label: 'Cumpleaños',        icon: '🎂' },
+                            { value: 'BODA',        label: 'Boda',              icon: '💍' },
+                            { value: 'GRADUACION',  label: 'Graduación',        icon: '🎓' },
+                            { value: 'QUINCEANERA', label: 'Quinceañera',       icon: '👑' },
+                            { value: 'CORPORATIVO', label: 'Corporativo',       icon: '🏢' },
+                            { value: 'CONCIERTO',   label: 'Concierto',         icon: '🎵' },
+                            { value: 'FIESTA',      label: 'Fiesta',            icon: '🎉' },
+                            { value: 'BABY_SHOWER', label: 'Baby Shower',       icon: '🍼' },
+                            { value: 'BAUTIZO',     label: 'Bautizo',           icon: '⛪' },
+                            { value: 'ANIVERSARIO', label: 'Aniversario',       icon: '🥂' },
+                            { value: 'OTRO',        label: 'Otro',              icon: '✨' },
+                          ].map(({ value, label, icon }) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setEventType(eventType === value ? '' : value)}
+                              className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 text-center transition-all ${
+                                eventType === value
+                                  ? 'border-[#FF6A00] bg-orange-50 text-[#FF6A00]'
+                                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                              }`}
+                            >
+                              <span className="text-xl">{icon}</span>
+                              <span className="text-xs font-medium leading-tight">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Notas */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1514,6 +1552,14 @@ function BookingContent() {
                               <dt className="text-sm text-gray-600">Coordenadas detectadas:</dt>
                               <dd className="text-sm font-medium text-gray-900">
                                 {clientCoords.lat.toFixed(4)}, {clientCoords.lng.toFixed(4)}
+                              </dd>
+                            </div>
+                          )}
+                          {eventType && (
+                            <div className="flex justify-between">
+                              <dt className="text-sm text-gray-600">Tipo de evento:</dt>
+                              <dd className="text-sm font-medium text-orange-700">
+                                {{ CUMPLEANOS:'🎂 Cumpleaños', BODA:'💍 Boda', GRADUACION:'🎓 Graduación', QUINCEANERA:'👑 Quinceañera', CORPORATIVO:'🏢 Corporativo', CONCIERTO:'🎵 Concierto', FIESTA:'🎉 Fiesta', BABY_SHOWER:'🍼 Baby Shower', BAUTIZO:'⛪ Bautizo', ANIVERSARIO:'🥂 Aniversario', OTRO:'✨ Otro' }[eventType] ?? eventType}
                               </dd>
                             </div>
                           )}

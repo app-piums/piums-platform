@@ -72,10 +72,10 @@ function BarChart({
 // ─── Horizontal bar (category distribution) ──────────────────────────────────
 
 const CATEGORY_LABELS: Record<string, string> = {
-  MUSICO: "Músico", FOTOGRAFO: "Fotógrafo", TATUADOR: "Tatuador",
-  MAQUILLADOR: "Maquillador", DJ: "DJ", PINTOR: "Pintor",
-  BAILARIN: "Bailarín", VIDEOGRAFO: "Videógrafo", DISENADOR: "Diseñador",
-  ANIMADOR: "Animador", MAGO: "Mago", ACROBATA: "Acróbata", OTRO: "Otro",
+  MUSICO: "Músico",
+  FOTOGRAFO: "Fotógrafo",
+  VIDEOGRAFO: "Videógrafo",
+  ANIMADOR: "Animador",
 };
 
 function CategoryChart({ data }: { data: AdminStats["artistsByCategory"] }) {

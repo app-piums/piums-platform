@@ -43,29 +43,19 @@ function LegalAccordion({ section }: { section: { id: string; title: string; ico
 }
 
 const ARTIST_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'MUSICO',     label: 'Músico' },
-  { value: 'DJ',         label: 'DJ / Productor' },
-  { value: 'FOTOGRAFO',  label: 'Fotógrafo' },
-  { value: 'VIDEOGRAFO', label: 'Videógrafo / Filmmaker' },
-  { value: 'DISENADOR',  label: 'Diseñador Gráfico' },
-  { value: 'BAILARIN',   label: 'Bailarín / Coreógrafo' },
-  { value: 'ANIMADOR',   label: 'Animador / MC' },
-  { value: 'TATUADOR',   label: 'Tatuador' },
-  { value: 'MAQUILLADOR',label: 'Maquillador / FX' },
-  { value: 'PINTOR',     label: 'Pintor / Ilustrador' },
-  { value: 'ESCULTOR',   label: 'Escultor' },
-  { value: 'ESCRITOR',   label: 'Escritor / Letrista' },
-  { value: 'MAGO',       label: 'Mago / Ilusionista' },
-  { value: 'ACROBATA',   label: 'Acróbata / Circo' },
-  { value: 'OTRO',       label: 'Otro' },
+  { value: 'MUSICO',            label: 'Músico' },
+  { value: 'FOTOGRAFO',         label: 'Fotógrafo' },
+  { value: 'VIDEOGRAFO',        label: 'Videógrafo' },
+  { value: 'ANIMADOR',          label: 'Animador' },
 ];
 
 type ArtistFormData = {
   nombre: string;
   email: string;
+  telefono: string;
   bio: string;
   ciudad: string;
-  experienceYears: number;
+  yearsExperience: number;
   baseLocationLabel: string;
   baseLocationLat: number | null;
   baseLocationLng: number | null;
@@ -101,9 +91,10 @@ export default function ArtistSettingsPage() {
   const [formData, setFormData] = useState<ArtistFormData>({
     nombre: '',
     email: '',
+    telefono: '',
     bio: '',
     ciudad: '',
-    experienceYears: 0,
+    yearsExperience: 0,
     baseLocationLabel: '',
     baseLocationLat: null,
     baseLocationLng: null,
@@ -182,9 +173,10 @@ export default function ArtistSettingsPage() {
       setFormData({
         nombre: artistProfile.nombre || '',
         email: artistProfile.email || '',
+        telefono: artistProfile.telefono || '',
         bio: artistProfile.bio || '',
         ciudad: artistProfile.ciudad || '',
-        experienceYears: artistProfile.experienceYears || 0,
+        yearsExperience: artistProfile.yearsExperience || 0,
         baseLocationLabel: artistProfile.baseLocationLabel || '',
         baseLocationLat: artistProfile.baseLocationLat ?? null,
         baseLocationLng: artistProfile.baseLocationLng ?? null,
@@ -830,6 +822,19 @@ export default function ArtistSettingsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Número de contacto
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.telefono}
+                      onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                      placeholder="+502 1234 5678"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Ciudad
                     </label>
                     <input
@@ -846,8 +851,8 @@ export default function ArtistSettingsPage() {
                     </label>
                     <input
                       type="number"
-                      value={formData.experienceYears}
-                      onChange={(e) => setFormData({ ...formData, experienceYears: parseInt(e.target.value) || 0 })}
+                      value={formData.yearsExperience}
+                      onChange={(e) => setFormData({ ...formData, yearsExperience: parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
@@ -1215,7 +1220,7 @@ export default function ArtistSettingsPage() {
                           {artist.rating !== undefined && (
                             <span>⭐ {artist.rating.toFixed(1)} ({artist.reviewsCount || 0} reseñas)</span>
                           )}
-                          {artist.experienceYears ? <span>🏆 {artist.experienceYears} años de exp.</span> : null}
+                          {artist.yearsExperience ? <span>🏆 {artist.yearsExperience} años de exp.</span> : null}
                         </div>
                       </div>
                     </div>

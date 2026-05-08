@@ -30,7 +30,36 @@ export interface BookingNotificationData {
   currency: string;
   anticipoRequired: boolean;
   anticipoAmount?: number;
+  eventType?: string;
 }
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  CUMPLEANOS:  'Cumpleaños',
+  BODA:        'Boda',
+  GRADUACION:  'Graduación',
+  QUINCEANERA: 'Quinceañera',
+  CORPORATIVO: 'Evento Corporativo',
+  CONCIERTO:   'Concierto / Festival',
+  FIESTA:      'Fiesta / Celebración',
+  BABY_SHOWER: 'Baby Shower',
+  BAUTIZO:     'Bautizo / Bienvenida',
+  ANIVERSARIO: 'Aniversario',
+  OTRO:        'Otro',
+};
+
+const EVENT_TYPE_ICONS: Record<string, string> = {
+  CUMPLEANOS:  '🎂',
+  BODA:        '💍',
+  GRADUACION:  '🎓',
+  QUINCEANERA: '👑',
+  CORPORATIVO: '🏢',
+  CONCIERTO:   '🎤',
+  FIESTA:      '🎉',
+  BABY_SHOWER: '🍼',
+  BAUTIZO:     '⛪',
+  ANIVERSARIO: '💑',
+  OTRO:        '📅',
+};
 
 const sendTemplate = (to: string, template: string, variables: Record<string, any>) =>
   axios.post(
@@ -102,6 +131,9 @@ function buildVars(d: BookingNotificationData) {
     appleCalendarUrl: '',
     unsubscribeUrl: `${CLIENT_APP_URL}/settings/notifications`,
     currentYear: new Date().getFullYear(),
+    eventTypeLabel: d.eventType ? EVENT_TYPE_LABELS[d.eventType] || d.eventType : '',
+    eventTypeIcon: d.eventType ? EVENT_TYPE_ICONS[d.eventType] || '📅' : '',
+    hasEventType: !!d.eventType,
   };
 }
 

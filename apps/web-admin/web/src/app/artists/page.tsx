@@ -15,17 +15,8 @@ const ARTIST_CATEGORIES = [
   { value: "", label: "Todas las categorías" },
   { value: "MUSICO", label: "Músico" },
   { value: "FOTOGRAFO", label: "Fotógrafo" },
-  { value: "TATUADOR", label: "Tatuador" },
-  { value: "MAQUILLADOR", label: "Maquillador" },
-  { value: "DJ", label: "DJ" },
-  { value: "PINTOR", label: "Pintor" },
-  { value: "BAILARIN", label: "Bailarín" },
   { value: "VIDEOGRAFO", label: "Videógrafo" },
-  { value: "DISENADOR", label: "Diseñador" },
   { value: "ANIMADOR", label: "Animador" },
-  { value: "MAGO", label: "Mago" },
-  { value: "ACROBATA", label: "Acróbata" },
-  { value: "OTRO", label: "Otro" },
 ];
 
 function VerifiedBadge({ verified }: { verified: boolean }) {

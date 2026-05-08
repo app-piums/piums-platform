@@ -1,6 +1,20 @@
 import { z } from "zod";
 
 // Enums
+export const EventTypeEnum = z.enum([
+  "CUMPLEANOS",
+  "BODA",
+  "GRADUACION",
+  "QUINCEANERA",
+  "CORPORATIVO",
+  "CONCIERTO",
+  "FIESTA",
+  "BABY_SHOWER",
+  "BAUTIZO",
+  "ANIVERSARIO",
+  "OTRO",
+]);
+
 export const BookingStatusEnum = z.enum([
   "PENDING",
   "CONFIRMED",
@@ -38,9 +52,10 @@ export const createBookingSchema = z.object({
   locationLng: z.number().min(-180).max(180).optional(),
   
   selectedAddons: z.array(z.string().uuid()).optional(),
-  
+
+  eventType: EventTypeEnum.optional(),
   clientNotes: z.string().max(1000).optional(),
-  
+
   eventId: z.string().uuid().optional(),
 });
 
