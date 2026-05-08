@@ -136,6 +136,7 @@ services:
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
+      AUTH_SERVICE_URL: http://auth-service:4001
       CLOUDINARY_CLOUD_NAME: dumqooqjv
       CLOUDINARY_API_KEY: 179725519298881
       CLOUDINARY_API_SECRET: jTmfpOxPMU3MGpcMgxOs7apWW44
@@ -212,6 +213,7 @@ services:
       CLIENT_APP_URL: https://client.piums.io
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       BOOKING_SERVICE_URL: http://booking-service:4008
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
     depends_on:
       postgres:
@@ -347,7 +349,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4010
-      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_users
+      DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_chat
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       ARTISTS_SERVICE_URL: http://artists-service:4003
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io

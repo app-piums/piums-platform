@@ -3,7 +3,7 @@
  */
 
 const ARTISTS_SERVICE_URL =
-  process.env.ARTISTS_SERVICE_URL || "http://localhost:4001";
+  process.env.ARTISTS_SERVICE_URL || "http://artists-service:4003";
 const SERVICE_TOKEN = process.env.JWT_SECRET;
 
 export class ArtistsClient {

@@ -6,6 +6,18 @@ import { logger } from '../utils/logger';
 
 const cloudinaryProvider = new CloudinaryProvider();
 
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
+
+async function getUserDocumentUrls(authId: string): Promise<string[]> {
+  const res = await fetch(`${AUTH_SERVICE_URL}/internal/users/${authId}/document-urls`, {
+    headers: { 'x-internal-secret': INTERNAL_SECRET },
+  });
+  if (!res.ok) return [];
+  const data = await res.json() as { documentFrontUrl?: string | null; documentBackUrl?: string | null; documentSelfieUrl?: string | null };
+  return [data.documentFrontUrl, data.documentBackUrl, data.documentSelfieUrl].filter(Boolean) as string[];
+}
+
 /**
  * POST /api/users/documents/upload
  * Sube un documento de identidad a Cloudinary.
@@ -51,6 +63,11 @@ export const deleteDocument = async (req: AuthRequest, res: Response, next: Next
 
     if (!url.includes('res.cloudinary.com') || !url.includes('piums/documents/')) {
       throw new AppError(400, 'URL de documento inválida');
+    }
+
+    const ownedUrls = await getUserDocumentUrls(authId);
+    if (!ownedUrls.includes(url)) {
+      throw new AppError(403, 'No tienes permiso para eliminar este documento');
     }
 
     await cloudinaryProvider.deleteDocument(url);

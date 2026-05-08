@@ -182,34 +182,37 @@ model Refund {
 
 model PaymentMethod {
   id          String   @id @default(uuid())
-  
+
   // Usuario
   userId      String
-  
-  // Stripe
+
+  // Proveedor: STRIPE | TILOPAY
+  provider    String   @default("STRIPE")
+
+  // Token del proveedor (Stripe: pm_xxx / Tilopay: hash)
   stripePaymentMethodId String @unique
-  
+
   // Tipo
-  type        String   // card, oxxo_debit, spei, etc.
-  
+  type        String   @default("card")
+
   // Detalles de tarjeta
   cardBrand   String?  // visa, mastercard, amex
   cardLast4   String?
   cardExpMonth Int?
   cardExpYear Int?
-  
+
   // Default
   isDefault   Boolean  @default(false)
-  
+
   // Metadata
   metadata    Json?
-  
+
   // Soft delete para auditorías
   deletedAt   DateTime?
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([userId])
   @@index([stripePaymentMethodId])
   @@map("payment_methods")
@@ -444,8 +447,9 @@ model CommissionRule {
   endDate           DateTime?          // null = indefinido (ajuste permanente)
 
   isActive          Boolean            @default(true)
+  isOneTime         Boolean            @default(false)  // Si true, se desactiva automáticamente tras aplicarse una vez
 
-  // Solo para FIXED_PENALTY
+  // Registro de aplicación (FIXED_PENALTY y RATE_OVERRIDE isOneTime)
   appliedAt         DateTime?
   appliedToPayoutId String?
 
@@ -459,4 +463,82 @@ model CommissionRule {
   @@index([type])
   @@index([isActive])
   @@map("commission_rules")
+}
+
+// ============================================================================
+// Coupons (descuentos)
+// ============================================================================
+
+enum CouponDiscountType {
+  PERCENTAGE    // discountValue = 1-100
+  FIXED_AMOUNT  // discountValue in cents
+}
+
+enum CouponTargetType {
+  GLOBAL     // available to everyone
+  ARTIST     // specific artist only
+  CLIENT     // specific client only
+  SERVICE    // specific service only
+}
+
+enum CouponStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+model Coupon {
+  id               String             @id @default(uuid())
+  code             String             @unique
+  name             String
+  description      String?            @db.Text
+
+  discountType     CouponDiscountType
+  discountValue    Int
+  currency         String             @default("USD")
+
+  maxUses          Int?
+  maxUsesPerUser   Int                @default(1)
+  currentUses      Int                @default(0)
+
+  targetType       CouponTargetType   @default(GLOBAL)
+  targetId         String?
+
+  minimumAmount    Int?               // minimum booking total in cents
+  maxDiscountAmount Int?              // cap for PERCENTAGE discounts (cents)
+  validationCount  Int                @default(0)  // times validated (not necessarily redeemed)
+
+  status           CouponStatus       @default(ACTIVE)
+  startsAt         DateTime           @default(now())
+  expiresAt        DateTime?
+
+  createdByAdminId String
+
+  uses             CouponUse[]
+
+  deletedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([code])
+  @@index([status])
+  @@index([targetType, targetId])
+  @@index([expiresAt])
+  @@map("coupons")
+}
+
+model CouponUse {
+  id              String   @id @default(uuid())
+  couponId        String
+  coupon          Coupon   @relation(fields: [couponId], references: [id])
+  userId          String
+  bookingId       String
+  discountApplied Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([couponId, userId, bookingId])
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_uses")
 }

@@ -1,10 +1,19 @@
 /**
  * Cliente HTTP para comunicarse con notifications-service
  */
+import jwt from 'jsonwebtoken';
 
 const NOTIFICATIONS_SERVICE_URL =
-  process.env.NOTIFICATIONS_SERVICE_URL || "http://localhost:4006";
-const SERVICE_TOKEN = process.env.JWT_SECRET;
+  process.env.NOTIFICATIONS_SERVICE_URL || "http://notifications-service:4007";
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_CHANGE_IN_PRODUCTION';
+
+function getServiceToken(): string {
+  return jwt.sign(
+    { id: 'payments-service', email: 'payments@internal', role: 'service' },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+}
 
 interface SendNotificationPayload {
   userId: string;
@@ -13,17 +22,18 @@ interface SendNotificationPayload {
   title: string;
   message: string;
   data?: Record<string, any>;
+  emailTo?: string;
+  emailSubject?: string;
+  emailHtml?: string;
   priority?: "low" | "normal" | "high" | "urgent";
   category?: string;
 }
 
 export class NotificationsClient {
   private baseUrl: string;
-  private serviceToken: string;
 
   constructor() {
     this.baseUrl = NOTIFICATIONS_SERVICE_URL;
-    this.serviceToken = SERVICE_TOKEN || "";
   }
 
   async sendNotification(payload: SendNotificationPayload): Promise<any> {
@@ -32,7 +42,7 @@ export class NotificationsClient {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.serviceToken}`,
+          Authorization: `Bearer ${getServiceToken()}`,
         },
         body: JSON.stringify(payload),
       });

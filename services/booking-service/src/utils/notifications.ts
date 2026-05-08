@@ -129,6 +129,36 @@ export async function notifyBookingConfirmed(data: BookingNotificationData): Pro
   ]);
 }
 
+export async function notifyNoShowReported(data: {
+  artistEmail: string;
+  artistName: string;
+  bookingCode: string;
+  scheduledDate: string;
+}): Promise<void> {
+  await sendTemplate(data.artistEmail, 'booking-no-show-artist', {
+    artistName: data.artistName,
+    bookingCode: data.bookingCode,
+    scheduledDate: formatDate(data.scheduledDate),
+    currentYear: new Date().getFullYear(),
+  }).catch((e: any) => console.error('[NOTIF] booking-no-show-artist failed:', e.message));
+}
+
+export async function notifyNoShowResolved(data: {
+  clientEmail: string;
+  clientName: string;
+  bookingCode: string;
+  refundAmount: number;
+  creditAmount: number;
+}): Promise<void> {
+  await sendTemplate(data.clientEmail, 'booking-no-show-client', {
+    clientName: data.clientName,
+    bookingCode: data.bookingCode,
+    refundAmount: (data.refundAmount / 100).toFixed(2),
+    creditAmount: (data.creditAmount / 100).toFixed(2),
+    currentYear: new Date().getFullYear(),
+  }).catch((e: any) => console.error('[NOTIF] booking-no-show-client failed:', e.message));
+}
+
 export async function sendReminder24h(data: BookingNotificationData): Promise<void> {
   const vars = buildVars(data);
   await sendTemplate(data.clientEmail, 'booking-reminder-24h', vars)

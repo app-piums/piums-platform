@@ -3,6 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+const INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
+
 const prisma = new PrismaClient();
 
 export class UsersService {
@@ -102,12 +105,29 @@ export class UsersService {
    * Obtener perfil de usuario por authId
    */
   async getUserByAuthId(authId: string) {
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { authId },
-      include: {
-        addresses: true,
-      },
+      include: { addresses: true },
     });
+
+    // Auto-create profile if it doesn't exist (handles users seeded directly in auth-DB)
+    if (!user) {
+      try {
+        const res = await fetch(`${AUTH_SERVICE_URL}/internal/users/${authId}/info`, {
+          headers: { 'x-internal-secret': INTERNAL_SERVICE_SECRET },
+        });
+        if (res.ok) {
+          const data = await res.json() as any;
+          user = await prisma.user.create({
+            data: { authId, email: data.email, nombre: data.nombre || data.email },
+            include: { addresses: true },
+          });
+          logger.info('Auto-created users-service profile', 'USERS_SERVICE', { authId, email: data.email });
+        }
+      } catch (err: any) {
+        logger.warn('Could not auto-create user profile from auth-service', 'USERS_SERVICE', { authId, error: err.message });
+      }
+    }
 
     if (!user || user.deletedAt) {
       throw new AppError(404, "Usuario no encontrado");

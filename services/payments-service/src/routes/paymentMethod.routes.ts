@@ -50,4 +50,36 @@ router.patch(
   asHandler(paymentMethodController.setDefaultPaymentMethod)
 );
 
+/**
+ * GET /api/payments/methods/default
+ * Obtener método de pago predeterminado del usuario
+ */
+router.get(
+  "/methods/default",
+  auth,
+  asHandler(paymentMethodController.getDefaultPaymentMethod)
+);
+
+/**
+ * POST /api/payments/methods/save-token
+ * Guardar token de tarjeta de proveedor (Tilopay hash o Stripe PM)
+ */
+router.post(
+  "/methods/save-token",
+  auth,
+  createPaymentLimiter,
+  asHandler(paymentMethodController.saveProviderToken)
+);
+
+/**
+ * POST /api/payments/methods/:id/charge
+ * One-click checkout con tarjeta guardada
+ */
+router.post(
+  "/methods/:id/charge",
+  auth,
+  createPaymentLimiter,
+  asHandler(paymentMethodController.chargeWithSavedCard)
+);
+
 export default router;

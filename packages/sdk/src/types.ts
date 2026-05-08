@@ -44,7 +44,7 @@ export interface Artist {
   baseLocationLat?: number;
   baseLocationLng?: number;
   coverageRadius?: number;
-  experienceYears?: number;
+  yearsExperience?: number;
   rating?: number;
   reviewsCount?: number;
   bookingsCount?: number;

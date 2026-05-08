@@ -113,7 +113,8 @@ model Booking {
   
   // Pricing
   servicePrice   Int          // Precio del servicio en centavos
-  addonsPrice    Int          @default(0) // Precio de addons en centavos
+  addonsPrice    Int          @default(0) // Precio de addons en centavos (sin viáticos)
+  travelPrice    Int          @default(0) // Viáticos / traslado en centavos
   totalPrice     Int          // Precio total en centavos
   currency       String       @default("USD")
 
@@ -131,7 +132,9 @@ model Booking {
   paidAt          DateTime?
   paymentMethod   String?
   savedCardToken  String?     // Token de tarjeta guardada para cobro automático del saldo
-  
+  couponCode            String?   // Código de cupón aplicado
+  couponDiscountAmount  Int       @default(0) // Descuento aplicado en centavos
+
   // Add-ons contratados (array de IDs)
   selectedAddons  String[]
   
@@ -457,4 +460,21 @@ model RescheduleRequest {
   @@index([confirmationToken])
   @@index([status])
   @@map("reschedule_requests")
+}
+
+model BookingFunnelEvent {
+  id        String   @id @default(uuid())
+  sessionId String
+  userId    String?
+  step      String   // service | datetime | details | review | checkout | confirmed
+  action    String   // enter | complete | abandon
+  bookingId String?
+  artistId  String?
+  serviceId String?
+  createdAt DateTime @default(now())
+
+  @@index([step, action])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("booking_funnel_events")
 }

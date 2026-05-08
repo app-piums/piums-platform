@@ -293,6 +293,20 @@ export const setupRoutes = (app: Express) => {
   );
 
   // ============================================================================
+  // Analytics (PROTEGIDO) — booking-service handles /api/analytics/*
+  // ============================================================================
+  app.use(
+    "/api/analytics",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.BOOKING_SERVICE_URL || "http://localhost:4008",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/analytics" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // ============================================================================
   // Payments Service (PROTEGIDO)
   // ============================================================================
 
@@ -315,6 +329,18 @@ export const setupRoutes = (app: Express) => {
       target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
       changeOrigin: true,
       pathRewrite: { "^": "/api/credits" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // Coupons — montados en /api/coupons dentro de payments-service
+  app.use(
+    "/api/coupons",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/coupons" },
       on: { proxyReq: fixRequestBody },
     })
   );

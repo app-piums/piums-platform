@@ -47,27 +47,28 @@ router.post(
         orderHash,
       } = body;
 
-      // ── Verificación OrderHash V2 ─────────────────────────────────────────
-      if (orderHash) {
-        const valid = tilopayProvider.verifyOrderHashV2({
+      // ── Verificación OrderHash V2 — obligatoria ───────────────────────────
+      if (!orderHash) {
+        logger.error("Tilopay webhook rechazado: falta orderHash", "CALLBACK_TILOPAY", { orderId, orderNumber });
+        return;
+      }
+
+      const valid = tilopayProvider.verifyOrderHashV2({
+        orderId,
+        external_orden_id,
+        amount,
+        currency,
+        responseCode,
+        auth,
+        email,
+        orderHash,
+      });
+      if (!valid) {
+        logger.error("Tilopay webhook: OrderHash V2 inválido — descartando", "CALLBACK_TILOPAY", {
           orderId,
-          external_orden_id,
-          amount,
-          currency,
-          responseCode,
-          auth,
-          email,
-          orderHash,
+          orderHash: String(orderHash).slice(0, 8) + "…",
         });
-        if (!valid) {
-          logger.error("Tilopay webhook: OrderHash V2 inválido — descartando", "CALLBACK_TILOPAY", {
-            orderId,
-            orderHash: String(orderHash).slice(0, 8) + "…",
-          });
-          return;
-        }
-      } else {
-        logger.warn("SECURITY_WARNING: Tilopay callback sin orderHash — aceptado sin verificar", "CALLBACK_TILOPAY", { orderId, orderNumber });
+        return;
       }
 
       if (!orderNumber && !orderId) {

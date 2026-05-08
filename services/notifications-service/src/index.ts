@@ -23,8 +23,8 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://loca
 
 app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Rate limiting
 app.use(apiRateLimiter);

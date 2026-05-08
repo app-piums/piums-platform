@@ -20,7 +20,7 @@ router.post(
         throw new AppError(403, "Acceso denegado");
       }
 
-      const { artistId, type, rate, fixedAmount, currency, reason, startDate, endDate, createdByAdminId } = req.body;
+      const { artistId, type, rate, fixedAmount, currency, reason, startDate, endDate, createdByAdminId, isOneTime } = req.body;
 
       if (!artistId || !type || !reason || !startDate || !createdByAdminId) {
         throw new AppError(400, "Faltan campos requeridos");
@@ -40,6 +40,7 @@ router.post(
           startDate: new Date(startDate),
           endDate: endDate ? new Date(endDate) : null,
           isActive: true,
+          isOneTime: isOneTime ?? false,
           createdByAdminId,
         },
       });

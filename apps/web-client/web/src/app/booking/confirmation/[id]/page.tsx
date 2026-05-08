@@ -41,6 +41,8 @@ export default function BookingConfirmationPage() {
     const auth = searchParams.get('auth') || undefined;
     const currency = searchParams.get('currency') || 'USD';
     const orderHash = searchParams.get('orderHash') || undefined;
+    // hash = card token returned by Tilopay when tokenize=1 was requested
+    const cardHash = searchParams.get('hash') || undefined;
 
     if (!responseCode || !orderNumber) return;
 
@@ -55,6 +57,14 @@ export default function BookingConfirmationPage() {
       .catch(() => {
         // No bloquear la UI si falla — el admin puede confirmar manualmente
       });
+
+    // Save card token as default payment method for future one-click payments
+    if (cardHash) {
+      sdk.saveProviderToken({ provider: 'TILOPAY', token: cardHash })
+        .catch(() => {
+          // Silent — card saving is best-effort
+        });
+    }
   }, [bookingId, searchParams]);
 
   const loadBookingData = useCallback(async () => {
@@ -143,10 +153,8 @@ export default function BookingConfirmationPage() {
 
   const handleDownloadPDF = () => {
     if (!bookingId) return;
-    
-    // Abrir PDF en nueva ventana para descarga
-    const pdfUrl = `/api/booking/bookings/${bookingId}/pdf`;
-    window.open(pdfUrl, '_blank');
+    // PDF generation not yet implemented — endpoint pending
+    alert('La descarga de PDF estará disponible próximamente.');
   };
 
   const handleAddToCalendar = (type: 'google' | 'apple') => {

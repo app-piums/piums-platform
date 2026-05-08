@@ -48,6 +48,13 @@ router.post(
 
 // ==================== PAYMENTS ====================
 
+// Estadísticas (debe ir ANTES de /:id para evitar route shadowing)
+router.get(
+  "/payments/stats",
+  authenticateToken,
+  paymentController.getPaymentStats.bind(paymentController)
+);
+
 // Buscar pagos
 router.get(
   "/payments",
@@ -60,13 +67,6 @@ router.get(
   "/payments/:id",
   authenticateToken,
   paymentController.getPaymentById.bind(paymentController)
-);
-
-// Estadísticas
-router.get(
-  "/payments/stats",
-  authenticateToken,
-  paymentController.getPaymentStats.bind(paymentController)
 );
 
 // ==================== TILOPAY REDIRECT CONFIRM ====================

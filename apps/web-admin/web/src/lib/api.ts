@@ -537,6 +537,80 @@ export const creditsApi = {
     }),
 };
 
+// ─── Analytics (booking funnel) ─────────────────────────────────────────────
+
+export interface FunnelStep {
+  step: string;
+  entered: number;
+  completed: number;
+  abandoned: number;
+  conversionRate: number;
+}
+
+export interface BookingFunnelData {
+  steps: FunnelStep[];
+  totalSessions: number;
+  totalCompleted: number;
+  overallConversionRate: number;
+  period: string;
+}
+
+export const analyticsApi = {
+  getFunnel: (days?: number) =>
+    request<BookingFunnelData>(`/analytics/funnel${days ? `?days=${days}` : ''}`),
+};
+
+// ─── Coupons ─────────────────────────────────────────────────────────────────
+
+export interface AdminCoupon {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+  currency: string;
+  maxUses?: number;
+  maxUsesPerUser: number;
+  currentUses: number;
+  validationCount?: number;
+  targetType: 'GLOBAL' | 'ARTIST' | 'CLIENT' | 'SERVICE';
+  targetId?: string;
+  minimumAmount?: number;
+  maxDiscountAmount?: number;
+  status: 'ACTIVE' | 'PAUSED' | 'EXPIRED';
+  startsAt: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export const couponsApi = {
+  list: (params?: { page?: number; limit?: number; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.status) qs.set('status', params.status);
+    return request<{ coupons: AdminCoupon[]; total: number; page: number; totalPages: number }>(`/coupons?${qs}`);
+  },
+  get: (id: string) => request<{ coupon: AdminCoupon }>(`/coupons/${id}`),
+  create: (data: Partial<AdminCoupon>) =>
+    request<{ coupon: AdminCoupon }>('/coupons', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<AdminCoupon>) =>
+    request<{ coupon: AdminCoupon }>(`/coupons/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    request<{ message: string }>(`/coupons/${id}`, { method: 'DELETE' }),
+  sendEmail: (id: string, email: string, recipientName: string) =>
+    request<{ message: string }>(`/coupons/${id}/send-email`, {
+      method: 'POST',
+      body: JSON.stringify({ email, recipientName }),
+    }),
+  bulkGenerate: (data: { prefix: string; count: number; template: Partial<AdminCoupon> }) =>
+    request<{ ok: boolean; count: number; coupons: { code: string; name: string }[] }>('/coupons/bulk-generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
 // ─── Disputes (Quejas) ────────────────────────────────────────────────────────
 
 export interface DisputeRow {

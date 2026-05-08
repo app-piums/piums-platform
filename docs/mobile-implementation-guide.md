@@ -14,7 +14,7 @@ Referencia de todo lo implementado en web (pagos → emails) para replicar en la
 3. POST /api/payments/payment-intents  →  obtiene redirectUrl (Tilopay) o clientSecret (Stripe)
 4. Cliente paga
 5. Polling cada 3s a GET /api/bookings/:id
-   → cuando paymentStatus === 'DEPOSIT_PAID' | 'FULLY_PAID'  →  navegar a confirmación
+   → cuando paymentStatus === 'ANTICIPO_PAID' | 'FULLY_PAID'  →  navegar a confirmación
 ```
 
 ### 1.2 Reglas de negocio al crear una reserva
@@ -22,7 +22,7 @@ Referencia de todo lo implementado en web (pagos → emails) para replicar en la
 | Regla | Detalle |
 |---|---|
 | Verificación de identidad | El cliente debe tener `documentType + documentNumber + documentFrontUrl + documentSelfieUrl` en auth-service. Si no, la API devuelve 403. |
-| Anticipo (depósito) | 30% del `totalPrice`. Campo `anticipoRequired: true`, `anticipoAmount` en centavos. |
+| Anticipo (depósito) | **50%** del `totalPrice`. Campo `anticipoRequired: true`, `anticipoAmount` en centavos. |
 | Cancelación cliente | Solo dentro de las **48h desde que se creó** la reserva. Reembolso del 50% del monto pagado. |
 | Cancelación artista (CONFIRMED) | Reembolso 100% al cliente + penalización al artista = 9% del `totalPrice`. |
 | Tiempo mínimo de anticipación | Por defecto 24h. Si cliente está a ≤ 60km del artista → mínimo 3h. |
@@ -106,8 +106,8 @@ Todos los templates son HTML con variables `{{variable}}` y bloques `{{#if varia
 |---|---|---|
 | `welcome-client` | Cliente | Al registrarse como cliente |
 | `welcome-artist` | Artista | Al registrarse como artista |
-| `booking-created-client` | Cliente | Al crear una reserva |
-| `booking-created-artist` | Artista | Al recibir una nueva reserva |
+| `booking-created-client` | Cliente | Al confirmar el anticipo (no al crear la reserva) |
+| `booking-created-artist` | Artista | Al confirmar el anticipo del cliente |
 | `booking-confirmed` | Cliente | Cuando el artista confirma la reserva |
 | `booking-confirmed-artist` | Artista | Cuando confirma la reserva |
 | `booking-reminder-24h` | Cliente | 24h antes del evento (cron) |
@@ -163,7 +163,7 @@ duration           // "2 horas"
 location           // dirección del evento
 servicePrice       // "$1,250.00"
 totalPrice         // "$1,250.00"
-depositAmount      // "$375.00" (si anticipoRequired)
+depositAmount      // "$625.00" (50% del totalPrice, si anticipoRequired)
 bookingUrl         // https://client.piums.io/bookings/:id
 dashboardUrl       // https://artist.piums.io/artist/dashboard
 acceptUrl          // URL para que el artista acepte
@@ -272,7 +272,7 @@ Cada servicio tiene su propia base de datos en la misma instancia de Postgres:
 - [ ] Iniciar pago → `POST /api/payments/payment-intents`
 - [ ] **Tilopay:** abrir WebView con `redirectUrl`, capturar URL de retorno con deep link
 - [ ] **Stripe:** usar Stripe SDK nativo con `clientSecret`
-- [ ] Polling de `paymentStatus` hasta `DEPOSIT_PAID` | `FULLY_PAID`
+- [ ] Polling de `paymentStatus` hasta `ANTICIPO_PAID` | `FULLY_PAID`
 - [ ] Confirmación de reserva
 
 ### Notificaciones push

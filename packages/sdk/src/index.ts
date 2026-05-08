@@ -19,7 +19,7 @@ export interface Artist {
   bio?: string;
   reviewsCount?: number;
   bookingsCount?: number;
-  experienceYears?: number;
+  yearsExperience?: number;
   cityId?: string;
   coverageRadius?: number;
   mainServicePrice?: number;
@@ -62,7 +62,7 @@ export interface ArtistProfile extends Artist {
   category?: string;
   specialties?: string[];
   cityId?: string;
-  experienceYears?: number;
+  yearsExperience?: number;
   reviewsCount?: number;
   bookingsCount?: number;
   isVerified?: boolean;
@@ -475,6 +475,21 @@ export interface CreateRefundPayload {
   metadata?: Record<string, any>;
 }
 
+export interface SavedPaymentMethod {
+  id: string;
+  userId: string;
+  provider: 'STRIPE' | 'TILOPAY';
+  stripePaymentMethodId: string;
+  type: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+  cardExpMonth: number | null;
+  cardExpYear: number | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== CREDIT TYPES ====================
 
 export type CreditStatus = 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED';
@@ -753,6 +768,27 @@ export interface AdminReportsResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface SavedCoupon {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+  currency: string;
+  expiresAt?: string;
+  minimumAmount?: number;
+  targetType: string;
+}
+
+export interface CouponValidation {
+  valid: boolean;
+  discount: number;
+  couponId?: string;
+  coupon?: SavedCoupon;
+  error?: string;
 }
 
 class PiumsSDK {
@@ -1739,6 +1775,71 @@ class PiumsSDK {
       console.error('Error confirming Tilopay redirect:', error);
       throw error;
     }
+  }
+
+  // ==================== SAVED PAYMENT METHODS ====================
+
+  /**
+   * Obtener el método de pago predeterminado del usuario (tarjeta guardada)
+   */
+  async getDefaultPaymentMethod(): Promise<SavedPaymentMethod | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/methods/default`,
+        this.withAuth({ method: 'GET' })
+      );
+      if (!response.ok) return null;
+      const data = await response.json() as any;
+      return data.method || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Guardar token de proveedor como tarjeta predeterminada.
+   * Llamar desde la página de confirmación tras un pago Tilopay exitoso.
+   */
+  async saveProviderToken(params: {
+    provider: 'TILOPAY' | 'STRIPE';
+    token: string;
+    cardBrand?: string;
+    cardLast4?: string;
+    cardExpMonth?: number;
+    cardExpYear?: number;
+  }): Promise<SavedPaymentMethod | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/payments/methods/save-token`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        })
+      );
+      if (!response.ok) return null;
+      const data = await response.json() as any;
+      return data.method || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * One-click checkout con tarjeta guardada
+   */
+  async chargeWithSavedCard(methodId: string, bookingId: string, amount: number, currency: string): Promise<{ success: boolean; orderNumber: string; provider: string }> {
+    const response = await fetch(`${this.baseUrl}/payments/methods/${methodId}/charge`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId, amount, currency }),
+      })
+    );
+    if (!response.ok) {
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json() as any; errMsg = e.message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
+    }
+    return await response.json();
   }
 
   /**
@@ -3048,6 +3149,52 @@ class PiumsSDK {
     }
     const data = await response.json();
     return data.data;
+  }
+
+  // ── Analytics / Funnel ────────────────────────────────────────────────────
+
+  async trackFunnelEvent(params: {
+    sessionId: string;
+    step: string;
+    action: 'enter' | 'complete' | 'abandon';
+    userId?: string;
+    bookingId?: string;
+    artistId?: string;
+    serviceId?: string;
+  }): Promise<void> {
+    fetch(`${this.baseUrl}/analytics/funnel`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      })
+    ).catch(() => {}); // fire-and-forget, never throw
+  }
+
+  // ── Coupons ───────────────────────────────────────────────────────────────
+
+  async getMyCoupons(): Promise<SavedCoupon[]> {
+    const res = await fetch(`${this.baseUrl}/coupons/my`, this.withAuth({ method: 'GET' }));
+    if (!res.ok) return [];
+    return (await res.json() as any).coupons || [];
+  }
+
+  async getArtistCoupons(): Promise<SavedCoupon[]> {
+    const res = await fetch(`${this.baseUrl}/coupons/artist`, this.withAuth({ method: 'GET' }));
+    if (!res.ok) return [];
+    return (await res.json() as any).coupons || [];
+  }
+
+  async validateCoupon(code: string, bookingTotal: number, artistId?: string, serviceId?: string): Promise<CouponValidation> {
+    const res = await fetch(`${this.baseUrl}/coupons/validate`,
+      this.withAuth({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, bookingTotal, artistId, serviceId }),
+      })
+    );
+    if (!res.ok) return { valid: false, discount: 0, error: 'Cupón no válido' };
+    return await res.json();
   }
 }
 

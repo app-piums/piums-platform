@@ -208,11 +208,17 @@ export const calculateServicePrice = async (
     }
 
     if (extraKm > 0) {
+      const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
+
       if (numDays > 1) {
-        // ── VIÁTICOS: multi-día + fuera de cobertura → tarifa plana plataforma ──
-        const foodTotal    = VIATICOS_FOOD_PER_DAY_CENTS    * numDays;
-        const lodgingTotal = VIATICOS_LODGING_PER_DAY_CENTS * numDays;
-        travelCostCents    = foodTotal + lodgingTotal + VIATICOS_TRANSPORT_CENTS;
+        // ── VIÁTICOS: multi-día + fuera de cobertura ──
+        // Transporte: proporcional a la distancia extra (igual que traslado), no tarifa plana
+        const foodTotal      = VIATICOS_FOOD_PER_DAY_CENTS    * numDays;
+        const lodgingTotal   = VIATICOS_LODGING_PER_DAY_CENTS * numDays;
+        const transportTotal = pricePerKmCents > 0
+          ? Math.round(extraKm * pricePerKmCents)
+          : VIATICOS_TRANSPORT_CENTS;
+        travelCostCents = foodTotal + lodgingTotal + transportTotal;
 
         items.push({
           type: 'TRAVEL',
@@ -225,16 +231,17 @@ export const calculateServicePrice = async (
             numDays,
             foodPerDay:    VIATICOS_FOOD_PER_DAY_CENTS,
             lodgingPerDay: VIATICOS_LODGING_PER_DAY_CENTS,
-            transport:     VIATICOS_TRANSPORT_CENTS,
+            transport:     transportTotal,
             foodTotal,
             lodgingTotal,
             distanceKm,
             includedKm,
+            extraKm,
+            pricePerKm: pricePerKmCents,
           },
         });
       } else {
         // ── TRASLADO: día único + fuera de cobertura → precio por km ──
-        const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
         if (pricePerKmCents > 0) {
           travelCostCents = Math.round(extraKm * pricePerKmCents);
           items.push({

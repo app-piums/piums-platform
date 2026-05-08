@@ -160,8 +160,9 @@ export class PaymentController {
   async getRefundById(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params['id'] as string;
+      const userId = req.user!.id;
 
-      const refund = await paymentService.getRefundById(id);
+      const refund = await paymentService.getRefundById(id, userId);
 
       return res.json(refund);
     } catch (error) {

@@ -209,6 +209,80 @@ export class PaymentsClient {
   }
 
   /**
+   * Validar un cupón para un booking (llamada a payments-service)
+   */
+  async validateCoupon(data: {
+    code: string;
+    userId: string;
+    bookingId: string;
+    bookingTotal: number;
+    artistId?: string;
+    serviceId?: string;
+  }): Promise<{ valid: boolean; discount: number; couponId: string; error?: string } | null> {
+    try {
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+      const response = await fetch(`${this.baseUrl}/api/coupons/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': internalSecret || '',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        console.error('[PaymentsClient] Error validando cupón:', error);
+        return null;
+      }
+
+      const result = await response.json() as any;
+      return {
+        valid: result.valid,
+        discount: result.discount,
+        couponId: result.coupon?.id || '',
+        error: result.error,
+      };
+    } catch (error) {
+      console.error('[PaymentsClient] Error de conexión al validar cupón:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Redimir un cupón tras crear el booking (llamada interna)
+   */
+  async redeemCoupon(data: {
+    couponId: string;
+    userId: string;
+    bookingId: string;
+    discountApplied: number;
+  }): Promise<any | null> {
+    try {
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+      const response = await fetch(`${this.baseUrl}/api/coupons/redeem`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': internalSecret || '',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        console.error('[PaymentsClient] Error redimiendo cupón:', error);
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('[PaymentsClient] Error de conexión al redimir cupón:', error);
+      return null;
+    }
+  }
+
+  /**
    * Buscar pagos de un booking
    */
   async getBookingPayments(bookingId: string, userId: string): Promise<any | null> {

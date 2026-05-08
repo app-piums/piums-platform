@@ -3,11 +3,14 @@ import Filter from 'bad-words';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { EventEmitter } from 'events';
+import { SPANISH_PROFANITY_LIST, cleanProfanity } from '../utils/profanity';
 
 export const chatEmitter = new EventEmitter();
 
 const prisma = new PrismaClient();
 const filter = new Filter();
+// Extend bad-words filter with Spanish single-word entries
+filter.addWords(...SPANISH_PROFANITY_LIST.filter(w => !w.includes(' ')));
 
 export class ChatService {
   // ==================== CONVERSATIONS ====================
@@ -241,10 +244,10 @@ export class ChatService {
         throw new AppError(403, 'No tienes acceso a esta conversación');
       }
 
-      // Moderation: filtrar malas palabras
+      // Moderation: filtrar malas palabras (inglés vía bad-words + español vía cleanProfanity)
       let filteredContent = content;
       if (type === 'TEXT') {
-        filteredContent = filter.clean(content);
+        filteredContent = cleanProfanity(filter.clean(content));
       }
 
       // Crear mensaje
@@ -264,7 +267,7 @@ export class ChatService {
         where: { id: conversationId },
         data: {
           lastMessageAt: new Date(),
-          lastMessagePreview: content.substring(0, 100),
+          lastMessagePreview: filteredContent.substring(0, 100),
         },
       });
 

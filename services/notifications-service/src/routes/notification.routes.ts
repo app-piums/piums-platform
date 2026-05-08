@@ -66,19 +66,8 @@ router.post(
 );
 
 // ============================================================================
-// Notification Queries
+// Notification Queries — rutas específicas ANTES de /:id para evitar shadowing
 // ============================================================================
-
-/**
- * GET /api/notifications/:id
- * Get notification by ID
- * Auth: Required
- */
-router.get(
-  '/:id',
-  authenticate,
-  notificationController.getNotificationById.bind(notificationController)
-);
 
 /**
  * GET /api/notifications
@@ -102,17 +91,6 @@ router.post(
   notificationController.markAsRead.bind(notificationController)
 );
 
-/**
- * DELETE /api/notifications/:id
- * Delete notification
- * Auth: Required
- */
-router.delete(
-  '/:id',
-  authenticate,
-  notificationController.deleteNotification.bind(notificationController)
-);
-
 // ============================================================================
 // Templates
 // ============================================================================
@@ -129,17 +107,6 @@ router.post(
 );
 
 /**
- * GET /api/notifications/templates/:key
- * Get template by key
- * Auth: Required
- */
-router.get(
-  '/templates/:key',
-  authenticate,
-  notificationController.getTemplateByKey.bind(notificationController)
-);
-
-/**
  * GET /api/notifications/templates
  * List all templates
  * Auth: Required
@@ -148,6 +115,17 @@ router.get(
   '/templates',
   authenticate,
   notificationController.listTemplates.bind(notificationController)
+);
+
+/**
+ * GET /api/notifications/templates/:key
+ * Get template by key
+ * Auth: Required
+ */
+router.get(
+  '/templates/:key',
+  authenticate,
+  notificationController.getTemplateByKey.bind(notificationController)
 );
 
 /**
@@ -212,6 +190,32 @@ router.get(
   '/stats',
   authenticate,
   notificationController.getStats.bind(notificationController)
+);
+
+// ============================================================================
+// Dynamic :id routes — SIEMPRE al final para no capturar rutas específicas
+// ============================================================================
+
+/**
+ * GET /api/notifications/:id
+ * Get notification by ID
+ * Auth: Required
+ */
+router.get(
+  '/:id',
+  authenticate,
+  notificationController.getNotificationById.bind(notificationController)
+);
+
+/**
+ * DELETE /api/notifications/:id
+ * Delete notification
+ * Auth: Required
+ */
+router.delete(
+  '/:id',
+  authenticate,
+  notificationController.deleteNotification.bind(notificationController)
 );
 
 export default router;

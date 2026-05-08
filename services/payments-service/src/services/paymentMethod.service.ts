@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { stripeProvider } from "../providers/stripe.provider";
+import { tilopayProvider } from "../providers/tilopay.provider";
+import { bookingClient } from "../clients/booking.client";
 
 const prisma = new PrismaClient();
 
@@ -140,16 +142,18 @@ export class PaymentMethodService {
         }
       }
 
-      // 4. Detach del customer en Stripe
-      try {
-        await stripeProvider.detachPaymentMethod(method.stripePaymentMethodId);
-      } catch (stripeError: any) {
-        logger.warn(
-          "Failed to detach payment method from Stripe",
-          "PAYMENT_METHOD_SERVICE",
-          { error: stripeError.message }
-        );
-        // Continuar aunque falle el detach en Stripe
+      // 4. Detach del customer en Stripe (solo para PMs de Stripe)
+      const methodProvider: string = (method as any).provider || 'STRIPE';
+      if (methodProvider === 'STRIPE' && method.stripePaymentMethodId.startsWith('pm_')) {
+        try {
+          await stripeProvider.detachPaymentMethod(method.stripePaymentMethodId);
+        } catch (stripeError: any) {
+          logger.warn(
+            "Failed to detach payment method from Stripe",
+            "PAYMENT_METHOD_SERVICE",
+            { error: stripeError.message }
+          );
+        }
       }
 
       logger.info("Payment method deleted", "PAYMENT_METHOD_SERVICE", {
@@ -162,6 +166,155 @@ export class PaymentMethodService {
       logger.error("Error deleting payment method", "PAYMENT_METHOD_SERVICE", error);
       throw error;
     }
+  }
+
+  /**
+   * Obtener método de pago predeterminado del usuario (sin deleted)
+   */
+  async getDefaultPaymentMethod(userId: string) {
+    try {
+      const method = await prisma.paymentMethod.findFirst({
+        where: { userId, isDefault: true, deletedAt: null },
+      });
+      return method;
+    } catch (error: any) {
+      logger.error("Error getting default payment method", "PAYMENT_METHOD_SERVICE", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Guardar token de proveedor (Tilopay hash o Stripe PM) como método guardado.
+   * Hace upsert: si ya existe el token, solo actualiza isDefault.
+   */
+  async saveProviderToken(
+    userId: string,
+    data: {
+      provider: 'TILOPAY' | 'STRIPE';
+      token: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardExpMonth?: number;
+      cardExpYear?: number;
+    }
+  ) {
+    try {
+      // Use a prefixed token to avoid collisions between providers
+      const tokenKey = data.provider === 'TILOPAY' ? `tilopay_${data.token}` : data.token;
+
+      // Check if already saved (idempotent)
+      const existing = await (prisma as any).paymentMethod.findFirst({
+        where: { userId, stripePaymentMethodId: tokenKey, deletedAt: null },
+      });
+
+      if (existing) {
+        // Already saved — ensure it's the default
+        await (prisma as any).paymentMethod.updateMany({
+          where: { userId, isDefault: true },
+          data: { isDefault: false },
+        });
+        const updated = await (prisma as any).paymentMethod.update({
+          where: { id: existing.id },
+          data: { isDefault: true },
+        });
+        return updated;
+      }
+
+      // Set all existing as non-default first
+      await prisma.paymentMethod.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+
+      const method = await (prisma as any).paymentMethod.create({
+        data: {
+          userId,
+          provider: data.provider,
+          stripePaymentMethodId: tokenKey,
+          type: 'card',
+          cardBrand: data.cardBrand || null,
+          cardLast4: data.cardLast4 || null,
+          cardExpMonth: data.cardExpMonth || null,
+          cardExpYear: data.cardExpYear || null,
+          isDefault: true,
+          metadata: {},
+        },
+      });
+
+      logger.info("Provider token saved as payment method", "PAYMENT_METHOD_SERVICE", {
+        userId,
+        provider: data.provider,
+        methodId: method.id,
+      });
+
+      return method;
+    } catch (error: any) {
+      logger.error("Error saving provider token", "PAYMENT_METHOD_SERVICE", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cobrar con tarjeta guardada (one-click checkout)
+   */
+  async chargeWithSavedCard(
+    userId: string,
+    methodId: string,
+    bookingId: string,
+    amount: number,
+    currency: string
+  ) {
+    const method = await prisma.paymentMethod.findUnique({ where: { id: methodId } });
+    if (!method || method.deletedAt) throw new AppError(404, "Método de pago no encontrado");
+    if (method.userId !== userId) throw new AppError(403, "No tienes permiso para usar este método");
+
+    const booking = await bookingClient.getBooking(bookingId);
+    if (!booking) throw new AppError(404, "Reserva no encontrada");
+    if (booking.clientId !== userId) throw new AppError(403, "No tienes permiso para pagar esta reserva");
+
+    const provider: string = (method as any).provider || 'STRIPE';
+
+    if (provider === 'TILOPAY') {
+      // Strip the tilopay_ prefix to get the raw hash
+      const hash = method.stripePaymentMethodId.replace(/^tilopay_/, '');
+      const result = await tilopayProvider.chargeToken({ hash, amount, currency, bookingId });
+
+      if (!result.approved) {
+        throw new AppError(402, `Pago rechazado por Tilopay (código ${result.responseCode})`);
+      }
+
+      // Mark booking as paid
+      await bookingClient.markPayment(bookingId, amount, 'TILOPAY', result.orderNumber, 'FULL_PAYMENT');
+
+      logger.info("One-click Tilopay charge succeeded", "PAYMENT_METHOD_SERVICE", {
+        userId, bookingId, methodId, orderNumber: result.orderNumber,
+      });
+
+      return { success: true, orderNumber: result.orderNumber, provider: 'TILOPAY' };
+    }
+
+    // Stripe: use saved PM with off-session confirm
+    const pmId = method.stripePaymentMethodId;
+    const { stripe } = await import('../providers/stripe.provider');
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency: currency.toLowerCase(),
+      payment_method: pmId,
+      confirm: true,
+      off_session: true,
+    });
+
+    if (intent.status !== 'succeeded') {
+      throw new AppError(402, `Pago Stripe no completado: ${intent.status}`);
+    }
+
+    await bookingClient.markPayment(bookingId, amount, 'STRIPE', intent.id, 'FULL_PAYMENT');
+
+    logger.info("One-click Stripe charge succeeded", "PAYMENT_METHOD_SERVICE", {
+      userId, bookingId, methodId, intentId: intent.id,
+    });
+
+    return { success: true, orderNumber: intent.id, provider: 'STRIPE' };
   }
 
   /**

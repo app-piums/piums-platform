@@ -98,6 +98,29 @@ app.get("/internal/users/:authId/identity-status", async (req, res, next) => {
   }
 });
 
+// Internal endpoint: get document URLs for ownership verification
+app.get("/internal/users/:authId/document-urls", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!internalSecret || req.headers['x-internal-secret'] !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { authId } = req.params;
+    const user = await prismaInternal.user.findUnique({
+      where: { id: authId },
+      select: { documentFrontUrl: true, documentBackUrl: true, documentSelfieUrl: true },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      documentFrontUrl: user.documentFrontUrl ?? null,
+      documentBackUrl: user.documentBackUrl ?? null,
+      documentSelfieUrl: user.documentSelfieUrl ?? null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Internal endpoint: get basic user info (email + nombre) by authId
 app.get("/internal/users/:authId/info", async (req, res, next) => {
   try {

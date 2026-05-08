@@ -48,15 +48,21 @@ export class PayoutService {
       }).catch(() => null);
 
       if (commissionRule) {
-        if (commissionRule.ruleType === "FIXED_PENALTY") {
-          // Penalización fija en centavos
+        if (commissionRule.type === "FIXED_PENALTY") {
           platformFee = commissionRule.fixedAmount ?? 0;
-        } else if (commissionRule.ruleType === "RATE_OVERRIDE") {
-          // Tasa personalizada (9% compensación por cancelación, etc.)
-          platformFeePercentage = commissionRule.percentage ?? platformFeePercentage;
+        } else if (commissionRule.type === "RATE_OVERRIDE") {
+          platformFeePercentage = commissionRule.rate ?? platformFeePercentage;
           platformFee = Math.round((data.amount * platformFeePercentage) / 100);
         } else {
           platformFee = Math.round((data.amount * platformFeePercentage) / 100);
+        }
+
+        // Regla de un solo uso: desactivar tras aplicarse
+        if (commissionRule.isOneTime) {
+          await (prisma as any).commissionRule.update({
+            where: { id: commissionRule.id },
+            data: { isActive: false, appliedAt: new Date() },
+          }).catch(() => null);
         }
       } else {
         platformFee = Math.round((data.amount * platformFeePercentage) / 100);

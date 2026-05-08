@@ -135,9 +135,101 @@ export const setDefaultPaymentMethod = async (
   }
 };
 
+/**
+ * GET /api/payments/methods/default — Obtener método de pago predeterminado
+ */
+export const getDefaultPaymentMethod = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(401, "No autenticado");
+
+    const method = await paymentMethodService.getDefaultPaymentMethod(userId);
+    res.json({ method: method || null });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/payments/methods/save-token — Guardar token de proveedor (Tilopay/Stripe)
+ */
+export const saveProviderToken = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(401, "No autenticado");
+
+    const { provider, token, cardBrand, cardLast4, cardExpMonth, cardExpYear } = req.body as {
+      provider: 'TILOPAY' | 'STRIPE';
+      token: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardExpMonth?: number;
+      cardExpYear?: number;
+    };
+
+    if (!provider || !token) throw new AppError(400, "provider y token son requeridos");
+    if (!['TILOPAY', 'STRIPE'].includes(provider)) throw new AppError(400, "provider inválido");
+
+    const method = await paymentMethodService.saveProviderToken(userId, {
+      provider, token, cardBrand, cardLast4, cardExpMonth, cardExpYear,
+    });
+
+    logger.info("Provider token saved", "PAYMENT_METHOD_CONTROLLER", { userId, provider });
+    res.status(201).json({ message: "Tarjeta guardada", method });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/payments/methods/:id/charge — One-click checkout con tarjeta guardada
+ */
+export const chargeWithSavedCard = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(401, "No autenticado");
+
+    const methodId = req.params['id'] as string;
+    const { bookingId, amount, currency } = req.body as {
+      bookingId: string;
+      amount: number;
+      currency?: string;
+    };
+
+    if (!bookingId || !amount) throw new AppError(400, "bookingId y amount son requeridos");
+
+    const result = await paymentMethodService.chargeWithSavedCard(
+      userId,
+      methodId,
+      bookingId,
+      amount,
+      currency || 'USD'
+    );
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const paymentMethodController = {
   getPaymentMethods,
   addPaymentMethod,
   deletePaymentMethod,
   setDefaultPaymentMethod,
+  getDefaultPaymentMethod,
+  saveProviderToken,
+  chargeWithSavedCard,
 };

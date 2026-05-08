@@ -14,7 +14,7 @@ import { PricingBreakdown } from '@/components/booking/PricingBreakdown';
 import { ConfirmModal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
-import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload } from '@piums/sdk';
+import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload, CouponValidation } from '@piums/sdk';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
@@ -188,9 +188,19 @@ function BookingContent() {
   const eventId = sanitizeParam(searchParams.get('eventId'));
   const [resolvedArtistId, setResolvedArtistId] = useState<string | null>(artistId);
 
+  // Funnel tracking session
+  const [sessionId] = useState(() => crypto.randomUUID());
+
   const [step, setStep] = useState<BookingStep>('service');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [couponInput, setCouponInput] = useState('');
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponResult, setCouponResult] = useState<CouponValidation | null>(null);
+  const couponDiscount = couponResult?.valid ? couponResult.discount : 0;
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [apiAvailability, setApiAvailability] = useState<DayAvailability[]>([]);
@@ -660,7 +670,25 @@ function BookingContent() {
     return [baseItem, ...addonItems, travelFeeDisplay];
   }, [priceQuote, selectedService, addons, selectedAddons, clientCoords, isMultiDay, numDays, travelDistanceKm, artist]);
 
+  // Funnel: track enter on mount
+  const funnelTrackedInitial = useRef(false);
+  useEffect(() => {
+    if (funnelTrackedInitial.current) return;
+    funnelTrackedInitial.current = true;
+    sdk.trackFunnelEvent({
+      sessionId,
+      step: 'service',
+      action: 'enter',
+      userId: user?.id,
+      artistId: artistId || undefined,
+      serviceId: serviceId || undefined,
+    });
+  }, [sessionId, user?.id, artistId, serviceId]);
+
   const handleServiceSelect = (service: Service) => {
+    // Funnel: complete 'service', enter 'datetime'
+    sdk.trackFunnelEvent({ sessionId, step: 'service', action: 'complete', userId: user?.id, artistId: service.artistId, serviceId: service.id });
+    sdk.trackFunnelEvent({ sessionId, step: 'datetime', action: 'enter', userId: user?.id, artistId: service.artistId, serviceId: service.id });
     setSelectedService(service);
     setSelectedAddons(getDefaultAddonIds(service));
     setApiAvailability([]);
@@ -715,12 +743,16 @@ function BookingContent() {
 
   const handleDateTimeNext = () => {
     if (selectedDate && selectedTime && selectedTimeSlot) {
+      sdk.trackFunnelEvent({ sessionId, step: 'datetime', action: 'complete', userId: user?.id, artistId: resolvedArtistId || undefined, serviceId: selectedService?.id });
+      sdk.trackFunnelEvent({ sessionId, step: 'details', action: 'enter', userId: user?.id, artistId: resolvedArtistId || undefined, serviceId: selectedService?.id });
       setStep('details');
     }
   };
 
   const handleDetailsNext = () => {
     if (location || clientCoords) {
+      sdk.trackFunnelEvent({ sessionId, step: 'details', action: 'complete', userId: user?.id, artistId: resolvedArtistId || undefined, serviceId: selectedService?.id });
+      sdk.trackFunnelEvent({ sessionId, step: 'review', action: 'enter', userId: user?.id, artistId: resolvedArtistId || undefined, serviceId: selectedService?.id });
       setStep('review');
       return;
     }
@@ -736,9 +768,12 @@ function BookingContent() {
     );
   };
 
-  const [submitStage, setSubmitStage] = useState<'idle' | 'creating' | 'checkout' | 'waiting'>('idle');
+  const [submitStage, setSubmitStage] = useState<'idle' | 'creating' | 'checkout' | 'waiting' | 'saved-card'>('idle');
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
+  const [showCancelPaymentConfirm, setShowCancelPaymentConfirm] = useState(false);
+  const [savedCard, setSavedCard] = useState<import('@piums/sdk').SavedPaymentMethod | null | undefined>(undefined);
+  const [useSavedCard, setUseSavedCard] = useState(true);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Cleanup on unmount
@@ -747,6 +782,15 @@ function BookingContent() {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
   }, []);
+
+  // Load saved default payment method when user reaches review step
+  useEffect(() => {
+    if (step === 'review' && savedCard === undefined && isAuthenticated) {
+      sdk.getDefaultPaymentMethod()
+        .then((method) => setSavedCard(method))
+        .catch(() => setSavedCard(null));
+    }
+  }, [step, savedCard, isAuthenticated]);
 
   const startPaymentPolling = (bookingId: string) => {
     setPendingBookingId(bookingId);
@@ -757,7 +801,7 @@ function BookingContent() {
         const booking = await sdk.getBooking(bookingId).catch(() => null);
         const paymentStatus = (booking as any)?.paymentStatus;
 
-        if (paymentStatus === 'FULLY_PAID' || paymentStatus === 'DEPOSIT_PAID') {
+        if (paymentStatus === 'FULLY_PAID' || paymentStatus === 'ANTICIPO_PAID' || paymentStatus === 'DEPOSIT_PAID') {
           clearInterval(pollIntervalRef.current!);
           pollIntervalRef.current = null;
           setPaymentIframeUrl(null);
@@ -795,13 +839,42 @@ function BookingContent() {
         clientNotes: notes || undefined,
         selectedAddons: selectedAddons.length ? selectedAddons : undefined,
         eventId: selectedEventId || undefined,
-      };
+        ...(couponCode ? { couponCode } : {}),
+      } as any;
+
+      sdk.trackFunnelEvent({ sessionId, step: 'review', action: 'complete', userId: user?.id, artistId: (payload as any).artistId, serviceId: (payload as any).serviceId });
+      sdk.trackFunnelEvent({ sessionId, step: 'checkout', action: 'enter', userId: user?.id, artistId: (payload as any).artistId, serviceId: (payload as any).serviceId });
 
       const booking = await sdk.createBooking(payload);
 
       const amountForIntent = (booking as any).anticipoRequired && (booking as any).anticipoAmount != null
         ? (booking as any).anticipoAmount
         : booking.totalPrice;
+
+      // One-click checkout with saved card
+      if (useSavedCard && savedCard) {
+        setSubmitStage('saved-card');
+        try {
+          await sdk.chargeWithSavedCard(
+            savedCard.id,
+            booking.id,
+            amountForIntent,
+            (booking as any).currency || 'USD',
+          );
+          setShowConfirmModal(false);
+          setSubmitStage('idle');
+          setSubmitting(false);
+          router.push(`/booking/confirmation/${booking.id}?responseCode=00`);
+          return;
+        } catch (savedCardError: any) {
+          // If saved card fails, fall through to normal checkout
+          toast.error(savedCardError.message || 'Error al cobrar la tarjeta guardada. Elige otro método de pago.');
+          setUseSavedCard(false);
+          setSubmitStage('idle');
+          setSubmitting(false);
+          return;
+        }
+      }
 
       setSubmitStage('checkout');
       let pi;
@@ -1482,6 +1555,85 @@ function BookingContent() {
                         </div>
                       </div>
 
+                      {/* Cupón de descuento */}
+                      <div className="border-t border-gray-200 pt-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Código de cupón</h4>
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!couponInput.trim()) return;
+                            setCouponValidating(true);
+                            setCouponResult(null);
+                            try {
+                              const totalCents = priceQuote?.totalCents ?? (selectedService?.basePrice ?? 0);
+                              const res = await sdk.validateCoupon(
+                                couponInput.trim().toUpperCase(),
+                                totalCents / 100,
+                                resolvedArtistId || undefined,
+                                selectedService?.id,
+                              );
+                              setCouponResult(res);
+                              if (res.valid) setCouponCode(couponInput.trim().toUpperCase());
+                              else setCouponCode('');
+                            } catch {
+                              setCouponResult({ valid: false, discount: 0, error: 'Error al validar el cupón' });
+                              setCouponCode('');
+                            } finally {
+                              setCouponValidating(false);
+                            }
+                          }}
+                          className="flex gap-2"
+                        >
+                          <input
+                            value={couponInput}
+                            onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponResult(null); setCouponCode(''); }}
+                            placeholder="Código de cupón"
+                            className="flex-1 rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-mono font-semibold tracking-wider text-gray-900 placeholder:font-normal placeholder:tracking-normal outline-none focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 transition"
+                          />
+                          <button
+                            type="submit"
+                            disabled={couponValidating || !couponInput.trim()}
+                            className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                          >
+                            {couponValidating ? 'Aplicando...' : 'Aplicar'}
+                          </button>
+                        </form>
+                        {couponResult && (
+                          <div className={`mt-2 rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 ${
+                            couponResult.valid
+                              ? 'bg-green-50 text-green-700 border border-green-200'
+                              : 'bg-red-50 text-red-600 border border-red-200'
+                          }`}>
+                            {couponResult.valid ? (
+                              <>
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Cupón aplicado — Descuento:{' '}
+                                <strong>
+                                  {couponResult.coupon?.discountType === 'PERCENTAGE'
+                                    ? `${couponResult.coupon.discountValue}%`
+                                    : `$${couponResult.discount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                                </strong>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {couponResult.error || 'Cupón no válido'}
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {couponDiscount > 0 && (
+                          <div className="mt-2 flex justify-between text-sm font-semibold text-green-700 bg-green-50 rounded-xl px-4 py-2.5 border border-green-200">
+                            <span>Descuento aplicado:</span>
+                            <span>-${couponDiscount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Buttons */}
                       <div className="flex gap-3 pt-4">
                         <Button variant="outline" onClick={() => setStep('details')} fullWidth>
@@ -1615,16 +1767,7 @@ function BookingContent() {
         isOpen={showConfirmModal}
         onClose={() => {
           if (submitStage === 'waiting') {
-            if (window.confirm('¿Cancelar el pago? Tu reserva será eliminada.')) {
-              clearInterval(pollIntervalRef.current!);
-              pollIntervalRef.current = null;
-              if (pendingBookingId) sdk.cancelBooking(pendingBookingId, 'Usuario canceló el pago').catch(() => {});
-              setPaymentIframeUrl(null);
-              setShowConfirmModal(false);
-              setSubmitStage('idle');
-              setSubmitting(false);
-              setPendingBookingId(null);
-            }
+            setShowCancelPaymentConfirm(true);
           } else if (!submitting) {
             setShowConfirmModal(false);
           }
@@ -1632,7 +1775,13 @@ function BookingContent() {
         onConfirm={handleConfirmBooking}
         title={submitStage === 'waiting' ? "Completa tu pago" : "Confirmar Reserva"}
         message=""
-        confirmLabel={submitStage === 'creating' ? "Creando reserva..." : submitStage === 'checkout' ? "Iniciando pago..." : "Sí, confirmar"}
+        confirmLabel={
+          submitStage === 'creating' ? "Creando reserva..." :
+          submitStage === 'checkout' ? "Iniciando pago..." :
+          submitStage === 'saved-card' ? "Procesando pago..." :
+          useSavedCard && savedCard ? `Pagar con ${savedCard.cardBrand || 'tarjeta'} ****${savedCard.cardLast4 || ''}` :
+          "Sí, confirmar"
+        }
         cancelLabel={submitStage === 'waiting' ? "Cancelar pago" : "Cancelar"}
         variant="info"
         isLoading={submitting && submitStage !== 'waiting'}
@@ -1667,6 +1816,43 @@ function BookingContent() {
             </div>
           ) : selectedService && selectedDate && selectedTime && artist ? (
             <div className="space-y-4">
+              {/* Saved card selector */}
+              {savedCard && (
+                <div className="rounded-xl border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setUseSavedCard(true)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${useSavedCard ? 'bg-orange-50 border-b border-orange-200' : 'bg-white border-b border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center ${useSavedCard ? 'border-[#FF6A00]' : 'border-gray-300'}`}>
+                      {useSavedCard && <div className="h-2 w-2 rounded-full bg-[#FF6A00]" />}
+                    </div>
+                    <svg className="h-5 w-5 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 capitalize">{savedCard.cardBrand || 'Tarjeta'} ****{savedCard.cardLast4}</p>
+                      {savedCard.cardExpMonth && savedCard.cardExpYear && (
+                        <p className="text-xs text-gray-500">Vence {String(savedCard.cardExpMonth).padStart(2, '0')}/{savedCard.cardExpYear}</p>
+                      )}
+                    </div>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Guardada</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseSavedCard(false)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${!useSavedCard ? 'bg-orange-50' : 'bg-white hover:bg-gray-50'}`}
+                  >
+                    <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center ${!useSavedCard ? 'border-[#FF6A00]' : 'border-gray-300'}`}>
+                      {!useSavedCard && <div className="h-2 w-2 rounded-full bg-[#FF6A00]" />}
+                    </div>
+                    <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span className="text-sm text-gray-600">Usar otra tarjeta</span>
+                  </button>
+                </div>
+              )}
               {/* Artist row */}
               <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl border border-orange-100">
                 <Avatar src={artist.avatar} fallback={artist.nombre} size="md" />
@@ -1717,6 +1903,53 @@ function BookingContent() {
           )
         }
       />
+
+      {/* Modal de confirmación para cancelar el pago */}
+      {showCancelPaymentConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelPaymentConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+            {/* Icon */}
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mx-auto">
+              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+            </div>
+            {/* Text */}
+            <div className="text-center">
+              <h3 className="text-base font-semibold text-gray-900">¿Cancelar el pago?</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Tu reserva será eliminada y tendrás que comenzar de nuevo si cambias de opinión.
+              </p>
+            </div>
+            {/* Actions */}
+            <div className="flex flex-col gap-2 mt-1">
+              <button
+                className="w-full rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-semibold py-2.5 transition-colors"
+                onClick={() => {
+                  setShowCancelPaymentConfirm(false);
+                  clearInterval(pollIntervalRef.current!);
+                  pollIntervalRef.current = null;
+                  if (pendingBookingId) sdk.cancelBooking(pendingBookingId, 'Usuario canceló el pago').catch(() => {});
+                  setPaymentIframeUrl(null);
+                  setShowConfirmModal(false);
+                  setSubmitStage('idle');
+                  setSubmitting(false);
+                  setPendingBookingId(null);
+                }}
+              >
+                Sí, cancelar reserva
+              </button>
+              <button
+                className="w-full rounded-xl bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 text-sm font-semibold py-2.5 transition-colors"
+                onClick={() => setShowCancelPaymentConfirm(false)}
+              >
+                Continuar con el pago
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

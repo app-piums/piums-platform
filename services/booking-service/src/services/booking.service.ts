@@ -9,7 +9,7 @@ import { chatClient } from "../clients/chat.client";
 import { generateBookingCode } from "./booking-code.service";
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
-import { notifyBookingCreated, notifyBookingConfirmed } from "../utils/notifications";
+import { notifyBookingCreated, notifyBookingConfirmed, notifyNoShowReported, notifyNoShowResolved } from "../utils/notifications";
 import { createAvailabilityReservation, removeAvailabilityReservation } from "./availability.service";
 
 const prisma = new PrismaClient();
@@ -32,6 +32,7 @@ export class BookingService {
     selectedAddons?: string[];
     clientNotes?: string;
     eventId?: string;
+    couponCode?: string;
   }) {
     const scheduledDate = new Date(data.scheduledDate);
 
@@ -101,6 +102,11 @@ export class BookingService {
 
     let distanceKm = 0;
     let sameDayBookingApplied = false;
+    if (!artist?.baseLocationLat || !artist?.baseLocationLng) {
+      logger.warn(`Artista sin coordenadas base — viáticos no aplicarán aunque haya distancia`, "BOOKING_SERVICE", { artistId: data.artistId });
+    } else if (!data.locationLat || !data.locationLng) {
+      logger.warn(`Cliente sin coordenadas — viáticos no aplicarán aunque haya distancia`, "BOOKING_SERVICE", { clientId: data.clientId });
+    }
     if (artist && artist.baseLocationLat && artist.baseLocationLng && data.locationLat && data.locationLng) {
       distanceKm = this.getDistance(
         artist.baseLocationLat,
@@ -141,12 +147,46 @@ export class BookingService {
     }
 
     const servicePrice = priceQuote.breakdown.baseCents;
-    const addonsPrice = priceQuote.breakdown.addonsCents + priceQuote.breakdown.travelCents;
-    const totalPrice = priceQuote.totalCents;
+    const addonsPrice = priceQuote.breakdown.addonsCents;
+    const travelPrice = priceQuote.breakdown.travelCents;
+    let totalPrice = priceQuote.totalCents;
+
+    // Validate coupon before creating booking (use placeholder bookingId='')
+    let couponDiscountAmount = 0;
+    let validatedCouponId: string | null = null;
+    if (data.couponCode) {
+      try {
+        const couponResult = await paymentsClient.validateCoupon({
+          code: data.couponCode,
+          userId: data.clientId,
+          bookingId: '',
+          bookingTotal: totalPrice,
+          artistId: data.artistId,
+          serviceId: data.serviceId,
+        });
+        if (couponResult && couponResult.valid) {
+          couponDiscountAmount = couponResult.discount;
+          validatedCouponId = couponResult.couponId || null;
+          totalPrice = Math.max(0, totalPrice - couponDiscountAmount);
+          logger.info('Cupón aplicado al booking', 'BOOKING_SERVICE', {
+            code: data.couponCode,
+            discount: couponDiscountAmount,
+            newTotal: totalPrice,
+          });
+        } else {
+          logger.warn('Cupón inválido — se procede sin descuento', 'BOOKING_SERVICE', {
+            code: data.couponCode,
+            error: couponResult?.error,
+          });
+        }
+      } catch (err: any) {
+        logger.warn('Error validando cupón — se procede sin descuento', 'BOOKING_SERVICE', { error: err.message });
+      }
+    }
 
     // Calcular depósito si es requerido
     const depositRequired = config.requiresDeposit;
-    const depositAmount = priceQuote.depositRequiredCents || (depositRequired ? Math.floor(totalPrice * 0.3) : 0);
+    const depositAmount = priceQuote.depositRequiredCents || (depositRequired ? Math.floor(totalPrice * 0.5) : 0);
 
     // Determinar estado inicial
     const initialStatus = config.autoConfirm ? "CONFIRMED" : "PENDING";
@@ -169,6 +209,7 @@ export class BookingService {
         status: initialStatus,
         servicePrice,
         addonsPrice,
+        travelPrice,
         totalPrice,
         quoteSnapshot: priceQuote as any, // Guardar quote completo
         anticipoRequired: depositRequired,
@@ -177,6 +218,8 @@ export class BookingService {
         clientNotes: data.clientNotes,
         paymentStatus: depositRequired ? "PENDING" : "ANTICIPO_PAID",
         eventId: data.eventId || null,
+        couponCode: data.couponCode || null,
+        couponDiscountAmount,
       },
     });
 
@@ -207,6 +250,31 @@ export class BookingService {
         bookingId: booking.id,
         itemsCount: priceQuote.items.length,
       });
+    }
+
+    // Add coupon discount item if applicable
+    if (couponDiscountAmount > 0 && data.couponCode) {
+      await prisma.bookingItem.create({
+        data: {
+          bookingId: booking.id,
+          type: 'DISCOUNT',
+          name: `Descuento cupón: ${data.couponCode}`,
+          qty: 1,
+          unitPriceCents: -couponDiscountAmount,
+          totalPriceCents: -couponDiscountAmount,
+          metadata: { couponCode: data.couponCode },
+        },
+      });
+
+      // Redeem the coupon (fire-and-forget — don't fail the booking if this fails)
+      if (validatedCouponId) {
+        paymentsClient.redeemCoupon({
+          couponId: validatedCouponId,
+          userId: data.clientId,
+          bookingId: booking.id,
+          discountApplied: couponDiscountAmount,
+        }).catch(err => logger.warn('Error redimiendo cupón tras crear booking', 'BOOKING_SERVICE', { error: err.message }));
+      }
     }
 
     // Si se requiere depósito, crear Payment Intent
@@ -263,40 +331,7 @@ export class BookingService {
       }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
     }
 
-    // Enviar emails de reserva creada (cliente + artista)
-    ;(async () => {
-      try {
-        const [user, artist, service] = await Promise.all([
-          usersClient.getUser(booking.clientId),
-          artistsClient.getArtist(booking.artistId),
-          catalogClient.getService(booking.serviceId),
-        ]);
-        await notifyBookingCreated({
-          bookingId: booking.id,
-          bookingCode: booking.code || booking.id.slice(0, 8).toUpperCase(),
-          clientId: booking.clientId,
-          clientName: user?.fullName || user?.firstName || 'Cliente',
-          clientEmail: user?.email || '',
-          clientNotes: booking.clientNotes || '',
-          artistId: booking.artistId,
-          artistName: artist?.artistName || 'Artista',
-          artistEmail: artist?.email || '',
-          artistCategory: artist?.category || '',
-          artistImage: artist?.avatar || '',
-          serviceName: service?.name || 'Servicio',
-          scheduledDate: booking.scheduledDate.toISOString(),
-          durationMinutes: booking.durationMinutes,
-          location: booking.location || '',
-          servicePrice: Number(booking.totalPrice),
-          totalPrice: Number(booking.totalPrice),
-          currency: booking.currency,
-          anticipoRequired: booking.anticipoRequired,
-          anticipoAmount: Number(booking.anticipoAmount),
-        });
-      } catch (err: any) {
-        logger.error('Error enviando notificación de reserva creada', 'BOOKING_SERVICE', { error: err.message });
-      }
-    })();
+    // Los emails de "reserva creada" se envían en markPaymentReceived() cuando el anticipo se confirma.
 
     // Crear conversación para el chat
     chatClient.createConversation(data.clientId, data.artistId, booking.id)
@@ -828,6 +863,19 @@ export class BookingService {
 
     logger.info("No-show reportado", "BOOKING_SERVICE", { bookingId: id, disputeId: dispute.id });
 
+    // Email al artista (tiene 24h para responder)
+    ;(async () => {
+      const artist = await artistsClient.getArtist(booking.artistId).catch(() => null);
+      if (artist?.email) {
+        notifyNoShowReported({
+          artistEmail: artist.email,
+          artistName: artist.artistName || 'Artista',
+          bookingCode: booking.code || id.slice(0, 8).toUpperCase(),
+          scheduledDate: booking.scheduledDate.toISOString(),
+        }).catch(err => logger.error('Error enviando email no-show artista', 'BOOKING_SERVICE', { error: err.message }));
+      }
+    })();
+
     // Notificar al artista (tiene 24h para responder)
     notificationsClient.sendNotification({
       userId: booking.artistId,
@@ -881,6 +929,24 @@ export class BookingService {
     // 3. Shadow ban al artista
     await artistsClient.shadowBan(booking.artistId, `No-show en reserva #${booking.code || bookingId}`);
 
+    // 3b. Penalización en la siguiente reserva: comisión 27% (18% normal + 9% recargo por no-show)
+    const paymentsUrl = process.env.PAYMENTS_SERVICE_URL || 'http://payments-service:4005';
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    fetch(`${paymentsUrl}/api/commission-rules/internal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret || '' },
+      body: JSON.stringify({
+        artistId: booking.artistId,
+        type: 'RATE_OVERRIDE',
+        rate: 27,
+        isOneTime: true,
+        currency: 'USD',
+        reason: `Recargo por no-show sin justificación en reserva #${booking.code || bookingId}`,
+        startDate: new Date().toISOString(),
+        createdByAdminId: 'system',
+      }),
+    }).catch(err => logger.error('Error creando recargo no-show en siguiente reserva', 'BOOKING_SERVICE', { error: err.message }));
+
     // 4. Liberar disponibilidad
     removeAvailabilityReservation(bookingId)
       .catch(() => { /* puede no existir */ });
@@ -900,7 +966,23 @@ export class BookingService {
       },
     });
 
-    // 6. Notificar al cliente
+    // 6. Email al cliente: reembolso + crédito
+    ;(async () => {
+      const PLATFORM_FEE = parseFloat(process.env.PLATFORM_FEE_PERCENTAGE || '18');
+      const creditAmount = Math.max(Math.round(booking.paidAmount * PLATFORM_FEE / 100), 2000);
+      const user = await usersClient.getUser(booking.clientId).catch(() => null);
+      if (user?.email) {
+        notifyNoShowResolved({
+          clientEmail: user.email,
+          clientName: user.fullName || (user as any).nombre || 'Cliente',
+          bookingCode: booking.code || bookingId.slice(0, 8).toUpperCase(),
+          refundAmount: booking.paidAmount,
+          creditAmount,
+        }).catch(err => logger.error('Error enviando email resolución no-show', 'BOOKING_SERVICE', { error: err.message }));
+      }
+    })();
+
+    // Notificar al cliente (IN_APP)
     notificationsClient.sendNotification({
       userId: booking.clientId,
       type: "BOOKING_NO_SHOW_RESOLVED",
@@ -1207,6 +1289,46 @@ export class BookingService {
       paymentType,
       paymentIntentId,
     });
+
+    // Enviar emails de "reserva creada" cuando el anticipo (o pago completo) se confirma por primera vez
+    if (
+      (newPaymentStatus === "ANTICIPO_PAID" || newPaymentStatus === "FULLY_PAID") &&
+      booking.paymentStatus === "PENDING"
+    ) {
+      ;(async () => {
+        try {
+          const [user, artist, service] = await Promise.all([
+            usersClient.getUser(updated.clientId),
+            artistsClient.getArtist(updated.artistId),
+            catalogClient.getService(updated.serviceId),
+          ]);
+          await notifyBookingCreated({
+            bookingId: updated.id,
+            bookingCode: updated.code || updated.id.slice(0, 8).toUpperCase(),
+            clientId: updated.clientId,
+            clientName: user?.fullName || user?.nombre || 'Cliente',
+            clientEmail: user?.email || '',
+            clientNotes: updated.clientNotes || '',
+            artistId: updated.artistId,
+            artistName: artist?.artistName || 'Artista',
+            artistEmail: artist?.email || '',
+            artistCategory: artist?.category || '',
+            artistImage: artist?.avatar || '',
+            serviceName: service?.name || 'Servicio',
+            scheduledDate: updated.scheduledDate.toISOString(),
+            durationMinutes: updated.durationMinutes,
+            location: updated.location || '',
+            servicePrice: Number(updated.totalPrice),
+            totalPrice: Number(updated.totalPrice),
+            currency: updated.currency,
+            anticipoRequired: updated.anticipoRequired,
+            anticipoAmount: Number(updated.anticipoAmount),
+          });
+        } catch (err: any) {
+          logger.error('Error enviando notificación de reserva con pago confirmado', 'BOOKING_SERVICE', { error: err.message });
+        }
+      })();
+    }
 
     return updated;
   }

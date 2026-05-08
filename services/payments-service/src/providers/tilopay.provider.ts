@@ -31,6 +31,7 @@ export class TilopayProvider implements IPaymentProvider {
       currency: params.currency.toUpperCase(),
       orderNumber,
       capture: '1',
+      tokenize: '1',  // request card tokenization — Tilopay returns hash in redirect URL
       // redirect = página del frontend a la que Tilopay redirige al usuario tras el pago
       redirect: params.returnUrl ||
         `${process.env.CLIENT_APP_URL || 'http://localhost:3000'}/booking/confirmation/${params.bookingId}`,
@@ -134,6 +135,55 @@ export class TilopayProvider implements IPaymentProvider {
       status: data.status || 'pending',
       amount: params.amount ?? 0,
     };
+  }
+
+  /**
+   * One-click charge using a previously tokenized card hash.
+   * Uses Tilopay's subscriptionPayment endpoint.
+   */
+  async chargeToken(params: {
+    hash: string;
+    amount: number;  // in cents
+    currency: string;
+    bookingId: string;
+  }): Promise<{ orderNumber: string; approved: boolean; responseCode: string }> {
+    const token = await getTilopayToken();
+    const amountDecimal = (params.amount / 100).toFixed(2);
+    const orderNumber = `piums_${params.bookingId}_${Date.now()}`;
+
+    let res: Response;
+    try {
+      res = await fetch(`${TILOPAY_API_URL}/subscriptionPayment`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: TILOPAY_API_KEY,
+          hash: params.hash,
+          amount: amountDecimal,
+          currency: params.currency.toUpperCase(),
+          orderNumber,
+        }),
+      });
+    } catch (networkErr: any) {
+      logger.error('Tilopay chargeToken network error', 'TILOPAY_PROVIDER', { error: networkErr.message });
+      throw new Error(`Tilopay network error: ${networkErr.message}`);
+    }
+
+    const data = await res.json() as any;
+    const responseCode: string = data.responseCode || data.response_code || '';
+    const approved = responseCode === '00';
+
+    logger.info('Tilopay chargeToken result', 'TILOPAY_PROVIDER', {
+      orderNumber,
+      approved,
+      responseCode,
+      bookingId: params.bookingId,
+    });
+
+    return { orderNumber, approved, responseCode };
   }
 
   /**

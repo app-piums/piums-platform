@@ -53,6 +53,20 @@ export const authenticateToken = (
   }
 };
 
+// Middleware para llamadas internas entre servicios (x-internal-secret)
+export const internalAuth = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  const secret = req.headers['x-internal-secret'];
+  const expectedSecret = process.env.INTERNAL_SERVICE_SECRET || 'dev_internal_secret_piums';
+  if (!secret || secret !== expectedSecret) {
+    return next(new AppError(403, 'Acceso interno denegado'));
+  }
+  next();
+};
+
 // Middleware opcional de autenticación
 export const optionalAuth = (
   req: Request,

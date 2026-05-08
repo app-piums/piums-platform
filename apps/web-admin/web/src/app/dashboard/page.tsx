@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { statsApi, type AdminStats } from "@/lib/api";
+import { statsApi, analyticsApi, type AdminStats, type BookingFunnelData } from "@/lib/api";
 import { AdminGuard } from "@/components/AdminGuard";
 import { ThemeToggle } from "@/contexts/ThemeContext";
 
@@ -161,6 +161,66 @@ function TopArtists({ data }: { data: AdminStats["topArtists"] }) {
   );
 }
 
+// ─── Booking Funnel ───────────────────────────────────────────────────────────
+
+const STEP_LABELS: Record<string, string> = {
+  service: "Servicio",
+  datetime: "Fecha/Hora",
+  details: "Detalles",
+  review: "Revisión",
+  checkout: "Pago",
+  confirmed: "Confirmado",
+};
+
+const FUNNEL_COLORS = [
+  "#3B82F6", // blue
+  "#6366F1", // indigo
+  "#8B5CF6", // violet
+  "#EC4899", // pink
+  "#F97316", // orange
+  "#FF6A00", // brand orange
+];
+
+function BookingFunnel({ data }: { data: BookingFunnelData }) {
+  const maxEntered = Math.max(...data.steps.map((s) => s.entered), 1);
+
+  return (
+    <div className="space-y-3">
+      {data.steps.map((step, i) => {
+        const color = FUNNEL_COLORS[Math.min(i, FUNNEL_COLORS.length - 1)];
+        const widthPct = Math.max((step.entered / maxEntered) * 100, step.entered > 0 ? 4 : 0);
+        return (
+          <div key={step.step} className="flex items-center gap-3">
+            <span className="w-24 shrink-0 text-xs text-zinc-500 dark:text-zinc-400 text-right">
+              {STEP_LABELS[step.step] ?? step.step}
+            </span>
+            <div className="flex-1 relative h-7 rounded-md bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+              <div
+                className="h-full rounded-md transition-all duration-500"
+                style={{ width: `${widthPct}%`, backgroundColor: color, opacity: 0.85 }}
+              />
+              <span className="absolute inset-0 flex items-center px-2 text-xs font-semibold text-white mix-blend-luminosity">
+                {step.entered.toLocaleString()} entradas · {step.completed.toLocaleString()} completadas
+              </span>
+            </div>
+            <span
+              className="w-14 shrink-0 text-right text-xs font-semibold rounded-full px-2 py-0.5"
+              style={{ backgroundColor: color + "22", color }}
+            >
+              {step.conversionRate.toFixed(1)}%
+            </span>
+          </div>
+        );
+      })}
+      <div className="mt-4 flex flex-wrap gap-4 border-t border-zinc-200 dark:border-zinc-700 pt-4 text-xs text-zinc-500 dark:text-zinc-400">
+        <span>Sesiones totales: <strong className="text-zinc-900 dark:text-zinc-50">{data.totalSessions.toLocaleString()}</strong></span>
+        <span>Completadas: <strong className="text-zinc-900 dark:text-zinc-50">{data.totalCompleted.toLocaleString()}</strong></span>
+        <span>Tasa global: <strong className="text-[#FF6A00]">{data.overallConversionRate.toFixed(1)}%</strong></span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Dashboard content ────────────────────────────────────────────────────────
 
 function DashboardContent() {
@@ -170,6 +230,13 @@ function DashboardContent() {
     queryKey: ["admin-stats", period],
     queryFn: () => statsApi.get(period),
     refetchInterval: 60_000,
+  });
+
+  const { data: funnelData } = useQuery({
+    queryKey: ["admin-booking-funnel"],
+    queryFn: () => analyticsApi.getFunnel(30),
+    refetchInterval: 120_000,
+    retry: false,
   });
 
   if (isLoading) {
@@ -332,6 +399,19 @@ function DashboardContent() {
           <ConversionFunnel data={stats.conversionFunnel} />
         </div>
       </div>
+
+      {/* Row 4: Booking funnel */}
+      {funnelData && (
+        <div className="mt-4">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h3 className="mb-5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              Embudo de Reserva{" "}
+              <span className="ml-1.5 text-xs font-normal text-zinc-400">(30 días)</span>
+            </h3>
+            <BookingFunnel data={funnelData} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

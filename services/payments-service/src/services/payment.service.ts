@@ -365,6 +365,10 @@ export class PaymentService {
       throw new AppError(404, "Pago no encontrado");
     }
 
+    if (payment.userId !== data.requestedBy) {
+      throw new AppError(403, "No tienes permiso para reembolsar este pago");
+    }
+
     if (payment.status !== "SUCCEEDED") {
       throw new AppError(400, "Solo se pueden reembolsar pagos exitosos");
     }
@@ -462,7 +466,7 @@ export class PaymentService {
   /**
    * Obtener refund por ID
    */
-  async getRefundById(id: string) {
+  async getRefundById(id: string, userId: string) {
     const refund = await prisma.refund.findUnique({
       where: { id },
       include: {
@@ -472,6 +476,10 @@ export class PaymentService {
 
     if (!refund) {
       throw new AppError(404, "Reembolso no encontrado");
+    }
+
+    if (refund.payment.userId !== userId) {
+      throw new AppError(403, "No tienes permiso para ver este reembolso");
     }
 
     return refund;
