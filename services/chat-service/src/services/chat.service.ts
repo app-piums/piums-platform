@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { EventEmitter } from 'events';
 import { SPANISH_PROFANITY_LIST, cleanProfanity } from '../utils/profanity';
+import { resolveUserInfo } from '../utils/user-resolver';
 
 export const chatEmitter = new EventEmitter();
 
@@ -47,7 +48,7 @@ export class ChatService {
         }),
       ]);
 
-      // Count unread messages for each conversation
+      // Enrich conversations with unread count and client info
       const conversationsWithUnread = await Promise.all(
         conversations.map(async (conversation: any) => {
           const unreadCount = await prisma.message.count({
@@ -58,9 +59,19 @@ export class ChatService {
             },
           });
 
+          // Determine the other participant (the client)
+          const clientId = conversation.participant1Id === userId
+            ? conversation.participant2Id
+            : conversation.participant1Id;
+
+          const clientInfo = clientId ? await resolveUserInfo(clientId) : null;
+
           return {
             ...conversation,
             unreadCount,
+            clientName: clientInfo?.nombre ?? null,
+            clientAvatar: clientInfo?.avatar ?? null,
+            clientEmail: clientInfo?.email ?? null,
           };
         })
       );
