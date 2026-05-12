@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
         <div>
           <h2 className="text-3xl font-bold text-white leading-tight">
             Recupera el acceso<br />
-            <span className="text-[#FF6A00]">a tu cuenta</span>
+            <span className="text-[#FF6B35]">a tu cuenta</span>
           </h2>
           <p className="mt-4 text-sm text-gray-400">
             Te enviaremos un enlace para restablecer tu contraseña.
@@ -93,14 +93,14 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="tu@email.com"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none transition hover:border-gray-300 focus:ring-2 focus:ring-[#FF6A00]/25 focus:border-[#FF6A00]"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none transition hover:border-gray-300 focus:ring-2 focus:ring-[#FF6B35]/25 focus:border-[#FF6B35]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-[#FF6A00] py-2.5 text-sm font-semibold text-white hover:bg-[#e05e00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/50 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] transition-all mt-2"
+                  className="w-full rounded-xl bg-[#FF6B35] py-2.5 text-sm font-semibold text-white hover:bg-[#e05e00] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] transition-all mt-2"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">

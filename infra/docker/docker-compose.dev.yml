@@ -346,16 +346,23 @@ services:
     container_name: piums-chat-service
     ports:
       - "4010:4010"
+    command: sh -c "npx prisma db push --skip-generate --accept-data-loss && node dist/index.js"
     environment:
       NODE_ENV: development
       PORT: 4010
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_chat
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
+      USERS_SERVICE_URL: http://users-service:4002
       ARTISTS_SERVICE_URL: http://artists-service:4003
+      INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
     depends_on:
       postgres:
         condition: service_healthy
+      users-service:
+        condition: service_started
+      artists-service:
+        condition: service_started
     networks:
       - piums-network
     restart: unless-stopped
@@ -368,21 +375,23 @@ services:
     build:
       context: ../../
       dockerfile: apps/web-client/web/Dockerfile
+      args:
+        GATEWAY_INTERNAL_URL: http://host.docker.internal:80
     container_name: piums-web-client
     ports:
       - "3000:3000"
     environment:
       PORT: 3000
       NODE_ENV: development
-      GATEWAY_INTERNAL_URL: http://gateway:3000
-      GATEWAY_URL: http://gateway:3000/api
+      GATEWAY_INTERNAL_URL: http://host.docker.internal:80
+      GATEWAY_URL: http://host.docker.internal:80/api
       AUTH_SERVICE_URL: http://auth-service:4001
       CHAT_SERVICE_URL: http://chat-service:4010
       NEXT_PUBLIC_APP_URL: https://client.piums.io
       NEXT_PUBLIC_CLIENT_URL: https://client.piums.io
       NEXT_PUBLIC_ARTIST_URL: https://artist.piums.io
       NEXT_PUBLIC_ADMIN_URL: https://admin.piums.io
-      NEXT_PUBLIC_API_URL: https://backend.piums.io/api
+      NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_CHAT_SERVICE_URL: https://backend.piums.io
     depends_on:
       - gateway
@@ -394,14 +403,16 @@ services:
     build:
       context: ../../
       dockerfile: apps/web-artist/web/Dockerfile
+      args:
+        GATEWAY_INTERNAL_URL: http://host.docker.internal:80
     container_name: piums-web-artist
     ports:
       - "3001:3001"
     environment:
       PORT: 3001
       NODE_ENV: development
-      GATEWAY_INTERNAL_URL: http://gateway:3000
-      GATEWAY_URL: http://gateway:3000/api
+      GATEWAY_INTERNAL_URL: http://host.docker.internal:80
+      GATEWAY_URL: http://host.docker.internal:80/api
       AUTH_SERVICE_URL: http://auth-service:4001
       ARTISTS_SERVICE_URL: http://artists-service:4003
       CHAT_SERVICE_URL: http://chat-service:4010
@@ -409,7 +420,7 @@ services:
       NEXT_PUBLIC_CLIENT_URL: https://client.piums.io
       NEXT_PUBLIC_ARTIST_URL: https://artist.piums.io
       NEXT_PUBLIC_ADMIN_URL: https://admin.piums.io
-      NEXT_PUBLIC_API_URL: https://backend.piums.io/api
+      NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_CHAT_SERVICE_URL: https://backend.piums.io
     depends_on:
       - gateway

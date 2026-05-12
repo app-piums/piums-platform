@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, BlockedSlot, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
+import { Check, Clock } from 'lucide-react';
 
 type DayStatus = 'available' | 'blocked' | 'occupied' | 'partial';
 
@@ -234,13 +235,13 @@ export default function ArtistCalendarPage() {
 
           {/* Feedback banners */}
           {actionSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
-              ✓ {actionSuccess}
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm flex items-center gap-2">
+              <Check size={14} /> {actionSuccess}
             </div>
           )}
           {actionError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-              ✗ {actionError}
+              {actionError}
             </div>
           )}
 
@@ -359,14 +360,14 @@ export default function ArtistCalendarPage() {
                   disabled={saving || selectedDayStatus === 'available'}
                   className="flex-1 min-w-[130px] px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? '...' : '✓ Marcar disponible'}
+                  {saving ? '...' : <span className="flex items-center gap-1.5"><Check size={14} /> Marcar disponible</span>}
                 </button>
                 <button
                   onClick={() => setShowHoursModal(true)}
                   disabled={saving}
                   className="flex-1 min-w-[130px] px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  ⏰ Configurar horarios
+                  <span className="flex items-center gap-1.5"><Clock size={14} /> Configurar horarios</span>
                 </button>
               </div>
 

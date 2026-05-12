@@ -15,12 +15,12 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const variants = {
     default: 'bg-gray-100 text-gray-800',
-    primary: 'bg-[#FF6A00]/10 text-[#FF6A00] border border-[#FF6A00]/20',
-    accent: 'bg-[#00AEEF]/10 text-[#00AEEF] border border-[#00AEEF]/20',
+    primary: 'bg-[#FF6B35]/10 text-[#FF6B35] border border-[#FF6B35]/20',
+    accent: 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20',
     success: 'bg-green-100 text-green-800',
     warning: 'bg-yellow-100 text-yellow-800',
     danger: 'bg-red-100 text-red-800',
-    info: 'bg-[#00AEEF]/10 text-[#00AEEF]',
+    info: 'bg-[#F59E0B]/10 text-[#F59E0B]',
   };
 
   const sizes = {

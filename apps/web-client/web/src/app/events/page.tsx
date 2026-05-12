@@ -101,7 +101,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]"
               placeholder="Ej: Boda García-López, Quince años Ana"
               maxLength={200}
             />
@@ -113,7 +113,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
               value={form.eventDate}
               min={today}
               onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]"
             />
           </div>
           <div>
@@ -121,7 +121,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
             <textarea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] resize-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] resize-none"
               rows={3}
               placeholder="Descripción del evento (opcional)"
               maxLength={2000}
@@ -133,7 +133,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
               type="text"
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]"
               placeholder="Ej: Salón El Ciprés, Ciudad de Guatemala"
               maxLength={500}
             />
@@ -143,7 +143,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
             <textarea
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] resize-none"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] resize-none"
               rows={2}
               placeholder="Notas privadas (opcional)"
               maxLength={2000}
@@ -160,7 +160,7 @@ function CreateEventModal({ onClose, onCreate }: { onClose: () => void; onCreate
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-[#FF6A00] text-white rounded-lg py-2.5 text-sm font-bold hover:bg-[#e55a00] transition-colors disabled:opacity-50"
+              className="flex-1 bg-[#FF6B35] text-white rounded-lg py-2.5 text-sm font-bold hover:bg-[#e55a00] transition-colors disabled:opacity-50"
             >
               {saving ? 'Creando…' : 'Crear Evento'}
             </button>
@@ -189,7 +189,7 @@ function EventCard({ event }: { event: any }) {
           <StatusBadge status={event.status} />
         </div>
         {formattedDate && (
-          <div className="flex items-center gap-1.5 text-sm text-[#FF6A00] font-medium mb-2">
+          <div className="flex items-center gap-1.5 text-sm text-[#FF6B35] font-medium mb-2">
             <CalendarIcon className="w-4 h-4 shrink-0" />
             <span className="capitalize">{formattedDate}</span>
           </div>
@@ -208,7 +208,7 @@ function EventCard({ event }: { event: any }) {
             <UsersIcon className="w-4 h-4 text-gray-400" />
             <span>{bookingCount} {bookingCount === 1 ? 'reserva' : 'reservas'}</span>
           </div>
-          <div className="flex items-center gap-1 text-sm font-medium text-[#FF6A00]">
+          <div className="flex items-center gap-1 text-sm font-medium text-[#FF6B35]">
             Ver detalles <ChevronRightIcon className="w-4 h-4" />
           </div>
         </div>
@@ -222,7 +222,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
   return (
     <div className="text-center py-16 px-4">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-50 mb-4">
-        <CalendarIcon className="w-8 h-8 text-[#FF6A00]" />
+        <CalendarIcon className="w-8 h-8 text-[#FF6B35]" />
       </div>
       <h3 className="text-lg font-bold text-gray-900 mb-2">Aún no tienes eventos</h3>
       <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
@@ -230,7 +230,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
       </p>
       <button
         onClick={onNew}
-        className="inline-flex items-center gap-2 bg-[#FF6A00] text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-[#e55a00] transition-colors"
+        className="inline-flex items-center gap-2 bg-[#FF6B35] text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-[#e55a00] transition-colors"
       >
         <PlusIcon /> Crear primer evento
       </button>
@@ -303,7 +303,7 @@ export default function EventsPage() {
           {events.length > 0 && (
             <button
               onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 bg-[#FF6A00] text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-[#e55a00] transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-[#FF6B35] text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-[#e55a00] transition-colors shadow-sm"
             >
               <PlusIcon /> Nuevo evento
             </button>
@@ -319,7 +319,7 @@ export default function EventsPage() {
         {events.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[
-              { label: 'Totales', value: events.length, color: 'text-[#FF6A00] bg-orange-50' },
+              { label: 'Totales', value: events.length, color: 'text-[#FF6B35] bg-orange-50' },
               { label: 'Activos', value: events.filter((e) => e.status === 'ACTIVE').length, color: 'text-green-600 bg-green-50' },
               { label: 'Borradores', value: events.filter((e) => e.status === 'DRAFT').length, color: 'text-gray-600 bg-gray-100' },
               { label: 'Cancelados', value: events.filter((e) => e.status === 'CANCELLED').length, color: 'text-red-600 bg-red-50' },

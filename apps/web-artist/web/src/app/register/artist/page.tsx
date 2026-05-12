@@ -469,7 +469,7 @@ export default function RegisterArtistPage() {
             </div>
             <div className="h-2 bg-zinc-200 rounded-full overflow-hidden dark:bg-zinc-700">
               <div
-                className="h-full bg-[#FF6A00] transition-all duration-300"
+                className="h-full bg-[#FF6B35] transition-all duration-300"
                 style={{ width: `${(step / 3) * 100}%` }}
               />
             </div>
@@ -724,7 +724,7 @@ export default function RegisterArtistPage() {
                     </label>
                     <div className="flex gap-2">
                       <div className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800">
-                        <span className="text-xl">{selectedCountry?.flag || "🌍"}</span>
+                        <span className="text-xl">{selectedCountry?.flag || "GT"}</span>
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                           {selectedCountry?.dialCode || "+___"}
                         </span>

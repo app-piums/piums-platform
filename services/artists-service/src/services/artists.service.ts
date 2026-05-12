@@ -225,9 +225,6 @@ export class ArtistsService {
     if (minRating) where.rating = { gte: minRating };
     if (verificationStatus) where.verificationStatus = verificationStatus;
 
-    // TODO: Implementar búsqueda por geolocalización con Prisma Raw Query
-    // Por ahora, solo filtramos por ciudad/país
-
     const skip = (page - 1) * limit;
 
     const [artists, total] = await Promise.all([
@@ -249,13 +246,35 @@ export class ArtistsService {
       prisma.artist.count({ where }),
     ]);
 
+    // Geo-filter: if lat/lng provided, keep only artists who cover the event location.
+    // Artists with coverageRadius = null are national — always included.
+    // Artists without base coordinates are also included (can't determine coverage).
+    let filteredArtists = artists;
+    let filteredTotal = total;
+
+    if (lat !== undefined && lng !== undefined) {
+      const RAD = Math.PI / 180;
+      filteredArtists = artists.filter(a => {
+        if (a.coverageRadius === null) return true; // national coverage
+        if (!a.baseLocationLat || !a.baseLocationLng) return true; // no base coords on file
+        const dLat = (a.baseLocationLat - lat) * RAD;
+        const dLng = (a.baseLocationLng - lng) * RAD;
+        const sin2 =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(lat * RAD) * Math.cos(a.baseLocationLat * RAD) * Math.sin(dLng / 2) ** 2;
+        const distKm = 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(sin2)));
+        return distKm <= a.coverageRadius;
+      });
+      filteredTotal = filteredArtists.length;
+    }
+
     return {
-      artists,
+      artists: filteredArtists,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: filteredTotal,
+        totalPages: Math.ceil(filteredTotal / limit),
       },
     };
   }

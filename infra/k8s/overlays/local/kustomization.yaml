@@ -67,7 +67,7 @@ patches:
         path: /spec/replicas
         value: 1
 
-  # ── Override NODE_ENV and add REDIS_URL to configmap ─────────────────────
+  # ── Override NODE_ENV, REDIS_URL, and ALLOWED_ORIGINS for local dev ───────
   - target:
       kind: ConfigMap
       name: piums-config
@@ -79,6 +79,7 @@ patches:
       data:
         NODE_ENV: "development"
         REDIS_URL: "redis://redis-service:6379"
+        ALLOWED_ORIGINS: "https://artist.piums.io,https://client.piums.io,https://admin.piums.io,https://piums.io,https://www.piums.io,https://backend.piums.io,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003"
 
   # ── Override secrets with dev credentials ─────────────────────────────────
   - path: dev-secrets.yaml
@@ -255,7 +256,7 @@ patches:
               - name: chat-service
                 env:
                   - name: DATABASE_URL
-                    value: "postgresql://piums:piums_dev_password@postgres-service:5432/piums_users"
+                    value: "postgresql://piums:piums_dev_password@postgres-service:5432/piums_chat"
 
   # ── Fix PORT env var: services use process.env.PORT but K8s configmap only
   # has BOOKING_PORT, PAYMENTS_PORT etc. — must set PORT explicitly. ─────────

@@ -41,7 +41,7 @@ interface MockBooking {
 
 
 const STATS = [
-  { label: 'Reservas Totales', value: 0, icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
+  { label: 'Reservas Totales', value: 0, icon: BookIcon,        color: 'text-[#FF6B35] bg-orange-50' },
   { label: 'Próximas',         value: 0, icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
   { label: 'Pendientes',       value: 0, icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
   { label: 'Completadas',      value: 0, icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
@@ -90,14 +90,14 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
             <div>
               <h3 className="font-semibold text-gray-900 text-base leading-snug">{b.title}</h3>
               <div className="flex items-center gap-1.5 mt-1">
-                <div className="h-5 w-5 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                <div className="h-5 w-5 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                   {b.artistName.charAt(0)}
                 </div>
                 <span className="text-xs text-gray-500">con <span className="font-medium text-gray-700">{b.artistName}</span></span>
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-lg font-bold text-[#FF6A00]">$${b.price.toLocaleString('en-US')}</p>
+              <p className="text-lg font-bold text-[#FF6B35]">$${b.price.toLocaleString('en-US')}</p>
               <p className="text-[11px] text-gray-400">{b.priceLabel}</p>
             </div>
           </div>
@@ -160,7 +160,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
                 <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />} onClick={() => onMessage(b)}>Mensaje al Artista</Btn>
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
                 {!b.reviewId && (
-                  <Btn variant="ghost" className="bg-orange-50 !text-[#FF6A00]" icon={<StarIcon className="h-4 w-4" />} onClick={() => onReview(b)}>Reseñar</Btn>
+                  <Btn variant="ghost" className="bg-orange-50 !text-[#FF6B35]" icon={<StarIcon className="h-4 w-4" />} onClick={() => onReview(b)}>Reseñar</Btn>
                 )}
                 <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
                 <Btn variant="danger-ghost" onClick={() => onCancel(b)}>Cancelar Reserva</Btn>
@@ -171,9 +171,9 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
                 <Btn variant="primary-outline" icon={<ChatBubbleIcon className="h-4 w-4" />} onClick={() => onMessage(b)}>Mensaje al Artista</Btn>
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
                 {b.eventId ? (
-                  <Btn variant="ghost" href={`/events/${b.eventId}`} className="!text-[#FF6A00] bg-orange-50">Ver Evento</Btn>
+                  <Btn variant="ghost" href={`/events/${b.eventId}`} className="!text-[#FF6B35] bg-orange-50">Ver Evento</Btn>
                 ) : (
-                  <Btn variant="ghost" className="!text-[#FF6A00] bg-orange-50" onClick={() => onAddToEvent(b)}>Agregar a Evento</Btn>
+                  <Btn variant="ghost" className="!text-[#FF6B35] bg-orange-50" onClick={() => onAddToEvent(b)}>Agregar a Evento</Btn>
                 )}
                 <Btn variant="danger-ghost" onClick={() => onCancel(b)}>Cancelar Solicitud</Btn>
               </>
@@ -190,7 +190,7 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
                   </Btn>
                 )}
                 <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Recibo</Btn>
-                <Btn variant="ghost" className="ml-auto !text-[#FF6A00]" href={`/services/${b.serviceId || '1'}`} data-serviceid={b.serviceId}>Volver a reservar</Btn>
+                <Btn variant="ghost" className="ml-auto !text-[#FF6B35]" href={`/services/${b.serviceId || '1'}`} data-serviceid={b.serviceId}>Volver a reservar</Btn>
                 <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
               </>
             )}
@@ -214,8 +214,8 @@ function Btn({ children, variant = 'ghost', icon, href, className = '', onClick 
 }) {
   const base = 'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all';
   const v: Record<string, string> = {
-    'primary-solid':   'bg-[#FF6A00] text-white hover:bg-orange-600',
-    'primary-outline': 'border border-[#FF6A00] text-[#FF6A00] hover:bg-orange-50',
+    'primary-solid':   'bg-[#FF6B35] text-white hover:bg-orange-600',
+    'primary-outline': 'border border-[#FF6B35] text-[#FF6B35] hover:bg-orange-50',
     'ghost':           'text-gray-600 hover:bg-gray-100',
     'danger-ghost':    'text-red-500 hover:bg-red-50',
   };
@@ -315,7 +315,7 @@ function AddToEventModal({ booking, onClose, onDone }: {
                   <button
                     onClick={() => handleAdd(ev.id)}
                     disabled={adding === ev.id}
-                    className="shrink-0 bg-[#FF6A00] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#e55a00] disabled:opacity-50"
+                    className="shrink-0 bg-[#FF6B35] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#e55a00] disabled:opacity-50"
                   >
                     {adding === ev.id ? '…' : 'Agregar'}
                   </button>
@@ -332,7 +332,7 @@ function AddToEventModal({ booking, onClose, onDone }: {
                 type="text"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]"
                 placeholder="Ej: Boda García-López"
                 maxLength={200}
                 autoFocus
@@ -342,7 +342,7 @@ function AddToEventModal({ booking, onClose, onDone }: {
                 <button
                   onClick={handleCreateAndAdd}
                   disabled={creating || !newName.trim()}
-                  className="flex-1 bg-[#FF6A00] text-white rounded-lg py-2 text-sm font-bold hover:bg-[#e55a00] disabled:opacity-50"
+                  className="flex-1 bg-[#FF6B35] text-white rounded-lg py-2 text-sm font-bold hover:bg-[#e55a00] disabled:opacity-50"
                 >
                   {creating ? 'Creando…' : 'Crear y agregar'}
                 </button>
@@ -351,7 +351,7 @@ function AddToEventModal({ booking, onClose, onDone }: {
           ) : (
             <button
               onClick={() => setShowCreate(true)}
-              className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-500 hover:border-[#FF6A00] hover:text-[#FF6A00] transition-colors flex items-center justify-center gap-2"
+              className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-500 hover:border-[#FF6B35] hover:text-[#FF6B35] transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               Crear nuevo evento y agregar
@@ -476,7 +476,7 @@ export default function BookingsPage() {
           setBookings(mappedBookings);
 
           const newStats = [
-            { label: 'Reservas Totales', value: mappedBookings.length,                                              icon: BookIcon,        color: 'text-[#FF6A00] bg-orange-50' },
+            { label: 'Reservas Totales', value: mappedBookings.length,                                              icon: BookIcon,        color: 'text-[#FF6B35] bg-orange-50' },
             { label: 'Próximas',         value: mappedBookings.filter(b => b.status === 'confirmed').length,        icon: ClockIcon,       color: 'text-blue-600 bg-blue-50'   },
             { label: 'Pendientes',       value: mappedBookings.filter(b => b.status === 'pending').length,          icon: BellIcon,        color: 'text-yellow-600 bg-yellow-50'},
             { label: 'Completadas',      value: mappedBookings.filter(b => b.status === 'completed').length,        icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
@@ -516,13 +516,13 @@ export default function BookingsPage() {
             <div className="relative hidden sm:block">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input type="text" placeholder="Buscar reservas..." value={search} onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition w-56" />
+                className="pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition w-56" />
             </div>
             <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
               <BellIcon className="h-5 w-5 text-gray-500" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#FF6A00] rounded-full" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#FF6B35] rounded-full" />
             </button>
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
               {userName.charAt(0).toUpperCase()}
             </div>
           </div>
@@ -548,7 +548,7 @@ export default function BookingsPage() {
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   activeTab === tab.key
-                    ? 'bg-[#FF6A00] text-white shadow-sm shadow-orange-200'
+                    ? 'bg-[#FF6B35] text-white shadow-sm shadow-orange-200'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                 }`}>
                 {tab.label}
@@ -563,7 +563,7 @@ export default function BookingsPage() {
               <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center gap-3 text-center">
                 <BookIcon className="h-10 w-10 text-gray-200" />
                 <p className="text-gray-500 font-medium">No se encontraron reservas</p>
-                <Link href="/artists" className="text-sm text-[#FF6A00] hover:underline font-medium">Explorar artistas →</Link>
+                <Link href="/artists" className="text-sm text-[#FF6B35] hover:underline font-medium">Explorar artistas →</Link>
               </div>
             ) : (
               filtered.map(b => (

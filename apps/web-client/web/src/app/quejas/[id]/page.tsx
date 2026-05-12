@@ -135,18 +135,18 @@ export default function QuejasDetailPage() {
             )}
           </div>
           {loading && (
-            <div className="w-4 h-4 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin shrink-0" />
+            <div className="w-4 h-4 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin shrink-0" />
           )}
         </header>
 
         {error ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
             <p className="text-zinc-500">{error}</p>
-            <Link href="/quejas" className="text-sm text-[#FF6A00] hover:underline">← Volver a mis quejas</Link>
+            <Link href="/quejas" className="text-sm text-[#FF6B35] hover:underline">← Volver a mis quejas</Link>
           </div>
         ) : loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : dispute ? (
           <>
@@ -212,7 +212,7 @@ export default function QuejasDetailPage() {
                             const bubbleClass = isMine
                               ? `bg-zinc-100 text-zinc-800 rounded-2xl ${isLast ? 'rounded-tl-sm' : ''}`
                               : isStaff
-                              ? `bg-[#FF6A00] text-white rounded-2xl ${isLast ? 'rounded-tr-sm' : ''}`
+                              ? `bg-[#FF6B35] text-white rounded-2xl ${isLast ? 'rounded-tr-sm' : ''}`
                               : `bg-indigo-50 text-indigo-900 rounded-2xl ${isLast ? 'rounded-tl-sm' : ''}`;
 
                             const timeClass = isMine ? 'text-zinc-400'
@@ -271,12 +271,12 @@ export default function QuejasDetailPage() {
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } }}
                     placeholder="Escribe un mensaje..."
                     autoFocus
-                    className="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-colors"
+                    className="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-colors"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={sending || !newMsg.trim()}
-                    className="px-4 py-2.5 bg-[#FF6A00] text-white rounded-xl text-sm font-medium hover:bg-[#E65F00] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-4 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-medium hover:bg-[#E85D2F] transition-colors disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {sending ? (
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

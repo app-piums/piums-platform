@@ -47,7 +47,7 @@ export default function AyudaPage() {
               { step: '3', title: 'Disfruta', desc: 'El artista se presenta y crea una experiencia inolvidable.' },
             ].map(({ step, title, desc }) => (
               <div key={step} className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-                <div className="h-12 w-12 bg-[#FF6A00] text-white rounded-full flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+                <div className="h-12 w-12 bg-[#FF6B35] text-white rounded-full flex items-center justify-center mx-auto mb-4 text-lg font-bold">
                   {step}
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
@@ -74,7 +74,7 @@ export default function AyudaPage() {
         <div className="mt-12 bg-orange-50 border border-orange-100 rounded-xl p-6 text-center">
           <p className="text-gray-700 font-medium mb-2">¿No encontraste lo que buscabas?</p>
           <p className="text-gray-500 text-sm mb-4">Nuestro equipo está disponible para ayudarte.</p>
-          <a href="/contacto" className="inline-block bg-[#FF6A00] text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-orange-600 transition text-sm">
+          <a href="/contacto" className="inline-block bg-[#FF6B35] text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-orange-600 transition text-sm">
             Contactar soporte
           </a>
         </div>

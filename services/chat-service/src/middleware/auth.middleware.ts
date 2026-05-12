@@ -17,8 +17,8 @@ export interface AuthRequest extends Request {
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Obtener token de cookie o header
-    const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
+    // Obtener token de cookie (auth_token o token) o header Authorization
+    const token = req.cookies?.auth_token || req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });

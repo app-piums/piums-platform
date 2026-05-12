@@ -11,9 +11,10 @@ COPY . .
 RUN pnpm install --force
 
 # Construir la aplicación
+ARG GATEWAY_INTERNAL_URL=http://gateway:3000
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=1
-ENV GATEWAY_INTERNAL_URL=http://gateway:3000
+ENV GATEWAY_INTERNAL_URL=${GATEWAY_INTERNAL_URL}
 ENV NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_APP_URL=http://localhost:3000
 RUN pnpm --filter web-client build

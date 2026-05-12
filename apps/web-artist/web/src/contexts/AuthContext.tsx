@@ -12,7 +12,9 @@ interface User {
   id: string;
   nombre: string;
   email: string;
-  role?: 'cliente' | 'artista';
+  role?: 'cliente' | 'artista' | 'ambos';
+  artistId?: string;
+  authId?: string;
   pais?: string;
   telefono?: string;
   avatar?: string;
@@ -108,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         let userData = data.user;
 
-        // Si es artista, resolvemos su Profile ID para sincronización global (Chat, Reservas)
+        // Si es artista puro, resolvemos su Profile ID (reemplaza user.id)
+        // Para rol 'ambos', el gateway ya agrega user.artistId directamente.
         if (userData && userData.role === 'artista') {
           console.log("[AUTH] Artista detectado, resolviendo Profile ID...", { authId: userData.id });
           try {

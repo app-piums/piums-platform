@@ -6,6 +6,7 @@ import { cImg } from '@/lib/cloudinaryImg';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ReviewDetailed } from '@piums/sdk';
+import { Star } from 'lucide-react';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { ReportModal } from '@/components/ReportModal';
 import { toast } from '@/lib/toast';
@@ -104,9 +105,7 @@ export default function ArtistReviewsPage() {
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
-          <span key={star} className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}>
-            ⭐
-          </span>
+          <Star key={star} size={16} className={star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
         ))}
       </div>
     );
@@ -265,7 +264,7 @@ export default function ArtistReviewsPage() {
                 </div>
               ) : (
                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                  <div className="text-6xl mb-4">⭐</div>
+                  <div className="mb-4 flex justify-center"><Star size={56} className="text-yellow-400" /></div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     No tienes reviews todavía
                   </h3>

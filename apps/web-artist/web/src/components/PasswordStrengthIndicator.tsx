@@ -72,20 +72,20 @@ export default function PasswordStrengthIndicator({ password, show }: PasswordSt
       <div className="text-xs space-y-1">
         <p className="font-medium text-zinc-700 dark:text-zinc-300">Tu contraseña debe tener:</p>
         <ul className="space-y-0.5">
-          <li className={strength.requirements.minLength ? "text-green-600 dark:text-green-400" : "text-zinc-500"}>
-            {strength.requirements.minLength ? "✓" : "○"} Al menos 8 caracteres
+          <li className={`flex items-center gap-1.5 ${strength.requirements.minLength ? "text-green-600 dark:text-green-400" : "text-zinc-500"}`}>
+            {strength.requirements.minLength ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/></svg>} Al menos 8 caracteres
           </li>
-          <li className={strength.requirements.hasUpperCase ? "text-green-600 dark:text-green-400" : "text-zinc-500"}>
-            {strength.requirements.hasUpperCase ? "✓" : "○"} Una letra mayúscula
+          <li className={`flex items-center gap-1.5 ${strength.requirements.hasUpperCase ? "text-green-600 dark:text-green-400" : "text-zinc-500"}`}>
+            {strength.requirements.hasUpperCase ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/></svg>} Una letra mayúscula
           </li>
-          <li className={strength.requirements.hasLowerCase ? "text-green-600 dark:text-green-400" : "text-zinc-500"}>
-            {strength.requirements.hasLowerCase ? "✓" : "○"} Una letra minúscula
+          <li className={`flex items-center gap-1.5 ${strength.requirements.hasLowerCase ? "text-green-600 dark:text-green-400" : "text-zinc-500"}`}>
+            {strength.requirements.hasLowerCase ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/></svg>} Una letra minúscula
           </li>
-          <li className={strength.requirements.hasNumber ? "text-green-600 dark:text-green-400" : "text-zinc-500"}>
-            {strength.requirements.hasNumber ? "✓" : "○"} Un número
+          <li className={`flex items-center gap-1.5 ${strength.requirements.hasNumber ? "text-green-600 dark:text-green-400" : "text-zinc-500"}`}>
+            {strength.requirements.hasNumber ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/></svg>} Un número
           </li>
-          <li className={strength.requirements.hasSpecial ? "text-green-600 dark:text-green-400" : "text-zinc-500"}>
-            {strength.requirements.hasSpecial ? "✓" : "○"} Un carácter especial (!@#$%...)
+          <li className={`flex items-center gap-1.5 ${strength.requirements.hasSpecial ? "text-green-600 dark:text-green-400" : "text-zinc-500"}`}>
+            {strength.requirements.hasSpecial ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/></svg>} Un carácter especial (!@#$%...)
           </li>
         </ul>
       </div>

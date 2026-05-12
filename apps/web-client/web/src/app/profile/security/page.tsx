@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import { toast } from '@/lib/toast';
+import { Check, X } from 'lucide-react';
 
 type SecurityTabProps = {
   onDirtyChange?: (isDirty: boolean) => void;
@@ -84,7 +85,7 @@ export default function SecurityTab(props: SecurityTabProps = {}) {
     'Excelente': 'text-green-700',
   };
 
-  const inputClass = "w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#FF6A00] focus:outline-none focus:ring-1 focus:ring-[#FF6A00]";
+  const inputClass = "w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#FF6B35] focus:outline-none focus:ring-1 focus:ring-[#FF6B35]";
 
   return (
     <div>
@@ -150,8 +151,10 @@ export default function SecurityTab(props: SecurityTabProps = {}) {
               className={inputClass}
             />
             {passwordData.confirmPassword && (
-              <p className={`text-sm mt-1 ${passwordData.newPassword === passwordData.confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
-                {passwordData.newPassword === passwordData.confirmPassword ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
+              <p className={`text-sm mt-1 flex items-center gap-1 ${passwordData.newPassword === passwordData.confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
+                {passwordData.newPassword === passwordData.confirmPassword
+                  ? <><Check size={13} /> Las contraseñas coinciden</>
+                  : <><X size={13} /> Las contraseñas no coinciden</>}
               </p>
             )}
           </div>
@@ -159,7 +162,7 @@ export default function SecurityTab(props: SecurityTabProps = {}) {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-lg hover:bg-[#e55f00] transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-semibold rounded-lg hover:bg-[#e55f00] transition-colors disabled:opacity-50"
           >
             {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
           </button>

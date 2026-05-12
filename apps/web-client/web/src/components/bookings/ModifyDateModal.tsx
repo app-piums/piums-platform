@@ -83,7 +83,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
           <div className="bg-white px-6 pt-6 pb-4">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100">
-                <svg className="h-6 w-6 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-6 w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -102,7 +102,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-                <div className="bg-orange-50 border-l-4 border-[#FF6A00] rounded-r-xl p-4">
+                <div className="bg-orange-50 border-l-4 border-[#FF6B35] rounded-r-xl p-4">
                   <p className="text-sm text-orange-800">
                     El artista deberá <strong>aceptar</strong> tu solicitud y tú recibirás un enlace por email para <strong>confirmar</strong> el cambio definitivo.
                   </p>
@@ -127,7 +127,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
                   <input
                     type="datetime-local"
                     required
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF6A00] focus:ring-[#FF6A00]"
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#FF6B35] focus:ring-[#FF6B35]"
                     value={proposedDate}
                     onChange={(e) => setProposedDate(e.target.value)}
                     disabled={loading}
@@ -139,7 +139,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
                   <textarea
                     rows={2}
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] resize-none"
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#FF6B35] focus:ring-[#FF6B35] resize-none"
                     placeholder="Ej: Cambio de planes en el evento..."
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}

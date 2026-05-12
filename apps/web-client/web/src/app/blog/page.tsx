@@ -41,7 +41,7 @@ const categoryColors: Record<string, string> = {
   'Consejos': 'bg-blue-100 text-blue-700',
   'Tendencias': 'bg-purple-100 text-purple-700',
   'Bodas': 'bg-pink-100 text-pink-700',
-  'Para Artistas': 'bg-orange-100 text-[#FF6A00]',
+  'Para Artistas': 'bg-orange-100 text-[#FF6B35]',
 };
 
 export default function BlogPage() {
@@ -64,13 +64,13 @@ export default function BlogPage() {
                 </span>
                 <span className="text-xs text-gray-400">{post.readTime} de lectura</span>
               </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#FF6A00] transition leading-snug">
+              <h2 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#FF6B35] transition leading-snug">
                 {post.title}
               </h2>
               <p className="text-sm text-gray-600 leading-relaxed mb-4">{post.excerpt}</p>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">{post.date}</span>
-                <span className="text-sm font-medium text-[#FF6A00] group-hover:underline">Leer más →</span>
+                <span className="text-sm font-medium text-[#FF6B35] group-hover:underline">Leer más →</span>
               </div>
             </article>
           ))}

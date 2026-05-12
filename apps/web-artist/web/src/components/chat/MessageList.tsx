@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Message } from '@/../../packages/sdk/src';
+import { Message } from '@/types/chat';
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 
@@ -32,7 +32,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6B35] mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando mensajes...</p>
         </div>
       </div>
@@ -66,10 +66,7 @@ export const MessageList: React.FC<MessageListProps> = ({
           <MessageBubble
             key={message.id}
             message={message}
-            isOwnMessage={
-              message.senderId === currentUserId || 
-              (message.senderType === 'artist' && currentUserId !== 'me')
-            }
+            isOwnMessage={message.senderId === currentUserId}
           />
         ))}
         

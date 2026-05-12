@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Message } from '@/../../packages/sdk/src';
+import { Message } from '@/types/chat';
+import { Check, CheckCheck } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -16,7 +17,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwnMess
           max-w-[72%] px-4 py-2.5
           ${
             isOwnMessage
-              ? 'bg-[#FF6A00] text-white rounded-2xl rounded-br-sm shadow-sm'
+              ? 'bg-[#FF6B35] text-white rounded-2xl rounded-br-sm shadow-sm'
               : 'bg-white border border-gray-200 text-gray-900 rounded-2xl rounded-bl-sm shadow-sm'
           }
         `}
@@ -32,8 +33,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwnMess
           </span>
 
           {isOwnMessage && (
-            <span className="text-xs text-orange-100">
-              {message.read ? '✓✓' : '✓'}
+            <span className="text-orange-100">
+              {message.readAt ? <CheckCheck size={13} /> : <Check size={13} />}
             </span>
           )}
         </div>

@@ -35,7 +35,7 @@ export function PiumsTourCard({
       {/* Progress bar */}
       <div className="h-1.5 bg-gray-100 dark:bg-[#334155] rounded-full mb-4 overflow-hidden">
         <div
-          className="h-full bg-[#FF6A00] rounded-full transition-all duration-400"
+          className="h-full bg-[#FF6B35] rounded-full transition-all duration-400"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -58,7 +58,7 @@ export function PiumsTourCard({
             className={`px-3 py-1.5 font-semibold text-white rounded-md transition-colors cursor-pointer ${
               isLast
                 ? 'bg-[#10B981] hover:bg-[#0d9e74]'
-                : 'bg-[#FF6A00] hover:bg-[#e55e00]'
+                : 'bg-[#FF6B35] hover:bg-[#e55e00]'
             }`}
           >
             {isLast ? 'Finalizar' : 'Siguiente'}

@@ -103,7 +103,7 @@ export default function Home() {
             </Link>
             <Link
               href="/register"
-              className="rounded-full bg-[#FF6A00] px-5 py-2 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors"
+              className="rounded-full bg-[#FF6B35] px-5 py-2 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors"
             >
               Registrarse gratis
             </Link>
@@ -114,7 +114,7 @@ export default function Home() {
 
           {/* Hero */}
           <div className="flex flex-col items-center text-center max-w-3xl">
-            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/5 px-4 py-1.5 text-xs font-medium text-[#FF6A00]">
+            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF6B35]/30 bg-[#FF6B35]/5 px-4 py-1.5 text-xs font-medium text-[#FF6B35]">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
               </svg>
@@ -123,7 +123,7 @@ export default function Home() {
 
             <h1 className="text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
               El talento creativo de Guatemala,<br />
-              <span className="text-[#FF6A00]">a tu alcance</span>
+              <span className="text-[#FF6B35]">a tu alcance</span>
             </h1>
 
             <p className="mt-6 max-w-md text-lg text-zinc-500 dark:text-zinc-400 leading-relaxed">
@@ -134,7 +134,7 @@ export default function Home() {
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/artists"
-                className="rounded-full bg-[#FF6A00] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6A00]/25"
+                className="rounded-full bg-[#FF6B35] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6B35]/25"
               >
                 Explorar artistas
               </Link>
@@ -178,9 +178,9 @@ export default function Home() {
                 <Link
                   key={cat.name}
                   href={`/artists?category=${cat.name.toUpperCase().replace(/\s/g, '_')}`}
-                  className="group flex flex-col gap-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-5 hover:border-[#FF6A00]/40 hover:bg-[#FF6A00]/5 transition-all"
+                  className="group flex flex-col gap-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-5 hover:border-[#FF6B35]/40 hover:bg-[#FF6B35]/5 transition-all"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[#FF6A00] group-hover:bg-[#FF6A00]/10 transition-colors">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[#FF6B35] group-hover:bg-[#FF6B35]/10 transition-colors">
                     {cat.icon}
                   </div>
                   <div>
@@ -199,7 +199,7 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
               {STEPS.map((s) => (
                 <div key={s.num} className="flex flex-col gap-3">
-                  <span className="font-mono text-3xl font-bold text-[#FF6A00] opacity-40">{s.num}</span>
+                  <span className="font-mono text-3xl font-bold text-[#FF6B35] opacity-40">{s.num}</span>
                   <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">{s.title}</h3>
                   <p className="text-sm text-zinc-500 leading-relaxed">{s.desc}</p>
                 </div>
@@ -215,7 +215,7 @@ export default function Home() {
             </div>
             <Link
               href="/register"
-              className="shrink-0 rounded-full bg-[#FF6A00] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6A00]/25"
+              className="shrink-0 rounded-full bg-[#FF6B35] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6B35]/25"
             >
               Empezar ahora
             </Link>
@@ -230,7 +230,7 @@ export default function Home() {
               href={`${ARTIST_APP_URL}/register/artist`}
               className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-5 py-2 font-medium text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
             >
-              <svg className="h-4 w-4 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
               </svg>
               Ir a Piums for Artists

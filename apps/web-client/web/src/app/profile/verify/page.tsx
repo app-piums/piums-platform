@@ -34,7 +34,7 @@ function UploadBox({ label, hint, uploading, preview, onFile, optional }: Upload
   return (
     <div
       onClick={() => !uploading && inputRef.current?.click()}
-      className="relative border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#FF6A00]/50 hover:bg-orange-50/40 transition-colors min-h-[120px]"
+      className="relative border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#FF6B35]/50 hover:bg-orange-50/40 transition-colors min-h-[120px]"
     >
       <input
         ref={inputRef}
@@ -48,7 +48,7 @@ function UploadBox({ label, hint, uploading, preview, onFile, optional }: Upload
         }}
       />
       {uploading ? (
-        <div className="h-6 w-6 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+        <div className="h-6 w-6 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
       ) : preview ? (
         <div className="relative w-full h-24">
           <Image src={preview} alt={label} fill className="object-contain rounded-lg" />
@@ -211,12 +211,12 @@ export default function VerifyClientTab() {
       </div>
 
       {isFullyVerified ? (
-        <div className="flex items-start gap-3 bg-orange-50 border border-[#FF6A00]/30 rounded-xl p-4">
-          <svg className="h-5 w-5 text-[#FF6A00] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-start gap-3 bg-orange-50 border border-[#FF6B35]/30 rounded-xl p-4">
+          <svg className="h-5 w-5 text-[#FF6B35] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <div>
-            <p className="text-sm font-semibold text-[#FF6A00]">Cuenta verificada</p>
+            <p className="text-sm font-semibold text-[#FF6B35]">Cuenta verificada</p>
             <p className="text-sm text-orange-900 mt-0.5">Tu información está completa. Puedes actualizarla en cualquier momento.</p>
           </div>
         </div>
@@ -247,7 +247,7 @@ export default function VerifyClientTab() {
               value={ciudad}
               onChange={(e) => setCiudad(e.target.value)}
               placeholder="Guatemala, Quetzaltenango..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] text-sm"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] text-sm"
             />
           </div>
 
@@ -260,7 +260,7 @@ export default function VerifyClientTab() {
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
               max={MAX_BIRTH_DATE}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] text-sm"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] text-sm"
             />
             <p className="text-xs text-gray-400 mt-1">Debes ser mayor de 18 años.</p>
           </div>
@@ -278,7 +278,7 @@ export default function VerifyClientTab() {
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] text-sm bg-white"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] text-sm bg-white"
             >
               {(Object.keys(DOCUMENT_LABELS) as DocumentType[]).map((k) => (
                 <option key={k} value={k}>{DOCUMENT_LABELS[k]}</option>
@@ -293,7 +293,7 @@ export default function VerifyClientTab() {
               value={documentNumber}
               onChange={(e) => setDocumentNumber(e.target.value)}
               placeholder="Ej. 1234 56789 0101"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] text-sm"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] text-sm"
             />
           </div>
 
@@ -331,7 +331,7 @@ export default function VerifyClientTab() {
           <button
             type="submit"
             disabled={saving || uploadingFront || uploadingBack || uploadingSelfie}
-            className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-xl text-sm font-semibold hover:bg-[#e05d00] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-semibold hover:bg-[#e05d00] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving ? 'Guardando...' : 'Guardar información'}
           </button>

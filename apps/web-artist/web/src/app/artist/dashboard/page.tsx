@@ -172,7 +172,7 @@ export default function ArtistDashboardPage() {
                 <input
                   type="text"
                   placeholder="Buscar..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900"
                 />
                 <svg className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -340,10 +340,10 @@ export default function ArtistDashboardPage() {
               <h3 className="text-lg font-bold mb-4">Fortaleza del Perfil</h3>
               {(() => {
                 const checks = [
-                  { label: 'Foto de perfil agregada', done: !!(artistProfile?.imageUrl || artistProfile?.profilePicture), href: '/artist/dashboard/settings?tab=personal' },
+                  { label: 'Foto de perfil agregada', done: !!(artistProfile?.avatar), href: '/artist/dashboard/settings?tab=personal' },
                   { label: 'Descripción de perfil', done: !!(artistProfile?.bio && artistProfile.bio.length > 10), href: '/artist/dashboard/settings?tab=personal' },
                   { label: 'Servicios publicados', done: artistServices.length > 0, href: '/artist/dashboard/services' },
-                  { label: 'Redes sociales vinculadas', done: !!(artistProfile?.socialLinks && Object.values(artistProfile.socialLinks).some((v: any) => !!v)), href: '/artist/dashboard/settings?tab=social' },
+                  { label: 'Redes sociales vinculadas', done: !!(artistProfile?.instagram || artistProfile?.facebook || artistProfile?.youtube || artistProfile?.tiktok || artistProfile?.website), href: '/artist/dashboard/settings?tab=social' },
                   { label: 'Primera reseña obtenida', done: !!(stats && (stats.rating?.totalReviews ?? 0) > 0), href: '/artist/dashboard/reviews' },
                 ];
                 const pct = artistProfile
@@ -400,7 +400,7 @@ export default function ArtistDashboardPage() {
           <div id="artist-dashboard-revenue" className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900">Resumen de Ingresos</h3>
-              <select className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+              <select className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
                 <option>Últimos 6 meses</option>
                 <option>Últimos 12 meses</option>
                 <option>Este año</option>

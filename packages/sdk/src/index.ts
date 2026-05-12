@@ -21,7 +21,7 @@ export interface Artist {
   bookingsCount?: number;
   yearsExperience?: number;
   cityId?: string;
-  coverageRadius?: number;
+  coverageRadius?: number | null;
   mainServicePrice?: number;
   mainServiceName?: string;
   matchedService?: {
@@ -72,7 +72,7 @@ export interface ArtistProfile extends Artist {
   baseLocationLabel?: string;
   baseLocationLat?: number;
   baseLocationLng?: number;
-  coverageRadius?: number;     // km incluidos sin costo de traslado
+  coverageRadius?: number | null;     // km incluidos sin costo de traslado
   hourlyRateMin?: number;      // precio mínimo por hora en centavos
   hourlyRateMax?: number;      // precio máximo por hora en centavos
   requiresDeposit?: boolean;

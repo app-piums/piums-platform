@@ -168,7 +168,7 @@ export default function RegisterPage() {
         }
 
         .custom-shadow {
-          box-shadow: 12px 12px 0px 0px rgba(255, 106, 0, 0.2);
+          box-shadow: 12px 12px 0px 0px rgba(255, 107, 53, 0.2);
         }
 
         .skew-section {
@@ -192,13 +192,13 @@ export default function RegisterPage() {
         input:-webkit-autofill:focus {
           -webkit-box-shadow: 0 0 0px 1000px white inset;
           -webkit-text-fill-color: #1a1614;
-          border-color: #FF6A00;
+          border-color: #FF6B35;
         }
 
         .role-card input:checked ~ div {
-          background-color: #FF6A00;
+          background-color: #FF6B35;
           color: white;
-          border-color: #FF6A00;
+          border-color: #FF6B35;
         }
 
         .role-card:hover div {
@@ -216,18 +216,18 @@ export default function RegisterPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#FAF9F6] via-[#FFF5EB] to-[#FAF9F6]"></div>
         
         {/* Decorative circles */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 border-[15px] border-[#FF6A00]/10 rounded-full"></div>
-        <div className="absolute top-1/3 -right-32 w-80 h-80 border-[12px] border-[#00AEEF]/10 rounded-full"></div>
-        <div className="absolute -bottom-20 left-1/4 w-64 h-64 border-[10px] border-[#FF6A00]/5 rounded-full blur-sm"></div>
+        <div className="absolute -top-24 -left-24 w-96 h-96 border-[15px] border-[#FF6B35]/10 rounded-full"></div>
+        <div className="absolute top-1/3 -right-32 w-80 h-80 border-[12px] border-[#F59E0B]/10 rounded-full"></div>
+        <div className="absolute -bottom-20 left-1/4 w-64 h-64 border-[10px] border-[#FF6B35]/5 rounded-full blur-sm"></div>
         
         {/* Material icons decorations */}
-        <span className="material-symbols-outlined absolute top-40 right-10 text-8xl text-[#00AEEF]/10 rotate-12">
+        <span className="material-symbols-outlined absolute top-40 right-10 text-8xl text-[#F59E0B]/10 rotate-12">
           draw
         </span>
-        <span className="material-symbols-outlined absolute bottom-32 left-20 text-7xl text-[#FF6A00]/10 -rotate-12">
+        <span className="material-symbols-outlined absolute bottom-32 left-20 text-7xl text-[#FF6B35]/10 -rotate-12">
           palette
         </span>
-        <span className="material-symbols-outlined absolute top-1/2 right-1/4 text-6xl text-[#00AEEF]/10 rotate-45">
+        <span className="material-symbols-outlined absolute top-1/2 right-1/4 text-6xl text-[#F59E0B]/10 rotate-45">
           music_note
         </span>
       </div>
@@ -244,9 +244,9 @@ export default function RegisterPage() {
                   JOIN THE
                   <br />
                   <span className="relative inline-block">
-                    <span className="text-[#FF6A00] font-marker tracking-wide">CREATIVE</span>
+                    <span className="text-[#FF6B35] font-marker tracking-wide">CREATIVE</span>
                     <svg className="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 200 12" fill="none">
-                      <path d="M2 10C52 4 102 7 152 5C172 4 192 6 198 8" stroke="#FF6A00" strokeWidth="3" strokeLinecap="round"/>
+                      <path d="M2 10C52 4 102 7 152 5C172 4 192 6 198 8" stroke="#FF6B35" strokeWidth="3" strokeLinecap="round"/>
                     </svg>
                   </span>
                   <br />
@@ -259,7 +259,7 @@ export default function RegisterPage() {
 
               {/* Role selection cards */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-[#00AEEF] tracking-wider font-grotesk uppercase">
+                <h3 className="text-sm font-bold text-[#F59E0B] tracking-wider font-grotesk uppercase">
                   ELIGE TU ROL
                 </h3>
                 
@@ -279,13 +279,13 @@ export default function RegisterPage() {
                     />
                     <div className="relative bg-white border-4 border-[#1a1614] p-8 transition-all duration-300 ease-out overflow-hidden">
                       {/* Background icon */}
-                      <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-[#FF6A00]/5">
+                      <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-[#FF6B35]/5">
                         palette
                       </span>
                       
                       <div className="relative z-10 space-y-4">
                         <div className="flex items-start justify-between">
-                          <span className="material-symbols-outlined text-5xl text-[#FF6A00]">
+                          <span className="material-symbols-outlined text-5xl text-[#FF6B35]">
                             palette
                           </span>
                           <span className="material-symbols-outlined text-2xl text-green-500 opacity-0 peer-checked:opacity-100 transition-opacity">
@@ -302,7 +302,7 @@ export default function RegisterPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-[#00AEEF] font-bold font-grotesk">
+                        <div className="flex items-center gap-2 text-xs text-[#F59E0B] font-bold font-grotesk">
                           <span className="material-symbols-outlined text-sm">
                             arrow_forward
                           </span>
@@ -327,13 +327,13 @@ export default function RegisterPage() {
                     />
                     <div className="relative bg-white border-4 border-[#1a1614] p-8 transition-all duration-300 ease-out overflow-hidden">
                       {/* Background icon */}
-                      <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-[#00AEEF]/5">
+                      <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-[#F59E0B]/5">
                         hub
                       </span>
                       
                       <div className="relative z-10 space-y-4">
                         <div className="flex items-start justify-between">
-                          <span className="material-symbols-outlined text-5xl text-[#00AEEF]">
+                          <span className="material-symbols-outlined text-5xl text-[#F59E0B]">
                             hub
                           </span>
                           <span className="material-symbols-outlined text-2xl text-green-500 opacity-0 peer-checked:opacity-100 transition-opacity">
@@ -350,7 +350,7 @@ export default function RegisterPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-[#00AEEF] font-bold font-grotesk">
+                        <div className="flex items-center gap-2 text-xs text-[#F59E0B] font-bold font-grotesk">
                           <span className="material-symbols-outlined text-sm">
                             arrow_forward
                           </span>
@@ -369,29 +369,29 @@ export default function RegisterPage() {
               {/* Creator avatars */}
               <div className="flex items-center gap-4 pt-4">
                 <div className="flex -space-x-3">
-                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#FF6A00] to-[#FF8F3E] flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#FF6B35] to-[#FF8F3E] flex items-center justify-center text-white font-bold">
                     A
                   </div>
-                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#00AEEF] to-[#39C0F7] flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#F59E0B] to-[#39C0F7] flex items-center justify-center text-white font-bold">
                     B
                   </div>
-                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#FF6A00] to-[#FF8F3E] flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#FF6B35] to-[#FF8F3E] flex items-center justify-center text-white font-bold">
                     C
                   </div>
-                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#00AEEF] to-[#39C0F7] flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-[#F59E0B] to-[#39C0F7] flex items-center justify-center text-white font-bold">
                     D
                   </div>
                 </div>
                 <p className="text-sm font-medium text-[#1a1614]/70 font-grotesk">
-                  Únete a <span className="font-bold text-[#FF6A00]">5,000+</span> creadores increíbles
+                  Únete a <span className="font-bold text-[#FF6B35]">5,000+</span> creadores increíbles
                 </p>
               </div>
             </div>
 
             {/* Right side - Form */}
             <div className="lg:col-span-2">
-              <div className="skew-section rotate-section bg-[#FF6A00] p-1 custom-shadow">
-                <div className="skew-content rotate-content bg-white p-10 border-2 border-[#FF6A00]">
+              <div className="skew-section rotate-section bg-[#FF6B35] p-1 custom-shadow">
+                <div className="skew-content rotate-content bg-white p-10 border-2 border-[#FF6B35]">
                   <div className="space-y-6">
                     <div className="text-center">
                       <h2 className="text-3xl font-bold text-[#1a1614] font-grotesk">
@@ -412,14 +412,14 @@ export default function RegisterPage() {
                       {showSuccess && (
                         <div className="bg-green-50 border-2 border-green-200 p-4 rounded">
                           <p className="text-sm text-green-800 font-grotesk font-bold">
-                            ✨ ¡Cuenta creada! Redirigiendo...
+                             ¡Cuenta creada! Redirigiendo...
                           </p>
                         </div>
                       )}
 
                       {/* Creative Name */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#00AEEF] tracking-wider uppercase font-grotesk flex items-center gap-2">
+                        <label className="text-xs font-bold text-[#F59E0B] tracking-wider uppercase font-grotesk flex items-center gap-2">
                           <span className="material-symbols-outlined text-sm">
                             badge
                           </span>
@@ -430,7 +430,7 @@ export default function RegisterPage() {
                           value={nombre}
                           onChange={(e) => setNombre(e.target.value)}
                           onBlur={() => handleBlur('nombre', nombre)}
-                          className="w-full px-0 py-3 text-lg font-medium text-[#1a1614] bg-transparent border-0 border-b-2 border-[#FF6A00] focus:outline-none focus:border-[#00AEEF] transition-colors font-grotesk placeholder:text-[#1a1614]/30"
+                          className="w-full px-0 py-3 text-lg font-medium text-[#1a1614] bg-transparent border-0 border-b-2 border-[#FF6B35] focus:outline-none focus:border-[#F59E0B] transition-colors font-grotesk placeholder:text-[#1a1614]/30"
                           placeholder="Tu nombre artístico"
                           disabled={loading}
                         />
@@ -441,7 +441,7 @@ export default function RegisterPage() {
 
                       {/* Digital Mailbox */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#00AEEF] tracking-wider uppercase font-grotesk flex items-center gap-2">
+                        <label className="text-xs font-bold text-[#F59E0B] tracking-wider uppercase font-grotesk flex items-center gap-2">
                           <span className="material-symbols-outlined text-sm">
                             mail
                           </span>
@@ -452,7 +452,7 @@ export default function RegisterPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           onBlur={() => handleBlur('email', email)}
-                          className="w-full px-0 py-3 text-lg font-medium text-[#1a1614] bg-transparent border-0 border-b-2 border-[#FF6A00] focus:outline-none focus:border-[#00AEEF] transition-colors font-grotesk placeholder:text-[#1a1614]/30"
+                          className="w-full px-0 py-3 text-lg font-medium text-[#1a1614] bg-transparent border-0 border-b-2 border-[#FF6B35] focus:outline-none focus:border-[#F59E0B] transition-colors font-grotesk placeholder:text-[#1a1614]/30"
                           placeholder="tu@email.com"
                           disabled={loading}
                         />
@@ -463,7 +463,7 @@ export default function RegisterPage() {
 
                       {/* Secret Key */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#00AEEF] tracking-wider uppercase font-grotesk flex items-center gap-2">
+                        <label className="text-xs font-bold text-[#F59E0B] tracking-wider uppercase font-grotesk flex items-center gap-2">
                           <span className="material-symbols-outlined text-sm">
                             key
                           </span>
@@ -474,7 +474,7 @@ export default function RegisterPage() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           onBlur={() => handleBlur('password', password)}
-                          className="w-full px-0 py-3 text-lg font-medium text-[#1a1614] bg-transparent border-0 border-b-2 border-[#FF6A00] focus:outline-none focus:border-[#00AEEF] transition-colors font-grotesk placeholder:text-[#1a1614]/30"
+                          className="w-full px-0 py-3 text-lg font-medium text-[#1a1614] bg-transparent border-0 border-b-2 border-[#FF6B35] focus:outline-none focus:border-[#F59E0B] transition-colors font-grotesk placeholder:text-[#1a1614]/30"
                           placeholder="••••••••"
                           disabled={loading}
                         />
@@ -493,16 +493,16 @@ export default function RegisterPage() {
                               setAcceptTerms(e.target.checked);
                               handleBlur('terms', e.target.checked);
                             }}
-                            className="w-5 h-5 mt-0.5 border-2 border-[#FF6A00] rounded accent-[#FF6A00] focus:ring-2 focus:ring-[#00AEEF] focus:ring-offset-2 cursor-pointer"
+                            className="w-5 h-5 mt-0.5 border-2 border-[#FF6B35] rounded accent-[#FF6B35] focus:ring-2 focus:ring-[#F59E0B] focus:ring-offset-2 cursor-pointer"
                             disabled={loading}
                           />
                           <span className="text-sm text-[#1a1614]/70 font-grotesk group-hover:text-[#1a1614] transition-colors">
                             Acepto los{" "}
-                            <Link href="/terms" className="text-[#FF6A00] font-bold hover:text-[#00AEEF] underline">
+                            <Link href="/terms" className="text-[#FF6B35] font-bold hover:text-[#F59E0B] underline">
                               términos y condiciones
                             </Link>{" "}
                             y la{" "}
-                            <Link href="/privacy" className="text-[#FF6A00] font-bold hover:text-[#00AEEF] underline">
+                            <Link href="/privacy" className="text-[#FF6B35] font-bold hover:text-[#F59E0B] underline">
                               política de privacidad
                             </Link>
                           </span>
@@ -516,7 +516,7 @@ export default function RegisterPage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#FF6A00] hover:bg-[#FF8F3E] disabled:bg-[#FF6A00]/50 text-white font-bold py-4 text-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 disabled:hover:translate-y-0 disabled:cursor-not-allowed font-grotesk uppercase tracking-wider flex items-center justify-center gap-2"
+                        className="w-full bg-[#FF6B35] hover:bg-[#FF8F3E] disabled:bg-[#FF6B35]/50 text-white font-bold py-4 text-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 disabled:hover:translate-y-0 disabled:cursor-not-allowed font-grotesk uppercase tracking-wider flex items-center justify-center gap-2"
                       >
                         {loading ? (
                           <>
@@ -539,7 +539,7 @@ export default function RegisterPage() {
                       <div className="text-center">
                         <p className="text-sm text-[#1a1614]/60 font-grotesk">
                           ¿Ya tienes cuenta?{" "}
-                          <Link href="/login" className="text-[#FF6A00] font-bold hover:text-[#00AEEF] underline">
+                          <Link href="/login" className="text-[#FF6B35] font-bold hover:text-[#F59E0B] underline">
                             Inicia sesión
                           </Link>
                         </p>
@@ -552,8 +552,8 @@ export default function RegisterPage() {
               {/* "Let's Go!" rotated badge */}
               <div className="relative mt-8 flex justify-end">
                 <div className="relative -rotate-12">
-                  <div className="bg-[#00AEEF] text-white px-6 py-3 font-marker text-xl border-4 border-[#1a1614] shadow-lg">
-                    Let&rsquo;s Go! ✨
+                  <div className="bg-[#F59E0B] text-white px-6 py-3 font-marker text-xl border-4 border-[#1a1614] shadow-lg">
+                    Let&rsquo;s Go! 
                   </div>
                 </div>
               </div>
@@ -564,7 +564,7 @@ export default function RegisterPage() {
           <div className="mt-16 pt-8 border-t-2 border-[#1a1614]/10">
             <div className="text-center">
               <p className="text-sm text-[#1a1614]/60 font-grotesk">
-                <span className="font-bold text-[#FF6A00]">PIUMS STUDIO</span> • Conectando creativos desde 2024
+                <span className="font-bold text-[#FF6B35]">PIUMS STUDIO</span> • Conectando creativos desde 2024
               </p>
             </div>
           </div>

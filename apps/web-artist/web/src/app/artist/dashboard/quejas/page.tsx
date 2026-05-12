@@ -88,7 +88,7 @@ export default function ArtistQuejasPage() {
 
           {loading ? (
             <div className="flex h-64 items-center justify-center">
-              <div className="w-8 h-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : error ? (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
@@ -106,7 +106,7 @@ export default function ArtistQuejasPage() {
               <p className="text-sm text-gray-400 text-center max-w-xs">
                 Si tienes algún problema con una reserva, puedes reportarlo desde la sección de Reservas.
               </p>
-              <Link href="/artist/dashboard/bookings" className="mt-2 text-sm font-medium text-[#FF6A00] hover:underline">
+              <Link href="/artist/dashboard/bookings" className="mt-2 text-sm font-medium text-[#FF6B35] hover:underline">
                 Ver mis reservas →
               </Link>
             </div>
@@ -152,8 +152,8 @@ function DisputeCard({ dispute }: { dispute: Dispute }) {
             </div>
             <p className="text-sm font-semibold text-gray-900 mb-0.5">{dispute.subject}</p>
             {previewMsg ? (
-              <p className={`text-xs flex items-center gap-1.5 truncate ${hasUnread ? 'text-[#FF6A00] font-medium' : 'text-gray-400'}`}>
-                {hasUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FF6A00] shrink-0" />}
+              <p className={`text-xs flex items-center gap-1.5 truncate ${hasUnread ? 'text-[#FF6B35] font-medium' : 'text-gray-400'}`}>
+                {hasUnread && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" />}
                 <span className="font-medium shrink-0">
                   {previewMsg.senderType === MY_SENDER_TYPE ? 'Tú:'
                     : previewMsg.senderType === 'staff' ? 'Piums:'
@@ -168,8 +168,8 @@ function DisputeCard({ dispute }: { dispute: Dispute }) {
               </p>
             )}
           </div>
-          <div className="shrink-0 flex items-center gap-1.5 text-[#FF6A00]">
-            {hasUnread && <span className="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse" />}
+          <div className="shrink-0 flex items-center gap-1.5 text-[#FF6B35]">
+            {hasUnread && <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse" />}
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>

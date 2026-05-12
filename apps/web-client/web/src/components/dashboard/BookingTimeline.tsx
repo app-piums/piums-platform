@@ -34,7 +34,7 @@ export const BookingTimeline: React.FC<BookingTimelineProps> = ({
     confirmed: {
       badge: 'info',
       label: 'Confirmada',
-      color: 'bg-[#00AEEF]',
+      color: 'bg-[#F59E0B]',
     },
     completed: {
       badge: 'success',
@@ -146,7 +146,7 @@ export const BookingTimeline: React.FC<BookingTimelineProps> = ({
 
       {events.length > maxItems && (
         <div className="mt-4 text-center">
-          <button className="text-sm text-[#FF6A00] hover:text-[#E65F00] font-medium">
+          <button className="text-sm text-[#FF6B35] hover:text-[#E85D2F] font-medium">
             Ver todas las reservas ({events.length})
           </button>
         </div>

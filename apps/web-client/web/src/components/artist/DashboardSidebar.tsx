@@ -46,7 +46,7 @@ export const DashboardSidebar: React.FC = () => {
                 }
               `}
             >
-              <span className="text-[#FF6A00]">{tab.icon}</span>
+              <span className="text-[#FF6B35]">{tab.icon}</span>
               <span>{tab.label}</span>
             </Link>
           );

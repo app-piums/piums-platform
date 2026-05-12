@@ -65,7 +65,7 @@ export const getUnreadCount = async (req: AuthRequest, res: Response, next: Next
     }
 
     const count = await chatService.getUnreadCount(userId);
-    res.json({ unreadCount: count });
+    res.json(count);
   } catch (error) {
     next(error);
   }

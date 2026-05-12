@@ -7,6 +7,7 @@ import { Loading } from '@/components/Loading';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import type { SavedCoupon, CouponValidation } from '@piums/sdk';
+import { AlertTriangle } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ function CouponCard({ coupon }: { coupon: SavedCoupon }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       {/* Top bar */}
-      <div className="h-2 bg-gradient-to-r from-[#FF6A00] to-orange-400" />
+      <div className="h-2 bg-gradient-to-r from-[#FF6B35] to-orange-400" />
 
       <div className="p-5 flex gap-4">
         {/* QR */}
@@ -68,7 +69,7 @@ function CouponCard({ coupon }: { coupon: SavedCoupon }) {
                 <p className="text-sm text-gray-500 mt-0.5">{coupon.description}</p>
               )}
             </div>
-            <span className="shrink-0 text-sm font-bold text-[#FF6A00] bg-orange-50 rounded-lg px-2.5 py-1 whitespace-nowrap">
+            <span className="shrink-0 text-sm font-bold text-[#FF6B35] bg-orange-50 rounded-lg px-2.5 py-1 whitespace-nowrap">
               {formatDiscount(coupon)}
             </span>
           </div>
@@ -94,7 +95,7 @@ function CouponCard({ coupon }: { coupon: SavedCoupon }) {
           {expiry && (
             <p className={`mt-2 text-xs font-medium ${expiry.isExpiringSoon ? 'text-orange-600' : 'text-gray-400'}`}>
               {expiry.isExpiringSoon
-                ? `⚠ Vence en ${expiry.daysLeft} día${expiry.daysLeft === 1 ? '' : 's'}`
+                ? <span className="flex items-center gap-1"><AlertTriangle size={11} /> Vence en {expiry.daysLeft} día{expiry.daysLeft === 1 ? '' : 's'}</span>
                 : `Válido hasta: ${expiry.formatted}`}
             </p>
           )}
@@ -141,12 +142,12 @@ function ValidateCouponSection() {
           value={code}
           onChange={(e) => { setCode(e.target.value.toUpperCase()); setResult(null); }}
           placeholder="Ej: PIUMS20"
-          className="flex-1 rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-mono font-semibold tracking-wider text-gray-900 placeholder:font-normal placeholder:tracking-normal outline-none focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 transition"
+          className="flex-1 rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-mono font-semibold tracking-wider text-gray-900 placeholder:font-normal placeholder:tracking-normal outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/20 transition"
         />
         <button
           type="submit"
           disabled={validating || !code.trim()}
-          className="rounded-xl bg-[#FF6A00] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#e05e00] disabled:opacity-60 transition-colors"
+          className="rounded-xl bg-[#FF6B35] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#e05e00] disabled:opacity-60 transition-colors"
         >
           {validating ? 'Validando...' : 'Verificar'}
         </button>
@@ -216,7 +217,7 @@ export default function CouponsPage() {
           {/* Coupon list */}
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#FF6A00] border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#FF6B35] border-t-transparent" />
             </div>
           ) : coupons.length === 0 ? (
             <div className="mb-6 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-14 text-center">

@@ -12,6 +12,7 @@ import { sdk, type Service, type ArtistProfile, type Booking } from '@piums/sdk'
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 import { cImg } from '@/lib/cloudinaryImg';
+import { Clock as LucideClock, CheckCircle as LucideCheckCircle } from 'lucide-react';
 
 // Icons
 const ClockIcon = ({ className }: { className?: string }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -121,7 +122,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
         <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 text-center">
           <p className="text-xl font-semibold text-gray-900 mb-2">Reserva no encontrada</p>
           <p className="text-sm text-gray-500 mb-5">{error || 'No pudimos encontrar los detalles de esta reserva.'}</p>
-          <Link href="/bookings" className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl shadow-lg hover:bg-orange-600 transition">
+          <Link href="/bookings" className="px-6 py-3 bg-[#FF6B35] text-white font-semibold rounded-xl shadow-lg hover:bg-orange-600 transition">
             Volver a mis reservas
           </Link>
         </div>
@@ -221,7 +222,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
               </h1>
               <p className="text-sm text-gray-500 flex items-center gap-2">
                 Reservado con{' '}
-                <span className="text-[#FF6A00] font-semibold">{artist?.nombre || booking.artistName || 'Profesional'}</span>
+                <span className="text-[#FF6B35] font-semibold">{artist?.nombre || booking.artistName || 'Profesional'}</span>
                 {' '}·{' '}
                 <span>ID: {booking.id.split('-')[0].toUpperCase()}</span>
               </p>
@@ -242,9 +243,9 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-600 leading-relaxed">{service.description}</p>
 
                 {artist?.bio && (
-                  <blockquote className="border-l-4 border-[#FF6A00] bg-orange-50 rounded-r-xl pl-4 pr-4 py-3 mt-4">
+                  <blockquote className="border-l-4 border-[#FF6B35] bg-orange-50 rounded-r-xl pl-4 pr-4 py-3 mt-4">
                     <p className="text-xs font-semibold text-orange-700 mb-1 flex items-center gap-1">
-                      <StarFilledIcon className="h-3.5 w-3.5 text-[#FF6A00]" />
+                      <StarFilledIcon className="h-3.5 w-3.5 text-[#FF6B35]" />
                        Artista
                     </p>
                     <p className="text-sm text-orange-900 italic leading-relaxed">{artist.bio}</p>
@@ -261,7 +262,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                   {service.whatIsIncluded.map((item: string, i: number) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
                       <span className="h-5 w-5 flex items-center justify-center shrink-0 mt-0.5">
-                        <svg className="h-4 w-4 text-[#FF6A00]" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-4 w-4 text-[#FF6B35]" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 2l1.8 5.4 5.7.4-4.4 3.3 1.6 5.5L12 13.5l-4.7 3.1 1.6-5.5L4.5 7.8l5.7-.4z" />
                         </svg>
                       </span>
@@ -307,7 +308,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
             <div className="sticky top-28 space-y-6">
               
               <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className={`px-5 py-4 flex items-center justify-between gap-3 ${booking.status === 'completed' ? 'bg-blue-600' : 'bg-[#FF6A00]'}`}>
+                <div className={`px-5 py-4 flex items-center justify-between gap-3 ${booking.status === 'completed' ? 'bg-blue-600' : 'bg-[#FF6B35]'}`}>
                   <span className="text-white font-semibold flex items-center gap-2">
                     <CalendarIcon className="h-5 w-5" />
                     Resumen del Evento
@@ -319,7 +320,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="border-b border-gray-100 pb-4">
                     <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Fecha Programada</p>
                     <p className="font-semibold text-gray-900 capitalize">{formattedDate}</p>
-                    <p className="text-sm text-[#FF6A00] font-medium mt-0.5">{formattedTime}</p>
+                    <p className="text-sm text-[#FF6B35] font-medium mt-0.5">{formattedTime}</p>
                   </div>
 
                   <div className="border-b border-gray-100 pb-4">
@@ -339,7 +340,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                     
                     <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-100">
                       <span className="font-bold text-gray-900">Total Pagado</span>
-                      <span className="text-lg font-black text-[#FF6A00]">${priceVal.toLocaleString('en-US')}</span>
+                      <span className="text-lg font-black text-[#FF6B35]">${priceVal.toLocaleString('en-US')}</span>
                     </div>
                   </div>
 
@@ -357,21 +358,21 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                      </button>
                    )}
                    {hasPendingReschedule && (
-                     <div className="w-full py-2.5 bg-yellow-50 border border-yellow-200 text-yellow-800 font-semibold rounded-xl text-sm text-center">
-                       ⏳ Solicitud de cambio de fecha en proceso
+                     <div className="w-full py-2.5 bg-yellow-50 border border-yellow-200 text-yellow-800 font-semibold rounded-xl text-sm flex items-center justify-center gap-2">
+                       <LucideClock size={15} /> Solicitud de cambio de fecha en proceso
                      </div>
                    )}
                    {canReview && (
                      <button
                        onClick={() => setIsReviewModalOpen(true)}
-                       className="w-full py-2.5 bg-white border border-[#FF6A00] text-[#FF6A00] font-semibold rounded-xl text-sm hover:bg-orange-50 transition"
+                       className="w-full py-2.5 bg-white border border-[#FF6B35] text-[#FF6B35] font-semibold rounded-xl text-sm hover:bg-orange-50 transition"
                      >
                        Dejar Reseña del Servicio
                      </button>
                    )}
                    {(reviewed || booking.reviewId) && (
-                     <div className="w-full py-2.5 bg-green-50 border border-green-200 text-green-700 font-semibold rounded-xl text-sm text-center">
-                       ✓ Reseña enviada
+                     <div className="w-full py-2.5 bg-green-50 border border-green-200 text-green-700 font-semibold rounded-xl text-sm flex items-center justify-center gap-2">
+                       <LucideCheckCircle size={15} /> Reseña enviada
                      </div>
                    )}
                    {canAddToEvent && (
@@ -385,7 +386,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                    {booking.eventId && (
                      <Link
                        href={`/events/${booking.eventId}`}
-                       className="block w-full py-2.5 bg-orange-50 border border-[#FF6A00]/30 text-[#FF6A00] font-semibold rounded-xl text-sm text-center hover:bg-orange-100 transition"
+                       className="block w-full py-2.5 bg-orange-50 border border-[#FF6B35]/30 text-[#FF6B35] font-semibold rounded-xl text-sm text-center hover:bg-orange-100 transition"
                      >
                        Ver Evento asociado
                      </Link>
@@ -406,7 +407,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                    <button onClick={() => window.print()} className="w-full py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition">
                      Descargar Recibo (PDF)
                    </button>
-                   <Link href={`/services/${booking.serviceId || '1'}`} className="text-center text-xs text-gray-500 hover:text-[#FF6A00] transition pt-1">
+                   <Link href={`/services/${booking.serviceId || '1'}`} className="text-center text-xs text-gray-500 hover:text-[#FF6B35] transition pt-1">
                      Agendar una nueva cita similar
                    </Link>
                 </div>

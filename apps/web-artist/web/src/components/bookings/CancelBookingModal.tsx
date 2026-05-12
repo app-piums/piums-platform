@@ -108,7 +108,7 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                     <textarea
                       id="reason"
                       rows={3}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900"
                       placeholder="Ej: Cambio de planes, encontré otro artista, etc."
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}

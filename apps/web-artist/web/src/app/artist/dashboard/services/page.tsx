@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, Service, ServiceCategory } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
+import { Pencil, Trash2, Settings, Lightbulb, Pause, Play } from 'lucide-react';
 
 type PricingType = 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'CUSTOM';
 
@@ -133,7 +134,7 @@ export default function ArtistServicesPage() {
       description: service.description,
       categoryId: service.categoryId || '',
       pricingType: (service.pricingType as PricingType) || 'FIXED',
-      basePrice: String(service.basePrice),
+      basePrice: String(service.basePrice / 100),
       durationMin: String(service.durationMin || service.duration || ''),
       whatIsIncluded: service.whatIsIncluded || [],
       minGuests: service.minGuests != null ? String(service.minGuests) : '',
@@ -161,8 +162,9 @@ export default function ArtistServicesPage() {
     setIsSubmitting(true);
 
     try {
-      const price = parseInt(form.basePrice, 10);
-      if (isNaN(price) || price < 0) throw new Error('El precio debe ser un número válido');
+      const priceRaw = parseFloat(form.basePrice);
+      if (isNaN(priceRaw) || priceRaw < 0) throw new Error('El precio debe ser un número válido');
+      const price = Math.round(priceRaw * 100);
 
       if (editingService) {
         const updated = await sdk.updateService(editingService.id, {
@@ -323,26 +325,26 @@ export default function ArtistServicesPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => openEdit(service)}
-                            className="flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
                           >
-                            ✏️ Editar
+                            <Pencil size={14} /> Editar
                           </button>
                           <button
                             onClick={() => handleToggle(service)}
                             disabled={isToggling}
-                            className={`flex-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
                               active
                                 ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 : 'bg-green-100 text-green-700 hover:bg-green-200'
                             } disabled:opacity-60`}
                           >
-                            {isToggling ? '...' : active ? '⏸ Desactivar' : '▶ Activar'}
+                            {isToggling ? '...' : active ? <><Pause size={14} /> Desactivar</> : <><Play size={14} /> Activar</>}
                           </button>
                           <button
                             onClick={() => setDeletingId(service.id)}
                             className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
                           >
-                            🗑
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </div>
@@ -352,7 +354,9 @@ export default function ArtistServicesPage() {
               ) : (
                 !error && (
                   <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                    <div className="text-6xl mb-4">⚙️</div>
+                    <div className="flex items-center justify-center mb-4">
+                    <Settings size={56} className="text-gray-300" />
+                  </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes servicios registrados</h3>
                     <p className="text-gray-600 mb-6">Comienza creando tu primer servicio</p>
                     <button
@@ -370,7 +374,7 @@ export default function ArtistServicesPage() {
           {/* Info Box */}
           {!isLoading && services.length > 0 && (
             <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="font-semibold text-blue-900 mb-2">💡 Gestión de Servicios</h3>
+              <h3 className="flex items-center gap-2 font-semibold text-blue-900 mb-2"><Lightbulb size={16} className="text-blue-600" /> Gestión de Servicios</h3>
               <p className="text-blue-800 text-sm">
                 Los servicios activos aparecen en tu perfil público y están disponibles para reserva.
                 Los servicios inactivos permanecen guardados pero no son visibles para los clientes.
@@ -414,7 +418,7 @@ export default function ArtistServicesPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Ej: Fotografía de bodas"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm text-gray-900"
                 />
               </div>
 
@@ -429,7 +433,7 @@ export default function ArtistServicesPage() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Describe qué incluye tu servicio..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm resize-none text-gray-900"
                 />
               </div>
 
@@ -462,7 +466,7 @@ export default function ArtistServicesPage() {
                   <select
                     value={form.pricingType}
                     onChange={(e) => setForm({ ...form, pricingType: e.target.value as PricingType })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white text-gray-900"
                   >
                     {(Object.keys(PRICING_LABELS) as PricingType[]).map((type) => (
                       <option key={type} value={type}>{PRICING_LABELS[type]}</option>
@@ -478,10 +482,11 @@ export default function ArtistServicesPage() {
                     type="number"
                     required
                     min={0}
+                    step="0.01"
                     value={form.basePrice}
                     onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
-                    placeholder="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm text-gray-900"
                   />
                 </div>
               </div>
@@ -496,7 +501,7 @@ export default function ArtistServicesPage() {
                   value={form.durationMin}
                   onChange={(e) => setForm({ ...form, durationMin: e.target.value })}
                   placeholder="Ej: 60"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm text-gray-900"
                 />
               </div>
 
@@ -512,7 +517,7 @@ export default function ArtistServicesPage() {
                     value={form.minGuests}
                     onChange={(e) => setForm({ ...form, minGuests: e.target.value })}
                     placeholder="Ej: 10"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm text-gray-900"
                   />
                 </div>
                 <div>
@@ -525,7 +530,7 @@ export default function ArtistServicesPage() {
                     value={form.maxGuests}
                     onChange={(e) => setForm({ ...form, maxGuests: e.target.value })}
                     placeholder="Ej: 300"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm text-gray-900"
                   />
                 </div>
               </div>
@@ -550,7 +555,7 @@ export default function ArtistServicesPage() {
                       }
                     }}
                     placeholder="Ej: Sistema de sonido propio"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm text-gray-900"
                   />
                   <button
                     type="button"

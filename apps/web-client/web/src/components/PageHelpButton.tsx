@@ -22,7 +22,7 @@ export function PageHelpButton({ tourId }: PageHelpButtonProps) {
     <button
       onClick={() => startNextStep(tourId)}
       aria-label="Ver ayuda de esta página"
-      className="fixed bottom-6 right-6 z-[9999] w-12 h-12 rounded-full bg-[#FF6A00] text-white shadow-lg hover:bg-[#e55e00] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+      className="fixed bottom-6 right-6 z-[9999] w-12 h-12 rounded-full bg-[#FF6B35] text-white shadow-lg hover:bg-[#e55e00] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -150,6 +150,8 @@ spec:
     metadata:
       labels:
         app: redis
+        app.kubernetes.io/part-of: piums-platform
+        app.kubernetes.io/managed-by: kustomize
     spec:
       containers:
         - name: redis

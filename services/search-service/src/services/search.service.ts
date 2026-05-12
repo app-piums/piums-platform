@@ -417,7 +417,14 @@ export class SearchService {
           name: artist.name,
           email: artist.email,
           bio: artist.bio,
-          specialties: artist.specialties || [],
+          // Prepend the ArtistCategory enum value (e.g. "MUSICO") so that
+          // category-based search filters (hasSome: ["MUSICO"]) work correctly.
+          specialties: [
+            ...new Set([
+              ...(artist.category ? [artist.category] : []),
+              ...(artist.specialties || []),
+            ]),
+          ],
           city: artist.city,
           state: artist.state,
           country: artist.country,

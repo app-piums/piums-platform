@@ -106,7 +106,7 @@ export function ReportarQuejaModal({ bookingId, reportedAgainst, artistName, onC
               onChange={e => setAsunto(e.target.value)}
               maxLength={120}
               placeholder="Ej: El artista llegó 2 horas tarde"
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/15 transition"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 transition"
             />
           </div>
 
@@ -120,7 +120,7 @@ export function ReportarQuejaModal({ bookingId, reportedAgainst, artistName, onC
               value={descripcion}
               onChange={e => setDescripcion(e.target.value)}
               placeholder="Describe con detalle lo que ocurrió. Esto ayuda al equipo de Piums a resolver tu caso más rápido."
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/15 transition resize-none"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 transition resize-none"
             />
           </div>
 

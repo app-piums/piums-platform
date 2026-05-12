@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, TravelAbsence, CreateAbsencePayload } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { Palmtree, Plane } from 'lucide-react';
 
 const COUNTRY_OPTIONS = [
   { code: 'AR', label: 'Argentina' },
@@ -161,13 +162,13 @@ export default function AusenciasPage() {
         {/* Legend */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 text-sm text-gray-600 space-y-2">
           <div className="flex items-start gap-2">
-            <span className="text-lg leading-tight">🏖️</span>
+            <Palmtree size={20} className="text-orange-400 shrink-0 mt-0.5" />
             <span>
               <strong>Vacaciones</strong> — No apareces en ninguna búsqueda mientras estás ausente.
             </span>
           </div>
           <div className="flex items-start gap-2">
-            <span className="text-lg leading-tight">✈️</span>
+            <Plane size={20} className="text-blue-400 shrink-0 mt-0.5" />
             <span>
               <strong>Trabajando en el extranjero</strong> — Solo te ven los clientes del país
               destino; eres invisible en tu país de origen.
@@ -217,7 +218,7 @@ export default function AusenciasPage() {
                         : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    🏖️ Vacaciones
+                    <Palmtree size={15} /> Vacaciones
                   </button>
                   <button
                     type="button"
@@ -228,7 +229,7 @@ export default function AusenciasPage() {
                         : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    ✈️ Trabajando en el extranjero
+                    <Plane size={15} /> Trabajando en el extranjero
                   </button>
                 </div>
               </div>
@@ -308,7 +309,7 @@ export default function AusenciasPage() {
           <div className="bg-red-50 text-red-600 rounded-xl p-4 text-sm">{error}</div>
         ) : absences.length === 0 ? (
           <div className="bg-white rounded-xl border border-dashed border-gray-300 py-16 text-center text-gray-400">
-            <span className="text-3xl block mb-3">✈️</span>
+            <Plane size={36} className="mx-auto mb-3 text-gray-300" />
             <p className="text-sm">No tienes ausencias registradas.</p>
           </div>
         ) : (
@@ -319,8 +320,8 @@ export default function AusenciasPage() {
                 className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center justify-between gap-4 shadow-sm"
               >
                 <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-xl mt-0.5 shrink-0">
-                    {absence.type === 'VACATION' ? '🏖️' : '✈️'}
+                  <span className="mt-0.5 shrink-0">
+                    {absence.type === 'VACATION' ? <Palmtree size={20} className="text-orange-400" /> : <Plane size={20} className="text-blue-400" />}
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-800">

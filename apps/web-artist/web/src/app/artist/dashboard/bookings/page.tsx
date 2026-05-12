@@ -8,6 +8,27 @@ import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
 import Link from 'next/link';
 import { sdk, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
+import { Check, X, Cake, Gem, GraduationCap, Crown, Building2, Music, PartyPopper, Baby, Church, Wine, HelpCircle, CalendarDays } from 'lucide-react';
+
+const EVENT_TYPE_ICONS: Record<string, React.ReactElement> = {
+  CUMPLEANOS:  <Cake       size={16} />,
+  BODA:        <Gem        size={16} />,
+  GRADUACION:  <GraduationCap size={16} />,
+  QUINCEANERA: <Crown      size={16} />,
+  CORPORATIVO: <Building2  size={16} />,
+  CONCIERTO:   <Music      size={16} />,
+  FIESTA:      <PartyPopper size={16} />,
+  BABY_SHOWER: <Baby       size={16} />,
+  BAUTIZO:     <Church     size={16} />,
+  ANIVERSARIO: <Wine       size={16} />,
+  OTRO:        <HelpCircle size={16} />,
+};
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  CUMPLEANOS:'Cumpleaños', BODA:'Boda', GRADUACION:'Graduación', QUINCEANERA:'Quinceañera',
+  CORPORATIVO:'Evento Corporativo', CONCIERTO:'Concierto / Festival', FIESTA:'Fiesta / Celebración',
+  BABY_SHOWER:'Baby Shower', BAUTIZO:'Bautizo / Bienvenida', ANIVERSARIO:'Aniversario', OTRO:'Otro',
+};
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 import { cImg } from '@/lib/cloudinaryImg';
@@ -259,7 +280,7 @@ export default function ArtistBookingsPage() {
   ];
 
   const STATS = [
-    { label: 'Total Reservas', count: allCount,                    color: 'text-[#FF6A00] bg-orange-50', icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
+    { label: 'Total Reservas', count: allCount,                    color: 'text-[#FF6B35] bg-orange-50', icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
     { label: 'Confirmadas',    count: statusCounts.CONFIRMED,      color: 'text-blue-600 bg-blue-50',    icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
     { label: 'Pendientes',     count: statusCounts.PENDING,        color: 'text-yellow-600 bg-yellow-50', icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg> },
     { label: 'Completadas',    count: statusCounts.COMPLETED,      color: 'text-green-600 bg-green-50',  icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> },
@@ -278,7 +299,7 @@ export default function ArtistBookingsPage() {
             <p className="text-sm text-gray-400 mt-0.5">Gestiona las reservas recibidas</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
               {userName.charAt(0).toUpperCase()}
             </div>
           </div>
@@ -312,7 +333,7 @@ export default function ArtistBookingsPage() {
                 onClick={() => { setActiveStatus(tab.value); setCurrentPage(1); }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   activeStatus === tab.value
-                    ? 'bg-[#FF6A00] text-white shadow-sm shadow-orange-200'
+                    ? 'bg-[#FF6B35] text-white shadow-sm shadow-orange-200'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
@@ -324,7 +345,7 @@ export default function ArtistBookingsPage() {
           {isLoading && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00] mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6B35] mx-auto mb-4"></div>
                 <p className="text-gray-500 text-sm">Cargando reservas...</p>
               </div>
             </div>
@@ -438,11 +459,11 @@ export default function ArtistBookingsPage() {
                         {/* Event type */}
                         {(booking as any).eventType && (
                           <div className="flex items-center gap-2 bg-orange-50 rounded-lg px-3 py-2">
-                            <span className="text-base">
-                              {({'CUMPLEANOS':'🎂','BODA':'💍','GRADUACION':'🎓','QUINCEANERA':'👑','CORPORATIVO':'🏢','CONCIERTO':'🎵','FIESTA':'🎉','BABY_SHOWER':'🍼','BAUTIZO':'⛪','ANIVERSARIO':'🥂','OTRO':'✨'} as Record<string,string>)[(booking as any).eventType] ?? '📅'}
+                            <span className="text-orange-500">
+                              {EVENT_TYPE_ICONS[(booking as any).eventType] ?? <CalendarDays size={16} />}
                             </span>
                             <p className="text-xs font-semibold text-orange-800">
-                              {({'CUMPLEANOS':'Cumpleaños','BODA':'Boda','GRADUACION':'Graduación','QUINCEANERA':'Quinceañera','CORPORATIVO':'Evento Corporativo','CONCIERTO':'Concierto / Festival','FIESTA':'Fiesta / Celebración','BABY_SHOWER':'Baby Shower','BAUTIZO':'Bautizo / Bienvenida','ANIVERSARIO':'Aniversario','OTRO':'Otro'} as Record<string,string>)[(booking as any).eventType] ?? (booking as any).eventType}
+                              {EVENT_TYPE_LABELS[(booking as any).eventType] ?? (booking as any).eventType}
                             </p>
                           </div>
                         )}
@@ -483,7 +504,7 @@ export default function ArtistBookingsPage() {
                               {processingBookingId === booking.id ? (
                                 <span className="flex items-center gap-1.5"><span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />Procesando</span>
                               ) : (
-                                <>✓ Aceptar cambio</>
+                                <><Check size={14} /> Aceptar cambio</>
                               )}
                             </button>
                             <button
@@ -499,7 +520,7 @@ export default function ArtistBookingsPage() {
                               disabled={processingBookingId === booking.id}
                               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white text-red-600 text-sm font-semibold rounded-lg border-2 border-red-500 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50"
                             >
-                              ✗ Rechazar
+                              <X size={14} /> Rechazar
                             </button>
                           </div>
                         </div>

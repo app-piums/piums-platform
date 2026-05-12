@@ -145,7 +145,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                         id="comment"
                         rows={4}
                         required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900"
                         placeholder="Cuéntanos sobre tu experiencia (mínimo 10 caracteres)..."
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}

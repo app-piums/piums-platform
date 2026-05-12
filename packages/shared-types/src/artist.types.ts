@@ -14,7 +14,7 @@ export interface Artist {
   cityId?: string;
   city?: string;
   experienceYears?: number;
-  coverageRadius?: number;
+  coverageRadius?: number | null;
   hourlyRateMin?: number;
   hourlyRateMax?: number;
   requiresDeposit?: boolean;

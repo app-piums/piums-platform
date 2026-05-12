@@ -43,7 +43,7 @@ export interface Artist {
   baseLocationLabel?: string;
   baseLocationLat?: number;
   baseLocationLng?: number;
-  coverageRadius?: number;
+  coverageRadius?: number | null;
   yearsExperience?: number;
   rating?: number;
   reviewsCount?: number;

@@ -121,10 +121,10 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
                   isPast
                     ? 'text-gray-300 cursor-not-allowed'
                     : isToday
-                    ? 'bg-[#FF6A00] text-white cursor-pointer'
+                    ? 'bg-[#FF6B35] text-white cursor-pointer'
                     : event
                     ? 'bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200'
-                    : 'text-gray-700 hover:bg-orange-50 hover:text-[#FF6A00] cursor-pointer',
+                    : 'text-gray-700 hover:bg-orange-50 hover:text-[#FF6B35] cursor-pointer',
                 ].join(' ')}
               >
                 {day}
@@ -153,7 +153,7 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
         )}
       </div>
 
-      <Link href="/artists" className="mt-5 w-full py-2.5 rounded-xl bg-[#FF6A00] text-white text-sm font-semibold hover:bg-[#e05e00] transition-colors flex items-center justify-center">
+      <Link href="/artists" className="mt-5 w-full py-2.5 rounded-xl bg-[#FF6B35] text-white text-sm font-semibold hover:bg-[#e05e00] transition-colors flex items-center justify-center">
         + Agendar proyecto
       </Link>
     </div>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="hidden lg:flex bg-white border-b border-gray-100 px-8 py-4 items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">¡Hola, {displayName}! 👋</h1>
+            <h1 className="text-xl font-bold text-gray-900">Hola, {displayName}</h1>
             <p className="text-sm text-gray-400">Descubre el mejor talento creativo cerca de ti</p>
           </div>
           <div className="flex items-center gap-4">
@@ -227,7 +227,7 @@ export default function DashboardPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar artistas, estilos..."
-                className="pl-9 pr-4 py-2 w-72 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00]"
+                className="pl-9 pr-4 py-2 w-72 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
               />
             </form>
             <ThemeToggle />
@@ -237,7 +237,7 @@ export default function DashboardPage() {
 
         <div className="flex-1 overflow-y-auto p-4 pt-20 lg:p-8 lg:pt-8">
           <div className="lg:hidden mb-5">
-            <h1 className="text-xl font-bold text-gray-900">¡Hola, {displayName}! 👋</h1>
+            <h1 className="text-xl font-bold text-gray-900">Hola, {displayName}</h1>
             <p className="text-sm text-gray-400 mt-0.5">Descubre el mejor talento creativo cerca de ti</p>
           </div>
           <form onSubmit={(e) => { e.preventDefault(); router.push(`/artists?q=${search}`); }} className="relative lg:hidden mb-5">
@@ -247,7 +247,7 @@ export default function DashboardPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar artistas, estilos..."
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00]"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
             />
           </form>
 
@@ -256,7 +256,7 @@ export default function DashboardPage() {
             <div id="dashboard-calendar" className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold text-gray-900">Reservas del Mes</h2>
-                <Link href="/bookings" className="text-sm text-[#FF6A00] font-medium hover:underline">
+                <Link href="/bookings" className="text-sm text-[#FF6B35] font-medium hover:underline">
                   Ver todas →
                 </Link>
               </div>
@@ -277,7 +277,7 @@ export default function DashboardPage() {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <h2 className="font-semibold text-gray-900">Buscar por Fecha</h2>
-                  <svg className="h-4 w-4 text-gray-400 group-hover:text-[#FF6A00] transition-colors ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 text-gray-400 group-hover:text-[#FF6B35] transition-colors ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                   <div className="absolute inset-0 opacity-10"
                     style={{ backgroundImage: 'repeating-linear-gradient(0deg,#f97316 0,#f97316 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,#f97316 0,#f97316 1px,transparent 1px,transparent 40px)' }}
                   />
-                  <div className="relative z-10 bg-[#FF6A00] text-white h-10 w-10 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="relative z-10 bg-[#FF6B35] text-white h-10 w-10 rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <Link href={nextBooking ? `/bookings/${nextBooking.id}` : "/bookings"} className="mt-3 block text-center text-sm font-medium text-[#FF6A00] hover:underline">
+                <Link href={nextBooking ? `/bookings/${nextBooking.id}` : "/bookings"} className="mt-3 block text-center text-sm font-medium text-[#FF6B35] hover:underline">
                   {nextBooking ? 'Ver detalles →' : 'Ver todas →'}
                 </Link>
               </div>
@@ -330,7 +330,7 @@ export default function DashboardPage() {
           <div id="dashboard-recommended" className="mt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">Recomendados para Ti</h2>
-              <Link href="/artists" className="text-sm text-[#FF6A00] font-medium hover:underline">Ver todos →</Link>
+              <Link href="/artists" className="text-sm text-[#FF6B35] font-medium hover:underline">Ver todos →</Link>
             </div>
             {loadingData ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -341,7 +341,7 @@ export default function DashboardPage() {
             ) : recommendedArtists.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-gray-100">
                 <p className="text-sm">No hay artistas disponibles aún.</p>
-                <Link href="/artists" className="text-[#FF6A00] text-sm font-medium mt-2 inline-block">Explorar →</Link>
+                <Link href="/artists" className="text-[#FF6B35] text-sm font-medium mt-2 inline-block">Explorar →</Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                       <p className="font-semibold text-gray-900 text-sm truncate">{artist.nombre}</p>
                       <p className="text-xs text-gray-400 truncate">{artist.category ?? artist.categoria ?? '—'}</p>
                       {artist.precioDesde && (
-                        <p className="text-sm font-bold text-[#FF6A00] mt-1">desde ${artist.precioDesde}</p>
+                        <p className="text-sm font-bold text-[#FF6B35] mt-1">desde ${artist.precioDesde}</p>
                       )}
                     </div>
                   </Link>

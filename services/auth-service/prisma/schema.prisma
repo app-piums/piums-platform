@@ -41,6 +41,8 @@ model User {
   documentFrontUrl    String?
   documentBackUrl     String?
   documentSelfieUrl   String?
+  // Push notifications
+  fcmToken            String?             // Firebase Cloud Messaging token del dispositivo móvil
   // Revisión de admin
   rejectionReason     String?             // Razón de rechazo de verificación
   adminNotes          String?             // Notas internas del admin

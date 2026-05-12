@@ -241,17 +241,6 @@ export default function ArtistProfilePage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!artist) return;
-    try {
-      const { sdk } = await import('@piums/sdk');
-      const { conversation } = await sdk.createConversation({ artistId: artist.id });
-      router.push(`/chat?conversationId=${conversation.id}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al abrir el chat';
-      toast.error(msg);
-    }
-  };
 
   if (loading) {
     return <Loading fullScreen />;
@@ -325,22 +314,22 @@ export default function ArtistProfilePage() {
         {/* Cover Photo */}
         {(() => {
           const CAT_GRAD: Record<string, [string, string]> = {
-            MUSICO:     ['#FF6A00', '#F59E0B'],
-            DJ:         ['#FF6A00', '#C026D3'],
-            FOTOGRAFO:  ['#00AEEF', '#1D4ED8'],
+            MUSICO:     ['#FF6B35', '#F59E0B'],
+            DJ:         ['#FF6B35', '#C026D3'],
+            FOTOGRAFO:  ['#F59E0B', '#1D4ED8'],
             VIDEOGRAFO: ['#4F46E5', '#C026D3'],
-            DISENADOR:  ['#00AEEF', '#10B981'],
-            BAILARIN:   ['#FF6A00', '#EF4444'],
-            ANIMADOR:   ['#F59E0B', '#FF6A00'],
+            DISENADOR:  ['#F59E0B', '#10B981'],
+            BAILARIN:   ['#FF6B35', '#EF4444'],
+            ANIMADOR:   ['#F59E0B', '#FF6B35'],
             TATUADOR:   ['#1E1B4B', '#7C3AED'],
             MAQUILLADOR:['#EC4899', '#9D174D'],
             PINTOR:     ['#0891B2', '#059669'],
             ESCULTOR:   ['#475569', '#1E293B'],
-            ESCRITOR:   ['#4F46E5', '#00AEEF'],
+            ESCRITOR:   ['#4F46E5', '#F59E0B'],
             MAGO:       ['#7C3AED', '#4F46E5'],
-            ACROBATA:   ['#FF6A00', '#F59E0B'],
+            ACROBATA:   ['#FF6B35', '#F59E0B'],
           };
-          const [a, b] = CAT_GRAD[artist.category ?? ''] ?? ['#FF6A00', '#00AEEF'];
+          const [a, b] = CAT_GRAD[artist.category ?? ''] ?? ['#FF6B35', '#F59E0B'];
           return (
             <div className="relative h-48 lg:h-64 rounded-none lg:rounded-2xl overflow-hidden mb-8" style={{ background: `linear-gradient(135deg, ${a} 0%, ${b} 100%)` }}>
               {!artist.coverPhoto && (
@@ -376,7 +365,7 @@ export default function ArtistProfilePage() {
             <div className="flex items-center space-x-2 mb-2">
               <h1 className="text-3xl font-bold text-gray-900">{artist.nombre}</h1>
               {artist.isVerified && (
-                <svg className="h-6 w-6 text-[#FF6A00]" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-6 w-6 text-[#FF6B35]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               )}
@@ -433,12 +422,12 @@ export default function ArtistProfilePage() {
                 aria-pressed={artistIsFavorite}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors shadow-sm ${
                   artistIsFavorite
-                    ? 'border-[#FF6A00] text-[#FF6A00] bg-[#FF6A00]/5'
-                    : 'border-gray-200 text-gray-600 hover:border-[#FF6A00]/60 hover:text-[#FF6A00]'
+                    ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/5'
+                    : 'border-gray-200 text-gray-600 hover:border-[#FF6B35]/60 hover:text-[#FF6B35]'
                 }`}
               >
                 <svg
-                  className={`h-5 w-5 ${artistIsFavorite ? 'fill-[#FF6A00]' : ''}`}
+                  className={`h-5 w-5 ${artistIsFavorite ? 'fill-[#FF6B35]' : ''}`}
                   fill={artistIsFavorite ? 'currentColor' : 'none'}
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -454,7 +443,7 @@ export default function ArtistProfilePage() {
               </button>
             </div>
             {artistIsFavorite && (
-              <p className="flex items-center gap-1 mt-2 text-xs text-[#FF6A00]">
+              <p className="flex items-center gap-1 mt-2 text-xs text-[#FF6B35]">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -473,7 +462,7 @@ export default function ArtistProfilePage() {
                 onClick={() => setActiveTab(key)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === key
-                    ? 'border-[#FF6A00] text-[#FF6A00]'
+                    ? 'border-[#FF6B35] text-[#FF6B35]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -498,7 +487,7 @@ export default function ArtistProfilePage() {
                       <div className="space-y-2">
                         {artist.certifications.map((cert) => (
                           <div key={cert.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <svg className="h-6 w-6 text-[#00AEEF] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-6 w-6 text-[#F59E0B] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                             </svg>
                             <div>
@@ -549,7 +538,7 @@ export default function ArtistProfilePage() {
                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Incluye</p>
                                     {service.whatIsIncluded!.map((item, i) => (
                                       <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                                        <svg className="h-3.5 w-3.5 text-[#FF6A00] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                        <svg className="h-3.5 w-3.5 text-[#FF6B35] shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                           <path d="M12 2l1.8 5.4 5.7.4-4.4 3.3 1.6 5.5L12 13.5l-4.7 3.1 1.6-5.5L4.5 7.8l5.7-.4z" />
                                         </svg>
                                         <span>{item}</span>
@@ -561,7 +550,7 @@ export default function ArtistProfilePage() {
                             )}
                           </div>
                           <div className="text-right ml-4 shrink-0">
-                            <p className="text-2xl font-bold text-[#FF6A00]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            <p className="text-2xl font-bold text-[#FF6B35]">${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                             <p className="text-sm text-gray-500">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                         </div>
@@ -631,7 +620,7 @@ export default function ArtistProfilePage() {
                           <p className="text-sm text-gray-600">¿Ya trabajaste con este artista?</p>
                           <button
                             onClick={() => setShowReviewForm(true)}
-                            className="flex items-center gap-2 rounded-xl bg-[#FF6A00] px-4 py-2 text-sm font-semibold text-white hover:bg-[#E65F00] transition-colors"
+                            className="flex items-center gap-2 rounded-xl bg-[#FF6B35] px-4 py-2 text-sm font-semibold text-white hover:bg-[#E85D2F] transition-colors"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -650,7 +639,7 @@ export default function ArtistProfilePage() {
                               <select
                                 value={reviewBookingId}
                                 onChange={e => setReviewBookingId(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20"
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20"
                               >
                                 {completedBookings.map(b => (
                                   <option key={b.id} value={b.id}>{b.code}</option>
@@ -702,7 +691,7 @@ export default function ArtistProfilePage() {
                               onChange={e => setReviewComment(e.target.value)}
                               placeholder="Cuéntanos tu experiencia con este artista…"
                               maxLength={2000}
-                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 resize-none"
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 resize-none"
                             />
                             <div className="mt-1 flex justify-between text-xs text-gray-400">
                               <span>{reviewComment.trim().length > 0 && reviewComment.trim().length < 3 ? <span className="text-red-500">Mínimo 3 caracteres</span> : null}</span>
@@ -724,7 +713,7 @@ export default function ArtistProfilePage() {
                             <button
                               onClick={handleSubmitReview}
                               disabled={reviewSubmitting || reviewRating === 0}
-                              className="flex-1 rounded-xl bg-[#FF6A00] py-2 text-sm font-semibold text-white hover:bg-[#E65F00] disabled:opacity-60 transition-colors"
+                              className="flex-1 rounded-xl bg-[#FF6B35] py-2 text-sm font-semibold text-white hover:bg-[#E85D2F] disabled:opacity-60 transition-colors"
                             >
                               {reviewSubmitting ? 'Enviando…' : 'Publicar reseña'}
                             </button>
@@ -832,11 +821,8 @@ export default function ArtistProfilePage() {
             <Card className="sticky top-8">
               <CardTitle className="mb-4">Información de Contacto</CardTitle>
               <CardContent>
-                <Button fullWidth size="lg" onClick={handleBookNow} className="mb-3">
+                <Button fullWidth size="lg" onClick={handleBookNow}>
                   Reservar Ahora
-                </Button>
-                <Button fullWidth variant="outline" onClick={handleSendMessage}>
-                  Enviar Mensaje
                 </Button>
                 
                 <div className="mt-6 pt-6 border-t border-gray-200">
@@ -873,7 +859,7 @@ export default function ArtistProfilePage() {
                         </a>
                       )}
                       {artist.website && (
-                        <a href={artist.website.startsWith('http') ? artist.website : `https://${artist.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#FF6A00] transition-colors">
+                        <a href={artist.website.startsWith('http') ? artist.website : `https://${artist.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#FF6B35] transition-colors">
                           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
                           Sitio web
                         </a>

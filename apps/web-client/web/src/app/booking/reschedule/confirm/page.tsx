@@ -53,7 +53,7 @@ function ConfirmRescheduleContent() {
       <div className="max-w-md w-full">
         {state === 'loading' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
-            <div className="animate-spin h-12 w-12 border-4 border-[#FF6A00] border-t-transparent rounded-full mx-auto mb-4" />
+            <div className="animate-spin h-12 w-12 border-4 border-[#FF6B35] border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-gray-600 font-medium">Confirmando cambio de fecha...</p>
           </div>
         )}
@@ -81,14 +81,14 @@ function ConfirmRescheduleContent() {
             {bookingId ? (
               <Link
                 href={`/bookings/${bookingId}`}
-                className="inline-block px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl hover:bg-orange-600 transition"
+                className="inline-block px-6 py-3 bg-[#FF6B35] text-white font-semibold rounded-xl hover:bg-orange-600 transition"
               >
                 Ver mi reserva
               </Link>
             ) : (
               <Link
                 href="/bookings"
-                className="inline-block px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl hover:bg-orange-600 transition"
+                className="inline-block px-6 py-3 bg-[#FF6B35] text-white font-semibold rounded-xl hover:bg-orange-600 transition"
               >
                 Ir a mis reservas
               </Link>
@@ -140,7 +140,7 @@ export default function ConfirmReschedulePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
-        <div className="animate-spin h-10 w-10 border-4 border-[#FF6A00] border-t-transparent rounded-full" />
+        <div className="animate-spin h-10 w-10 border-4 border-[#FF6B35] border-t-transparent rounded-full" />
       </div>
     }>
       <ConfirmRescheduleContent />

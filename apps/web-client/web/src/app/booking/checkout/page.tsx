@@ -63,11 +63,11 @@ function StepsHeader({ current }: { current: number }) {
               <React.Fragment key={step.num}>
                 <div className="flex flex-col items-center min-w-[56px]">
                   <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                    done ? 'bg-green-500 border-green-500 text-white' : active ? 'bg-[#FF6A00] border-[#FF6A00] text-white' : 'bg-white border-gray-200 text-gray-400'
+                    done ? 'bg-green-500 border-green-500 text-white' : active ? 'bg-[#FF6B35] border-[#FF6B35] text-white' : 'bg-white border-gray-200 text-gray-400'
                   }`}>
                     {done ? <CheckIcon className="h-3.5 w-3.5" /> : step.num}
                   </div>
-                  <span className={`text-[11px] mt-1 font-medium ${done ? 'text-green-500' : active ? 'text-[#FF6A00]' : 'text-gray-400'}`}>
+                  <span className={`text-[11px] mt-1 font-medium ${done ? 'text-green-500' : active ? 'text-[#FF6B35]' : 'text-gray-400'}`}>
                     {step.label}
                   </span>
                 </div>
@@ -94,14 +94,14 @@ function BookingSummary({ booking }: { booking: Booking }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
         <div className="h-7 w-7 rounded-lg bg-orange-100 flex items-center justify-center">
-          <ClipboardIcon className="h-4 w-4 text-[#FF6A00]" />
+          <ClipboardIcon className="h-4 w-4 text-[#FF6B35]" />
         </div>
         <h2 className="font-semibold text-gray-900">Resumen de la Reserva</h2>
       </div>
       <div className="px-5 py-4 space-y-5">
         <div className="flex items-start gap-3">
           <div className="h-14 w-14 rounded-xl bg-orange-50 shrink-0 flex items-center justify-center">
-            <ClipboardIcon className="h-6 w-6 text-[#FF6A00]" />
+            <ClipboardIcon className="h-6 w-6 text-[#FF6B35]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900 text-sm leading-snug">
@@ -110,21 +110,21 @@ function BookingSummary({ booking }: { booking: Booking }) {
             {(booking as any).artistName && (
               <p className="text-xs text-gray-400 mt-0.5">con {(booking as any).artistName}</p>
             )}
-            <span className="inline-block mt-1 text-[10px] font-semibold bg-orange-100 text-[#FF6A00] px-2 py-0.5 rounded-full">
+            <span className="inline-block mt-1 text-[10px] font-semibold bg-orange-100 text-[#FF6B35] px-2 py-0.5 rounded-full">
               #{(booking as any).code || booking.id.slice(0, 8).toUpperCase()}
             </span>
           </div>
         </div>
         <div className="space-y-2">
           <div className="flex items-start gap-2.5">
-            <CalendarIcon className="h-4 w-4 text-[#FF6A00] shrink-0 mt-0.5" />
+            <CalendarIcon className="h-4 w-4 text-[#FF6B35] shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Fecha</p>
               <p className="text-sm font-medium text-gray-800 capitalize">{date}</p>
             </div>
           </div>
           <div className="flex items-start gap-2.5">
-            <ClockIcon className="h-4 w-4 text-[#FF6A00] shrink-0 mt-0.5" />
+            <ClockIcon className="h-4 w-4 text-[#FF6B35] shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-gray-800">
                 {time} &ndash; {endTime}{' '}
@@ -156,7 +156,7 @@ function BookingSummary({ booking }: { booking: Booking }) {
           </div>
           {booking.anticipoRequired && booking.anticipoAmount != null && (
             <>
-              <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
+              <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-[#FF6B35] text-base">
                 <span>Anticipo a pagar ahora</span>
                 <span>{booking.currency} {centsToDisplay(booking.anticipoAmount)}</span>
               </div>
@@ -167,7 +167,7 @@ function BookingSummary({ booking }: { booking: Booking }) {
             </>
           )}
           {!booking.anticipoRequired && (
-            <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-[#FF6A00] text-base">
+            <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-[#FF6B35] text-base">
               <span>A pagar ahora</span>
               <span>{booking.currency} {centsToDisplay(booking.totalPrice)}</span>
             </div>
@@ -243,7 +243,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
     <div className="space-y-5">
       {booking.anticipoRequired && booking.anticipoAmount != null && (
         <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
-          <InfoIcon className="h-5 w-5 text-[#FF6A00] shrink-0 mt-0.5" />
+          <InfoIcon className="h-5 w-5 text-[#FF6B35] shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-orange-800">Pago en dos partes</p>
             <p className="text-sm text-orange-700 mt-0.5">
@@ -261,7 +261,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
           value={notes}
           onChange={e => setNotes(e.target.value.slice(0, 300))}
           placeholder="¿Tienes algún requerimiento especial o idea para la sesión?"
-          className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/30 focus:border-[#FF6A00] transition placeholder:text-gray-300"
+          className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35] transition placeholder:text-gray-300"
         />
         <p className="text-right text-xs text-gray-300 mt-1">{notes.length}/300</p>
       </div>
@@ -304,7 +304,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
                 <div className="flex justify-between"><span className="text-gray-500">A nombre de</span><span className="font-medium text-gray-900">PIUMS S.A.</span></div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Monto</span>
-                  <span className="font-bold text-[#FF6A00]">{booking.currency} {centsToDisplay(amountDue)}</span>
+                  <span className="font-bold text-[#FF6B35]">{booking.currency} {centsToDisplay(amountDue)}</span>
                 </div>
               </div>
             </div>
@@ -338,7 +338,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
         <button
           onClick={handleConfirm}
           disabled={!canSubmit || submitting}
-          className="w-full py-4 bg-[#FF6A00] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 text-base"
+          className="w-full py-4 bg-[#FF6B35] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 text-base"
         >
           {submitting ? (
             <><div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Procesando...</>
@@ -445,7 +445,7 @@ function CheckoutPageInner() {
         <StepsHeader current={3} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+            <div className="h-8 w-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-gray-500">Preparando tu pago...</p>
           </div>
         </div>
@@ -466,7 +466,7 @@ function CheckoutPageInner() {
             <p className="text-sm text-gray-500 mb-4">{error || 'Ocurrió un problema inesperado.'}</p>
             <button
               onClick={() => router.push('/dashboard')}
-              className="px-6 py-2 bg-[#FF6A00] text-white rounded-lg font-semibold text-sm"
+              className="px-6 py-2 bg-[#FF6B35] text-white rounded-lg font-semibold text-sm"
             >
               Volver al inicio
             </button>
@@ -481,7 +481,7 @@ function CheckoutPageInner() {
     appearance: {
       theme: 'stripe' as const,
       variables: {
-        colorPrimary: '#FF6A00',
+        colorPrimary: '#FF6B35',
         colorBackground: '#ffffff',
         colorText: '#111827',
         colorDanger: '#EF4444',
@@ -541,7 +541,7 @@ export default function CheckoutPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
-          <div className="h-8 w-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+          <div className="h-8 w-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >

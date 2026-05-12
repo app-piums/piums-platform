@@ -380,8 +380,37 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware({
       target: process.env.CHAT_SERVICE_URL || "http://localhost:4010",
       changeOrigin: true,
+      ws: true,
       pathRewrite: { "^": "/api/chat" },
-      on: { proxyReq: fixRequestBody },
+      on: {
+        proxyReq: (proxyReq, req) => {
+          fixRequestBody(proxyReq, req);
+          try {
+            const cookie = (req as any).headers.cookie || '';
+            const authToken = cookie.split(';').reduce((acc: any, c: string) => {
+              const [k, ...v] = c.trim().split('=');
+              if (k === 'auth_token') acc = v.join('=');
+              return acc;
+            }, '');
+            if (authToken) {
+              proxyReq.setHeader('Authorization', `Bearer ${authToken}`);
+            }
+          } catch {
+            // headers already sent — skip injection, request proceeds without auth header
+          }
+        },
+      },
+    })
+  );
+
+  // Socket.io WebSocket — proxy directo al chat-service sin auth middleware
+  // (socket.io pasa su token en el handshake, no en HTTP headers)
+  app.use(
+    "/socket.io",
+    createProxyMiddleware({
+      target: process.env.CHAT_SERVICE_URL || "http://localhost:4010",
+      changeOrigin: true,
+      ws: true,
     })
   );
 

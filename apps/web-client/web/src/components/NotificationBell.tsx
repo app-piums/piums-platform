@@ -55,7 +55,7 @@ export function NotificationBell() {
       >
         <BellIcon className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-[#FF6A00] rounded-full" aria-hidden />
+          <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-[#FF6B35] rounded-full" aria-hidden />
         )}
       </button>
 
@@ -64,11 +64,11 @@ export function NotificationBell() {
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-gray-900">Notificaciones</p>
-              <p className="text-xs text-gray-400">{unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día ✨'}</p>
+              <p className="text-xs text-gray-400">{unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día'}</p>
             </div>
             <button
               onClick={refresh}
-              className="text-xs font-medium text-[#FF6A00] hover:text-[#db5800]"
+              className="text-xs font-medium text-[#FF6B35] hover:text-[#db5800]"
             >
               Actualizar
             </button>
@@ -122,7 +122,7 @@ export function NotificationBell() {
             {error && <p className="text-xs text-amber-600 mb-2">{error}</p>}
             <Link
               href="/profile"
-              className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold text-[#FF6A00] hover:text-[#db5800]"
+              className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold text-[#FF6B35] hover:text-[#db5800]"
             >
               Ver configuración
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -136,7 +136,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
                           minute: '2-digit',
                         })}
                         disabled
-                        className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm text-gray-500"
                       />
                     </div>
 
@@ -148,7 +148,7 @@ export const ModifyDateModal: React.FC<ModifyDateModalProps> = ({
                         type="datetime-local"
                         id="newDate"
                         required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900"
                         value={newDate}
                         onChange={(e) => setNewDate(e.target.value)}
                         disabled={loading}

@@ -13,6 +13,9 @@ import { logger } from './utils/logger';
 const app = express();
 const httpServer = createServer(app);
 
+// Trust the gateway/load-balancer proxy so rate-limiter reads the real client IP
+app.set('trust proxy', 1);
+
 // Middlewares globales
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 app.use(cors({
@@ -21,14 +24,14 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(apiLimiter);
 
-// Health check
+// Health check BEFORE rate limiter — K8s probes no deben contabilizarse en el límite
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'chat-service', timestamp: new Date().toISOString() });
 });
 
-// Rutas API
+// Rate limiter solo sobre rutas /api
+app.use('/api', apiLimiter);
 app.use('/api/chat/conversations', conversationsRoutes);
 app.use('/api/chat/messages', messagesRoutes);
 

@@ -6,16 +6,20 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/Loading';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
+import {
+  BarChart2, CalendarClock, ShieldCheck, ClipboardList,
+  CalendarDays, Music, Wallet, Settings, LucideIcon
+} from 'lucide-react';
 
-const QUICK_STEPS = [
-  { icon: '📊', label: 'Estadísticas clave' },
-  { icon: '⏰', label: 'Próximas presentaciones' },
-  { icon: '💪', label: 'Fortaleza del perfil' },
-  { icon: '📋', label: 'Gestión de reservas' },
-  { icon: '🗓️', label: 'Agenda de disponibilidad' },
-  { icon: '🎭', label: 'Tus servicios' },
-  { icon: '💳', label: 'Billetera e ingresos' },
-  { icon: '⚙️', label: 'Configuración' },
+const QUICK_STEPS: { Icon: LucideIcon; label: string }[] = [
+  { Icon: BarChart2,     label: 'Estadísticas clave' },
+  { Icon: CalendarClock, label: 'Próximas presentaciones' },
+  { Icon: ShieldCheck,   label: 'Fortaleza del perfil' },
+  { Icon: ClipboardList, label: 'Gestión de reservas' },
+  { Icon: CalendarDays,  label: 'Agenda de disponibilidad' },
+  { Icon: Music,         label: 'Tus servicios' },
+  { Icon: Wallet,        label: 'Billetera e ingresos' },
+  { Icon: Settings,      label: 'Configuración' },
 ];
 
 export default function ArtistTutorialPage() {
@@ -44,8 +48,8 @@ export default function ArtistTutorialPage() {
           <div className="max-w-lg w-full text-center">
 
             {/* Icon */}
-            <div className="mx-auto mb-6 w-24 h-24 rounded-full bg-[#FF6A00]/10 flex items-center justify-center">
-              <svg className="w-12 h-12 text-[#FF6A00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mx-auto mb-6 w-24 h-24 rounded-full bg-[#FF6B35]/10 flex items-center justify-center">
+              <svg className="w-12 h-12 text-[#FF6B35]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
@@ -58,10 +62,10 @@ export default function ArtistTutorialPage() {
 
             {/* Steps grid */}
             <div className="grid grid-cols-2 gap-2.5 mb-8 text-left">
-              {QUICK_STEPS.map(({ icon, label }) => (
+              {QUICK_STEPS.map(({ Icon, label }) => (
                 <div key={label} className="flex items-center gap-2.5 bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-                  <div className="h-7 w-7 rounded-lg bg-[#FF6A00]/10 flex items-center justify-center text-sm shrink-0">
-                    {icon}
+                  <div className="h-7 w-7 rounded-lg bg-[#FF6B35]/10 flex items-center justify-center shrink-0">
+                    <Icon size={15} className="text-[#FF6B35]" />
                   </div>
                   <span className="text-sm font-medium text-gray-700">{label}</span>
                 </div>
@@ -71,9 +75,9 @@ export default function ArtistTutorialPage() {
             {/* CTA */}
             <button
               onClick={handleStart}
-              className="w-full py-4 bg-[#FF6A00] text-white font-semibold rounded-2xl text-lg hover:bg-[#e55f00] active:scale-95 transition-all shadow-lg shadow-orange-200"
+              className="w-full py-4 bg-[#FF6B35] text-white font-semibold rounded-2xl text-lg hover:bg-[#e55f00] active:scale-95 transition-all shadow-lg shadow-orange-200"
             >
-              Iniciar tour interactivo ✨
+              Iniciar tour interactivo
             </button>
             <p className="mt-4 text-xs text-gray-400">
               Puedes cerrar el tour en cualquier momento pulsando Saltar

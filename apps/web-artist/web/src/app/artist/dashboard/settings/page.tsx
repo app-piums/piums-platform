@@ -10,6 +10,7 @@ import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/l
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { Globe, Star, Trophy, Lightbulb, CreditCard, CheckCircle } from 'lucide-react';
 
 function LegalAccordion({ section }: { section: { id: string; title: string; icon: React.ReactNode; content: React.ReactNode } }) {
   const [open, setOpen] = React.useState(false);
@@ -21,7 +22,7 @@ function LegalAccordion({ section }: { section: { id: string; title: string; ico
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-[#FF6A00]">{section.icon}</span>
+          <span className="text-[#FF6B35]">{section.icon}</span>
           <span className="font-semibold text-gray-900 text-sm">{section.title}</span>
         </div>
         <svg
@@ -103,7 +104,13 @@ export default function ArtistSettingsPage() {
   });
 
   // Cobertura / pricing state
-  const [coverageData, setCoverageData] = useState({
+  const [coverageData, setCoverageData] = useState<{
+    coverageRadius: number | null;
+    hourlyRateMin: number;
+    hourlyRateMax: number;
+    requiresDeposit: boolean;
+    depositPercentage: number;
+  }>({
     coverageRadius: 10,
     hourlyRateMin: 0,
     hourlyRateMax: 0,
@@ -191,7 +198,7 @@ export default function ArtistSettingsPage() {
         website: artistProfile.website || '',
       });
       setCoverageData({
-        coverageRadius: artistProfile.coverageRadius ?? 10,
+        coverageRadius: artistProfile.coverageRadius ?? null,
         hourlyRateMin: artistProfile.hourlyRateMin ?? 0,
         hourlyRateMax: artistProfile.hourlyRateMax ?? 0,
         requiresDeposit: artistProfile.requiresDeposit ?? false,
@@ -651,12 +658,12 @@ export default function ArtistSettingsPage() {
                   </div>
 
                   {!needsVerification && (
-                    <div className="flex items-start gap-3 bg-orange-50 border border-[#FF6A00]/30 rounded-xl p-4">
-                      <svg className="h-5 w-5 text-[#FF6A00] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-start gap-3 bg-orange-50 border border-[#FF6B35]/30 rounded-xl p-4">
+                      <svg className="h-5 w-5 text-[#FF6B35] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <p className="text-sm font-semibold text-[#FF6A00]">Identidad verificada</p>
+                        <p className="text-sm font-semibold text-[#FF6B35]">Identidad verificada</p>
                         <p className="text-sm text-orange-900 mt-0.5">Tu información está completa. Puedes actualizarla en cualquier momento.</p>
                       </div>
                     </div>
@@ -683,7 +690,7 @@ export default function ArtistSettingsPage() {
                         value={verifyData.ciudad}
                         onChange={(e) => setVerifyData((p) => ({ ...p, ciudad: e.target.value }))}
                         placeholder="Guatemala, Quetzaltenango..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm text-gray-900"
                       />
                     </div>
                     <div>
@@ -693,7 +700,7 @@ export default function ArtistSettingsPage() {
                         value={verifyData.birthDate}
                         onChange={(e) => setVerifyData((p) => ({ ...p, birthDate: e.target.value }))}
                         max={MAX_BIRTH_DATE}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm text-gray-900"
                       />
                       <p className="text-xs text-gray-400 mt-1">Debes ser mayor de 18 años.</p>
                     </div>
@@ -706,7 +713,7 @@ export default function ArtistSettingsPage() {
                       <select
                         value={verifyData.documentType}
                         onChange={(e) => setVerifyData((p) => ({ ...p, documentType: e.target.value as 'DPI' | 'PASSPORT' | 'RESIDENCE_CARD', documentBackUrl: '' }))}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm bg-white"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm text-gray-900 bg-white"
                       >
                         <option value="DPI">DPI (Guatemala)</option>
                         <option value="PASSPORT">Pasaporte</option>
@@ -720,7 +727,7 @@ export default function ArtistSettingsPage() {
                         value={verifyData.documentNumber}
                         onChange={(e) => setVerifyData((p) => ({ ...p, documentNumber: e.target.value }))}
                         placeholder="1234567890101"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/40 focus:border-orange-400 text-sm text-gray-900"
                       />
                     </div>
                   </div>
@@ -804,7 +811,7 @@ export default function ArtistSettingsPage() {
                       type="text"
                       value={formData.nombre}
                       onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                     />
                   </div>
 
@@ -816,7 +823,7 @@ export default function ArtistSettingsPage() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                     />
                   </div>
 
@@ -829,7 +836,7 @@ export default function ArtistSettingsPage() {
                       value={formData.telefono}
                       onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                       placeholder="+502 1234 5678"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                     />
                   </div>
 
@@ -841,7 +848,7 @@ export default function ArtistSettingsPage() {
                       type="text"
                       value={formData.ciudad}
                       onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                     />
                   </div>
 
@@ -853,7 +860,7 @@ export default function ArtistSettingsPage() {
                       type="number"
                       value={formData.yearsExperience}
                       onChange={(e) => setFormData({ ...formData, yearsExperience: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                     />
                   </div>
                 </div>
@@ -866,7 +873,7 @@ export default function ArtistSettingsPage() {
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                     placeholder="Cuéntanos sobre ti y tu experiencia..."
                   />
                 </div>
@@ -912,7 +919,7 @@ export default function ArtistSettingsPage() {
                           if (locationError) setLocationError(null);
                         }}
                         placeholder="Zona 10, Ciudad de Guatemala"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Puedes escribir la colonia, zona o referencia que mejor describa tu punto base.
@@ -927,7 +934,7 @@ export default function ArtistSettingsPage() {
                           step="0.00001"
                           value={formData.baseLocationLat ?? ''}
                           onChange={(e) => handleCoordinateChange('baseLocationLat', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                           placeholder="14.6349"
                         />
                       </div>
@@ -938,7 +945,7 @@ export default function ArtistSettingsPage() {
                           step="0.00001"
                           value={formData.baseLocationLng ?? ''}
                           onChange={(e) => handleCoordinateChange('baseLocationLng', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                           placeholder="-90.5069"
                         />
                       </div>
@@ -1013,7 +1020,9 @@ export default function ArtistSettingsPage() {
                     <div>
                       <h3 className="font-semibold text-gray-900">Zona de cobertura sin costo</h3>
                       <p className="text-sm text-gray-600 mt-1">
-                        Dentro de <span className="font-bold text-orange-600">{coverageData.coverageRadius} km</span> desde tu ciudad base, el traslado es gratuito para el cliente.
+                        {coverageData.coverageRadius === null
+                          ? 'Cobertura nacional — trabajas en cualquier ciudad del país. No se cobra viáticos ni traslado al cliente.'
+                          : <>Dentro de <span className="font-bold text-orange-600">{coverageData.coverageRadius} km</span> desde tu ciudad base, el traslado es gratuito para el cliente.</>}
                       </p>
                     </div>
                   </div>
@@ -1027,8 +1036,8 @@ export default function ArtistSettingsPage() {
                       <div
                         className="absolute rounded-full bg-orange-100 border-2 border-orange-400 transition-all duration-300"
                         style={{
-                          width: `${Math.min(100, (coverageData.coverageRadius / 100) * 100)}%`,
-                          height: `${Math.min(100, (coverageData.coverageRadius / 100) * 100)}%`,
+                          width: coverageData.coverageRadius === null ? '100%' : `${Math.min(100, (coverageData.coverageRadius / 100) * 100)}%`,
+                          height: coverageData.coverageRadius === null ? '100%' : `${Math.min(100, (coverageData.coverageRadius / 100) * 100)}%`,
                           top: '50%',
                           left: '50%',
                           transform: 'translate(-50%, -50%)',
@@ -1041,26 +1050,35 @@ export default function ArtistSettingsPage() {
                         <span className="text-xs text-gray-500">Tu ciudad</span>
                       </div>
                       <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-full pl-2">
-                        <span className="text-xs font-medium text-orange-600">{coverageData.coverageRadius} km</span>
+                        <span className="text-xs font-medium text-orange-600">
+                          {coverageData.coverageRadius === null ? 'Nacional' : `${coverageData.coverageRadius} km`}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Slider */}
-                  <div className="mb-4">
-                    <input
-                      type="range"
-                      min={1}
-                      max={200}
-                      value={coverageData.coverageRadius}
-                      onChange={(e) => setCoverageData({ ...coverageData, coverageRadius: parseInt(e.target.value) })}
-                      className="w-full accent-orange-500"
-                    />
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
-                      <span>1 km</span>
-                      <span>200 km</span>
+                  {/* Slider — hidden when Nacional is selected */}
+                  {coverageData.coverageRadius !== null && (
+                    <div className="mb-4">
+                      <input
+                        type="range"
+                        min={1}
+                        max={200}
+                        value={coverageData.coverageRadius}
+                        onChange={(e) => setCoverageData({ ...coverageData, coverageRadius: parseInt(e.target.value) })}
+                        className="w-full accent-orange-500"
+                      />
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>1 km</span>
+                        <span>200 km</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {coverageData.coverageRadius === null && (
+                    <div className="mb-4 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700">
+                      Sin restricción geográfica — trabajas en cualquier ciudad del país. No se cobran viáticos ni traslado al cliente.
+                    </div>
+                  )}
 
                   {/* Quick presets */}
                   <div className="flex flex-wrap gap-2">
@@ -1078,14 +1096,15 @@ export default function ArtistSettingsPage() {
                       </button>
                     ))}
                     <button
-                      onClick={() => setCoverageData({ ...coverageData, coverageRadius: 999 })}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        !RADIUS_PRESETS.includes(coverageData.coverageRadius) && coverageData.coverageRadius >= 200
+                      onClick={() => setCoverageData({ ...coverageData, coverageRadius: null })}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1 ${
+                        coverageData.coverageRadius === null
                           ? 'bg-orange-500 text-white'
                           : 'bg-white border border-gray-300 text-gray-700 hover:border-orange-400 hover:text-orange-600'
                       }`}
                     >
-                      Sin límite
+                      <Globe size={14} />
+                      Nacional
                     </button>
                   </div>
                 </div>
@@ -1106,7 +1125,7 @@ export default function ArtistSettingsPage() {
                           min={0}
                           value={coverageData.hourlyRateMin}
                           onChange={(e) => setCoverageData({ ...coverageData, hourlyRateMin: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-7 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full pl-7 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                           placeholder="0"
                         />
                       </div>
@@ -1123,7 +1142,7 @@ export default function ArtistSettingsPage() {
                           min={0}
                           value={coverageData.hourlyRateMax}
                           onChange={(e) => setCoverageData({ ...coverageData, hourlyRateMax: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-7 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full pl-7 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                           placeholder="0"
                         />
                       </div>
@@ -1208,19 +1227,19 @@ export default function ArtistSettingsPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg font-bold text-gray-900">{artist.nombre || 'Tu nombre'}</h3>
                           {artist.isVerified && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">✓ Verificado</span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium"><CheckCircle size={11} /> Verificado</span>
                           )}
                           {artist.isPremium && (
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">⭐ Premium</span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium"><Star size={11} /> Premium</span>
                           )}
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">{artist.category || artist.categoria || 'Categoría'} · {artist.ciudad || 'Ciudad'}</p>
                         {artist.bio && <p className="text-sm text-gray-600 mt-2 line-clamp-2">{artist.bio}</p>}
                         <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
                           {artist.rating !== undefined && (
-                            <span>⭐ {artist.rating.toFixed(1)} ({artist.reviewsCount || 0} reseñas)</span>
+                            <span className="flex items-center gap-1"><Star size={12} className="text-yellow-500" /> {artist.rating.toFixed(1)} ({artist.reviewsCount || 0} reseñas)</span>
                           )}
-                          {artist.yearsExperience ? <span>🏆 {artist.yearsExperience} años de exp.</span> : null}
+                          {artist.yearsExperience ? <span className="flex items-center gap-1"><Trophy size={12} className="text-orange-400" /> {artist.yearsExperience} años de exp.</span> : null}
                         </div>
                       </div>
                     </div>
@@ -1300,7 +1319,7 @@ export default function ArtistSettingsPage() {
                           value={socialData[key]}
                           onChange={(e) => setSocialData((prev) => ({ ...prev, [key]: e.target.value }))}
                           placeholder={placeholder}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                       </div>
                     ))}
@@ -1309,7 +1328,7 @@ export default function ArtistSettingsPage() {
                     <button
                       onClick={handleSaveSocial}
                       disabled={isSavingSocial}
-                      className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#e05e00] transition-colors text-sm font-semibold disabled:opacity-60"
+                      className="px-6 py-2.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e05e00] transition-colors text-sm font-semibold disabled:opacity-60"
                     >
                       {isSavingSocial ? 'Guardando...' : 'Guardar redes sociales'}
                     </button>
@@ -1362,14 +1381,14 @@ export default function ArtistSettingsPage() {
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                  <strong>💡 Consejo:</strong> Los artistas con foto de perfil y portada reciben hasta 3x más visitas en su perfil. ¡Complétalo!
+                  <strong className="flex items-center gap-1.5"><Lightbulb size={14} className="text-blue-600" /> Consejo:</strong> Los artistas con foto de perfil y portada reciben hasta 3x más visitas en su perfil. ¡Complétalo!
                 </div>
 
                 <div className="flex justify-end pt-2">
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#e05e00] transition-colors text-sm font-semibold disabled:opacity-60"
+                    className="px-6 py-2.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e05e00] transition-colors text-sm font-semibold disabled:opacity-60"
                   >
                     {isSaving ? 'Guardando...' : 'Guardar cambios'}
                   </button>
@@ -1385,15 +1404,15 @@ export default function ArtistSettingsPage() {
                 </div>
 
                 {/* Upload button */}
-                <label className={`flex items-center justify-center gap-3 w-full py-4 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${portfolioUploading ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-[#FF6A00]/40 hover:border-[#FF6A00] hover:bg-orange-50'}`}>
+                <label className={`flex items-center justify-center gap-3 w-full py-4 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${portfolioUploading ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : 'border-[#FF6B35]/40 hover:border-[#FF6B35] hover:bg-orange-50'}`}>
                   {portfolioUploading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-[#FF6A00]" />
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-[#FF6B35]" />
                   ) : (
-                    <svg className="h-5 w-5 text-[#FF6A00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5 text-[#FF6B35]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                   )}
-                  <span className="text-sm font-semibold text-[#FF6A00]">
+                  <span className="text-sm font-semibold text-[#FF6B35]">
                     {portfolioUploading ? 'Subiendo...' : 'Añadir fotos'}
                   </span>
                   <input
@@ -1416,7 +1435,7 @@ export default function ArtistSettingsPage() {
                 ) : portfolioItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="h-16 w-16 rounded-full bg-orange-50 flex items-center justify-center mb-4">
-                      <ArtistPhotoIcon className="h-8 w-8 text-[#FF6A00]" />
+                      <ArtistPhotoIcon className="h-8 w-8 text-[#FF6B35]" />
                     </div>
                     <p className="text-gray-700 font-medium mb-1">Sin fotos aún</p>
                     <p className="text-sm text-gray-400">Sube fotos de tu trabajo para destacar tu talento</p>
@@ -1519,7 +1538,7 @@ export default function ArtistSettingsPage() {
                 ] as { section: string; icon: React.ReactNode; items: { id: string; label: string; desc: string; defaultOn: boolean }[] }[]).map((group) => (
                   <div key={group.section} className="border border-gray-200 rounded-xl overflow-hidden">
                     <div className="bg-gray-50 px-5 py-3 flex items-center gap-2 border-b border-gray-200">
-                      <span className="text-[#FF6A00]">{group.icon}</span>
+                      <span className="text-[#FF6B35]">{group.icon}</span>
                       <span className="font-semibold text-gray-800 text-sm">{group.section}</span>
                     </div>
                     <div className="divide-y divide-gray-100">
@@ -1549,7 +1568,7 @@ export default function ArtistSettingsPage() {
 
             {currentTab === 'payments' && (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">💳</div>
+                <CreditCard size={56} className="mx-auto mb-4 text-gray-300" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Métodos de Pago
                 </h3>

@@ -40,7 +40,7 @@ export default function CookiesPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">Contacto</h2>
-            <p>Para más información, escríbenos a <a href="mailto:privacidad@piums.com" className="text-[#FF6A00] hover:underline">privacidad@piums.com</a>.</p>
+            <p>Para más información, escríbenos a <a href="mailto:privacidad@piums.com" className="text-[#FF6B35] hover:underline">privacidad@piums.com</a>.</p>
           </section>
         </div>
       </div>

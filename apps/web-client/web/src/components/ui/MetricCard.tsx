@@ -59,15 +59,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     },
     primary: {
       bg: 'bg-white',
-      iconBg: 'bg-[#FF6A00]/10',
-      iconColor: 'text-[#FF6A00]',
-      border: 'border-[#FF6A00]/20',
+      iconBg: 'bg-[#FF6B35]/10',
+      iconColor: 'text-[#FF6B35]',
+      border: 'border-[#FF6B35]/20',
     },
     accent: {
       bg: 'bg-white',
-      iconBg: 'bg-[#00AEEF]/10',
-      iconColor: 'text-[#00AEEF]',
-      border: 'border-[#00AEEF]/20',
+      iconBg: 'bg-[#F59E0B]/10',
+      iconColor: 'text-[#F59E0B]',
+      border: 'border-[#F59E0B]/20',
     },
   };
 

@@ -87,7 +87,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           {isMonthLoading && (
             <div className="absolute inset-0 bg-white/70 rounded-xl flex items-center justify-center z-10">
               <div className="flex flex-col items-center gap-2">
-                <svg className="animate-spin h-6 w-6 text-[#FF6A00]" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-6 w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
@@ -137,7 +137,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                   type="time"
                   value={selectedTime || ''}
                   onChange={(e) => e.target.value && onTimeSelect(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 pl-10 pr-4 py-3 text-base font-semibold text-gray-900 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 focus:bg-white outline-none transition hover:border-gray-300"
+                  className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 pl-10 pr-4 py-3 text-base font-semibold text-gray-900 focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/20 focus:bg-white outline-none transition hover:border-gray-300"
                 />
               </div>
               <p className="mt-1.5 text-xs text-gray-400">Escribe o usa el selector del navegador para elegir la hora</p>
@@ -167,8 +167,8 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     onClick={() => onTimeSelect(t)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       selectedTime === t
-                        ? 'border-[#FF6A00] bg-[#FF6A00]/10 text-[#FF6A00]'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-[#FF6A00]/50 hover:text-[#FF6A00]'
+                        ? 'border-[#FF6B35] bg-[#FF6B35]/10 text-[#FF6B35]'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-[#FF6B35]/50 hover:text-[#FF6B35]'
                     }`}
                   >
                     {t}

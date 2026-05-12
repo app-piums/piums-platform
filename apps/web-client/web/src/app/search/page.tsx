@@ -145,24 +145,24 @@ function SearchContent() {
                   placeholder="¿Qué estás buscando?"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition"
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition"
                 />
               </div>
-              <button type="submit" className="px-6 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-xl hover:bg-[#e05e00] transition-colors">
+              <button type="submit" className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e05e00] transition-colors">
                 Buscar
               </button>
             </div>
             <div className="flex gap-3">
               <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] text-gray-700">
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] text-gray-700">
                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
               <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] text-gray-700">
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] text-gray-700">
                 {CITIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
               <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] text-gray-700">
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] text-gray-700">
                 {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
@@ -201,7 +201,7 @@ function SearchContent() {
           {/* Loading */}
           {loading && (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#FF6A00]" />
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#FF6B35]" />
             </div>
           )}
 
@@ -238,7 +238,7 @@ function SearchContent() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-gray-400">También buscamos:</span>
                   {expandedTerms.map(term => (
-                    <span key={term} className="px-2 py-0.5 bg-orange-50 text-[#FF6A00] text-xs rounded-full border border-orange-100">{term}</span>
+                    <span key={term} className="px-2 py-0.5 bg-orange-50 text-[#FF6B35] text-xs rounded-full border border-orange-100">{term}</span>
                   ))}
                 </div>
               )}
@@ -267,10 +267,10 @@ function SearchContent() {
                             <p className="text-xs text-gray-400 mt-2">{Math.floor((service.duration ?? 0) / 60)} horas</p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <p className="text-lg font-bold text-[#FF6A00]">{formatPrice(service.basePrice / 100)}</p>
+                            <p className="text-lg font-bold text-[#FF6B35]">{formatPrice(service.basePrice / 100)}</p>
                             <button
                               onClick={() => router.push(`/artists/${service.artistId}`)}
-                              className="mt-2 text-xs font-medium text-[#FF6A00] border border-[#FF6A00]/30 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
+                              className="mt-2 text-xs font-medium text-[#FF6B35] border border-[#FF6B35]/30 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
                             >
                               Ver detalles
                             </button>
