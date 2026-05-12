@@ -89,6 +89,10 @@ export class NotificationController {
   async searchNotifications(req: Request, res: Response, next: NextFunction) {
     try {
       const params = searchNotificationsSchema.parse(req.query);
+      // Scope to authenticated user unless an explicit userId was provided (admin use)
+      if (!params.userId) {
+        params.userId = req.user!.id;
+      }
       const result = await notificationService.searchNotifications(params);
 
       res.status(200).json(result);
