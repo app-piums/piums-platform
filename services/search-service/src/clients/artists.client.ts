@@ -8,6 +8,7 @@ export interface ArtistData {
   name: string;
   email: string;
   bio?: string;
+  category?: string;
   specialties: string[];
   city?: string;
   state?: string;

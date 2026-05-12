@@ -991,3 +991,25 @@ export const completeOnboarding = async (req: Request, res: Response, next: Next
     next(error);
   }
 };
+// ─────────────────────────────────────────────────────────────────────────
+// PATCH /auth/fcm-token  — registra o actualiza el FCM token del dispositivo
+// ─────────────────────────────────────────────────────────────────────────
+export const registerFCMToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = (req as any).user;
+    const { fcmToken } = req.body;
+
+    if (!fcmToken || typeof fcmToken !== 'string') {
+      return res.status(400).json({ error: 'fcmToken es requerido' });
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { fcmToken },
+    });
+
+    res.json({ ok: true });
+  } catch (error: any) {
+    next(error);
+  }
+};

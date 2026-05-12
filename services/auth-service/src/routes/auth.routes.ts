@@ -16,6 +16,7 @@ import {
   updateProfile,
   firebaseLogin,
   completeOnboarding,
+  registerFCMToken,
 } from "../controller/auth.controller";
 import { isAdmin } from "../middleware/isAdmin";
 import { authenticate } from "../middleware/authenticate";
@@ -53,6 +54,7 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
 router.get("/me", authenticate, getMe);
 router.patch("/profile", authenticate, updateProfile);
 router.patch("/complete-onboarding", authenticate, completeOnboarding);
+router.patch("/fcm-token", authenticate, registerFCMToken);
 
 export default router;
 

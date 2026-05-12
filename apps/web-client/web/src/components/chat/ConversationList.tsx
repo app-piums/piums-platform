@@ -19,7 +19,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6A00]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6B35]"></div>
       </div>
     );
   }
@@ -50,11 +50,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             onClick={() => onSelectConversation(conversation.id)}
             className={`
               w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors
-              ${isActive ? 'bg-orange-50 border-l-[3px] border-l-[#FF6A00]' : 'border-l-[3px] border-l-transparent'}
+              ${isActive ? 'bg-orange-50 border-l-[3px] border-l-[#FF6B35]' : 'border-l-[3px] border-l-transparent'}
             `}
           >
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
                 A
               </div>
               <div className="flex-1 min-w-0">
@@ -63,7 +63,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     {(conversation as { artistName?: string }).artistName ?? 'Artista'}
                   </h3>
                   {hasUnread && (
-                    <span className="bg-[#FF6A00] text-white text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-1">
+                    <span className="bg-[#FF6B35] text-white text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-1">
                       {conversation.unreadCount}
                     </span>
                   )}

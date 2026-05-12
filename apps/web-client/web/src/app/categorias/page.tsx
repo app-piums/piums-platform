@@ -36,17 +36,17 @@ export default function CategoriasPage() {
             <Link
               key={value}
               href={`/artists?category=${value}`}
-              className="bg-white rounded-2xl border border-gray-200 p-6 text-center hover:shadow-md hover:border-[#FF6A00]/30 transition group"
+              className="bg-white rounded-2xl border border-gray-200 p-6 text-center hover:shadow-md hover:border-[#FF6B35]/30 transition group"
             >
-              <div className="flex justify-center mb-3 text-[#FF6A00]">{icon}</div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-1 group-hover:text-[#FF6A00] transition">{name}</h3>
+              <div className="flex justify-center mb-3 text-[#FF6B35]">{icon}</div>
+              <h3 className="font-semibold text-gray-900 text-sm mb-1 group-hover:text-[#FF6B35] transition">{name}</h3>
               <p className="text-xs text-gray-400 leading-snug">{desc}</p>
             </Link>
           ))}
         </div>
 
         <div className="mt-12 text-center">
-          <Link href="/artists" className="inline-block bg-[#FF6A00] text-white font-semibold px-8 py-3 rounded-xl hover:bg-orange-600 transition">
+          <Link href="/artists" className="inline-block bg-[#FF6B35] text-white font-semibold px-8 py-3 rounded-xl hover:bg-orange-600 transition">
             Ver todos los artistas
           </Link>
         </div>

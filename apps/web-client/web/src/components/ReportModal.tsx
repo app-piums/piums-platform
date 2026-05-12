@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Ban, AlertTriangle, EyeOff, XCircle, FileText } from 'lucide-react';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -10,11 +11,11 @@ interface ReportModalProps {
 }
 
 const REPORT_REASONS = [
-  { id: 'SPAM',         label: 'Spam o contenido comercial',  icon: '🚫' },
-  { id: 'OFFENSIVE',    label: 'Contenido ofensivo o acoso',   icon: '⚠️' },
-  { id: 'INAPPROPRIATE',label: 'Contenido inapropiado',        icon: '🔞' },
-  { id: 'FAKE',         label: 'Falso o engañoso',             icon: '❌' },
-  { id: 'OTHER',        label: 'Otro motivo',                  icon: '📝' },
+  { id: 'SPAM',          label: 'Spam o contenido comercial', Icon: Ban },
+  { id: 'OFFENSIVE',     label: 'Contenido ofensivo o acoso',  Icon: AlertTriangle },
+  { id: 'INAPPROPRIATE', label: 'Contenido inapropiado',       Icon: EyeOff },
+  { id: 'FAKE',          label: 'Falso o engañoso',            Icon: XCircle },
+  { id: 'OTHER',         label: 'Otro motivo',                 Icon: FileText },
 ];
 
 export const ReportModal: React.FC<ReportModalProps> = ({
@@ -89,13 +90,13 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                   key={r.id}
                   type="button"
                   onClick={() => setReason(r.id)}
-                  className={`text-left px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                  className={`flex items-center gap-2 text-left px-3 py-2.5 rounded-xl border text-sm transition-all ${
                     reason === r.id
                       ? 'border-amber-400 bg-amber-50 text-amber-700 font-medium'
                       : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="mr-1.5">{r.icon}</span>
+                  <r.Icon size={15} className="shrink-0" />
                   {r.label}
                 </button>
               ))}
@@ -115,7 +116,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Proporciona más detalles sobre el contenido inapropiado…"
               disabled={loading}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/15 transition resize-none"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 transition resize-none"
             />
           </div>
 

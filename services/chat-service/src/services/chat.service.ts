@@ -66,12 +66,19 @@ export class ChatService {
 
           const clientInfo = clientId ? await resolveUserInfo(clientId) : null;
 
+          const resolvedName = clientInfo?.nombre ?? null;
+          const resolvedAvatar = clientInfo?.avatar ?? null;
+
           return {
             ...conversation,
             unreadCount,
-            clientName: clientInfo?.nombre ?? null,
-            clientAvatar: clientInfo?.avatar ?? null,
+            // clientName: used by artist app (other participant is the client)
+            clientName: resolvedName,
+            clientAvatar: resolvedAvatar,
             clientEmail: clientInfo?.email ?? null,
+            // artistName: used by client app (other participant is the artist)
+            artistName: resolvedName,
+            artistAvatar: resolvedAvatar,
           };
         })
       );
@@ -344,13 +351,16 @@ export class ChatService {
       }
 
       // Actualizar todos los mensajes no leídos de esta conversación
+      const now = new Date();
       await prisma.message.updateMany({
         where: {
           conversationId,
           senderId: { not: userId },
+          readAt: null,
         },
         data: {
-          readAt: new Date(),
+          readAt: now,
+          status: 'READ',
         },
       });
 

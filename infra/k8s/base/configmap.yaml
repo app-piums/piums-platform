@@ -20,6 +20,9 @@ data:
   SEARCH_SERVICE_URL: "http://search-service:4009"
   CHAT_SERVICE_URL: "http://chat-service:4010"
 
+  # CORS — allowed browser origins that may call the gateway directly
+  ALLOWED_ORIGINS: "https://artist.piums.io,https://client.piums.io,https://admin.piums.io,https://piums.io,https://www.piums.io,https://backend.piums.io,http://localhost:3000,http://localhost:3001,http://localhost:3002"
+
   # Infrastructure
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"

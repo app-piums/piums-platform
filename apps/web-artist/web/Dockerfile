@@ -11,7 +11,9 @@ COPY . .
 RUN pnpm install --force
 
 # Construir la aplicación
+ARG GATEWAY_INTERNAL_URL=http://gateway:3000
 ENV NODE_ENV=production
+ENV GATEWAY_INTERNAL_URL=${GATEWAY_INTERNAL_URL}
 RUN pnpm --filter web-artist build
 
 # Preparar el directorio de ejecución

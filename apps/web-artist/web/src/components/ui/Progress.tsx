@@ -32,8 +32,8 @@ export const Progress: React.FC<ProgressProps> = ({
     success: 'bg-green-600',
     warning: 'bg-yellow-600',
     danger: 'bg-red-600',
-    primary: 'bg-[#FF6A00]',
-    accent: 'bg-[#00AEEF]',
+    primary: 'bg-[#FF6B35]',
+    accent: 'bg-[#F59E0B]',
   };
 
   return (

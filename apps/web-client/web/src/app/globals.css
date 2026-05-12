@@ -6,19 +6,19 @@
   --background: #ffffff;
   --foreground: #171717;
   
-  /* Piúms Brand Colors */
-  --color-primary: #FF6A00;        /* Naranja - Color principal dominante */
-  --color-primary-dark: #E65F00;   /* Naranja oscuro para hover */
-  --color-primary-light: #FF8533;  /* Naranja claro para backgrounds */
-  --color-accent: #00AEEF;         /* Azul - Acento puntual (punto de la 'i') */
-  --color-accent-dark: #009DD6;    /* Azul oscuro para hover */
-  --color-accent-light: #33BDFF;   /* Azul claro para backgrounds */
+  /* Piúms Brand Colors — alineados con iOS (piumsPrimary / piumsAccent) */
+  --color-primary: #FF6B35;        /* Naranja — iOS piumsPrimary / piumsOrange */
+  --color-primary-dark: #E85D2F;   /* Naranja oscuro — iOS piumsSecondary */
+  --color-primary-light: #FF8C61;  /* Naranja claro para backgrounds */
+  --color-accent: #F59E0B;         /* Ámbar — iOS piumsAccent */
+  --color-accent-dark: #D97706;    /* Ámbar oscuro para hover */
+  --color-accent-light: #FCD34D;   /* Ámbar claro para backgrounds */
   
   /* Semantic Colors */
-  --color-success: #10B981;        /* Verde para estados exitosos */
-  --color-warning: #F59E0B;        /* Amarillo para advertencias */
-  --color-danger: #EF4444;         /* Rojo para errores */
-  --color-info: var(--color-accent); /* Azul para información */
+  --color-success: #10B981;        /* Verde — iOS piumsSuccess */
+  --color-warning: #F59E0B;        /* Ámbar — iOS piumsWarning */
+  --color-danger: #EF4444;         /* Rojo — iOS piumsError */
+  --color-info: #3B82F6;           /* Azul — iOS piumsInfo */
   
   /* Neutral Colors */
   --color-gray-50: #F9FAFB;
@@ -125,7 +125,7 @@ html.dark,
 .dark a[class*="rounded-xl"][class*="border"]:hover,
 .dark div[class*="rounded-xl"][class*="border"]:hover,
 .dark div[class*="rounded-2xl"][class*="border"]:hover {
-  box-shadow: 0 0 0 1px #334155, 0 0 0 3px rgba(255,106,0,0.18), 0 8px 24px rgba(0,0,0,0.45) !important;
+  box-shadow: 0 0 0 1px #334155, 0 0 0 3px rgba(255,107,53,0.18), 0 8px 24px rgba(0,0,0,0.45) !important;
 }
 
 body {
@@ -139,9 +139,9 @@ body {
 
 /* ─── Microinteracciones Piums ────────────────────────────────────── */
 
-/* 1. Spinners → azul acento (naranja = CTA, azul = estado de carga) */
-[class~="animate-spin"][class*="border-[#FF6A00]"] {
-  border-color: #00AEEF;
+/* 1. Spinners → azul info (naranja = CTA, azul = estado de carga) */
+[class~="animate-spin"][class*="border-[#FF6B35]"] {
+  border-color: #3B82F6;
   border-top-color: transparent;
 }
 
@@ -152,7 +152,7 @@ a[class*="rounded-xl"][class*="border"] {
 }
 a[class*="rounded-2xl"][class*="border"]:hover,
 a[class*="rounded-xl"][class*="border"]:hover {
-  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.13), 0 6px 20px rgba(255, 106, 0, 0.07);
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.13), 0 6px 20px rgba(255, 107, 53, 0.07);
 }
 
 /* Card hover: div containers */
@@ -162,7 +162,7 @@ div[class*="rounded-2xl"][class*="border"][class*="bg-white"] {
 }
 div[class*="rounded-xl"][class*="border"][class*="bg-white"]:hover,
 div[class*="rounded-2xl"][class*="border"][class*="bg-white"]:hover {
-  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.13), 0 6px 20px rgba(255, 106, 0, 0.07);
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.13), 0 6px 20px rgba(255, 107, 53, 0.07);
 }
 
 /* 3. Ripple naranja en botones primarios (CSS puro, sin JS) */
@@ -171,11 +171,11 @@ div[class*="rounded-2xl"][class*="border"][class*="bg-white"]:hover {
   to   { transform: translate(-50%, -50%) scale(4); opacity: 0; }
 }
 
-button[class*="bg-[#FF6A00]"]:not([class*="fixed"]) {
+button[class*="bg-[#FF6B35]"]:not([class*="fixed"]) {
   position: relative;
   overflow: hidden;
 }
-button[class*="bg-[#FF6A00]"]:not([class*="fixed"])::after {
+button[class*="bg-[#FF6B35]"]:not([class*="fixed"])::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -188,7 +188,7 @@ button[class*="bg-[#FF6A00]"]:not([class*="fixed"])::after {
   transform: translate(-50%, -50%) scale(0);
   opacity: 0;
 }
-button[class*="bg-[#FF6A00]"]:not([class*="fixed"]):active::after {
+button[class*="bg-[#FF6B35]"]:not([class*="fixed"]):active::after {
   animation: piums-ripple 0.45s ease-out forwards;
 }
 

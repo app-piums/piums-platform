@@ -9,7 +9,7 @@ export default function NosotrosPage() {
       {/* Hero */}
       <section className="bg-gray-900 text-white py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl font-bold mb-4">Sobre <span className="text-[#FF6A00]">Piums</span></h1>
+          <h1 className="text-5xl font-bold mb-4">Sobre <span className="text-[#FF6B35]">Piums</span></h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Conectamos el talento artístico con quienes buscan crear experiencias únicas e inolvidables.
           </p>
@@ -26,9 +26,9 @@ export default function NosotrosPage() {
             </p>
           </div>
           <div className="bg-orange-50 rounded-2xl p-8 text-center">
-            <p className="text-6xl font-bold text-[#FF6A00]">+500</p>
+            <p className="text-6xl font-bold text-[#FF6B35]">+500</p>
             <p className="text-gray-600 mt-2">Artistas verificados</p>
-            <p className="text-6xl font-bold text-[#FF6A00] mt-6">+2,000</p>
+            <p className="text-6xl font-bold text-[#FF6B35] mt-6">+2,000</p>
             <p className="text-gray-600 mt-2">Eventos realizados</p>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function NosotrosPage() {
             ].map(({ title, desc }) => (
               <div key={title} className="text-center p-6 rounded-xl border border-gray-100">
                 <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="h-5 w-5 bg-[#FF6A00] rounded-full" />
+                  <div className="h-5 w-5 bg-[#FF6B35] rounded-full" />
                 </div>
                 <h3 className="font-bold text-gray-900 text-lg mb-2">{title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{desc}</p>
@@ -57,11 +57,11 @@ export default function NosotrosPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#FF6A00] py-16 text-white text-center">
+      <section className="bg-[#FF6B35] py-16 text-white text-center">
         <div className="max-w-2xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-4">¿Listo para crear algo memorable?</h2>
           <p className="text-orange-100 mb-8">Explora nuestro catálogo de artistas y encuentra el talento perfecto para tu próximo evento.</p>
-          <a href="/artists" className="inline-block bg-white text-[#FF6A00] font-semibold px-8 py-3 rounded-xl hover:bg-orange-50 transition">
+          <a href="/artists" className="inline-block bg-white text-[#FF6B35] font-semibold px-8 py-3 rounded-xl hover:bg-orange-50 transition">
             Explorar Artistas
           </a>
         </div>

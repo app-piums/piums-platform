@@ -44,8 +44,8 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
     <button
       type="button"
       onClick={onChange}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:ring-offset-2 ${
-        checked ? 'bg-[#FF6A00]' : 'bg-gray-200'
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:ring-offset-2 ${
+        checked ? 'bg-[#FF6B35]' : 'bg-gray-200'
       }`}
     >
       <span
@@ -147,9 +147,9 @@ export default function NotificationsTab(props: NotificationsTabProps = {}) {
       </div>
 
       {/* Info Box */}
-      <div className="mt-6 bg-orange-50 border-l-4 border-[#FF6A00] p-4 rounded-r-lg">
+      <div className="mt-6 bg-orange-50 border-l-4 border-[#FF6B35] p-4 rounded-r-lg">
         <div className="flex gap-3">
-          <svg className="h-5 w-5 text-[#FF6A00] flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <svg className="h-5 w-5 text-[#FF6B35] flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
           <p className="text-sm text-orange-800">
@@ -163,7 +163,7 @@ export default function NotificationsTab(props: NotificationsTabProps = {}) {
         <button
           onClick={handleSave}
           disabled={loading || !hasUnsavedChanges}
-          className="px-6 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-lg hover:bg-[#e55f00] transition-colors disabled:opacity-50"
+          className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-semibold rounded-lg hover:bg-[#e55f00] transition-colors disabled:opacity-50"
         >
           {loading ? 'Guardando...' : 'Guardar Preferencias'}
         </button>

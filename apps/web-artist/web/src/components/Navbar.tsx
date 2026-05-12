@@ -40,7 +40,7 @@ export const Navbar: React.FC = () => {
                 href="/dashboard"
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname === '/dashboard'
-                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                    ? 'text-[#FF6B35] bg-[#FF6B35]/10'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -50,7 +50,7 @@ export const Navbar: React.FC = () => {
                 href="/artists"
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname?.startsWith('/artists')
-                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                    ? 'text-[#FF6B35] bg-[#FF6B35]/10'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
                 href="/bookings"
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname?.startsWith('/bookings')
-                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                    ? 'text-[#FF6B35] bg-[#FF6B35]/10'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >

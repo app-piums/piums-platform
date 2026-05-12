@@ -83,14 +83,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           placeholder="Escribe un mensaje..."
           disabled={disabled}
           rows={1}
-          className="flex-1 px-4 py-2 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 px-4 py-2 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors text-gray-900"
           style={{ maxHeight: '120px' }}
         />
         
         <button
           onClick={handleSend}
           disabled={!message.trim() || disabled}
-          className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6A00] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shrink-0"
+          className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6B35] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shrink-0"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

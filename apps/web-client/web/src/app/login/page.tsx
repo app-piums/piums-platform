@@ -138,7 +138,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
         {/* Acento naranja difuso */}
         <div className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at 20% 60%, rgba(255,106,0,0.25) 0%, transparent 65%)' }} />
+          style={{ background: 'radial-gradient(ellipse at 20% 60%, rgba(255,107,53,0.25) 0%, transparent 65%)' }} />
         <div className="absolute inset-0"
           style={{ background: 'radial-gradient(ellipse at 80% 20%, rgba(255,154,60,0.12) 0%, transparent 55%)' }} />
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
           <div>
             <h2 className="text-4xl font-bold text-white leading-tight mb-4">
               Haz realidad<br />
-              <span className="text-[#FF6A00]">tu próximo proyecto</span><br />
+              <span className="text-[#FF6B35]">tu próximo proyecto</span><br />
               con artistas locales.
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
@@ -186,8 +186,8 @@ export default function LoginPage() {
 
           {/* Trust badge */}
           <div className="flex items-center gap-3 rounded-xl border border-gray-700/50 bg-gray-800/40 px-4 py-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF6A00]/20">
-              <svg className="h-4 w-4 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF6B35]/20">
+              <svg className="h-4 w-4 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={(e) => handleBlur("email", e.target.value)}
                 placeholder="tu@email.com"
-                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none transition focus:ring-2 focus:ring-[#FF6A00]/25 focus:border-[#FF6A00] ${
+                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none transition focus:ring-2 focus:ring-[#FF6B35]/25 focus:border-[#FF6B35] ${
                   touched.email && errors.email
                     ? "border-red-300 bg-red-50 focus:ring-red-200 focus:border-red-400"
                     : "border-gray-200 bg-gray-50 hover:border-gray-300"
@@ -255,7 +255,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Contraseña
                 </label>
-                <Link href="/forgot-password" className="text-xs text-[#FF6A00] hover:text-[#e05e00] font-medium transition-colors">
+                <Link href="/forgot-password" className="text-xs text-[#FF6B35] hover:text-[#e05e00] font-medium transition-colors">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
@@ -268,7 +268,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={(e) => handleBlur("password", e.target.value)}
                   placeholder="••••••••"
-                  className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-gray-900 placeholder-gray-300 outline-none transition focus:ring-2 focus:ring-[#FF6A00]/25 focus:border-[#FF6A00] ${
+                  className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-gray-900 placeholder-gray-300 outline-none transition focus:ring-2 focus:ring-[#FF6B35]/25 focus:border-[#FF6B35] ${
                     touched.password && errors.password
                       ? "border-red-300 bg-red-50 focus:ring-red-200 focus:border-red-400"
                       : "border-gray-200 bg-gray-50 hover:border-gray-300"
@@ -294,7 +294,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#FF6A00] py-2.5 text-sm font-semibold text-white hover:bg-[#e05e00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/50 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] transition-all mt-2"
+              className="w-full rounded-xl bg-[#FF6B35] py-2.5 text-sm font-semibold text-white hover:bg-[#e05e00] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] transition-all mt-2"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -365,7 +365,7 @@ export default function LoginPage() {
             {/* Register */}
             <p className="pt-1 text-center text-sm text-gray-500">
               ¿No tienes cuenta?{" "}
-              <Link href="/register" className="font-semibold text-[#FF6A00] hover:text-[#e05e00] transition-colors">
+              <Link href="/register" className="font-semibold text-[#FF6B35] hover:text-[#e05e00] transition-colors">
                 Regístrate gratis
               </Link>
             </p>

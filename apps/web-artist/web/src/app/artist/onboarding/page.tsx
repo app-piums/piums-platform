@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from '@/lib/toast';
 import { ThemeToggle } from '@/contexts/ThemeContext';
+import { Globe, Music, Camera, Video, Sparkles, Check } from 'lucide-react';
 
 // Disciplinas creativas disponibles
 const creativeDisciplines = [
-  { id: 'musician',    name: 'Músico',    subtitle: 'Cantante, Compositor, Banda',     icon: '🎵' },
-  { id: 'photographer', name: 'Fotógrafo', subtitle: 'Eventos, Retratos, Bodas',       icon: '📷' },
-  { id: 'filmmaker',   name: 'Videógrafo', subtitle: 'Clips, Eventos, Comerciales',    icon: '🎬' },
-  { id: 'animador',    name: 'Animador',   subtitle: 'Payaso, Maestro de Ceremonia',   icon: '🎪' },
+  { id: 'musician',     name: 'Músico',     subtitle: 'Cantante, Compositor, Banda',    Icon: Music },
+  { id: 'photographer', name: 'Fotógrafo',  subtitle: 'Eventos, Retratos, Bodas',       Icon: Camera },
+  { id: 'filmmaker',    name: 'Videógrafo',  subtitle: 'Clips, Eventos, Comerciales',    Icon: Video },
+  { id: 'animador',     name: 'Animador',    subtitle: 'Payaso, Maestro de Ceremonia',   Icon: Sparkles },
 ];
 
 // Especialidades específicas por disciplina
@@ -183,7 +184,7 @@ export default function ArtistOnboardingPage() {
   const [hourlyRateMin, setHourlyRateMin] = useState<number>(0);
   const [hourlyRateMax, setHourlyRateMax] = useState<number>(0);
   const [currency] = useState<'USD'>('USD');
-  const [coverageRadius, setCoverageRadius] = useState<number>(30);
+  const [coverageRadius, setCoverageRadius] = useState<number | null>(30);
   const [requiresDeposit, setRequiresDeposit] = useState(true);
   const depositPercentage = 50;
 
@@ -659,7 +660,7 @@ export default function ArtistOnboardingPage() {
                       </svg>
                     </div>
                   )}
-                  <div className="text-3xl mb-3">{discipline.icon}</div>
+                  <div className="mb-3 flex justify-center"><discipline.Icon size={28} /></div>
                   <h3 className="font-semibold text-gray-900 mb-1">{discipline.name}</h3>
                   {discipline.subtitle && <p className="text-xs text-gray-500">{discipline.subtitle}</p>}
                 </button>
@@ -787,7 +788,7 @@ export default function ArtistOnboardingPage() {
                           }`}
                         >
                           {selected && (
-                            <span className="mr-1.5">✓</span>
+                            <Check size={14} className="mr-1" />
                           )}
                           {item}
                         </button>
@@ -1159,7 +1160,7 @@ export default function ArtistOnboardingPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-3">Moneda</label>
                 <div className="inline-flex items-center gap-2 rounded-xl border-2 border-orange-500 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700">
-                  🇺🇸 USD
+                  USD
                   <span className="text-[10px] font-medium text-orange-500/80">(moneda global)</span>
                 </div>
               </div>
@@ -1221,7 +1222,24 @@ export default function ArtistOnboardingPage() {
                       {km} km
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => setCoverageRadius(null)}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all flex items-center gap-1 ${
+                      coverageRadius === null
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                    }`}
+                  >
+                    <Globe size={14} />
+                    Nacional
+                  </button>
                 </div>
+                {coverageRadius === null && (
+                  <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-3">
+                    Sin restricción geográfica — trabajas en cualquier ciudad del país. No se cobran viáticos ni traslado al cliente.
+                  </p>
+                )}
               </div>
 
               {/* Deposit toggle */}
@@ -1396,7 +1414,7 @@ export default function ArtistOnboardingPage() {
             </p>
 
             <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 mb-6">
-              <svg className="h-5 w-5 shrink-0 text-[#FF6A00] mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="h-5 w-5 shrink-0 text-[#FF6B35] mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
               <p className="text-xs text-orange-800 leading-relaxed">
@@ -1486,7 +1504,7 @@ export default function ArtistOnboardingPage() {
                 <button
                   onClick={handleFinish}
                   disabled={isLoading}
-                  className="px-8 py-3 bg-gradient-to-r from-[#FF6A00] to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-8 py-3 bg-gradient-to-r from-[#FF6B35] to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {isLoading ? (
                     <>

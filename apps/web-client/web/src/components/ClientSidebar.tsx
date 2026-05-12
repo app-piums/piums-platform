@@ -134,15 +134,15 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose, on
                 href={href}
                 onClick={(event) => onLinkClick(event, href)}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  active ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
+                  active ? 'bg-[#FF6B35]/10 text-[#FF6B35]' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
+                  <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#FF6B35]' : 'text-gray-400'}`} />
                   {label}
                 </div>
                 {badge && (
-                  <span className="bg-[#FF6A00] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className="bg-[#FF6B35] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {badge}
                   </span>
                 )}
@@ -159,10 +159,10 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose, on
               href="/profile"
               onClick={(event) => onLinkClick(event, '/profile')}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                pathname.startsWith('/profile') ? 'bg-[#FF6A00]/10 text-[#FF6A00]' : 'text-gray-700 hover:bg-gray-50'
+                pathname.startsWith('/profile') ? 'bg-[#FF6B35]/10 text-[#FF6B35]' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <SettingsIcon className={`h-5 w-5 shrink-0 ${pathname.startsWith('/profile') ? 'text-[#FF6A00]' : 'text-gray-400'}`} />
+              <SettingsIcon className={`h-5 w-5 shrink-0 ${pathname.startsWith('/profile') ? 'text-[#FF6B35]' : 'text-gray-400'}`} />
               Configuración
             </Link>
             <button
@@ -187,7 +187,7 @@ function SidebarContent({ userName, pathname, navItems, onLinkClick, onClose, on
           onClick={(event) => onLinkClick(event, '/profile')}
           className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
         >
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
             {userName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">

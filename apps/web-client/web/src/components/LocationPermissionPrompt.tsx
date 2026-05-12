@@ -105,7 +105,7 @@ export function LocationPermissionPrompt({
   if (detecting) {
     return (
       <div className="fixed bottom-6 right-6 z-50 bg-white rounded-xl shadow-lg border border-gray-100 px-4 py-3 flex items-center gap-3 text-sm text-gray-500 max-w-xs">
-        <div className="w-4 h-4 rounded-full border-2 border-[#FF6A00] border-t-transparent animate-spin shrink-0" />
+        <div className="w-4 h-4 rounded-full border-2 border-[#FF6B35] border-t-transparent animate-spin shrink-0" />
         Detectando tu ubicación…
       </div>
     );
@@ -115,8 +115,8 @@ export function LocationPermissionPrompt({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-[#FF6A00]/10 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 rounded-full bg-[#FF6B35]/10 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -155,13 +155,13 @@ export function LocationPermissionPrompt({
             <button
               key={mode}
               onClick={() => choose(mode as GeoMode)}
-              className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 hover:border-[#FF6A00]/40 hover:bg-[#FF6A00]/5 transition-colors group"
+              className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 hover:border-[#FF6B35]/40 hover:bg-[#FF6B35]/5 transition-colors group"
             >
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-800">{label}</span>
                   {recommended && (
-                    <span className="text-xs bg-[#FF6A00]/10 text-[#FF6A00] px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-0.5 rounded-full font-medium">
                       Recomendado
                     </span>
                   )}
@@ -169,7 +169,7 @@ export function LocationPermissionPrompt({
                 <span className="text-xs text-gray-400">{desc}</span>
               </div>
               <svg
-                className="w-4 h-4 text-gray-400 group-hover:text-[#FF6A00] shrink-0 ml-2"
+                className="w-4 h-4 text-gray-400 group-hover:text-[#FF6B35] shrink-0 ml-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

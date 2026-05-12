@@ -92,7 +92,7 @@ export default function DeleteAccountTab(props: DeleteAccountTabProps = {}) {
           </div>
           <div className="ml-3">
             <h3 className="text-lg font-semibold text-red-800 mb-2">
-              ⚠️ Advertencia: Esta acción es irreversible
+              Advertencia: Esta acción es irreversible
             </h3>
             <p className="text-sm text-red-700 mb-3">
               Al eliminar tu cuenta, perderás permanentemente:

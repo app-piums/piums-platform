@@ -54,7 +54,7 @@ export default async function Home() {
             </Link>
             <Link
               href="/register/artist"
-              className="rounded-full bg-[#FF6A00] px-5 py-2 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors"
+              className="rounded-full bg-[#FF6B35] px-5 py-2 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors"
             >
               Empezar gratis
             </Link>
@@ -63,7 +63,7 @@ export default async function Home() {
 
         {/* Hero */}
         <main className="flex flex-1 flex-col items-center px-6 pt-20 pb-12 text-center">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF6A00]/40 bg-[#FF6A00]/10 px-4 py-1.5 text-xs font-medium text-[#FF6A00]">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF6B35]/40 bg-[#FF6B35]/10 px-4 py-1.5 text-xs font-medium text-[#FF6B35]">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
             </svg>
@@ -72,7 +72,7 @@ export default async function Home() {
 
           <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-zinc-50 leading-tight">
             Tu talento merece<br />
-            <span className="text-[#FF6A00]">clientes que te valoren</span>
+            <span className="text-[#FF6B35]">clientes que te valoren</span>
           </h1>
 
           <p className="mt-6 max-w-lg text-lg text-zinc-400 leading-relaxed">
@@ -92,7 +92,7 @@ export default async function Home() {
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <Link
               href="/register/artist"
-              className="rounded-full bg-[#FF6A00] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6A00]/30"
+              className="rounded-full bg-[#FF6B35] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6B35]/30"
             >
               Crear mi perfil — es gratis
             </Link>
@@ -107,8 +107,8 @@ export default async function Home() {
           {/* Feature cards */}
           <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl text-left w-full">
             <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6A00]/10">
-                <svg className="h-5 w-5 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6B35]/10">
+                <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -116,8 +116,8 @@ export default async function Home() {
               <p className="text-sm text-zinc-500">Acepta o rechaza reservas. Controla tu disponibilidad con un calendario propio.</p>
             </div>
             <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6A00]/10">
-                <svg className="h-5 w-5 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6B35]/10">
+                <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
@@ -125,8 +125,8 @@ export default async function Home() {
               <p className="text-sm text-zinc-500">Tu perfil aparece en búsquedas de clientes que buscan artistas como tú.</p>
             </div>
             <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6A00]/10">
-                <svg className="h-5 w-5 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6B35]/10">
+                <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -142,7 +142,7 @@ export default async function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-left">
               {STEPS.map((s) => (
                 <div key={s.num} className="flex flex-col gap-3">
-                  <span className="font-mono text-3xl font-bold text-[#FF6A00] opacity-50">{s.num}</span>
+                  <span className="font-mono text-3xl font-bold text-[#FF6B35] opacity-50">{s.num}</span>
                   <h3 className="font-semibold text-zinc-50">{s.title}</h3>
                   <p className="text-sm text-zinc-500 leading-relaxed">{s.desc}</p>
                 </div>
@@ -158,7 +158,7 @@ export default async function Home() {
             </p>
             <Link
               href="/register/artist"
-              className="rounded-full bg-[#FF6A00] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6A00]/30"
+              className="rounded-full bg-[#FF6B35] px-8 py-3.5 text-sm font-semibold text-white hover:bg-[#e05e00] transition-colors shadow-lg shadow-[#FF6B35]/30"
             >
               Unirme a la comunidad
             </Link>

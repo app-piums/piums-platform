@@ -52,12 +52,12 @@ export const BookingCard: React.FC<BookingCardProps> = ({
       borderColor: 'border-yellow-200',
     },
     confirmed: {
-      bgColor: 'bg-[#00AEEF]/5',
-      borderColor: 'border-[#00AEEF]/20',
+      bgColor: 'bg-[#F59E0B]/5',
+      borderColor: 'border-[#F59E0B]/20',
     },
     'in-progress': {
-      bgColor: 'bg-[#FF6A00]/5',
-      borderColor: 'border-[#FF6A00]/20',
+      bgColor: 'bg-[#FF6B35]/5',
+      borderColor: 'border-[#FF6B35]/20',
     },
     completed: {
       bgColor: 'bg-green-50',

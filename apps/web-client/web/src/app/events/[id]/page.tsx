@@ -65,7 +65,7 @@ function ConfirmCancelModal({
             type="checkbox"
             checked={cancelBookings}
             onChange={(e) => setCancelBookings(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#FF6A00] focus:ring-[#FF6A00]"
+            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#FF6B35] focus:ring-[#FF6B35]"
           />
           <span className="text-sm text-gray-700">
             Cancelar también las reservas <span className="font-medium">PENDIENTES y CONFIRMADAS</span> asociadas a este evento
@@ -143,27 +143,27 @@ function EditEventModal({
           {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-            <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]" maxLength={200} />
+            <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]" maxLength={200} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] resize-none" rows={3} maxLength={2000} />
+            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] resize-none" rows={3} maxLength={2000} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Fecha del evento</label>
-            <input type="date" value={form.eventDate} min={today} onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]" />
+            <input type="date" value={form.eventDate} min={today} onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Lugar</label>
-            <input type="text" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00]" maxLength={500} />
+            <input type="text" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35]" maxLength={500} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-            <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] resize-none" rows={2} maxLength={2000} />
+            <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] resize-none" rows={2} maxLength={2000} />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 bg-[#FF6A00] text-white rounded-lg py-2.5 text-sm font-bold hover:bg-[#e55a00] disabled:opacity-50">{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+            <button type="submit" disabled={saving} className="flex-1 bg-[#FF6B35] text-white rounded-lg py-2.5 text-sm font-bold hover:bg-[#e55a00] disabled:opacity-50">{saving ? 'Guardando…' : 'Guardar cambios'}</button>
           </div>
         </form>
       </div>
@@ -271,7 +271,7 @@ function AddBookingModal({
                     <button
                       onClick={() => handleAdd(b.id)}
                       disabled={adding === b.id}
-                      className="shrink-0 bg-[#FF6A00] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#e55a00] disabled:opacity-50 transition-colors"
+                      className="shrink-0 bg-[#FF6B35] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#e55a00] disabled:opacity-50 transition-colors"
                     >
                       {adding === b.id ? '…' : 'Agregar'}
                     </button>
@@ -284,7 +284,7 @@ function AddBookingModal({
         <div className="p-4 border-t border-gray-100 shrink-0 space-y-2">
           <Link
             href={`/booking?eventId=${eventId}${eventDate ? `&date=${eventDate}` : ''}`}
-            className="flex items-center justify-center gap-2 w-full bg-[#FF6A00] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#e55a00] transition-colors"
+            className="flex items-center justify-center gap-2 w-full bg-[#FF6B35] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#e55a00] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             Reservar nuevo artista para este evento
@@ -316,11 +316,11 @@ function BookingRow({ booking, eventStatus, onRemove }: { booking: any; eventSta
         <p className="text-xs text-gray-500">{booking.artistName || booking.artistId} · {formattedDate} {formattedTime}</p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-sm font-bold text-[#FF6A00]">{symbol}{(price / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+        <p className="text-sm font-bold text-[#FF6B35]">{symbol}{(price / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
         {eventStatus !== 'CANCELLED' && (
           <Link
             href={`/bookings/${booking.id}`}
-            className="text-xs text-gray-400 hover:text-[#FF6A00] transition-colors"
+            className="text-xs text-gray-400 hover:text-[#FF6B35] transition-colors"
           >
             Ver detalle
           </Link>
@@ -434,7 +434,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 text-center">
           <p className="text-xl font-semibold text-gray-900 mb-2">Evento no encontrado</p>
           <p className="text-sm text-gray-500 mb-5">{error || 'No pudimos encontrar este evento.'}</p>
-          <Link href="/events" className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl hover:bg-orange-600 transition">
+          <Link href="/events" className="px-6 py-3 bg-[#FF6B35] text-white font-semibold rounded-xl hover:bg-orange-600 transition">
             Volver a Eventos
           </Link>
         </div>
@@ -454,7 +454,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       <main className="flex-1 min-w-0 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-20 lg:pt-10">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-          <Link href="/events" className="flex items-center gap-1 hover:text-[#FF6A00] transition-colors">
+          <Link href="/events" className="flex items-center gap-1 hover:text-[#FF6B35] transition-colors">
             <ChevronLeftIcon className="w-4 h-4" /> Eventos
           </Link>
           <span>/</span>
@@ -470,7 +470,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">{event.name}</h1>
             {event.eventDate && (
-              <div className="flex items-center gap-1.5 text-sm text-[#FF6A00] font-medium mt-1.5">
+              <div className="flex items-center gap-1.5 text-sm text-[#FF6B35] font-medium mt-1.5">
                 <CalendarIcon className="w-4 h-4 shrink-0" />
                 <span className="capitalize">{new Date(event.eventDate).toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
               </div>
@@ -492,7 +492,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </button>
               <button
                 onClick={() => setShowAddBooking(true)}
-                className="inline-flex items-center gap-1.5 bg-[#FF6A00] text-white px-3 py-2 rounded-xl text-sm font-bold hover:bg-[#e55a00] transition-colors"
+                className="inline-flex items-center gap-1.5 bg-[#FF6B35] text-white px-3 py-2 rounded-xl text-sm font-bold hover:bg-[#e55a00] transition-colors"
               >
                 <PlusIcon /> Agregar reserva
               </button>
@@ -516,7 +516,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               {!isCancelled && (
                 <Link
                   href={`/artists?eventId=${id}`}
-                  className="text-xs font-medium text-[#FF6A00] hover:underline"
+                  className="text-xs font-medium text-[#FF6B35] hover:underline"
                 >
                   + Reservar nuevo artista
                 </Link>
@@ -530,7 +530,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 {!isCancelled && (
                   <button
                     onClick={() => setShowAddBooking(true)}
-                    className="mt-4 inline-flex items-center gap-1.5 bg-[#FF6A00] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#e55a00]"
+                    className="mt-4 inline-flex items-center gap-1.5 bg-[#FF6B35] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#e55a00]"
                   >
                     <PlusIcon /> Agregar reserva existente
                   </button>
@@ -571,7 +571,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           {/* Right: price breakdown */}
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="bg-[#FF6A00] px-5 py-4">
+              <div className="bg-[#FF6B35] px-5 py-4">
                 <p className="text-white font-bold">Desglose de precios</p>
               </div>
               <div className="p-5 space-y-3">
@@ -594,7 +594,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     })}
                     <div className="border-t border-gray-100 pt-3 mt-1 flex items-center justify-between font-bold">
                       <span className="text-gray-900">Total estimado</span>
-                      <span className="text-[#FF6A00] text-lg">
+                      <span className="text-[#FF6B35] text-lg">
                         {symbol}{(grandTotal / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -609,7 +609,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               {event.eventDate && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Fecha</span>
-                  <span className="text-[#FF6A00] font-medium">{new Date(event.eventDate).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <span className="text-[#FF6B35] font-medium">{new Date(event.eventDate).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 </div>
               )}
               <div className="flex justify-between">

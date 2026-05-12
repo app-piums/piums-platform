@@ -17,7 +17,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, trend
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-4">
-        <div className="text-[#FF6A00]">{icon}</div>
+        <div className="text-[#FF6B35]">{icon}</div>
         {trend && (
           <span
             className={`text-sm font-medium ${

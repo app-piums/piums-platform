@@ -29,7 +29,7 @@ export function LocationPickerMap({ latitude, longitude, onSelect }: LocationPic
         attributionPrefix={false}
       >
         {latitude !== null && longitude !== null && (
-          <Marker anchor={[latitude, longitude]} width={40} color="#FF6A00" />
+          <Marker anchor={[latitude, longitude]} width={40} color="#FF6B35" />
         )}
       </Map>
     </div>

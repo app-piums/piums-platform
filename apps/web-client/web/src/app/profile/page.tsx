@@ -100,7 +100,7 @@ export default function ProfilePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
             {userName.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -121,7 +121,7 @@ export default function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#FF6A00] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
+            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-lg font-bold shrink-0">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -144,11 +144,11 @@ export default function ProfilePage() {
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left transition-colors border-b border-gray-50 last:border-b-0
                         ${
                           active
-                            ? tab.danger ? 'bg-red-50 text-red-600' : 'bg-[#FF6A00]/10 text-[#FF6A00]'
+                            ? tab.danger ? 'bg-red-50 text-red-600' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
                             : tab.danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                     >
-                      <span className={active ? (tab.danger ? 'text-red-500' : 'text-[#FF6A00]') : 'text-gray-400'}>
+                      <span className={active ? (tab.danger ? 'text-red-500' : 'text-[#FF6B35]') : 'text-gray-400'}>
                         {tab.icon}
                       </span>
                       {tab.label}
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                       {active && !showBadge && (
-                        <span className={`hidden lg:inline ml-auto h-1.5 w-1.5 rounded-full ${tab.danger ? 'bg-red-500' : 'bg-[#FF6A00]'}`} />
+                        <span className={`hidden lg:inline ml-auto h-1.5 w-1.5 rounded-full ${tab.danger ? 'bg-red-500' : 'bg-[#FF6B35]'}`} />
                       )}
                     </button>
                   );

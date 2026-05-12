@@ -23,23 +23,23 @@ export default function BookmarksPage() {
   if (isLoading || !isAuthenticated) return <Loading fullScreen />;
 
   const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
-    MUSICO:      ['#FF6A00', '#F59E0B'],
-    DJ:          ['#FF6A00', '#C026D3'],
-    FOTOGRAFO:   ['#00AEEF', '#1D4ED8'],
+    MUSICO:      ['#FF6B35', '#F59E0B'],
+    DJ:          ['#FF6B35', '#C026D3'],
+    FOTOGRAFO:   ['#F59E0B', '#1D4ED8'],
     VIDEOGRAFO:  ['#4F46E5', '#C026D3'],
-    DISENADOR:   ['#00AEEF', '#10B981'],
-    BAILARIN:    ['#FF6A00', '#EF4444'],
-    ANIMADOR:    ['#F59E0B', '#FF6A00'],
+    DISENADOR:   ['#F59E0B', '#10B981'],
+    BAILARIN:    ['#FF6B35', '#EF4444'],
+    ANIMADOR:    ['#F59E0B', '#FF6B35'],
     TATUADOR:    ['#1E1B4B', '#7C3AED'],
     MAQUILLADOR: ['#EC4899', '#9D174D'],
     PINTOR:      ['#0891B2', '#059669'],
     ESCULTOR:    ['#475569', '#1E293B'],
-    ESCRITOR:    ['#4F46E5', '#00AEEF'],
+    ESCRITOR:    ['#4F46E5', '#F59E0B'],
     MAGO:        ['#7C3AED', '#4F46E5'],
-    ACROBATA:    ['#FF6A00', '#F59E0B'],
+    ACROBATA:    ['#FF6B35', '#F59E0B'],
   };
   const getCoverGradient = (category?: string | null) => {
-    const [a, b] = CATEGORY_GRADIENTS[category ?? ''] ?? ['#FF6A00', '#00AEEF'];
+    const [a, b] = CATEGORY_GRADIENTS[category ?? ''] ?? ['#FF6B35', '#F59E0B'];
     return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
   };
 
@@ -74,8 +74,8 @@ export default function BookmarksPage() {
             </div>
           ) : favorites.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="h-20 w-20 rounded-full bg-[#FF6A00]/10 flex items-center justify-center mb-6">
-                <svg className="h-10 w-10 text-[#FF6A00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="h-20 w-20 rounded-full bg-[#FF6B35]/10 flex items-center justify-center mb-6">
+                <svg className="h-10 w-10 text-[#FF6B35]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
@@ -85,7 +85,7 @@ export default function BookmarksPage() {
               </p>
               <Link
                 href="/artists"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-xl hover:bg-[#e55d00] transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B35] text-white font-semibold rounded-xl hover:bg-[#e55d00] transition-colors"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -163,7 +163,7 @@ export default function BookmarksPage() {
                     <div className="mt-auto flex gap-2 pt-4">
                       <Link
                         href={`/artists/${artist.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:border-[#FF6A00] hover:text-[#FF6A00]"
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:border-[#FF6B35] hover:text-[#FF6B35]"
                       >
                         Ver perfil
                       </Link>

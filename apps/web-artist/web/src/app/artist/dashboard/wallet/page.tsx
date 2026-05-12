@@ -148,7 +148,7 @@ export default function WalletPage() {
                 onClick={() => { setStatusFilter(s); setPage(1); }}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   statusFilter === s
-                    ? 'bg-[#FF6A00] border-[#FF6A00] text-white'
+                    ? 'bg-[#FF6B35] border-[#FF6B35] text-white'
                     : 'border-gray-200 text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -166,7 +166,7 @@ export default function WalletPage() {
 
             {loading ? (
               <div className="flex items-center justify-center h-32">
-                <div className="h-6 w-6 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+                <div className="h-6 w-6 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : error ? (
               <div className="px-6 py-8 text-center text-sm text-red-500">{error}</div>
@@ -196,7 +196,7 @@ export default function WalletPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-bold text-[#FF6A00]">
+                      <p className="text-sm font-bold text-[#FF6B35]">
                         {p.currency} {centsToDisplay((p as any).netAmount ?? p.amount)}
                       </p>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[p.status] ?? 'bg-gray-100 text-gray-500'}`}>

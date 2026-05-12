@@ -6,6 +6,28 @@ import ClientSidebar from '@/components/ClientSidebar';
 import { Loading } from '@/components/Loading';
 import { sdk } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  CheckCircle, XCircle, Clock, DollarSign,
+  Star, MessageCircle, Info, Bell
+} from 'lucide-react';
+
+type NotificationIconKey =
+  | 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED' | 'BOOKING_REJECTED'
+  | 'BOOKING_PENDING' | 'PAYMENT_RECEIVED' | 'NEW_REVIEW'
+  | 'NEW_MESSAGE' | 'SYSTEM';
+
+const TYPE_ICON_MAP: Record<NotificationIconKey, React.ReactElement> = {
+  BOOKING_CONFIRMED:  <CheckCircle   size={20} className="text-green-500" />,
+  BOOKING_CANCELLED:  <XCircle       size={20} className="text-red-500" />,
+  BOOKING_REJECTED:   <XCircle       size={20} className="text-red-500" />,
+  BOOKING_PENDING:    <Clock         size={20} className="text-orange-400" />,
+  PAYMENT_RECEIVED:   <DollarSign    size={20} className="text-green-600" />,
+  NEW_REVIEW:         <Star          size={20} className="text-yellow-500" />,
+  NEW_MESSAGE:        <MessageCircle size={20} className="text-blue-400" />,
+  SYSTEM:             <Info          size={20} className="text-gray-400" />,
+};
+
+const DEFAULT_ICON = <Bell size={20} className="text-gray-400" />;
 
 type Notification = {
   id: string;
@@ -18,19 +40,8 @@ type Notification = {
   data?: Record<string, string>;
 };
 
-const TYPE_ICONS: Record<string, string> = {
-  BOOKING_CONFIRMED: '✅',
-  BOOKING_CANCELLED: '❌',
-  BOOKING_REJECTED: '❌',
-  BOOKING_PENDING: '⏳',
-  PAYMENT_RECEIVED: '💰',
-  NEW_REVIEW: '⭐',
-  NEW_MESSAGE: '💬',
-  SYSTEM: 'ℹ️',
-};
-
 function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id: string) => void }) {
-  const icon = TYPE_ICONS[n.type ?? ''] ?? '🔔';
+  const icon = TYPE_ICON_MAP[n.type as NotificationIconKey] ?? DEFAULT_ICON;
   const isUnread = n.status === 'PENDING' || n.isRead === false;
   const date = n.createdAt
     ? new Date(n.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -42,7 +53,7 @@ function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id:
         isUnread ? 'bg-orange-50 border-orange-100' : 'bg-white border-gray-100'
       }`}
     >
-      <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
+      <div className="flex items-start gap-3 p-1 shrink-0 mt-0.5">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold ${isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
           {n.title || n.type || 'Notificación'}
@@ -55,7 +66,7 @@ function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id:
       {isUnread && (
         <button
           onClick={() => onMarkRead(n.id)}
-          className="shrink-0 text-xs font-medium text-[#FF6A00] hover:text-orange-700 transition-colors"
+          className="shrink-0 text-xs font-medium text-[#FF6B35] hover:text-orange-700 transition-colors"
         >
           Marcar leída
         </button>
@@ -139,7 +150,7 @@ export default function NotificationsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Notificaciones</h1>
             {unreadCount > 0 && (
               <p className="text-sm text-gray-500 mt-0.5">
-                Tienes <span className="font-semibold text-[#FF6A00]">{unreadCount}</span> sin leer
+                Tienes <span className="font-semibold text-[#FF6B35]">{unreadCount}</span> sin leer
               </p>
             )}
           </div>
@@ -147,7 +158,7 @@ export default function NotificationsPage() {
             <button
               onClick={handleMarkAllRead}
               disabled={markingAll}
-              className="text-sm font-medium text-[#FF6A00] hover:text-orange-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+              className="text-sm font-medium text-[#FF6B35] hover:text-orange-700 disabled:opacity-50 transition-colors whitespace-nowrap"
             >
               {markingAll ? 'Marcando…' : 'Marcar todas como leídas'}
             </button>
@@ -158,7 +169,7 @@ export default function NotificationsPage() {
           <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-600">{error}</div>
         ) : notifications.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-20 text-center">
-            <span className="text-4xl block mb-3">🔔</span>
+            <Bell size={40} className="mx-auto mb-3 text-gray-300" />
             <p className="text-sm font-medium text-gray-600">Sin notificaciones por ahora</p>
             <p className="text-xs text-gray-400 mt-1">Te avisaremos cuando haya novedades en tus reservas.</p>
           </div>

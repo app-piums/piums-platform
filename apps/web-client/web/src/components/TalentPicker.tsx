@@ -128,7 +128,7 @@ export function TalentPicker({ selectedTalentId, onSelect, onClear, defaultExpan
       {selectedTalent && (
         <div className="flex items-center gap-2 mb-3">
           <span className="text-sm text-gray-500">Talento seleccionado:</span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6A00] text-white text-sm font-medium rounded-full">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35] text-white text-sm font-medium rounded-full">
             {selectedTalent.label}
             {onClear && (
               <button onClick={onClear} className="ml-1 hover:opacity-70 transition-opacity">
@@ -154,12 +154,12 @@ export function TalentPicker({ selectedTalentId, onSelect, onClear, defaultExpan
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#243044] transition-colors text-left"
             >
               <div className="flex items-center gap-2.5">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${hasSelected ? 'bg-[#FF6A00]' : 'bg-orange-50 dark:bg-[#243044]'}`}>
-                  <Icon className={`h-4 w-4 ${hasSelected ? 'text-white' : 'text-[#FF6A00]'}`} />
+                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${hasSelected ? 'bg-[#FF6B35]' : 'bg-orange-50 dark:bg-[#243044]'}`}>
+                  <Icon className={`h-4 w-4 ${hasSelected ? 'text-white' : 'text-[#FF6B35]'}`} />
                 </div>
                 <span className="text-sm font-semibold text-gray-900 dark:text-[#F1F5F9]">{group.label}</span>
                 {hasSelected && (
-                  <span className="h-2 w-2 rounded-full bg-[#FF6A00]" title="Tienes un talento seleccionado en este grupo" />
+                  <span className="h-2 w-2 rounded-full bg-[#FF6B35]" title="Tienes un talento seleccionado en este grupo" />
                 )}
               </div>
               {isOpen
@@ -186,8 +186,8 @@ export function TalentPicker({ selectedTalentId, onSelect, onClear, defaultExpan
                             }}
                             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                               isSelected
-                                ? 'bg-[#FF6A00] border-[#FF6A00] text-white shadow-sm'
-                                : 'border-gray-200 dark:border-[#334155] text-gray-700 dark:text-[#CBD5E1] bg-gray-50 dark:bg-[#243044] hover:border-[#FF6A00]/50 hover:text-[#FF6A00] dark:hover:text-[#FF6A00] hover:bg-orange-50 dark:hover:bg-[#1E293B]'
+                                ? 'bg-[#FF6B35] border-[#FF6B35] text-white shadow-sm'
+                                : 'border-gray-200 dark:border-[#334155] text-gray-700 dark:text-[#CBD5E1] bg-gray-50 dark:bg-[#243044] hover:border-[#FF6B35]/50 hover:text-[#FF6B35] dark:hover:text-[#FF6B35] hover:bg-orange-50 dark:hover:bg-[#1E293B]'
                             }`}
                           >
                             {talent.label}

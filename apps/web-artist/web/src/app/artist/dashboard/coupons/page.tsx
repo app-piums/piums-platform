@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { sdk } from '@piums/sdk';
 import type { SavedCoupon } from '@piums/sdk';
+import { AlertTriangle } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ function ArtistCouponCard({ coupon }: { coupon: SavedCoupon }) {
           {expiry && (
             <p className={`mt-2 text-xs font-medium ${expiry.isExpiringSoon ? 'text-orange-600' : 'text-gray-400'}`}>
               {expiry.isExpiringSoon
-                ? `⚠ Vence en ${expiry.daysLeft} día${expiry.daysLeft === 1 ? '' : 's'}`
+                ? <span className="flex items-center gap-1"><AlertTriangle size={11} /> Vence en {expiry.daysLeft} día{expiry.daysLeft === 1 ? '' : 's'}</span>
                 : `Válido hasta: ${expiry.formatted}`}
             </p>
           )}

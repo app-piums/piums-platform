@@ -7,6 +7,7 @@ import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
 import { toast } from '@/lib/toast';
+import { CheckCheck } from 'lucide-react';
 
 type DisputeStatus = 'OPEN' | 'IN_REVIEW' | 'AWAITING_INFO' | 'RESOLVED' | 'CLOSED' | 'ESCALATED';
 type DisputeType   = 'CANCELLATION' | 'QUALITY' | 'REFUND' | 'NO_SHOW' | 'ARTIST_NO_SHOW' | 'PRICING' | 'BEHAVIOR' | 'OTHER';
@@ -135,18 +136,18 @@ export default function ArtistQuejasDetailPage() {
             )}
           </div>
           {loading && (
-            <div className="w-4 h-4 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin shrink-0" />
+            <div className="w-4 h-4 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin shrink-0" />
           )}
         </header>
 
         {error ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
             <p className="text-gray-500">{error}</p>
-            <Link href="/artist/dashboard/quejas" className="text-sm text-[#FF6A00] hover:underline">← Volver a mis quejas</Link>
+            <Link href="/artist/dashboard/quejas" className="text-sm text-[#FF6B35] hover:underline">← Volver a mis quejas</Link>
           </div>
         ) : loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : dispute ? (
           <>
@@ -159,7 +160,7 @@ export default function ArtistQuejasDetailPage() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
                   <div className="flex items-start gap-4">
                     <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                      <svg className="w-6 h-6 text-[#FF6A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-6 h-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                       </svg>
                     </div>
@@ -225,7 +226,7 @@ export default function ArtistQuejasDetailPage() {
                               : m.senderType === 'client' ? 'Cliente'
                               : 'Artista';
                             const bubbleClass = isMine
-                              ? 'bg-[#FF6A00] text-white rounded-2xl rounded-br-sm shadow-sm'
+                              ? 'bg-[#FF6B35] text-white rounded-2xl rounded-br-sm shadow-sm'
                               : isStaff
                               ? 'bg-white border border-gray-200 text-gray-900 rounded-2xl rounded-bl-sm shadow-sm'
                               : 'bg-white border border-indigo-100 text-indigo-900 rounded-2xl rounded-bl-sm shadow-sm';
@@ -245,7 +246,7 @@ export default function ArtistQuejasDetailPage() {
                                       <span className={`text-xs ${timeClass}`}>
                                         {m.createdAt ? formatMsgTime(m.createdAt) : ''}
                                       </span>
-                                      {isMine && <span className="text-xs text-orange-100">✓✓</span>}
+                                      {isMine && <span className="text-xs text-orange-100"><CheckCheck size={13} /></span>}
                                     </div>
                                   </div>
                                 </div>
@@ -287,14 +288,14 @@ export default function ArtistQuejasDetailPage() {
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                       placeholder="Escribe un mensaje..."
                       rows={1}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/40 focus:border-[#FF6A00] transition-colors text-sm"
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/40 focus:border-[#FF6B35] transition-colors text-sm"
                       style={{ maxHeight: '120px' }}
                       autoFocus
                     />
                     <button
                       onClick={sendMessage}
                       disabled={sending || !newMsg.trim()}
-                      className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6A00] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shrink-0"
+                      className="flex items-center gap-1.5 px-5 py-2 bg-[#FF6B35] text-white rounded-xl hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shrink-0"
                     >
                       {sending ? (
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

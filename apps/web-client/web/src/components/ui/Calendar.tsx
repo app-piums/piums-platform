@@ -175,9 +175,9 @@ export const Calendar: React.FC<CalendarProps> = ({
                 aspect-square p-2 text-sm font-medium
                 transition-all duration-200
                 ${!date ? 'invisible' : ''}
-                ${isSelected && hasRange ? 'bg-[#FF6A00] text-white rounded-l-lg rounded-r-none' : ''}
+                ${isSelected && hasRange ? 'bg-[#FF6B35] text-white rounded-l-lg rounded-r-none' : ''}
                 ${isSelected && !hasRange ? 'bg-blue-600 text-white rounded-lg hover:bg-blue-700' : ''}
-                ${isEnd ? 'bg-[#FF6A00] text-white rounded-r-lg rounded-l-none' : ''}
+                ${isEnd ? 'bg-[#FF6B35] text-white rounded-r-lg rounded-l-none' : ''}
                 ${inRange ? 'bg-orange-100 text-orange-900 rounded-none' : ''}
                 ${!isSelected && !isEnd && !inRange && !isDisabled && !isToday ? 'hover:bg-gray-100 text-gray-900 rounded-lg' : ''}
                 ${isDisabled ? 'text-gray-300 cursor-not-allowed rounded-lg' : 'cursor-pointer'}

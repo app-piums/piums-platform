@@ -69,7 +69,7 @@ model Artist {
   baseLocationLabel String?
   baseLocationLat   Float?
   baseLocationLng   Float?
-  coverageRadius Int      @default(10) // Radio en kilómetros
+  coverageRadius Int?                  // Radio en kilómetros; null = cobertura nacional (sin restricción geográfica)
   
   // Pricing
   hourlyRateMin  Int?     // Precio mínimo por hora en centavos

@@ -43,9 +43,14 @@ export class ChatGateway {
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
         lazyConnect: true,
+        retryStrategy: () => null, // no reintentar — el adaptador in-memory es suficiente si Redis no está disponible
       };
       const pubClient = new Redis(redisOptions);
       const subClient = pubClient.duplicate();
+
+      // Listeners de error obligatorios antes de connect() para evitar crashes por eventos no manejados
+      pubClient.on('error', (err: Error) => logger.error('Redis pub error', 'CHAT_GATEWAY', err));
+      subClient.on('error', (err: Error) => logger.error('Redis sub error', 'CHAT_GATEWAY', err));
 
       Promise.all([pubClient.connect(), subClient.connect()])
         .then(() => {
@@ -54,6 +59,8 @@ export class ChatGateway {
         })
         .catch((err) => {
           logger.error('Redis adapter connection failed, falling back to in-memory', 'CHAT_GATEWAY', err);
+          pubClient.disconnect();
+          subClient.disconnect();
         });
     }
 

@@ -6,6 +6,30 @@ import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  ClipboardList, CheckCircle, XCircle, PartyPopper, DollarSign,
+  Star, MessageCircle, CalendarClock, AlertTriangle, Info, Bell
+} from 'lucide-react';
+
+type NotificationIconKey =
+  | 'BOOKING_REQUEST' | 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED'
+  | 'BOOKING_COMPLETED' | 'PAYMENT_RECEIVED' | 'NEW_REVIEW'
+  | 'NEW_MESSAGE' | 'RESCHEDULE_REQUEST' | 'BOOKING_NO_SHOW' | 'SYSTEM';
+
+const TYPE_ICON_MAP: Record<NotificationIconKey, React.ReactElement> = {
+  BOOKING_REQUEST:    <ClipboardList   size={20} className="text-blue-500" />,
+  BOOKING_CONFIRMED:  <CheckCircle     size={20} className="text-green-500" />,
+  BOOKING_CANCELLED:  <XCircle         size={20} className="text-red-500" />,
+  BOOKING_COMPLETED:  <PartyPopper     size={20} className="text-purple-500" />,
+  PAYMENT_RECEIVED:   <DollarSign      size={20} className="text-green-600" />,
+  NEW_REVIEW:         <Star            size={20} className="text-yellow-500" />,
+  NEW_MESSAGE:        <MessageCircle   size={20} className="text-blue-400" />,
+  RESCHEDULE_REQUEST: <CalendarClock   size={20} className="text-orange-500" />,
+  BOOKING_NO_SHOW:    <AlertTriangle   size={20} className="text-red-600" />,
+  SYSTEM:             <Info            size={20} className="text-gray-400" />,
+};
+
+const DEFAULT_ICON = <Bell size={20} className="text-gray-400" />;
 
 type Notification = {
   id: string;
@@ -18,23 +42,10 @@ type Notification = {
   metadata?: { disputeId?: string; bookingId?: string };
 };
 
-const TYPE_ICONS: Record<string, string> = {
-  BOOKING_REQUEST: '📋',
-  BOOKING_CONFIRMED: '✅',
-  BOOKING_CANCELLED: '❌',
-  BOOKING_COMPLETED: '🎉',
-  PAYMENT_RECEIVED: '💰',
-  NEW_REVIEW: '⭐',
-  NEW_MESSAGE: '💬',
-  RESCHEDULE_REQUEST: '📅',
-  BOOKING_NO_SHOW: '🚨',
-  SYSTEM: 'ℹ️',
-};
-
 const NO_SHOW_TYPES = new Set(['BOOKING_NO_SHOW', 'ARTIST_NO_SHOW']);
 
 function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id: string) => void }) {
-  const icon = TYPE_ICONS[n.type ?? ''] ?? '🔔';
+  const icon = TYPE_ICON_MAP[n.type as NotificationIconKey] ?? DEFAULT_ICON;
   const isUnread = n.status === 'PENDING' || n.isRead === false;
   const isNoShow = NO_SHOW_TYPES.has(n.type ?? '');
   const disputeId = n.metadata?.disputeId;
@@ -52,7 +63,7 @@ function NotificationItem({ n, onMarkRead }: { n: Notification; onMarkRead: (id:
           : 'bg-white border-gray-100'
       }`}
     >
-      <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
+      <div className="flex items-start gap-3 p-1 shrink-0 mt-0.5">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold ${isNoShow ? 'text-red-900' : isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
           {n.title || n.type || 'Notificación'}
@@ -173,7 +184,7 @@ export default function NotificationsPage() {
           <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-600">{error}</div>
         ) : notifications.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-20 text-center">
-            <span className="text-4xl block mb-3">🔔</span>
+            <Bell size={40} className="mx-auto mb-3 text-gray-300" />
             <p className="text-sm font-medium text-gray-600">Sin notificaciones por ahora</p>
             <p className="text-xs text-gray-400 mt-1">Te avisaremos cuando recibas nuevas solicitudes o pagos.</p>
           </div>

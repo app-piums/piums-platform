@@ -49,11 +49,11 @@ export default function ContactoPage() {
             },
           ].map(({ icon, title, value, href, sub }) => (
             <a key={title} href={href} className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:shadow-md transition group">
-              <div className="h-14 w-14 bg-orange-50 text-[#FF6A00] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-[#FF6A00] group-hover:text-white transition">
+              <div className="h-14 w-14 bg-orange-50 text-[#FF6B35] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-[#FF6B35] group-hover:text-white transition">
                 {icon}
               </div>
               <h3 className="font-bold text-gray-900 mb-1">{title}</h3>
-              <p className="text-[#FF6A00] font-medium text-sm mb-1">{value}</p>
+              <p className="text-[#FF6B35] font-medium text-sm mb-1">{value}</p>
               <p className="text-gray-400 text-xs">{sub}</p>
             </a>
           ))}
@@ -66,22 +66,22 @@ export default function ContactoPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <input type="text" placeholder="Tu nombre" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00]" />
+                <input type="text" placeholder="Tu nombre" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-                <input type="email" placeholder="tu@email.com" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00]" />
+                <input type="email" placeholder="tu@email.com" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
-              <input type="text" placeholder="¿En qué podemos ayudarte?" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00]" />
+              <input type="text" placeholder="¿En qué podemos ayudarte?" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-              <textarea rows={4} placeholder="Cuéntanos más sobre tu consulta..." className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] resize-none" />
+              <textarea rows={4} placeholder="Cuéntanos más sobre tu consulta..." className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] resize-none" />
             </div>
-            <button type="submit" className="w-full bg-[#FF6A00] text-white font-semibold py-3 rounded-xl hover:bg-orange-600 transition">
+            <button type="submit" className="w-full bg-[#FF6B35] text-white font-semibold py-3 rounded-xl hover:bg-orange-600 transition">
               Enviar mensaje
             </button>
           </form>

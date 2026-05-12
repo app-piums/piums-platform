@@ -19,6 +19,24 @@ import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
 import { ThemeToggle } from '@/contexts/ThemeContext';
+import {
+  Cake, Rings, GraduationCap, Crown, Building2,
+  Music, PartyPopper, Baby, Church, Wine, HelpCircle, LucideIcon
+} from 'lucide-react';
+
+const EVENT_TYPE_OPTIONS: { value: string; label: string; Icon: LucideIcon }[] = [
+  { value: 'CUMPLEANOS',  label: 'Cumpleaños', Icon: Cake },
+  { value: 'BODA',        label: 'Boda',       Icon: Rings },
+  { value: 'GRADUACION',  label: 'Graduación', Icon: GraduationCap },
+  { value: 'QUINCEANERA', label: 'Quinceañera', Icon: Crown },
+  { value: 'CORPORATIVO', label: 'Corporativo', Icon: Building2 },
+  { value: 'CONCIERTO',   label: 'Concierto',  Icon: Music },
+  { value: 'FIESTA',      label: 'Fiesta',     Icon: PartyPopper },
+  { value: 'BABY_SHOWER', label: 'Baby Shower', Icon: Baby },
+  { value: 'BAUTIZO',     label: 'Bautizo',    Icon: Church },
+  { value: 'ANIVERSARIO', label: 'Aniversario', Icon: Wine },
+  { value: 'OTRO',        label: 'Otro',       Icon: HelpCircle },
+];
 
 type BookingStep = 'service' | 'datetime' | 'details' | 'review';
 type DayAvailability = {
@@ -592,8 +610,11 @@ function BookingContent() {
       setPriceQuote(null);
       return;
     }
-    calculatePriceQuote(selectedService, selectedAddons, clientCoords, travelDistanceKm);
-  }, [selectedService, selectedAddons, clientCoords, travelDistanceKm, calculatePriceQuote]);
+    // National artists (coverageRadius === null) never charge travel — don't send distanceKm
+    // so the backend calculates travelCostCents = 0.
+    const effectiveDistanceKm = artist?.coverageRadius === null ? null : travelDistanceKm;
+    calculatePriceQuote(selectedService, selectedAddons, clientCoords, effectiveDistanceKm);
+  }, [selectedService, selectedAddons, clientCoords, travelDistanceKm, artist?.coverageRadius, calculatePriceQuote]);
 
   const addons = useMemo(() => selectedService?.addons ?? [], [selectedService]);
   const { currency, formatPrice } = useCurrency();
@@ -601,23 +622,30 @@ function BookingContent() {
     // Viáticos se activa cuando: multi-día (>1 día) Y fuera del radio de cobertura.
     // Sin ubicación aún mostramos el label "Viáticos" como indicativo si es multi-día,
     // ya que la mayoría de reservas multi-día implican desplazamiento fuera de cobertura.
-    const coverageRadius = artist?.coverageRadius ?? 0;
+    const coverageRadius = artist?.coverageRadius ?? null;
+    const isNational = coverageRadius === null;
     const outsideCoverage =
-      travelDistanceKm != null ? travelDistanceKm > coverageRadius : null; // null = sin datos aún
+      isNational
+        ? false // artista nacional — siempre dentro de cobertura, sin cobro
+        : travelDistanceKm != null ? travelDistanceKm > coverageRadius : null; // null = sin datos aún
 
     const isMultiDayBooking = isMultiDay && numDays > 1;
     const showViaticoLabel = isMultiDayBooking && (outsideCoverage !== false);
 
     const travelFeeDisplay = {
       id: 'travel-fee',
-      label: showViaticoLabel ? 'Viáticos' : 'Costo de traslado',
-      description: showViaticoLabel
-        ? clientCoords
-          ? `Incluye transporte, comida y hospedaje por ${numDays} días.`
-          : `Agrega tu ubicación para calcular los viáticos (${numDays} días).`
-        : clientCoords
-          ? 'Usaremos tu ubicación para estimar este monto.'
-          : 'Agrega tu ubicación para calcular el traslado.',
+      label: isNational
+        ? 'Traslado incluido'
+        : (showViaticoLabel ? 'Viáticos' : 'Costo de traslado'),
+      description: isNational
+        ? 'Artista con cobertura nacional — sin cobro de viáticos ni traslado.'
+        : (showViaticoLabel
+          ? clientCoords
+            ? `Incluye transporte, comida y hospedaje por ${numDays} días.`
+            : `Agrega tu ubicación para calcular los viáticos (${numDays} días).`
+          : clientCoords
+            ? 'Usaremos tu ubicación para estimar este monto.'
+            : 'Agrega tu ubicación para calcular el traslado.'),
       amount: 0,
       type: 'fee' as const,
     };
@@ -979,7 +1007,7 @@ function BookingContent() {
                   <React.Fragment key={s.key}>
                     <div className="flex items-center">
                       <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all ${step === s.key
-                          ? 'bg-[#FF6A00] text-white ring-4 ring-[#FF6A00]/20'
+                          ? 'bg-[#FF6B35] text-white ring-4 ring-[#FF6B35]/20'
                           : idx < currentStepIndex
                             ? 'bg-green-500 text-white'
                             : 'bg-gray-200 text-gray-600'
@@ -992,7 +1020,7 @@ function BookingContent() {
                           idx + 1
                         )}
                       </div>
-                      <span className={`ml-2 text-sm font-medium hidden sm:block transition-colors ${step === s.key ? 'text-[#FF6A00]' : 'text-gray-700'
+                      <span className={`ml-2 text-sm font-medium hidden sm:block transition-colors ${step === s.key ? 'text-[#FF6B35]' : 'text-gray-700'
                         }`}>
                         {s.label}
                       </span>
@@ -1032,8 +1060,8 @@ function BookingContent() {
                           <div
                             key={service.id}
                             className={`group p-6 border-2 rounded-lg cursor-pointer transition-all ${selectedService?.id === service.id
-                                ? 'border-[#FF6A00] bg-[#FF6A00]/5 shadow-md'
-                                : 'border-gray-200 hover:border-[#FF6A00]/50 hover:shadow-sm'
+                                ? 'border-[#FF6B35] bg-[#FF6B35]/5 shadow-md'
+                                : 'border-gray-200 hover:border-[#FF6B35]/50 hover:shadow-sm'
                               }`}
                             onClick={() => handleServiceSelect(service)}
                           >
@@ -1044,7 +1072,7 @@ function BookingContent() {
                                     {service.name}
                                   </h3>
                                   {selectedService?.id === service.id && (
-                                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-[#FF6A00] flex items-center justify-center">
+                                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-[#FF6B35] flex items-center justify-center">
                                       <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                       </svg>
@@ -1062,7 +1090,7 @@ function BookingContent() {
                                 </div>
                               </div>
                               <div className="text-right ml-4">
-                                <p className="text-2xl font-bold text-[#FF6A00]">
+                                <p className="text-2xl font-bold text-[#FF6B35]">
                                   ${(service.basePrice / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </p>
                               </div>
@@ -1102,7 +1130,7 @@ function BookingContent() {
                             type="button"
                             onClick={() => { setIsMultiDay((v) => !v); setNumDays(1); }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              isMultiDay ? 'bg-[#FF6A00]' : 'bg-gray-300'
+                              isMultiDay ? 'bg-[#FF6B35]' : 'bg-gray-300'
                             }`}
                           >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
@@ -1126,7 +1154,7 @@ function BookingContent() {
                                   max={30}
                                   value={numDays}
                                   onChange={(e) => setNumDays(Math.min(30, Math.max(1, Number(e.target.value))))}
-                                  className="w-14 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                  className="w-14 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35]"
                                 />
                                 <button
                                   type="button"
@@ -1222,13 +1250,13 @@ function BookingContent() {
                           <p className="text-sm text-gray-700">
                             {artist.nombre} se desplaza desde {artist.baseLocationLabel || artist.city || 'una ubicación aún no publicada'}.
                           </p>
-                          {artist.coverageRadius ? (
+                          {artist.coverageRadius != null ? (
                             <p className="text-xs text-gray-500 mt-2">
                               Incluye hasta {artist.coverageRadius} km sin costo adicional antes de aplicar traslado.
                             </p>
                           ) : (
-                            <p className="text-xs text-gray-500 mt-2">
-                              Comparte la dirección del evento para calcular el costo de traslado.
+                            <p className="text-xs text-green-700 mt-2">
+                              Artista nacional — cubre todo el país sin restricción geográfica.
                             </p>
                           )}
                           {!artistBaseCoords && (
@@ -1264,7 +1292,7 @@ function BookingContent() {
                               onClick={() => handleUseDetectedLocation()}
 
                               disabled={requestingLocation}
-                              className={`${locationMode === 'auto' ? 'border-[#FF6A00] text-[#FF6A00]' : ''}`}
+                              className={`${locationMode === 'auto' ? 'border-[#FF6B35] text-[#FF6B35]' : ''}`}
                             >
                               {requestingLocation ? 'Obteniendo ubicación...' : 'Usar mi ubicación actual'}
                             </Button>
@@ -1329,7 +1357,7 @@ function BookingContent() {
                               <div
                                 key={addon.id}
                                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAddons.includes(addon.id)
-                                    ? 'border-[#00AEEF] bg-[#00AEEF]/5'
+                                    ? 'border-[#F59E0B] bg-[#F59E0B]/5'
                                     : 'border-gray-200 hover:border-gray-300'
                                   }`}
                                 onClick={() => toggleAddon(addon.id)}
@@ -1340,7 +1368,7 @@ function BookingContent() {
                                       type="checkbox"
                                       checked={selectedAddons.includes(addon.id)}
                                       onChange={() => { }}
-                                      className="h-4 w-4 text-[#00AEEF] focus:ring-[#00AEEF] border-gray-300 rounded"
+                                      className="h-4 w-4 text-[#F59E0B] focus:ring-[#F59E0B] border-gray-300 rounded"
                                     />
                                   </div>
                                   <div className="ml-3 flex-1">
@@ -1348,7 +1376,7 @@ function BookingContent() {
                                     <p className="text-sm text-gray-600 mt-1">{addon.description}</p>
                                   </div>
                                   <div className="ml-4 text-right">
-                                    <p className="font-semibold text-[#00AEEF]">
+                                    <p className="font-semibold text-[#F59E0B]">
                                       +${(addon.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
                                   </div>
@@ -1365,30 +1393,18 @@ function BookingContent() {
                           ¿Para qué es el evento? <span className="text-gray-400 font-normal">(Opcional)</span>
                         </label>
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {[
-                            { value: 'CUMPLEANOS',  label: 'Cumpleaños',        icon: '🎂' },
-                            { value: 'BODA',        label: 'Boda',              icon: '💍' },
-                            { value: 'GRADUACION',  label: 'Graduación',        icon: '🎓' },
-                            { value: 'QUINCEANERA', label: 'Quinceañera',       icon: '👑' },
-                            { value: 'CORPORATIVO', label: 'Corporativo',       icon: '🏢' },
-                            { value: 'CONCIERTO',   label: 'Concierto',         icon: '🎵' },
-                            { value: 'FIESTA',      label: 'Fiesta',            icon: '🎉' },
-                            { value: 'BABY_SHOWER', label: 'Baby Shower',       icon: '🍼' },
-                            { value: 'BAUTIZO',     label: 'Bautizo',           icon: '⛪' },
-                            { value: 'ANIVERSARIO', label: 'Aniversario',       icon: '🥂' },
-                            { value: 'OTRO',        label: 'Otro',              icon: '✨' },
-                          ].map(({ value, label, icon }) => (
+                          {EVENT_TYPE_OPTIONS.map(({ value, label, Icon }) => (
                             <button
                               key={value}
                               type="button"
                               onClick={() => setEventType(eventType === value ? '' : value)}
                               className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 text-center transition-all ${
                                 eventType === value
-                                  ? 'border-[#FF6A00] bg-orange-50 text-[#FF6A00]'
+                                  ? 'border-[#FF6B35] bg-orange-50 text-[#FF6B35]'
                                   : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                               }`}
                             >
-                              <span className="text-xl">{icon}</span>
+                              <Icon size={20} />
                               <span className="text-xs font-medium leading-tight">{label}</span>
                             </button>
                           ))}
@@ -1401,7 +1417,7 @@ function BookingContent() {
                           Notas Adicionales (Opcional)
                         </label>
                         <textarea
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] transition-colors"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35] transition-colors text-gray-900"
                           rows={4}
                           placeholder="Información adicional sobre el evento, preferencias especiales, etc."
                           value={notes}
@@ -1419,7 +1435,7 @@ function BookingContent() {
                         </label>
                         {eventId ? (
                           <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                            <svg className="h-5 w-5 text-[#FF6A00] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-5 w-5 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <div>
@@ -1432,13 +1448,13 @@ function BookingContent() {
                         ) : eventsLoading ? (
                           <p className="text-sm text-gray-400">Cargando eventos…</p>
                         ) : clientEvents.length === 0 ? (
-                          <p className="text-sm text-gray-500">No tienes eventos activos. <a href="/events" className="text-[#FF6A00] underline">Crea uno aquí</a>.</p>
+                          <p className="text-sm text-gray-500">No tienes eventos activos. <a href="/events" className="text-[#FF6B35] underline">Crea uno aquí</a>.</p>
                         ) : (
                           <div className="relative">
                             <select
                               value={selectedEventId ?? ''}
                               onChange={(e) => setSelectedEventId(e.target.value || null)}
-                              className="w-full appearance-none rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm text-gray-700 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 focus:bg-white outline-none transition hover:border-gray-300"
+                              className="w-full appearance-none rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm text-gray-700 focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/20 focus:bg-white outline-none transition hover:border-gray-300"
                             >
                               <option value="">Sin evento</option>
                               {clientEvents.map((ev: any) => (
@@ -1559,7 +1575,7 @@ function BookingContent() {
                             <div className="flex justify-between">
                               <dt className="text-sm text-gray-600">Tipo de evento:</dt>
                               <dd className="text-sm font-medium text-orange-700">
-                                {{ CUMPLEANOS:'🎂 Cumpleaños', BODA:'💍 Boda', GRADUACION:'🎓 Graduación', QUINCEANERA:'👑 Quinceañera', CORPORATIVO:'🏢 Corporativo', CONCIERTO:'🎵 Concierto', FIESTA:'🎉 Fiesta', BABY_SHOWER:'🍼 Baby Shower', BAUTIZO:'⛪ Bautizo', ANIVERSARIO:'🥂 Aniversario', OTRO:'✨ Otro' }[eventType] ?? eventType}
+                                {{ CUMPLEANOS:'Cumpleaños', BODA:'Boda', GRADUACION:'Graduación', QUINCEANERA:'Quinceañera', CORPORATIVO:'Corporativo', CONCIERTO:'Concierto', FIESTA:'Fiesta', BABY_SHOWER:'Baby Shower', BAUTIZO:'Bautizo', ANIVERSARIO:'Aniversario', OTRO:'Otro' }[eventType] ?? eventType}
                               </dd>
                             </div>
                           )}
@@ -1634,7 +1650,7 @@ function BookingContent() {
                             value={couponInput}
                             onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponResult(null); setCouponCode(''); }}
                             placeholder="Código de cupón"
-                            className="flex-1 rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-mono font-semibold tracking-wider text-gray-900 placeholder:font-normal placeholder:tracking-normal outline-none focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 transition"
+                            className="flex-1 rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-mono font-semibold tracking-wider text-gray-900 placeholder:font-normal placeholder:tracking-normal outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/20 transition"
                           />
                           <button
                             type="submit"
@@ -1743,9 +1759,13 @@ function BookingContent() {
                       <p className="font-medium text-gray-900">
                         {artist.baseLocationLabel || artist.city || 'Ubicación pendiente'}
                       </p>
-                      {artist.coverageRadius && (
+                      {artist.coverageRadius != null ? (
                         <p className="text-xs text-gray-500">
                           Incluye {artist.coverageRadius} km sin recargo
+                        </p>
+                      ) : (
+                        <p className="text-xs text-green-600">
+                          Cobertura nacional
                         </p>
                       )}
                     </div>
@@ -1774,28 +1794,28 @@ function BookingContent() {
                   <ul className="space-y-3 text-sm text-gray-600">
                     <li className="flex items-start gap-2">
                       {/* Lightning bolt — instant confirmation */}
-                      <svg className="h-5 w-5 text-[#FF6A00] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="h-5 w-5 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                       Confirmación instantánea
                     </li>
                     <li className="flex items-start gap-2">
                       {/* Chat bubble — direct communication */}
-                      <svg className="h-5 w-5 text-[#FF6A00] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="h-5 w-5 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                       Comunicación directa con el artista
                     </li>
                     <li className="flex items-start gap-2">
                       {/* Calendar X — free cancellation */}
-                      <svg className="h-5 w-5 text-[#FF6A00] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="h-5 w-5 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       Cancelación gratuita (48h antes)
                     </li>
                     <li className="flex items-start gap-2">
                       {/* Headset — 24/7 support */}
-                      <svg className="h-5 w-5 text-[#FF6A00] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="h-5 w-5 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
                       Soporte 24/7
@@ -1833,7 +1853,7 @@ function BookingContent() {
         isLoading={submitting && submitStage !== 'waiting'}
         hideActions={submitStage === 'waiting'}
         size={submitStage === 'waiting' ? 'xl' : 'sm'}
-        confirmClassName="bg-[#FF6A00] hover:bg-[#e55a00] text-white"
+        confirmClassName="bg-[#FF6B35] hover:bg-[#e55a00] text-white"
         details={
           submitStage === 'waiting' && paymentIframeUrl ? (
             <div className="flex flex-col gap-0 -mx-6 -mb-4">
@@ -1870,8 +1890,8 @@ function BookingContent() {
                     onClick={() => setUseSavedCard(true)}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${useSavedCard ? 'bg-orange-50 border-b border-orange-200' : 'bg-white border-b border-gray-100 hover:bg-gray-50'}`}
                   >
-                    <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center ${useSavedCard ? 'border-[#FF6A00]' : 'border-gray-300'}`}>
-                      {useSavedCard && <div className="h-2 w-2 rounded-full bg-[#FF6A00]" />}
+                    <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center ${useSavedCard ? 'border-[#FF6B35]' : 'border-gray-300'}`}>
+                      {useSavedCard && <div className="h-2 w-2 rounded-full bg-[#FF6B35]" />}
                     </div>
                     <svg className="h-5 w-5 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
@@ -1889,8 +1909,8 @@ function BookingContent() {
                     onClick={() => setUseSavedCard(false)}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${!useSavedCard ? 'bg-orange-50' : 'bg-white hover:bg-gray-50'}`}
                   >
-                    <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center ${!useSavedCard ? 'border-[#FF6A00]' : 'border-gray-300'}`}>
-                      {!useSavedCard && <div className="h-2 w-2 rounded-full bg-[#FF6A00]" />}
+                    <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center ${!useSavedCard ? 'border-[#FF6B35]' : 'border-gray-300'}`}>
+                      {!useSavedCard && <div className="h-2 w-2 rounded-full bg-[#FF6B35]" />}
                     </div>
                     <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1910,13 +1930,13 @@ function BookingContent() {
               {/* Details rows */}
               <div className="space-y-3 px-1">
                 <div className="flex items-center gap-3">
-                  <span className="text-[#FF6A00] flex-shrink-0">
+                  <span className="text-[#FF6B35] flex-shrink-0">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                   </span>
                   <span className="text-sm text-gray-700">{selectedService.name}</span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-[#FF6A00] flex-shrink-0 mt-0.5">
+                  <span className="text-[#FF6B35] flex-shrink-0 mt-0.5">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </span>
                   <span className="text-sm text-gray-700 capitalize">
@@ -1924,14 +1944,14 @@ function BookingContent() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[#FF6A00] flex-shrink-0">
+                  <span className="text-[#FF6B35] flex-shrink-0">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </span>
                   <span className="text-sm text-gray-700">{selectedTime}</span>
                 </div>
                 {selectedService.basePrice != null && (
                   <div className="flex items-center gap-3">
-                    <span className="text-[#FF6A00] flex-shrink-0">
+                    <span className="text-[#FF6B35] flex-shrink-0">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </span>
                     <span className="text-sm font-semibold text-gray-900">

@@ -113,7 +113,7 @@ function StripeCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Datos de la tarjeta</label>
-        <div className="border border-gray-300 rounded-xl px-4 py-3.5 focus-within:border-[#FF6A00] focus-within:ring-1 focus-within:ring-[#FF6A00] transition-colors bg-white">
+        <div className="border border-gray-300 rounded-xl px-4 py-3.5 focus-within:border-[#FF6B35] focus-within:ring-1 focus-within:ring-[#FF6B35] transition-colors bg-white">
           <CardElement options={CARD_ELEMENT_OPTS} />
         </div>
       </div>
@@ -123,7 +123,7 @@ function StripeCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
           type="checkbox"
           checked={setDef}
           onChange={e => setSetDef(e.target.checked)}
-          className="w-4 h-4 rounded border-gray-300 accent-[#FF6A00]"
+          className="w-4 h-4 rounded border-gray-300 accent-[#FF6B35]"
         />
         <span className="text-sm text-gray-700">Usar como tarjeta predeterminada</span>
       </label>
@@ -136,7 +136,7 @@ function StripeCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
         <button
           type="submit"
           disabled={saving || !stripe}
-          className="flex-1 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-2.5 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Guardando…' : 'Guardar tarjeta'}
         </button>
@@ -237,7 +237,7 @@ function DemoCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Nombre en la tarjeta"
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]"
         />
       </div>
       <div>
@@ -248,7 +248,7 @@ function DemoCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
           value={cardNum}
           onChange={e => setCardNum(formatCardNum(e.target.value))}
           placeholder="1234 5678 9012 3456"
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider focus:outline-none focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -260,7 +260,7 @@ function DemoCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
             value={expiry}
             onChange={e => setExpiry(formatExpiry(e.target.value))}
             placeholder="MM/AA"
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]"
           />
         </div>
         <div>
@@ -271,7 +271,7 @@ function DemoCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
             value={cvv}
             onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0,4))}
             placeholder="•••"
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]"
           />
         </div>
       </div>
@@ -281,7 +281,7 @@ function DemoCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
           type="checkbox"
           checked={setDef}
           onChange={e => setSetDef(e.target.checked)}
-          className="w-4 h-4 rounded border-gray-300 accent-[#FF6A00]"
+          className="w-4 h-4 rounded border-gray-300 accent-[#FF6B35]"
         />
         <span className="text-sm text-gray-700">Usar como tarjeta predeterminada</span>
       </label>
@@ -294,7 +294,7 @@ function DemoCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-2.5 bg-[#FF6A00] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors disabled:opacity-50"
+          className="flex-1 py-2.5 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors disabled:opacity-50"
         >
           {saving ? 'Guardando…' : 'Guardar tarjeta'}
         </button>
@@ -379,7 +379,7 @@ export default function PaymentsTab() {
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="px-4 py-2 bg-[#FF6A00] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors"
+          className="px-4 py-2 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors"
         >
           + Agregar tarjeta
         </button>
@@ -403,7 +403,7 @@ export default function PaymentsTab() {
           <p className="text-sm text-gray-500 mb-4">Agrega una tarjeta para pagar reservas más rápido</p>
           <button
             onClick={() => setShowAdd(true)}
-            className="px-5 py-2 bg-[#FF6A00] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors"
+            className="px-5 py-2 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors"
           >
             Agregar tarjeta
           </button>
@@ -421,7 +421,7 @@ export default function PaymentsTab() {
             return (
               <div
                 key={m.id}
-                className={`flex items-center gap-4 p-4 rounded-2xl border transition-colors ${m.isDefault ? 'border-[#FF6A00]/40 bg-[#FF6A00]/5' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                className={`flex items-center gap-4 p-4 rounded-2xl border transition-colors ${m.isDefault ? 'border-[#FF6B35]/40 bg-[#FF6B35]/5' : 'border-gray-200 bg-white hover:border-gray-300'}`}
               >
                 {/* Card visual */}
                 <div className={`w-14 h-9 rounded-lg bg-gradient-to-br ${brandColor(brand)} flex items-end p-1.5 shrink-0`}>
@@ -433,7 +433,7 @@ export default function PaymentsTab() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900 text-sm">{label} •••• {last4}</span>
                     {m.isDefault && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#FF6A00]/10 text-[#FF6A00]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#FF6B35]/10 text-[#FF6B35]">
                         Predeterminada
                       </span>
                     )}
@@ -447,7 +447,7 @@ export default function PaymentsTab() {
                     <button
                       onClick={() => handleSetDefault(m.id)}
                       disabled={busy}
-                      className="text-xs font-medium text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:border-[#FF6A00] hover:text-[#FF6A00] transition-colors disabled:opacity-40"
+                      className="text-xs font-medium text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:border-[#FF6B35] hover:text-[#FF6B35] transition-colors disabled:opacity-40"
                     >
                       {busy ? '…' : 'Predeterminar'}
                     </button>
