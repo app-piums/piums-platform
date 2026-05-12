@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk } from '@piums/sdk';
@@ -186,13 +185,12 @@ const financeLinks = [
 
 interface NavContentProps {
   pathname: string | null;
-  t: (key: string) => string;
   onNavigate: () => void;
   user: any;
   onLogout: () => void;
 }
 
-const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate, user, onLogout }) => (
+const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, onNavigate, user, onLogout }) => (
   <>
     {/* Logo */}
     <div className="px-6 py-2 border-b border-gray-100 flex items-center justify-between">
@@ -216,7 +214,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate,
     {/* Main Menu */}
     <div className="flex-1 px-4 py-6 overflow-y-auto">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-        {t('main')}
+        Menú Principal
       </p>
       <nav className="space-y-1">
         {tabs.map((tab) => {
@@ -249,7 +247,7 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate,
       {/* Finance Section */}
       <div className="mt-8">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-          {t('finance')}
+          Finanzas
         </p>
         <nav className="space-y-1">
           {financeLinks.map((link) => {
@@ -347,7 +345,6 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, t, onNavigate,
 export const DashboardSidebar: React.FC = () => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { t } = useTranslation('menu');
   const [isOpen, setIsOpen] = useState(false);
   const handleClose = () => setIsOpen(false);
 
@@ -355,7 +352,7 @@ export const DashboardSidebar: React.FC = () => {
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 min-h-screen flex-col">
-        <SidebarNavContent pathname={pathname} t={t} onNavigate={() => {}} user={user} onLogout={logout} />
+        <SidebarNavContent pathname={pathname} onNavigate={() => {}} user={user} onLogout={logout} />
       </aside>
 
       {/* ── Mobile: top bar with hamburger ── */}
@@ -387,7 +384,7 @@ export const DashboardSidebar: React.FC = () => {
           />
           {/* Drawer panel */}
           <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
-            <SidebarNavContent pathname={pathname} t={t} onNavigate={handleClose} user={user} onLogout={logout} />
+            <SidebarNavContent pathname={pathname} onNavigate={handleClose} user={user} onLogout={logout} />
           </aside>
         </div>
       )}
