@@ -72,27 +72,35 @@ const fetchArtistsPage = async (
   filters: ArtistsFilters
 ): Promise<ArtistsPageResponse> => {
   try {
-    const { sdk } = await import('@piums/sdk');
     const resolved = resolveFilters(filters);
 
-    // Use artists-service (/artists/search) — always has all artists indexed.
-    // The search-service index (/search/artists) may lag behind so we avoid it here.
-    const result = await sdk.searchArtists({
-      query: resolved.q,
-      categoria: resolved.category,
-      ciudad: resolved.cityId,
-      page,
-      limit: ITEMS_PER_PAGE,
-    });
+    // Build query params directly — SDK sends 'categoria'/'ciudad' but
+    // artists-service expects 'category'/'city', so we call the endpoint manually.
+    const params = new URLSearchParams();
+    if (resolved.q)        params.append('q',        resolved.q);
+    if (resolved.category) params.append('category', resolved.category);
+    if (resolved.cityId)   params.append('city',     resolved.cityId);
+    params.append('page',  String(page));
+    params.append('limit', String(ITEMS_PER_PAGE));
+
+    const response = await fetch(`/api/artists/search?${params.toString()}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+
+    const artists = data.artists ?? [];
+    const total   = data.pagination?.total ?? artists.length;
+    const totalPages = data.pagination?.totalPages ?? Math.ceil(total / ITEMS_PER_PAGE);
 
     return {
-      artists: result.artists,
-      total: result.total || result.artists.length,
-      page: result.page || page,
-      totalPages: result.totalPages ?? Math.ceil((result.total || result.artists.length) / ITEMS_PER_PAGE),
-      hasNextPage: page < (result.totalPages ?? 1),
+      artists,
+      total,
+      page:        data.pagination?.page ?? page,
+      totalPages,
+      hasNextPage: page < totalPages,
     };
-  } catch {
+  } catch (err) {
+    // Only fall back to mock when there are no real results yet (first render)
+    console.warn('[useInfiniteArtists] API error, falling back to mock:', err);
     return getMockPage(page, filters);
   }
 };
@@ -103,7 +111,7 @@ export function useInfiniteArtists(filters: ArtistsFilters) {
     queryFn: ({ pageParam = 1 }) => fetchArtistsPage(pageParam, filters),
     getNextPageParam: (lastPage) => lastPage.hasNextPage ? lastPage.page + 1 : undefined,
     initialPageParam: 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 s — short enough to recover quickly from transient errors
   });
 }
 

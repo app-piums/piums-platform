@@ -74,9 +74,9 @@ function SearchContent() {
       } else {
         // Filter-only search (category/city without text query)
         const results = await sdk.searchArtists({
-          categoria: selectedCategory || undefined,
-          ciudad: selectedCity || undefined,
-        });
+          category: selectedCategory || undefined,
+          cityId: selectedCity || undefined,
+        } as any);
         setArtists((results as any).artists ?? []);
         setExpandedTerms([]);
       }

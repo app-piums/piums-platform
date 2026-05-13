@@ -248,7 +248,7 @@ export default function ArtistOnboardingPage() {
         credentials: 'include',
         body: JSON.stringify({ category: 'OTRO', specialties: ['OTRO'], equipment: [] }),
       });
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('[onboarding] skip profile creation failed:', e); }
     document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
     router.push('/artist/dashboard');
   };

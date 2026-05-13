@@ -390,6 +390,7 @@ services:
       GATEWAY_INTERNAL_URL: http://host.docker.internal:80
       GATEWAY_URL: http://host.docker.internal:80/api
       AUTH_SERVICE_URL: http://auth-service:4001
+      BOOKING_SERVICE_URL: http://host.docker.internal:80
       CHAT_SERVICE_URL: http://chat-service:4010
       NEXT_PUBLIC_APP_URL: https://client.piums.io
       NEXT_PUBLIC_CLIENT_URL: https://client.piums.io
@@ -418,8 +419,11 @@ services:
       GATEWAY_INTERNAL_URL: http://host.docker.internal:80
       GATEWAY_URL: http://host.docker.internal:80/api
       AUTH_SERVICE_URL: http://auth-service:4001
-      ARTISTS_SERVICE_URL: http://artists-service:4003
+      ARTISTS_SERVICE_URL: http://host.docker.internal:80/api
+      USERS_SERVICE_URL: http://host.docker.internal:80
+      BOOKING_SERVICE_URL: http://host.docker.internal:80
       CHAT_SERVICE_URL: http://chat-service:4010
+      CATALOG_API_URL: http://host.docker.internal:80/api/catalog/services
       NEXT_PUBLIC_APP_URL: https://artist.piums.io
       NEXT_PUBLIC_CLIENT_URL: https://client.piums.io
       NEXT_PUBLIC_ARTIST_URL: https://artist.piums.io

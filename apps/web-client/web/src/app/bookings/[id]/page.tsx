@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 import { cImg } from '@/lib/cloudinaryImg';
 import { Clock as LucideClock, CheckCircle as LucideCheckCircle } from 'lucide-react';
+import { generateBookingReceipt } from '@/lib/generateReceipt';
 
 // Icons
 const ClockIcon = ({ className }: { className?: string }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -404,7 +405,25 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                        No-show reportado — en revisión
                      </div>
                    )}
-                   <button onClick={() => window.print()} className="w-full py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition">
+                   <button
+                     onClick={() => generateBookingReceipt({
+                       bookingId: booking.id,
+                       bookingCode: booking.code || booking.id.slice(0, 8).toUpperCase(),
+                       status: booking.status,
+                       serviceName: service?.name || booking.serviceName || 'Servicio',
+                       artistName: artist?.nombre || booking.artistName || 'Artista',
+                       clientName: userName,
+                       clientEmail: user?.email,
+                       scheduledDate: booking.scheduledDate || booking.startAt,
+                       durationMinutes: booking.durationMinutes,
+                       location: booking.location,
+                       totalPrice: Number(booking.totalPrice || booking.amount || 0),
+                       anticipoAmount: booking.anticipoAmount ? Number(booking.anticipoAmount) : undefined,
+                       currency: booking.currency,
+                     })}
+                     className="w-full py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition flex items-center justify-center gap-2"
+                   >
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                      Descargar Recibo (PDF)
                    </button>
                    <Link href={`/services/${booking.serviceId || '1'}`} className="text-center text-xs text-gray-500 hover:text-[#FF6B35] transition pt-1">

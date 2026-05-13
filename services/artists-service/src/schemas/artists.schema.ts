@@ -6,6 +6,7 @@ export const ArtistCategoryEnum = z.enum([
   "FOTOGRAFO",
   "VIDEOGRAFO",
   "ANIMADOR",
+  "OTRO",
 ]);
 
 export const VerificationStatusEnum = z.enum([

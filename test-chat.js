@@ -9,7 +9,7 @@ async function test() {
   
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role, status: user.status },
-    process.env.JWT_SECRET || 'piums_super_secret_jwt_key_2024',
+    process.env.JWT_SECRET,
     { expiresIn: '1d' }
   );
   

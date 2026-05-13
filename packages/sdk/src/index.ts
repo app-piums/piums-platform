@@ -306,6 +306,10 @@ export interface SmartSearchResults {
 
 export interface SearchParams {
   query?: string;
+  // Canonical names (match artists-service query params)
+  category?: string;
+  cityId?: string;
+  // Legacy Spanish names kept for backwards compatibility
   categoria?: string;
   ciudad?: string;
   precioMin?: number;
@@ -859,18 +863,20 @@ class PiumsSDK {
   async searchArtists(params?: SearchParams): Promise<SearchResults> {
     try {
       const queryParams = new URLSearchParams();
-      if (params?.query) queryParams.append('q', params.query);
-      if (params?.categoria) queryParams.append('categoria', params.categoria);
-      if (params?.ciudad) queryParams.append('ciudad', params.ciudad);
-      if (params?.page) queryParams.append('page', params.page.toString());
-      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.query)    queryParams.append('q',        params.query);
+      if ((params as any)?.categoria) queryParams.append('category', (params as any).categoria);
+      else if (params?.category) queryParams.append('category', params.category);
+      if ((params as any)?.ciudad)    queryParams.append('city',     (params as any).ciudad);
+      else if (params?.cityId)   queryParams.append('city',     params.cityId);
+      if (params?.page)     queryParams.append('page',     params.page.toString());
+      if (params?.limit)    queryParams.append('limit',    params.limit.toString());
 
       const response = await fetch(`${this.baseUrl}/artists/search?${queryParams.toString()}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       if (data.pagination) {
         return {

@@ -138,8 +138,44 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
+        {/* App Download */}
+        <div className="border-t border-gray-800 mt-8 pt-8 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <h3 className="text-white font-semibold text-sm mb-1">Descarga la app Piums Artista</h3>
+              <p className="text-xs text-gray-400">Gestiona reservas, disponibilidad y pagos desde tu móvil. iOS y Android.</p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <a
+                href={process.env.NEXT_PUBLIC_ARTIST_APP_IOS || 'https://apps.apple.com/app/piums-artista'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5 text-white shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                <div className="text-left">
+                  <div className="text-[9px] text-gray-400 leading-none">Disponible en</div>
+                  <div className="text-xs font-semibold text-white leading-tight">App Store</div>
+                </div>
+              </a>
+              <a
+                href={process.env.NEXT_PUBLIC_ARTIST_APP_ANDROID || 'https://play.google.com/store/apps/details?id=io.piums.artista'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5 text-white shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.3.17.64.19.96.07l11.37-6.57-2.39-2.39-9.94 8.89zm-1.76-20.1C1.16 3.96 1 4.34 1 4.8v14.4c0 .46.16.84.42 1.14l.06.06 8.07-8.07v-.19L1.42 3.6l-.06.06zm17.16 8.67l-2.3-1.33-2.67 2.67 2.67 2.67 2.31-1.33c.66-.38.66-1.01 0-1.68h-.01zm-15.4 9.28L14.55 13l-2.39-2.39L3.18 2.24C2.86 2.12 2.52 2.14 2.22 2.31c-.61.35-.61 1.31 0 1.68l.14.08L14.55 12 2.36 20.43l-.14.08c-.61.37-.61 1.33 0 1.68.3.17.64.19.96.07l-.14-.08.14.08z"/></svg>
+                <div className="text-left">
+                  <div className="text-[9px] text-gray-400 leading-none">Disponible en</div>
+                  <div className="text-xs font-semibold text-white leading-tight">Google Play</div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Línea divisora */}
-        <div className="border-t border-gray-800 mt-8 pt-8">
+        <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-400">
               © {new Date().getFullYear()} Piums. Todos los derechos reservados.
