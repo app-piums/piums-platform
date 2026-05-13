@@ -38,51 +38,46 @@ function ChatPageInner() {
   useEffect(() => {
     if (!user || !isAuthenticated) return;
 
-    // Fetch token from server to use for socket auth (httpOnly cookie)
-    fetch('/api/chat/token', { credentials: 'include' })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (!data?.token) return;
+    const socket = io(CHAT_SOCKET_URL, {
+      path: '/socket.io/',
+      auth: (cb: (data: object) => void) => {
+        fetch('/api/chat/token', { credentials: 'include' })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => cb({ token: data?.token || '' }))
+          .catch(() => cb({ token: '' }));
+      },
+      transports: ['polling', 'websocket'],
+    });
 
-        const socket = io(CHAT_SOCKET_URL, {
-          path: '/socket.io/',
-          auth: { token: data.token },
-          transports: ['websocket'],
-        });
+    socket.on('connect', () => {
+      if (currentConversation) {
+        socket.emit('conversation:join', { conversationId: currentConversation.id });
+      }
+    });
 
-        socket.on('connect', () => {
-          // Join current conversation if one is selected
-          if (currentConversation) {
-            socket.emit('conversation:join', { conversationId: currentConversation.id });
-          }
-        });
+    socket.on('message:received', (msg: Message) => {
+      setMessages(prev => {
+        if (prev.find(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === msg.conversationId
+            ? { ...c, lastMessageAt: msg.createdAt, unreadCount: c.id === currentConversation?.id ? 0 : (c.unreadCount ?? 0) + 1 }
+            : c
+        )
+      );
+    });
 
-        socket.on('message:received', (msg: Message) => {
-          setMessages(prev => {
-            // Avoid duplicates
-            if (prev.find(m => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-          setConversations(prev =>
-            prev.map(c =>
-              c.id === msg.conversationId
-                ? { ...c, lastMessageAt: msg.createdAt, unreadCount: c.id === currentConversation?.id ? 0 : (c.unreadCount ?? 0) + 1 }
-                : c
-            )
-          );
-        });
+    socket.on('typing:start', ({ userId }: { userId: string }) => {
+      if (userId !== user.id) setIsTyping(true);
+    });
 
-        socket.on('typing:start', ({ userId }: { userId: string }) => {
-          if (userId !== user.id) setIsTyping(true);
-        });
+    socket.on('typing:stop', ({ userId }: { userId: string }) => {
+      if (userId !== user.id) setIsTyping(false);
+    });
 
-        socket.on('typing:stop', ({ userId }: { userId: string }) => {
-          if (userId !== user.id) setIsTyping(false);
-        });
-
-        socketRef.current = socket;
-      })
-      .catch(() => {});
+    socketRef.current = socket;
 
     return () => {
       socketRef.current?.disconnect();

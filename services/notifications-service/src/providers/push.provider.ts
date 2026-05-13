@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin';
 import { logger } from '../utils/logger';
 
 interface PushOptions {
@@ -8,58 +9,47 @@ interface PushOptions {
 }
 
 class PushProvider {
-  private enabled: boolean;
-  private serverKey: string = '';
+  private enabled: boolean = false;
 
   constructor() {
-    this.enabled = process.env.ENABLE_PUSH === 'true';
-    this.serverKey = process.env.FCM_SERVER_KEY || '';
-    
-    if (this.enabled) {
-      this.initialize();
-    } else {
-      logger.info('Push notifications provider disabled');
-    }
-  }
-
-  private initialize() {
-    if (!this.serverKey) {
-      logger.warn('FCM server key not configured, push notifications disabled');
-      this.enabled = false;
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!serviceAccountJson) {
+      logger.warn('FIREBASE_SERVICE_ACCOUNT_JSON not set, push notifications disabled', 'PUSH_PROVIDER');
       return;
     }
 
-    logger.info('Push notifications provider initialized', 'PUSH_PROVIDER');
+    try {
+      const serviceAccount = JSON.parse(serviceAccountJson);
+      if (!admin.apps.length) {
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      }
+      this.enabled = true;
+      logger.info('Push notifications provider initialized (FCM)', 'PUSH_PROVIDER');
+    } catch (e: any) {
+      logger.error('Failed to initialize Firebase Admin SDK', 'PUSH_PROVIDER', e);
+    }
   }
 
   async sendPush(options: PushOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (!this.enabled) {
-      return {
-        success: false,
-        error: 'Push notifications not enabled or configured',
-      };
+      return { success: false, error: 'Push notifications not configured' };
     }
 
     try {
-      // TODO: Implement FCM push notification sending
-      // This is a placeholder that would use Firebase Admin SDK
-      
-      logger.info('Push notification sent (placeholder)', 'PUSH_PROVIDER', {
-        fcmToken: options.fcmToken.substring(0, 20) + '...',
-        title: options.title,
+      const messageId = await admin.messaging().send({
+        token: options.fcmToken,
+        notification: { title: options.title, body: options.body },
+        data: options.data ?? {},
+        apns: {
+          payload: { aps: { sound: 'default', badge: 1, contentAvailable: 1 } },
+        },
       });
 
-      return {
-        success: true,
-        messageId: 'placeholder-message-id',
-      };
+      logger.info('Push notification sent', 'PUSH_PROVIDER', { messageId });
+      return { success: true, messageId };
     } catch (error: any) {
       logger.error('Failed to send push notification', 'PUSH_PROVIDER', error);
-
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
   }
 

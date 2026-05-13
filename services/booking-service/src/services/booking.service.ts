@@ -649,6 +649,17 @@ export class BookingService {
         };
 
         await notifyBookingConfirmed(notificationData);
+
+        notificationsClient.sendNotification({
+          userId: booking.clientId,
+          type: 'BOOKING_CONFIRMED',
+          channel: 'PUSH',
+          title: '¡Reserva Confirmada!',
+          message: `Tu reserva con ${notificationData.artistName} ha sido confirmada`,
+          data: { bookingId: id },
+          priority: 'high',
+          category: 'booking',
+        }).catch(() => {});
       } catch (err: any) {
         logger.error('Error enviando notificación de confirmación', 'BOOKING_SERVICE', { error: err.message });
       }
@@ -837,6 +848,16 @@ export class BookingService {
         priority: 'high',
         category: 'booking',
       }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+      notificationsClient.sendNotification({
+        userId: booking.artistId,
+        type: 'BOOKING_CANCELLED',
+        channel: 'PUSH',
+        title: 'Reserva Cancelada',
+        message: `El cliente ha cancelado una reserva`,
+        data: { bookingId: id },
+        priority: 'high',
+        category: 'booking',
+      }).catch(() => {});
     } else {
       notificationsClient.sendNotification({
         userId: booking.clientId,
@@ -848,6 +869,16 @@ export class BookingService {
         priority: 'high',
         category: 'booking',
       }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: 'BOOKING_CANCELLED',
+        channel: 'PUSH',
+        title: 'Reserva Cancelada',
+        message: `El artista ha cancelado tu reserva`,
+        data: { bookingId: id },
+        priority: 'high',
+        category: 'booking',
+      }).catch(() => {});
     }
 
     return updated;

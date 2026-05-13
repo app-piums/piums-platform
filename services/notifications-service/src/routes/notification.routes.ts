@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { notificationController } from '../controller/notification.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import { pushProvider } from '../providers/push.provider';
 import {
   sendRateLimiter,
   batchSendRateLimiter,
@@ -8,6 +9,36 @@ import {
 } from '../middleware/rateLimiter';
 
 const router: Router = Router();
+
+// ============================================================================
+// Push Token Registration — llamado por las apps iOS al iniciar sesión
+// POST /api/notifications/push-token  { token, platform }
+// ============================================================================
+router.post('/push-token', authenticate, async (req: any, res) => {
+  const { token, platform } = req.body;
+  if (!token) return res.status(400).json({ error: 'token es requerido' });
+
+  const authUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+  const rawToken = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+
+  try {
+    const r = await fetch(`${authUrl}/auth/fcm-token`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${rawToken}`,
+      },
+      body: JSON.stringify({ fcmToken: token }),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      return res.status(r.status).json(err);
+    }
+    return res.json({ ok: true, platform });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message });
+  }
+});
 
 // ============================================================================
 // Send Notifications
@@ -217,5 +248,22 @@ router.delete(
   authenticate,
   notificationController.deleteNotification.bind(notificationController)
 );
+
+/**
+ * POST /api/notifications/internal/push
+ * Envía push directamente con fcmToken — solo inter-servicios (x-internal-secret)
+ */
+router.post('/internal/push', async (req, res) => {
+  const secret = process.env.INTERNAL_SERVICE_SECRET;
+  if (!secret || req.headers['x-internal-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  const { fcmToken, title, body, data } = req.body;
+  if (!fcmToken || !title || !body) {
+    return res.status(400).json({ error: 'fcmToken, title y body son requeridos' });
+  }
+  const result = await pushProvider.sendPush({ fcmToken, title, body, data });
+  return res.json(result);
+});
 
 export default router;

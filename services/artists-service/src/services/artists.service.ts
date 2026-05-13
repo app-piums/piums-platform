@@ -66,6 +66,12 @@ export class ArtistsService {
 
       logger.info("Artista creado", "ARTISTS_SERVICE", { artistId: artist.id, email: artist.email });
       triggerArtistReindex(artist.id);
+      this.alertAdmins('admin:alert', {
+        type: 'artist_pending',
+        title: 'Nuevo artista pendiente',
+        message: `${artist.name || artist.email} está esperando verificación`,
+        actionUrl: '/artists',
+      });
       return artist;
     } catch (error) {
       logger.error("Error creando artista", "ARTISTS_SERVICE", { error });
@@ -454,5 +460,17 @@ export class ArtistsService {
     });
 
     return availability;
+  }
+
+  private alertAdmins(event: string, data: Record<string, any>) {
+    const chatUrl = process.env.CHAT_SERVICE_URL;
+    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!chatUrl || !secret) return;
+
+    fetch(`${chatUrl}/internal/notify-admins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+      body: JSON.stringify({ event, data }),
+    }).catch(() => { /* non-critical */ });
   }
 }

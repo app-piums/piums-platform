@@ -56,5 +56,26 @@ router.patch("/profile", authenticate, updateProfile);
 router.patch("/complete-onboarding", authenticate, completeOnboarding);
 router.patch("/fcm-token", authenticate, registerFCMToken);
 
+// Internal endpoint — solo para llamadas inter-servicio con x-internal-secret
+router.get("/internal/fcm-token/:userId", async (req, res) => {
+  const secret = process.env.INTERNAL_SERVICE_SECRET;
+  if (!secret || req.headers['x-internal-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      select: { fcmToken: true },
+    });
+    await prisma.$disconnect();
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    return res.json({ fcmToken: user.fcmToken ?? null });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;
 

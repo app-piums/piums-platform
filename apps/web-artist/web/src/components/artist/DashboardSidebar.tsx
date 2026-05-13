@@ -7,6 +7,12 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk } from '@piums/sdk';
+import { io, Socket } from 'socket.io-client';
+
+const CHAT_SOCKET_URL =
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? (process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'https://backend.piums.io')
+    : (process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4010');
 
 // ─── Notification Bell ───────────────────────────────────────────────────────
 
@@ -19,6 +25,33 @@ function NotificationBell() {
     sdk.getNotifications({ status: 'PENDING', limit: 20 })
       .then((data) => setNotifications(data.notifications ?? []))
       .catch(() => { /* notifications non-critical */ });
+  }, []);
+
+  // Real-time: listen for new notifications via chat-service socket
+  useEffect(() => {
+    let socket: Socket | null = null;
+
+    fetch('/api/chat/token', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data?.token) return;
+
+        socket = io(CHAT_SOCKET_URL, {
+          path: '/socket.io/',
+          transports: ['polling', 'websocket'],
+          auth: { token: data.token },
+          reconnectionAttempts: 3,
+        });
+
+        socket.on('notification:new', (notif: any) => {
+          setNotifications((prev) => [notif, ...prev]);
+        });
+      })
+      .catch(() => { /* auth not available — skip socket */ });
+
+    return () => {
+      socket?.disconnect();
+    };
   }, []);
 
   useEffect(() => {

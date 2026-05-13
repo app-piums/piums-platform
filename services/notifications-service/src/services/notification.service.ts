@@ -321,6 +321,9 @@ export class NotificationService {
         // Log success
         await this.logNotificationEvent(notificationId, 'sent', result.messageId);
 
+        // Push real-time event to connected web clients
+        this.dispatchRealtime(notification.userId, notification);
+
         logger.info('Notification sent successfully', 'NOTIFICATION_SERVICE', {
           notificationId,
           channel: notification.channel,
@@ -680,6 +683,35 @@ export class NotificationService {
     }
 
     return result;
+  }
+
+  private dispatchRealtime(userId: string, notification: any) {
+    const chatUrl = process.env.CHAT_SERVICE_URL;
+    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!chatUrl || !secret) return;
+
+    fetch(`${chatUrl}/internal/notify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': secret,
+      },
+      body: JSON.stringify({
+        userId,
+        event: 'notification:new',
+        data: {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          category: notification.category,
+          channel: notification.channel,
+          createdAt: notification.createdAt ?? new Date().toISOString(),
+        },
+      }),
+    }).catch((err) => {
+      logger.warn('Could not dispatch realtime notification', 'NOTIFICATION_SERVICE', err);
+    });
   }
 
   private async logNotificationEvent(

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 type RawNotification = {
   id?: string | number;
@@ -78,10 +79,45 @@ const normalizeNotifications = (input: RawNotification[] = []): NotificationItem
     category: item.category ?? item.channel,
   }));
 
+const CHAT_SOCKET_URL =
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? (process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'https://backend.piums.io')
+    : (process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4010');
+
 export function useNotifications(limit: number = 6) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Real-time: connect to chat-service socket and listen for new notifications
+  useEffect(() => {
+    let socket: Socket | null = null;
+
+    fetch('/api/chat/token', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data?.token) return;
+
+        socket = io(CHAT_SOCKET_URL, {
+          path: '/socket.io/',
+          transports: ['polling', 'websocket'],
+          auth: { token: data.token },
+          reconnectionAttempts: 3,
+        });
+
+        socket.on('notification:new', (notif: RawNotification) => {
+          setNotifications((prev) => {
+            const normalized = normalizeNotifications([notif]);
+            return [...normalized, ...prev];
+          });
+        });
+      })
+      .catch(() => { /* auth not available — skip socket */ });
+
+    return () => {
+      socket?.disconnect();
+    };
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);

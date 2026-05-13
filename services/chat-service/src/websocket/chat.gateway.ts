@@ -17,6 +17,7 @@ interface AuthenticatedSocket extends Socket {
   };
   userId?: string;
   email?: string;
+  role?: string;
 }
 
 export class ChatGateway {
@@ -101,6 +102,7 @@ export class ChatGateway {
 
       socket.userId = user.id;
       socket.email = user.email;
+      socket.role = user.role;
       next();
     });
   }
@@ -115,6 +117,11 @@ export class ChatGateway {
 
       // Join user to their personal room
       socket.join(`user:${userId}`);
+
+      // Admins also join the shared broadcast room
+      if (socket.role === 'admin') {
+        socket.join('room:admins');
+      }
 
       // ==================== EVENTS ====================
 
@@ -231,8 +238,11 @@ export class ChatGateway {
     });
   }
 
-  // Método para enviar notificaciones desde el backend
   public notifyUser(userId: string, event: string, data: any) {
     this.io.to(`user:${userId}`).emit(event, data);
+  }
+
+  public notifyAdmins(event: string, data: any) {
+    this.io.to('room:admins').emit(event, data);
   }
 }

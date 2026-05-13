@@ -35,60 +35,58 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user || !isAuthenticated) return;
 
-    fetch('/api/chat/token', { credentials: 'include' })
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (!data?.token) return;
+    const socket: Socket = io(CHAT_SOCKET_URL, {
+      path: '/socket.io/',
+      auth: (cb: (data: object) => void) => {
+        fetch('/api/chat/token', { credentials: 'include' })
+          .then(res => (res.ok ? res.json() : null))
+          .then(data => cb({ token: data?.token || '' }))
+          .catch(() => cb({ token: '' }));
+      },
+      transports: ['polling', 'websocket'],
+    });
 
-        const socket: Socket = io(CHAT_SOCKET_URL, {
-          path: '/socket.io/',
-          auth: { token: data.token },
-          transports: ['websocket'],
-        });
+    socket.on('connect', () => {
+      if (currentConversationIdRef.current) {
+        socket.emit('conversation:join', { conversationId: currentConversationIdRef.current });
+      }
+    });
 
-        socket.on('connect', () => {
-          if (currentConversationIdRef.current) {
-            socket.emit('conversation:join', { conversationId: currentConversationIdRef.current });
-          }
-        });
+    socket.on('message:received', (msg: Message) => {
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === msg.conversationId
+            ? {
+                ...c,
+                lastMessageAt: msg.createdAt,
+                unreadCount:
+                  msg.conversationId === currentConversationIdRef.current
+                    ? 0
+                    : (c.unreadCount ?? 0) + 1,
+                messages: [msg, ...(c.messages ?? []).filter(m => m.id !== msg.id)],
+              }
+            : c
+        )
+      );
 
-        socket.on('message:received', (msg: Message) => {
-          setConversations(prev =>
-            prev.map(c =>
-              c.id === msg.conversationId
-                ? {
-                    ...c,
-                    lastMessageAt: msg.createdAt,
-                    unreadCount:
-                      msg.conversationId === currentConversationIdRef.current
-                        ? 0
-                        : (c.unreadCount ?? 0) + 1,
-                    messages: [msg, ...(c.messages ?? []).filter(m => m.id !== msg.id)],
-                  }
-                : c
-            )
-          );
+      if (msg.conversationId === currentConversationIdRef.current) {
+        setMessages(prev => (prev.find(m => m.id === msg.id) ? prev : [...prev, msg]));
+      }
+    });
 
-          if (msg.conversationId === currentConversationIdRef.current) {
-            setMessages(prev => (prev.find(m => m.id === msg.id) ? prev : [...prev, msg]));
-          }
-        });
+    socket.on('typing:start', ({ conversationId }: { conversationId: string }) => {
+      if (conversationId === currentConversationIdRef.current) {
+        setIsTyping(true);
+      }
+    });
 
-        socket.on('typing:start', ({ conversationId }: { conversationId: string }) => {
-          if (conversationId === currentConversationIdRef.current) {
-            setIsTyping(true);
-          }
-        });
+    socket.on('typing:stop', ({ conversationId }: { conversationId: string }) => {
+      if (conversationId === currentConversationIdRef.current) {
+        setIsTyping(false);
+      }
+    });
 
-        socket.on('typing:stop', ({ conversationId }: { conversationId: string }) => {
-          if (conversationId === currentConversationIdRef.current) {
-            setIsTyping(false);
-          }
-        });
-
-        socketRef.current = socket;
-      })
-      .catch(() => {});
+    socketRef.current = socket;
 
     return () => {
       socketRef.current?.disconnect();
@@ -112,6 +110,7 @@ export default function ChatPage() {
   }, [authLoading, isAuthenticated, router]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     const fetchConversations = async () => {
       setIsLoadingConversations(true);
       setError(null);
@@ -154,7 +153,7 @@ export default function ChatPage() {
       }
     };
     fetchConversations();
-  }, []);
+  }, [isAuthenticated]);
 
   const selectConversation = (conversationId: string) => {
       const conv = conversations.find(c => c.id === conversationId) ?? null;

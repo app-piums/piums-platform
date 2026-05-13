@@ -161,6 +161,7 @@ services:
       DATABASE_URL: postgresql://piums:piums_dev_password@postgres:5432/piums_artists
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
+      CHAT_SERVICE_URL: http://chat-service:4010
       BOOKING_SERVICE_URL: http://booking-service:4008
       PAYMENTS_SERVICE_URL: http://payments-service:4005
       SEARCH_SERVICE_URL: http://search-service:4009
@@ -263,10 +264,13 @@ services:
       FRONTEND_URL: https://client.piums.io
       # Email config — Resend (set RESEND_API_KEY to activate)
       ENABLE_EMAIL: "true"
+      ENABLE_PUSH: "true"
+      FIREBASE_SERVICE_ACCOUNT_JSON: ""
       RESEND_API_KEY: "re_12S1fuyc_GW4CzFYACENmn13hcKs2HS9v"
       EMAIL_FROM: noreply@piums.io
       EMAIL_FROM_NAME: Piums
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
+      CHAT_SERVICE_URL: http://chat-service:4010
       CLIENT_APP_URL: https://client.piums.io
       ARTIST_APP_URL: https://artist.piums.io
       # Fallback providers (used only if RESEND_API_KEY is empty)
@@ -432,18 +436,18 @@ services:
     build:
       context: ../../
       dockerfile: apps/web-admin/web/Dockerfile
+      args:
+        GATEWAY_INTERNAL_URL: http://host.docker.internal:80
     container_name: piums-web-admin
     ports:
       - "3002:3003"
     environment:
       NODE_ENV: development
-      GATEWAY_INTERNAL_URL: http://gateway:3000
-      GATEWAY_URL: http://gateway:3000/api
-      AUTH_SERVICE_URL: http://auth-service:4001
+      GATEWAY_INTERNAL_URL: http://host.docker.internal:80
+      GATEWAY_URL: http://host.docker.internal:80/api
       NEXT_PUBLIC_APP_URL: https://admin.piums.io
       NEXT_PUBLIC_API_URL: https://backend.piums.io/api
-    depends_on:
-      - gateway
+      NEXT_PUBLIC_CHAT_SERVICE_URL: https://backend.piums.io
     networks:
       - piums-network
     restart: unless-stopped

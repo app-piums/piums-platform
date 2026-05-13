@@ -294,6 +294,12 @@ export class ChatService {
       // Emit to WebSocket Gateway
       chatEmitter.emit('new_message', message, conversation);
 
+      // Fire-and-forget push notification para iOS (no bloquea el response)
+      const recipientId = conversation.participant1Id === senderId
+        ? conversation.participant2Id
+        : conversation.participant1Id;
+      this.sendPushToRecipient(recipientId, conversationId, filteredContent).catch(() => {});
+
       return message;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
@@ -371,6 +377,30 @@ export class ChatService {
       logger.error('Error marking conversation as read', 'CHAT_SERVICE', error);
       throw new AppError(500, 'Error al marcar conversación como leída');
     }
+  }
+
+  private async sendPushToRecipient(recipientId: string, chatId: string, preview: string) {
+    const authUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+    const notifUrl = process.env.NOTIFICATIONS_SERVICE_URL || 'http://notifications-service:4007';
+    const secret = process.env.INTERNAL_SERVICE_SECRET || '';
+
+    const tokenRes = await fetch(`${authUrl}/auth/internal/fcm-token/${recipientId}`, {
+      headers: { 'x-internal-secret': secret },
+    });
+    if (!tokenRes.ok) return;
+    const { fcmToken } = await tokenRes.json() as { fcmToken: string | null };
+    if (!fcmToken) return;
+
+    await fetch(`${notifUrl}/api/notifications/internal/push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+      body: JSON.stringify({
+        fcmToken,
+        title: 'Nuevo mensaje',
+        body: preview.substring(0, 100),
+        data: { type: 'NEW_MESSAGE', conversationId: chatId },
+      }),
+    });
   }
 
   async getUnreadCount(userId: string) {

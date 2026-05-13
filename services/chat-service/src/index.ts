@@ -40,6 +40,34 @@ app.use(errorHandler);
 
 // Inicializar WebSocket Gateway
 const chatGateway = new ChatGateway(httpServer);
+
+// Internal endpoint — emits a socket event to a specific user
+// Called by other services (notifications-service, etc.) using x-internal-secret
+app.post('/internal/notify', (req, res) => {
+  const secret = process.env.INTERNAL_SERVICE_SECRET;
+  if (!secret || req.headers['x-internal-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  const { userId, event, data } = req.body;
+  if (!userId || !event) {
+    return res.status(400).json({ error: 'userId and event are required' });
+  }
+  chatGateway.notifyUser(userId, event, data ?? {});
+  return res.json({ ok: true });
+});
+
+app.post('/internal/notify-admins', (req, res) => {
+  const secret = process.env.INTERNAL_SERVICE_SECRET;
+  if (!secret || req.headers['x-internal-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  const { event, data } = req.body;
+  if (!event) {
+    return res.status(400).json({ error: 'event is required' });
+  }
+  chatGateway.notifyAdmins(event, data ?? {});
+  return res.json({ ok: true });
+});
 logger.info('WebSocket Gateway initialized', 'SERVER');
 
 const PORT = process.env.PORT || 4010;

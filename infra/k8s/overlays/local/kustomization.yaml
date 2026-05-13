@@ -79,7 +79,13 @@ patches:
       data:
         NODE_ENV: "development"
         REDIS_URL: "redis://redis-service:6379"
+        ENABLE_PUSH: "true"
         ALLOWED_ORIGINS: "https://artist.piums.io,https://client.piums.io,https://admin.piums.io,https://piums.io,https://www.piums.io,https://backend.piums.io,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003"
+        GOOGLE_CALLBACK_URL: "https://backend.piums.io/api/auth/google/callback"
+        TIKTOK_CALLBACK_URL: "https://backend.piums.io/api/auth/tiktok/callback"
+        FACEBOOK_CALLBACK_URL: "https://backend.piums.io/api/auth/facebook/callback"
+        CLIENT_APP_URL: "https://client.piums.io"
+        ARTIST_APP_URL: "https://artist.piums.io"
 
   # ── Override secrets with dev credentials ─────────────────────────────────
   - path: dev-secrets.yaml
@@ -350,3 +356,12 @@ patches:
                   httpGet:
                     path: /api/health/ping
                     port: 3000
+
+  # ── Set HPA minReplicas to 1 for local dev (metrics-server not installed;
+  # minReplicas:2 breaks Socket.IO polling sessions via load balancing) ──────
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1

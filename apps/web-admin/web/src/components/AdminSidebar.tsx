@@ -2,9 +2,142 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { ThemeToggle } from "@/contexts/ThemeContext";
+import { io, Socket } from "socket.io-client";
+
+const CHAT_SOCKET_URL =
+  typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || "https://backend.piums.io"
+    : process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || "http://localhost:4010";
+
+type AdminAlert = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  actionUrl?: string;
+  at: string;
+};
+
+function NotificationBell() {
+  const [alerts, setAlerts] = useState<AdminAlert[]>([]);
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Connect to chat-service socket using the admin JWT stored in sessionStorage
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("admin_token") : null;
+    if (!token) return;
+
+    const socket: Socket = io(CHAT_SOCKET_URL, {
+      path: "/socket.io/",
+      transports: ["polling", "websocket"],
+      auth: { token },
+      reconnectionAttempts: 3,
+    });
+
+    socket.on("admin:alert", (data: Omit<AdminAlert, "id" | "at">) => {
+      const alert: AdminAlert = {
+        ...data,
+        id: crypto.randomUUID(),
+        at: new Date().toISOString(),
+      };
+      setAlerts((prev) => [alert, ...prev].slice(0, 20));
+      setUnread((n) => n + 1);
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const toggle = () => {
+    setOpen((v) => !v);
+    if (!open) setUnread(0);
+  };
+
+  const formatTime = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "Justo ahora";
+    if (min < 60) return `Hace ${min} min`;
+    return `Hace ${Math.floor(min / 60)} h`;
+  };
+
+  const typeIcon = (type: string) => {
+    if (type === "dispute_opened") return "⚠️";
+    if (type === "artist_pending") return "🎨";
+    return "🔔";
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={toggle}
+        className="relative rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition-colors"
+        aria-label="Alertas"
+      >
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        {unread > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF6A00] px-0.5 text-[10px] font-bold text-white">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-0 mb-2 w-80 rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 z-50">
+          <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Alertas en tiempo real</p>
+          </div>
+
+          <div className="max-h-72 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
+            {alerts.length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-zinc-400">Sin alertas nuevas</p>
+            ) : (
+              alerts.map((a) => {
+                const content = (
+                  <div className="px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 text-base">{typeIcon(a.type)}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">{a.title}</p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">{a.message}</p>
+                        <p className="text-[10px] text-zinc-400 mt-1">{formatTime(a.at)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+                return a.actionUrl ? (
+                  <Link key={a.id} href={a.actionUrl} onClick={() => setOpen(false)} className="block">
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={a.id}>{content}</div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -156,7 +289,10 @@ export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
             </p>
             <p className="truncate text-xs text-zinc-400">{user?.email}</p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
         </div>
         <button
           onClick={logout}

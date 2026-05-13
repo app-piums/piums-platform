@@ -403,14 +403,15 @@ export const setupRoutes = (app: Express) => {
     })
   );
 
-  // Socket.io WebSocket — proxy directo al chat-service sin auth middleware
-  // (socket.io pasa su token en el handshake, no en HTTP headers)
+  // Socket.io HTTP handshake — proxy without prefix stripping fix
+  // WebSocket upgrades are handled by httpServer.on('upgrade') in index.ts.
+  // pathRewrite restores the /socket.io prefix that Express strips on app.use().
   app.use(
     "/socket.io",
     createProxyMiddleware({
       target: process.env.CHAT_SERVICE_URL || "http://localhost:4010",
       changeOrigin: true,
-      ws: true,
+      pathRewrite: { "^/": "/socket.io/" },
     })
   );
 

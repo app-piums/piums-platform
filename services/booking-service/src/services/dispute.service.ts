@@ -60,6 +60,13 @@ export class DisputeService {
       reportedBy: data.reportedBy,
     });
 
+    this.alertAdmins('admin:alert', {
+      type: 'dispute_opened',
+      title: 'Nueva disputa abierta',
+      message: `${data.subject} — Reserva ${data.bookingId.slice(-6).toUpperCase()}`,
+      actionUrl: `/reports/disputes/${dispute.id}`,
+    });
+
     return dispute;
   }
 
@@ -531,6 +538,17 @@ export class DisputeService {
       asReported,
       total: asReporter.length + asReported.length,
     };
+  }
+  private alertAdmins(event: string, data: Record<string, any>) {
+    const chatUrl = process.env.CHAT_SERVICE_URL;
+    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!chatUrl || !secret) return;
+
+    fetch(`${chatUrl}/internal/notify-admins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+      body: JSON.stringify({ event, data }),
+    }).catch(() => { /* non-critical */ });
   }
 }
 

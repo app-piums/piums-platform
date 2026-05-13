@@ -21,6 +21,7 @@
   "author": "Piums Team",
   "license": "MIT",
   "dependencies": {
+    "firebase-admin": "^12.0.0",
     "@prisma/client": "^6.19.2",
     "@sendgrid/mail": "^8.1.6",
     "bullmq": "^5.70.1",
@@ -31,7 +32,7 @@
     "helmet": "^7.1.0",
     "ioredis": "^5.9.3",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.17",
+    "nodemailer": "^8.0.5",
     "resend": "^6.12.3",
     "twilio": "^5.4.0",
     "zod": "^3.24.1"

@@ -1,10 +1,10 @@
 # AGENT.MD — Contexto Completo PIUMS Platform
 
-**Fecha de última actualización**: 22 de abril de 2026
-**Último commit**: `dave` branch — fix: resize search bar and shrink count text in buscar-artistas (`f623985`)
+**Fecha de última actualización**: 12 de mayo de 2026
+**Último commit**: `dave` branch — feat: mejoras masivas en web-artist, web-client, gateway, componentes, booking, chat, estilos y fixes (`84360d7`)
 **Branch activo**: `dave`
 **Repo**: `github.com:app-piums/piums-platform.git`
-**Credenciales de prueba**: `artista@piums.com` / `Test1234!`
+**Credenciales de prueba**: `xdave418@gmail.com` (role: ambos — cliente Y artista) / `xdave687@gmail.com` (role: cliente)
 
 ---
 
@@ -50,7 +50,7 @@ Opera bajo la **moneda GTQ (Quetzal guatemalteco)**. Locale: `es-GT`. Símbolo: 
 
 ## 3. Puertos y Servicios
 
-> Stack dev real: **Docker Compose** ([infra/docker/docker-compose.dev.yml](infra/docker/docker-compose.dev.yml)). Los manifiestos de K8s existen para prod/infra pero el desarrollo local usa Docker.
+> Stack dev real: **Kubernetes (Docker Desktop)** para todos los microservicios. Las apps web (`web-artist`, `web-client`) corren en Docker Compose y llaman al K8s gateway vía `host.docker.internal:80`. Los manifiestos K8s están en `infra/k8s/overlays/local/`. Ver sección 19 para detalles.
 
 ### Backend (Docker Compose — mapeo `host:container`)
 
@@ -70,7 +70,9 @@ Opera bajo la **moneda GTQ (Quetzal guatemalteco)**. Locale: `es-GT`. Símbolo: 
 | postgres | 5432 | 5432 | — |
 | redis | 6379 | 6379 | — |
 
-**Punto de entrada único al backend**: `http://localhost:3005` (API Gateway)
+**Punto de entrada único al backend**: `http://localhost:80` (K8s gateway LoadBalancer) — antes era `localhost:3005` en Docker Compose.
+
+**Desde containers Docker Compose** (web-artist, web-client): `http://host.docker.internal:80` (build ARG `GATEWAY_INTERNAL_URL`).
 
 ### Frontends (Docker Compose — mapeo `host:container`)
 
@@ -167,6 +169,49 @@ App para **clientes** que contratan artistas.
 - `bookings/ModifyDateModal.tsx` — Modificar fecha de reserva
 - `chat/ConversationList.tsx`, `MessageBubble.tsx` — Mensajería
 - `admin/` — Panel de administración
+
+---
+
+### 4.3 Apps Móviles (`/apps/mobile/`)
+
+Existen **cuatro apps nativas** — cliente y artista para iOS y Android. Toda la documentación detallada está en `apps/mobile/AGENT.md`.
+
+| App | Plataforma | Repo | Tech stack |
+|---|---|---|---|
+| Piums Client | iOS | `piums-ios-client` | Swift + SwiftUI + URLSession |
+| Piums Artist | iOS | `piums-ios-artist` | Swift + SwiftUI + URLSession |
+| Piums Client | Android | `piums-android-client` | Kotlin + Jetpack Compose + Retrofit |
+| Piums Artist | Android | `piums-android-artist` | Kotlin + Jetpack Compose + Retrofit |
+
+**Arquitectura**: MVVM + Clean Architecture en ambas plataformas. Admin nunca en mobile.
+
+**Piums Client** (iOS + Android) — equivalente móvil de `web-client`:
+- Onboarding, login/registro de cliente
+- Descubrimiento y búsqueda de artistas
+- Perfil del artista + servicios + reviews
+- Flujo de reserva + pago con Stripe
+- Mis reservas, historial, cancelación
+- Chat con artistas
+- Notificaciones push
+
+**Piums Artist** (iOS + Android) — equivalente móvil de `web-artist`:
+- Onboarding, login/registro de artista
+- Dashboard: reservas pendientes, ingresos, rating
+- CRUD de servicios del catálogo
+- Gestión de solicitudes de reserva (aceptar/rechazar)
+- Calendario y disponibilidad
+- Ingresos y pagos recibidos
+- Reviews recibidas, quejas/disputas
+- Notificaciones push
+
+**Backend URL en dev**:
+- iOS Simulator: `http://localhost:80/api`
+- Android Emulator: `http://10.0.2.2:80/api` (`10.0.2.2` = localhost del host)
+- Dispositivo físico: `http://<IP-LAN>:80/api`
+
+**Autenticación**: Bearer token (JWT). iOS guarda tokens en Keychain; Android en EncryptedSharedPreferences.
+
+**Push notifications**: APNs (iOS) + FCM (Android). Registro del token vía `POST /api/notifications/push-token`.
 
 ---
 
@@ -272,10 +317,12 @@ Usa `credentials: 'include'` para enviar cookies automáticamente.
 - Filtros por categoría, ciudad, precio, rating
 - Indexación de artistas activos
 
-### chat-service — (sin puerto dedicado aún, usa booking-service internamente)
+### chat-service (4010) — `piums_chat`
 - Conversaciones entre clientes y artistas
 - Mensajes con estado de lectura
-- Integrable con WebSocket (pendiente)
+- **Socket.IO en tiempo real** — completamente funcional (mayo 2026)
+- Redis adapter (`@socket.io/redis-adapter`) para soporte multi-réplica futuro
+- Auth vía JWT en `socket.handshake.auth.token`
 
 ---
 
@@ -688,6 +735,32 @@ TIKTOK_CALLBACK_URL=http://localhost:4001/auth/tiktok/callback
 ```
 
 **Pendiente para producción**: registrar `https://api.piums.com/auth/tiktok/callback` como Redirect URI en el portal TikTok Developer. En sandbox solo pueden autenticarse cuentas de prueba registradas en el portal.
+
+---
+
+### 🆕 Completado (mayo 2026) — branch `dave`
+
+#### Backend migrado a Kubernetes (Docker Desktop)
+- **K8s es ahora el backend activo** para desarrollo local. Docker Compose postgres/redis son sandbox independiente.
+- Web apps (web-artist, web-client) llaman al K8s gateway mediante `GATEWAY_INTERNAL_URL=http://host.docker.internal:80` (build ARG).
+- Cloudflare Tunnel: `backend.piums.io → localhost:80 → K8s gateway`.
+
+#### Chat en tiempo real — Socket.IO completamente funcional
+- **Causa raíz del bug**: HPA tenía `minReplicas: 2` → 2 pods → K8s load-balanceba polling requests entre pods → Engine.IO sessions en memoria del proceso → 400 "Session ID unknown" en pod B.
+- **Fix gateway** (`apps/gateway/src/routes/index.ts`): añadido `pathRewrite: { "^/": "/socket.io/" }` (Express stripea el prefijo `/socket.io` antes de pasar al proxy); eliminado `ws: true` de la ruta (conflicto con el handler `httpServer.on('upgrade')` en `index.ts`).
+- **Fix web apps**: `transports: ['polling', 'websocket']` + `auth` como callback async (no objeto estático, para JWT fresco en reconexiones).
+- **Fix K8s**: HPA `minReplicas` forzado a 1 en `infra/k8s/overlays/local/kustomization.yaml`.
+
+#### Migración de datos Docker Compose → K8s (mayo 2026)
+| Tabla | DB | Registros |
+|---|---|---|
+| `service_categories` | piums_catalog | 12 |
+| `services` | piums_catalog | 2 (Dave Artista) |
+| `bookings` | piums_bookings | 16 |
+| `booking_status_changes` | piums_bookings | 19 |
+
+#### Firebase Push Notifications — advertencia K8s
+`FIREBASE_SERVICE_ACCOUNT_JSON` **NO** va en `dev-secrets.yaml` (kustomize lo sobreescribiría en cada apply). Parchear vía `kubectl patch secret piums-secrets -n piums --type merge -p '...'` después de cada `kubectl apply -k`.
 
 ---
 
@@ -1188,16 +1261,22 @@ Vercel se encarga automáticamente del deploy de frontends sin necesidad de conf
 
 ## 19. Kubernetes — Docker Desktop (Local)
 
-**Fecha de implementación**: 20 de abril de 2026
+**Fecha de implementación**: 20 de abril de 2026 | **Activo como backend principal**: mayo 2026
 
 ### 19.1 Estado actual
 
-El cluster local de Kubernetes (Docker Desktop, Kubeadm v1.34.1) corre en paralelo con Docker Compose. Ambos entornos son independientes:
+Kubernetes (Docker Desktop, Kubeadm v1.34.1) es el **backend activo** para desarrollo local. Las apps web corren en Docker Compose y se conectan al K8s gateway.
 
-| Entorno | Acceso | Contexto |
+| Rol | Entorno | Acceso |
 |---|---|---|
-| Docker Compose (dev) | `http://localhost:3005` | desarrollo normal, hot-reload |
-| Kubernetes (local) | `http://localhost:80` | simulación multi-réplica |
+| Backend (microservicios + BD + Redis) | **Kubernetes** | `http://localhost:80` |
+| Web apps (Next.js) | Docker Compose | `http://localhost:3000/3001` |
+| Túnel externo | Cloudflare | `https://backend.piums.io → localhost:80` |
+
+**Usuarios activos en K8s** (todos en `piums_auth`):
+- `xdave418@gmail.com` — role `ambos` (cliente Y artista; artistId `5e83275d`)
+- `xdave687@gmail.com` — role `cliente`
+- `artist01–10@piums.com` — role `artista` (seed; solo 02, 05, 08, 10 tienen perfil en `piums_artists`)
 
 ### 19.2 Archivos K8s
 
@@ -1226,10 +1305,14 @@ infra/k8s/
 # Aplicar/actualizar todo el stack
 kubectl apply -k infra/k8s/overlays/local/
 
+# ⚠️ IMPORTANTE: después de cada apply, re-parchear Firebase (kustomize sobreescribe el secret)
+kubectl patch secret piums-secrets -n piums --type merge \
+  -p "{\"stringData\":{\"FIREBASE_SERVICE_ACCOUNT_JSON\":\"$(cat firebase-key.json | jq -c .)\"}}"
+
 # Ver estado
 kubectl get pods -n piums
 kubectl get svc -n piums
-kubectl get hpa -n piums
+kubectl get hpa -n piums      # todos deben mostrar minReplicas:1
 
 # Logs de un servicio
 kubectl logs -n piums -l app=chat-service --tail=30
@@ -1238,13 +1321,15 @@ kubectl logs -n piums -l app=chat-service --tail=30
 kubectl delete namespace piums
 ```
 
-### 19.4 Chat Service — Multi-réplica con Redis Adapter
+### 19.4 Chat Service — Socket.IO y réplicas
 
-El `chat-service` corre con **2 réplicas** en K8s. Para que los WebSockets funcionen entre réplicas, se usa `@socket.io/redis-adapter` (instalado en `services/chat-service/package.json`).
+El `chat-service` corre con **1 réplica** en K8s local (forzado por el kustomize overlay). Razón: Engine.IO almacena sesiones de polling en memoria del proceso; con 2 pods y sin sticky sessions, el pod B rechaza sesiones creadas en pod A con 400 "Session ID unknown".
 
-El adapter se activa **condicionalmente** en `services/chat-service/src/websocket/chat.gateway.ts`:
-- Si `REDIS_HOST` está definido (K8s vía `piums-config` ConfigMap) → Redis adapter activo
-- Si no está definido (Docker Compose dev) → in-memory adapter (comportamiento anterior)
+El `@socket.io/redis-adapter` está instalado y configurado condicionalmente en `chat.gateway.ts`:
+- Si `REDIS_HOST` definido (K8s) → Redis adapter activo (prepara escala futura)
+- Si no (Docker Compose) → in-memory adapter
+
+**Para escalar a >1 réplica en producción**: añadir `sessionAffinity: ClientIP` en el K8s Service del chat-service (y del gateway si actúa como proxy WebSocket).
 
 ### 19.5 Correcciones de puertos (K8s vs código fuente)
 
@@ -1266,6 +1351,9 @@ Los servicios tienen puertos por defecto en código que **no coinciden** con los
   ```
 - Instalar `nginx-ingress-controller` para que el Ingress resuelva `api.piums.app`
 - Configurar `REDIS_PASSWORD` real en el Secret de producción
+- Añadir `sessionAffinity: ClientIP` en los Services de `gateway` y `chat-service` antes de escalar a >1 réplica
+- `FIREBASE_SERVICE_ACCOUNT_JSON` real en el Secret (parchear con `kubectl patch`, no editar `dev-secrets.yaml`)
+- `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` reales en el Secret
 - Push de imágenes al registry antes de desplegar en producción:
   ```bash
   docker tag docker-chat-service:latest ghcr.io/app-piums/piums-platform/chat-service:latest

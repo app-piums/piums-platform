@@ -1,8 +1,8 @@
-# Piums Mobile — Agente de Desarrollo iOS (Xcode / Swift / SwiftUI)
+# Piums Mobile — Agente de Desarrollo iOS y Android
 
 ## Propósito del agente
 
-Eres un experto en desarrollo iOS nativo con Swift y SwiftUI, especializado en construir las **dos apps móviles de Piums** — el marketplace para contratar artistas callejeros en Latinoamérica.
+Eres un experto en desarrollo móvil nativo, especializado en construir las **cuatro apps móviles de Piums** — el marketplace para contratar artistas callejeros en Latinoamérica. Dos plataformas (iOS y Android), dos roles (cliente y artista).
 
 ### Arquitectura de plataformas
 
@@ -10,9 +10,13 @@ Eres un experto en desarrollo iOS nativo con Swift y SwiftUI, especializado en c
 |---|---|---|---|
 | **Piums Client** (iOS) | `piums-ios-client` | Clientes que contratan artistas | App Store |
 | **Piums Artist** (iOS) | `piums-ios-artist` | Artistas que ofrecen servicios | App Store |
+| **Piums Client** (Android) | `piums-android-client` | Clientes que contratan artistas | Google Play |
+| **Piums Artist** (Android) | `piums-android-artist` | Artistas que ofrecen servicios | Google Play |
 | **Piums Admin** (Web) | `piums-platform` monorepo | Solo equipo interno | Web (no mobile) |
 
-> **Regla clave**: Admin **nunca** se hace en móvil. Solo existe como web en `apps/web-admin`. Las dos apps iOS son completamente independientes entre sí — repositorios separados, Bundle IDs separados, publicaciones en App Store separadas.
+> **Regla clave**: Admin **nunca** se hace en móvil. Solo existe como web en `apps/web-admin`. Las cuatro apps móviles son completamente independientes entre sí — repositorios separados, IDs de app separados, publicaciones separadas en App Store / Google Play.
+
+> **Paridad de funcionalidades**: iOS y Android tienen exactamente los mismos flujos y pantallas. La diferencia es solo de implementación: SwiftUI / Swift en iOS, Jetpack Compose / Kotlin en Android.
 
 ---
 
@@ -58,7 +62,7 @@ GET  /api/auth/verify            → Verificar token
 
 ---
 
-## Stack tecnológico de la app
+## Stack tecnológico — iOS
 
 - **Lenguaje**: Swift 5.9+
 - **UI Framework**: SwiftUI (mínimo iOS 17)
@@ -72,9 +76,28 @@ GET  /api/auth/verify            → Verificar token
 - **Persistencia local**: SwiftData (o CoreData si se requiere iOS 16)
 - **Xcode**: 16+, target iOS 17+
 
+## Stack tecnológico — Android
+
+- **Lenguaje**: Kotlin
+- **UI Framework**: Jetpack Compose (Material 3)
+- **Arquitectura**: MVVM + Clean Architecture (mismo patrón que iOS)
+- **Networking**: Retrofit 2 + OkHttp + `kotlinx.serialization` (o Gson)
+- **Async**: Kotlin Coroutines + Flow
+- **Inyección de dependencias**: Hilt
+- **Autenticación social**: Firebase Auth SDK (Google Sign-In, no Sign in with Apple en Android)
+- **Imágenes**: Coil (Compose-friendly)
+- **Mapas**: Google Maps Compose
+- **Pagos**: Stripe Android SDK
+- **Push notifications**: FCM (Firebase Cloud Messaging)
+- **Tokens seguros**: Android Keystore + EncryptedSharedPreferences
+- **Navegación**: Jetpack Navigation Compose
+- **Android Studio**: Hedgehog+, minSdk 26 (Android 8.0), targetSdk 35
+
 ---
 
-## Estructura de carpetas — dos proyectos Xcode separados
+---
+
+## Estructura de carpetas — iOS (dos proyectos Xcode separados)
 
 ### App Cliente (`piums-ios-client`)
 ```
@@ -166,6 +189,262 @@ piums-ios-artist/
 ---
 
 > **Admin es solo web**: `apps/web-admin` en el monorepo. No existe app móvil de admin.
+
+---
+
+## Estructura de carpetas — Android (dos proyectos separados)
+
+### App Cliente (`piums-android-client`)
+```
+piums-android-client/
+├── app/
+│   ├── src/main/
+│   │   ├── java/com/piums/client/
+│   │   │   ├── PiumsClientApp.kt         ← Application class (Hilt)
+│   │   │   ├── MainActivity.kt
+│   │   │   ├── core/
+│   │   │   │   ├── network/
+│   │   │   │   │   ├── ApiService.kt     ← Retrofit interface
+│   │   │   │   │   ├── ApiClient.kt      ← OkHttp + interceptors
+│   │   │   │   │   └── AuthInterceptor.kt
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── AuthManager.kt
+│   │   │   │   │   └── TokenStorage.kt   ← EncryptedSharedPreferences
+│   │   │   │   └── models/
+│   │   │   ├── features/
+│   │   │   │   ├── auth/                 ← Login, Registro, ForgotPassword
+│   │   │   │   ├── home/                 ← Descubrimiento de artistas
+│   │   │   │   ├── search/               ← Búsqueda con filtros
+│   │   │   │   ├── artistProfile/        ← Perfil + servicios + reviews
+│   │   │   │   ├── booking/              ← Flujo: servicio → fecha → confirmación
+│   │   │   │   ├── payments/             ← Checkout con Stripe
+│   │   │   │   ├── myBookings/           ← Historial de reservas
+│   │   │   │   ├── reviews/              ← Dejar reseñas
+│   │   │   │   ├── quejas/               ← Disputas
+│   │   │   │   ├── profile/              ← Perfil del cliente
+│   │   │   │   └── notifications/        ← Centro de notificaciones
+│   │   │   ├── components/               ← Composables reutilizables
+│   │   │   └── navigation/
+│   │   │       └── NavGraph.kt
+│   │   └── res/
+│   └── build.gradle.kts
+├── build.gradle.kts
+└── google-services.json                  ← NO subir a git
+```
+
+**Application ID**: `com.piums.client`  
+**App name**: `Piums`
+
+---
+
+### App Artista (`piums-android-artist`)
+
+Misma estructura que `piums-android-client`. Diferencias:
+- **Application ID**: `com.piums.artist`
+- **App name**: `Piums Artista`
+- Features: `dashboard/`, `myServices/`, `bookings/`, `calendar/`, `availability/`, `earnings/`, `reviews/`, `quejas/`, `profile/`, `notifications/`
+
+---
+
+## Convenciones de código — Android
+
+### Naming (Kotlin / Compose)
+- Screens: `ArtistProfileScreen`, `BookingDetailScreen`
+- ViewModels: `ArtistProfileViewModel`, `BookingDetailViewModel`
+- Repositories: `BookingRepository`, `AuthRepository`
+- Models: `Artist`, `Booking` (sin sufijo, mismos nombres que iOS)
+- UI State: `BookingDetailUiState` (sealed class o data class)
+
+### MVVM pattern (Kotlin)
+```kotlin
+// UiState
+data class BookingDetailUiState(
+    val booking: Booking? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+// ViewModel
+@HiltViewModel
+class BookingDetailViewModel @Inject constructor(
+    private val repository: BookingRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(BookingDetailUiState())
+    val uiState: StateFlow<BookingDetailUiState> = _uiState.asStateFlow()
+
+    fun loadBooking(id: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            repository.getBooking(id)
+                .onSuccess { booking -> _uiState.update { it.copy(booking = booking, isLoading = false) } }
+                .onFailure { e -> _uiState.update { it.copy(error = e.message, isLoading = false) } }
+        }
+    }
+}
+
+// Screen (Composable)
+@Composable
+fun BookingDetailScreen(
+    bookingId: String,
+    viewModel: BookingDetailViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(bookingId) { viewModel.loadBooking(bookingId) }
+
+    when {
+        uiState.isLoading -> CircularProgressIndicator()
+        uiState.error != null -> ErrorView(message = uiState.error!!)
+        uiState.booking != null -> BookingDetailContent(booking = uiState.booking!!)
+    }
+}
+```
+
+### Networking (Retrofit)
+```kotlin
+// ApiService.kt
+interface ApiService {
+    @GET("artists/{id}")
+    suspend fun getArtist(@Path("id") id: String): Response<Artist>
+
+    @GET("bookings")
+    suspend fun listBookings(
+        @Query("page") page: Int = 1,
+        @Query("status") status: String? = null
+    ): Response<PaginatedResponse<Booking>>
+
+    @POST("bookings/{id}/cancel")
+    suspend fun cancelBooking(@Path("id") id: String): Response<Unit>
+}
+
+// AuthInterceptor.kt — añade Bearer token automáticamente
+class AuthInterceptor @Inject constructor(
+    private val tokenStorage: TokenStorage
+) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+        val request = chain.request().newBuilder()
+            .addHeader("Authorization", "Bearer ${tokenStorage.accessToken ?: ""}")
+            .build()
+        return chain.proceed(request)
+    }
+}
+```
+
+### Tokens y seguridad
+- **NUNCA** guardar tokens en SharedPreferences plano — usar `EncryptedSharedPreferences` (Jetpack Security)
+- Access token en memoria (`AuthManager` Singleton) + EncryptedSharedPreferences
+- Refresh token solo en EncryptedSharedPreferences
+- Borrar al logout y al detectar 401
+
+---
+
+## Repositorios Android
+
+| App | Repositorio |
+|---|---|
+| App Cliente | `https://github.com/app-piums/piums-android-client.git` |
+| App Artista | `https://github.com/app-piums/piums-android-artist.git` |
+
+### Flujo de ramas (igual que iOS)
+```
+main          ← producción (protegida)
+develop       ← integración/staging
+feature/*     ← nuevas funcionalidades
+fix/*         ← corrección de bugs
+release/*     ← preparación de release a Google Play
+```
+
+---
+
+## Variables de entorno — Android (`local.properties` + `BuildConfig`)
+
+```properties
+# local.properties (NO subir a git)
+API_BASE_URL=http://10.0.2.2:80   # emulador → host.docker.internal
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+```kotlin
+// build.gradle.kts — exponer como BuildConfig
+android {
+    buildFeatures { buildConfig = true }
+    defaultConfig {
+        buildConfigField("String", "API_BASE_URL",
+            "\"${properties["API_BASE_URL"] ?: "https://piums.com"}\"")
+    }
+}
+```
+
+> En el emulador Android `10.0.2.2` apunta a `localhost` del host. En producción usar `https://backend.piums.io`.
+
+---
+
+## Push Notifications — Android (FCM)
+
+```kotlin
+// PiumsFcmService.kt
+class PiumsFcmService : FirebaseMessagingService() {
+
+    override fun onNewToken(token: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                apiService.registerPushToken(RegisterPushTokenRequest(token, "android"))
+            }
+        }
+    }
+
+    override fun onMessageReceived(message: RemoteMessage) {
+        val type = message.data["type"] ?: return
+        val notificationId = System.currentTimeMillis().toInt()
+
+        val intent = when (type) {
+            "BOOKING_CONFIRMED", "BOOKING_CANCELLED" ->
+                Intent(this, MainActivity::class.java).apply {
+                    putExtra("bookingId", message.data["bookingId"])
+                }
+            else -> Intent(this, MainActivity::class.java)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(message.notification?.title)
+            .setContentText(message.notification?.body)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+            .also { NotificationManagerCompat.from(this).notify(notificationId, it) }
+    }
+
+    companion object { const val CHANNEL_ID = "piums_default" }
+}
+```
+
+---
+
+## Checklist antes de subir a Google Play
+
+> Aplicar para **cada una de las dos apps Android** por separado.
+
+```
+□ Application ID registrado (com.piums.client / com.piums.artist)
+□ google-services.json de producción en app/ (NO subir a git)
+□ Signing keystore configurado y respaldado de forma segura
+□ local.properties con claves de producción (nunca en git)
+□ versionCode y versionName incrementados
+□ Permisos en AndroidManifest.xml declarados y justificados
+□ POST_NOTIFICATIONS permission solicitado en runtime (Android 13+)
+□ Network Security Config para debug (localhost) vs release (producción)
+□ ProGuard/R8 reglas para Retrofit, Kotlin Serialization, Firebase
+□ Bundle de release generado: Build → Generate Signed Bundle/APK
+□ Probado en dispositivo físico (no solo emulador) antes de publicar
+□ Probado en pantalla pequeña (360dp) y pantalla grande (tablet opcional)
+□ Internal Testing en Play Console antes de producción
+```
 
 ---
 
@@ -405,7 +684,7 @@ Cada app vive en su propio repositorio GitHub, separado del monorepo principal:
 | App Cliente | `https://github.com/app-piums/piums-ios-client.git` |
 | App Artista | `https://github.com/app-piums/piums-ios-artist.git` |
 
-### Setup inicial
+### Setup inicial — iOS
 
 ```bash
 # App Cliente
@@ -419,14 +698,14 @@ cd piums-ios-artist
 open PiumsArtist.xcworkspace
 ```
 
-### Flujo de ramas (igual en ambos repos)
+### Flujo de ramas (igual en todos los repos)
 
 ```
 main          ← producción (protegida)
 develop       ← integración/staging
 feature/*     ← nuevas funcionalidades
 fix/*         ← corrección de bugs
-release/*     ← preparación de release a App Store
+release/*     ← preparación de release a App Store / Google Play
 ```
 
 ### Convención de commits
@@ -434,8 +713,8 @@ release/*     ← preparación de release a App Store
 ```
 feat: agregar pantalla de perfil del artista
 fix: corregir token refresh en interceptor
-chore: actualizar dependencias SPM
-style: aplicar colores de brand en HomeView
+chore: actualizar dependencias SPM / Gradle
+style: aplicar colores de brand en HomeView / BookingCard
 test: agregar tests de BookingRepository
 ```
 
@@ -444,6 +723,7 @@ test: agregar tests de BookingRepository
 ## Comandos útiles de desarrollo
 
 ```bash
+# ── iOS ──────────────────────────────────────────────────────────
 # App Cliente — correr tests
 xcodebuild test -workspace PiumsClient.xcworkspace \
   -scheme PiumsClient -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
@@ -452,45 +732,97 @@ xcodebuild test -workspace PiumsClient.xcworkspace \
 xcodebuild test -workspace PiumsArtist.xcworkspace \
   -scheme PiumsArtist -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
 
-# Levantar el backend local para desarrollo (desde piums-platform)
-cd piums-platform/infra/docker && docker compose -f docker-compose.dev.yml up -d
+# ── Android ───────────────────────────────────────────────────────
+# App Cliente — correr tests
+./gradlew test                   # unit tests
+./gradlew connectedAndroidTest   # instrumented tests (emulador/dispositivo)
 
-# URL base del backend en desarrollo (configurar en .xcconfig)
-API_BASE_URL = http://localhost:3000
+# Build de debug
+./gradlew assembleDebug
+
+# Build de release (requiere keystore configurado)
+./gradlew bundleRelease
+
+# ── Backend (K8s local) ───────────────────────────────────────────
+# El backend corre en K8s Docker Desktop; verificar que los pods estén healthy
+kubectl get pods -n piums
+
+# URL base en desarrollo:
+# iOS Simulator:     http://localhost:80       (accede al host directamente)
+# Android Emulator:  http://10.0.2.2:80        (10.0.2.2 = localhost del host en emulador)
+# Dispositivo físico: http://<IP-local>:80      (misma red WiFi)
 ```
 
 ---
 
-## Variables de entorno (`.xcconfig`)
+## Variables de entorno
 
+### iOS — `.xcconfig`
 Cada app tiene sus propios `.xcconfig` — nunca compartir el mismo archivo entre repos.
 
 ```
-// Debug.xcconfig  (mismo esquema en ambas apps)
-API_BASE_URL = http://localhost:3000
+// Debug.xcconfig
+API_BASE_URL = http://localhost:80
 FIREBASE_PROJECT_ID = piums-dev
 STRIPE_PUBLISHABLE_KEY = pk_test_...
 
 // Release.xcconfig
-API_BASE_URL = https://piums.com
+API_BASE_URL = https://backend.piums.io
 FIREBASE_PROJECT_ID = piums-prod
 STRIPE_PUBLISHABLE_KEY = pk_live_...
 ```
 
 Leer en Swift:
 ```swift
-let apiBase = Bundle.main.infoDictionary?["API_BASE_URL"] as? String ?? "https://piums.com"
+let apiBase = Bundle.main.infoDictionary?["API_BASE_URL"] as? String ?? "https://backend.piums.io"
+```
+
+### Android — `local.properties` + `BuildConfig`
+```properties
+# local.properties (NO subir a git)
+API_BASE_URL_DEBUG=http://10.0.2.2:80
+API_BASE_URL_RELEASE=https://backend.piums.io
+STRIPE_PUBLISHABLE_KEY_DEBUG=pk_test_...
+STRIPE_PUBLISHABLE_KEY_RELEASE=pk_live_...
+```
+
+Leer en Kotlin:
+```kotlin
+val apiBase = BuildConfig.API_BASE_URL
 ```
 
 ---
 
-## Dependencias sugeridas (Swift Package Manager)
+## Dependencias sugeridas
 
+### iOS — Swift Package Manager
 ```swift
-// Package.swift dependencies
 .package(url: "https://github.com/onevcat/Kingfisher", from: "7.0.0"),
 .package(url: "https://github.com/firebase/firebase-ios-sdk", from: "11.0.0"),
 .package(url: "https://github.com/stripe/stripe-ios", from: "24.0.0"),
+```
+
+### Android — Gradle (`libs.versions.toml`)
+```toml
+[versions]
+retrofit = "2.11.0"
+okhttp = "4.12.0"
+hilt = "2.51"
+coil = "2.6.0"
+firebase-bom = "33.0.0"
+stripe = "20.47.0"
+coroutines = "1.8.0"
+compose-bom = "2024.05.00"
+
+[libraries]
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
+okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+stripe-android = { module = "com.stripe:stripe-android", version.ref = "stripe" }
 ```
 
 ---
@@ -712,8 +1044,10 @@ enum APIEndpoint {
     case forgotPassword(email: String)
 
     // ── Artists ───────────────────────────────────────────
-    case listArtists(page: Int, limit: Int, category: String?, cityId: String?, q: String?)
+    // Browsing/listado: /artists/search — sin filtro de isVerified ni servicesCount
+    case listArtists(page: Int, limit: Int, category: String?, city: String?, q: String?)
     case getArtist(id: String)
+    // Búsqueda full-text con filtros: /search/artists — requiere isVerified=true y servicesCount>0
     case searchArtists(q: String, page: Int)
     case busyArtistsOnDate(date: String)   // YYYY-MM-DD
 
@@ -812,9 +1146,10 @@ extension APIEndpoint {
         case .verifyToken:                  return "/auth/verify"
         case .forgotPassword:               return "/auth/forgot-password"
         case .listArtists(let pg, let lm, let cat, let city, let q):
-            var p = "/artists?page=\(pg)&limit=\(lm)"
+            // ⚠️ Ruta correcta: /artists/search — NO /artists (esa ruta no existe y devuelve 404)
+            var p = "/artists/search?page=\(pg)&limit=\(lm)"
             if let cat  = cat  { p += "&category=\(cat)" }
-            if let city = city { p += "&cityId=\(city)" }
+            if let city = city { p += "&city=\(city)" }  // param: city (string), NO cityId
             if let q    = q    { p += "&q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q)" }
             return p
         case .getArtist(let id):            return "/artists/\(id)"
@@ -1190,7 +1525,11 @@ final class MockBookingRepository: BookingRepositoryProtocol {
 
 ## Referencias
 
-- Backend API base: `http://localhost:3000/api` (dev) / `https://piums.com/api` (prod)
+- **Backend API base**:
+  - Dev iOS Simulator: `http://localhost:80/api`
+  - Dev Android Emulator: `http://10.0.2.2:80/api`
+  - Dev dispositivo físico: `http://<IP-local>:80/api`
+  - Producción: `https://backend.piums.io/api`
 - Spec OpenAPI: `docs/api-contracts/openapi.yaml`
 - Tipos compartidos (para referencia de campos): `packages/shared-types/`
 - Colores y brand: ver sección Brand & design arriba
