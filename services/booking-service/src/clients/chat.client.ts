@@ -53,6 +53,32 @@ export class ChatClient {
   }
 
   /**
+   * Cerrar conversación cuando se cancela una reserva confirmada
+   */
+  async closeConversation(bookingId: string, userId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat/conversations/booking/${bookingId}/close`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getServiceToken(userId)}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error desconocido' })) as any;
+        logger.error('[ChatClient] Error cerrando conversación', 'CHAT_CLIENT', { error: error.message });
+        return null;
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      logger.error('[ChatClient] Error de conexión con chat-service', 'CHAT_CLIENT', { error: error.message });
+      return null;
+    }
+  }
+
+  /**
    * Activar una conversación cuando se confirma la reserva
    */
   async activateConversation(bookingId: string, userId: string): Promise<any> {

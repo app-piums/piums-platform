@@ -176,12 +176,12 @@ App para **clientes** que contratan artistas.
 
 Existen **cuatro apps nativas** — cliente y artista para iOS y Android. Toda la documentación detallada está en `apps/mobile/AGENT.md`.
 
-| App | Plataforma | Repo | Tech stack |
-|---|---|---|---|
-| Piums Client | iOS | `piums-ios-client` | Swift + SwiftUI + URLSession |
-| Piums Artist | iOS | `piums-ios-artist` | Swift + SwiftUI + URLSession |
-| Piums Client | Android | `piums-android-client` | Kotlin + Jetpack Compose + Retrofit |
-| Piums Artist | Android | `piums-android-artist` | Kotlin + Jetpack Compose + Retrofit |
+| App | Plataforma | Repo | Tech stack | Estado contexto |
+|---|---|---|---|---|
+| Piums Client | iOS | `piums-ios-client` | Swift + SwiftUI + URLSession | ✅ documentado en `apps/mobile/AGENT.md` |
+| Piums Artist | iOS | `piums-ios-artist` | Swift + SwiftUI + URLSession | ✅ documentado en `apps/mobile/AGENT.md` |
+| Piums Client | Android | `piums-android-client` | Kotlin + Jetpack Compose + Retrofit | ✅ documentado en `apps/mobile/AGENT.md` |
+| Piums Artist | Android | `piums-android-artist` | Kotlin + Jetpack Compose + Retrofit | ✅ documentado en `apps/mobile/AGENT.md` |
 
 **Arquitectura**: MVVM + Clean Architecture en ambas plataformas. Admin nunca en mobile.
 
@@ -194,15 +194,17 @@ Existen **cuatro apps nativas** — cliente y artista para iOS y Android. Toda l
 - Chat con artistas
 - Notificaciones push
 
-**Piums Artist** (iOS + Android) — equivalente móvil de `web-artist`:
-- Onboarding, login/registro de artista
-- Dashboard: reservas pendientes, ingresos, rating
-- CRUD de servicios del catálogo
-- Gestión de solicitudes de reserva (aceptar/rechazar)
-- Calendario y disponibilidad
-- Ingresos y pagos recibidos
-- Reviews recibidas, quejas/disputas
-- Notificaciones push
+**Piums Artist** (iOS + Android) — ✅ contexto completo en `apps/mobile/AGENT.md`:
+- Onboarding, login/registro de artista (email + Google Sign-In)
+- Dashboard: stats, reservas hoy, fuerza de perfil
+- CRUD de servicios del catálogo (toggle optimista)
+- Gestión de solicitudes de reserva (aceptar/rechazar/completar/cancelar)
+- Calendario mensual + bloqueo de días y ausencias
+- Mensajes: inbox (polling 15 s iOS / 15 s Android) + chat activo (polling 3 s iOS / 8 s Android)
+- Wallet: historial de pagos y payouts
+- Reviews recibidas, cupones, disputas, verificación de identidad
+- Notificaciones push (APNs iOS, FCM Android)
+- Configuración: modo oscuro, cambiar contraseña, eliminar cuenta
 
 **Backend URL en dev**:
 - iOS Simulator: `http://localhost:80/api`

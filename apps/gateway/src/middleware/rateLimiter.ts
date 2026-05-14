@@ -25,14 +25,47 @@ export const globalRateLimiter = rateLimit({
   },
 });
 
-// Rate limiter específico para autenticación (más estricto)
+// Rate limiter para login con email/password (estricto)
+// Excluye OAuth, refresh y firebase — tienen sus propios limiters en auth-service
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // 5 intentos de login
-  skipSuccessfulRequests: true, // No contar requests exitosos
+  max: 5,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `auth:${req.ip}`,
   message: {
     error: "Too Many Requests",
     message: "Too many authentication attempts. Please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => /\/(google|facebook|tiktok|refresh|firebase|complete-onboarding|me|logout)/.test(req.path),
+});
+
+// Rate limiter para OAuth (Google, Facebook, TikTok) — más permisivo
+// Google/FB manejan su propia seguridad; aquí solo prevenimos abuso masivo
+export const oauthRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 30,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `oauth:${req.ip}`,
+  message: {
+    error: "Too Many Requests",
+    message: "Too many authentication attempts. Please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter para refresh de token — el cliente ya autenticó, solo renueva sesión
+// Permisivo: apps móviles refrescan al abrir la app, volver de background, etc.
+export const refreshRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 20,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `refresh:${req.ip}`,
+  message: {
+    error: "Too Many Requests",
+    message: "Too many token refresh attempts. Please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,

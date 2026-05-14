@@ -123,29 +123,20 @@ export class ChatService {
     }
   }
 
-  async createConversation(participant1Id: string, participant2Id: string, bookingId?: string) {
+  async createConversation(participantA: string, participantB: string, bookingId?: string) {
     try {
-      // Check if conversation already exists
-      const existing = await prisma.conversation.findFirst({
+      // Normalize order to prevent (A,B) and (B,A) duplicates
+      const [participant1Id, participant2Id] = [participantA, participantB].sort();
+
+      const conversation = await prisma.conversation.upsert({
         where: {
-          AND: [
-            {
-              OR: [
-                { participant1Id, participant2Id },
-                { participant1Id: participant2Id, participant2Id: participant1Id },
-              ],
-            },
-            bookingId ? { bookingId } : {},
-          ],
+          participant1Id_participant2Id: { participant1Id, participant2Id },
         },
-      });
-
-      if (existing) {
-        return existing;
-      }
-
-      const conversation = await prisma.conversation.create({
-        data: {
+        update: {
+          // Update bookingId only if provided and not already set
+          ...(bookingId ? { bookingId } : {}),
+        },
+        create: {
           participant1Id,
           participant2Id,
           bookingId,
@@ -154,7 +145,7 @@ export class ChatService {
         },
       });
 
-      logger.info('Conversation created', 'CHAT_SERVICE', { conversationId: conversation.id });
+      logger.info('Conversation upserted', 'CHAT_SERVICE', { conversationId: conversation.id });
       return conversation;
     } catch (error: any) {
       logger.error('Error creating conversation', 'CHAT_SERVICE', error);
@@ -162,7 +153,31 @@ export class ChatService {
     }
   }
 
-  async updateConversationStatus(conversationId: string, status: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
+  async closeConversationByBookingId(bookingId: string) {
+    try {
+      const conversation = await prisma.conversation.findFirst({
+        where: { bookingId },
+      });
+
+      if (!conversation) {
+        logger.warn('Conversation not found for bookingId (close)', 'CHAT_SERVICE', { bookingId });
+        return null;
+      }
+
+      const updated = await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { status: 'CLOSED' },
+      });
+
+      logger.info('Conversation closed by bookingId', 'CHAT_SERVICE', { bookingId, conversationId: updated.id });
+      return updated;
+    } catch (error: any) {
+      logger.error('Error closing conversation by bookingId', 'CHAT_SERVICE', error);
+      return null;
+    }
+  }
+
+  async updateConversationStatus(conversationId: string, status: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED' | 'CLOSED') {
     try {
       const conversation = await prisma.conversation.update({
         where: { id: conversationId },

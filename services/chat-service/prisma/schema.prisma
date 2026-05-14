@@ -17,6 +17,7 @@ enum ConversationStatus {
   ACTIVE
   ARCHIVED
   BLOCKED
+  CLOSED
 }
 
 enum MessageType {
@@ -51,7 +52,7 @@ model Conversation {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  @@unique([participant1Id, participant2Id, bookingId])
+  @@unique([participant1Id, participant2Id])
   @@index([participant1Id])
   @@index([participant2Id])
   @@index([bookingId])

@@ -29,7 +29,7 @@ export default function PrivacidadPage() {
             <p>
               <strong>Piums S.A.</strong> es el responsable del tratamiento de tus datos personales.<br />
               Correo de contacto:{' '}
-              <a href="mailto:privacidad@piums.io" className="text-[#FF6B35] hover:underline">privacidad@piums.io</a>
+              <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>
             </p>
           </section>
 
@@ -189,7 +189,7 @@ export default function PrivacidadPage() {
             </ul>
             <p className="mt-3">
               Para ejercer cualquiera de estos derechos, escríbenos a{' '}
-              <a href="mailto:privacidad@piums.io" className="text-[#FF6B35] hover:underline">privacidad@piums.io</a>{' '}
+              <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>{' '}
               indicando tu nombre completo y la solicitud. Responderemos en un plazo máximo de 30 días.
             </p>
           </section>
@@ -218,7 +218,7 @@ export default function PrivacidadPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-3">11. Contacto</h2>
             <p>
               Si tienes dudas, preguntas o deseas ejercer tus derechos, contáctanos en:{' '}
-              <a href="mailto:privacidad@piums.io" className="text-[#FF6B35] hover:underline">privacidad@piums.io</a>
+              <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>
             </p>
           </section>
 

@@ -1630,7 +1630,7 @@ export default function ArtistSettingsPage() {
                           <li>Ubicación base para cálculo de cobertura y traslados</li>
                         </ul>
                         <p className="font-medium text-gray-800 mt-2">Tus derechos</p>
-                        <p>Puedes solicitar acceso, rectificación o eliminación de tus datos escribiéndonos a <span className="font-medium text-orange-600">privacidad@piums.com</span>.</p>
+                        <p>Puedes solicitar acceso, rectificación o eliminación de tus datos escribiéndonos a <span className="font-medium text-orange-600">soporte@piums.io</span>.</p>
                       </>
                     ),
                   },
@@ -1664,13 +1664,13 @@ export default function ArtistSettingsPage() {
                             <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                            <span className="font-medium text-orange-600">soporte@piums.com</span>
+                            <span className="font-medium text-orange-600">soporte@piums.io</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                             </svg>
-                            <span className="font-medium text-orange-600">privacidad@piums.com</span>
+                            <span className="font-medium text-orange-600">soporte@piums.io</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

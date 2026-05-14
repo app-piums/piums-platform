@@ -311,7 +311,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-2">
               <InfoIcon className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700">
-                Después de realizar la transferencia, envía el comprobante a <strong>pagos@piums.com</strong>. Tu reserva se confirmará en menos de 2 horas hábiles.
+                Después de realizar la transferencia, envía el comprobante a <strong>soporte@piums.io</strong>. Tu reserva se confirmará en menos de 2 horas hábiles.
               </p>
             </div>
           </div>

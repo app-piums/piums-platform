@@ -20,13 +20,13 @@ import { toast } from '@/lib/toast';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import {
-  Cake, Rings, GraduationCap, Crown, Building2,
+  Cake, HeartHandshake, GraduationCap, Crown, Building2,
   Music, PartyPopper, Baby, Church, Wine, HelpCircle, LucideIcon
 } from 'lucide-react';
 
 const EVENT_TYPE_OPTIONS: { value: string; label: string; Icon: LucideIcon }[] = [
   { value: 'CUMPLEANOS',  label: 'Cumpleaños', Icon: Cake },
-  { value: 'BODA',        label: 'Boda',       Icon: Rings },
+  { value: 'BODA',        label: 'Boda',       Icon: HeartHandshake },
   { value: 'GRADUACION',  label: 'Graduación', Icon: GraduationCap },
   { value: 'QUINCEANERA', label: 'Quinceañera', Icon: Crown },
   { value: 'CORPORATIVO', label: 'Corporativo', Icon: Building2 },

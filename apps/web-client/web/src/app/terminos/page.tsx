@@ -34,7 +34,7 @@ export default function TerminosPage() {
             <p>
               Piums es una plataforma digital operada por <strong>Piums S.A.</strong>, con domicilio en Guatemala.
               Para consultas legales, puedes contactarnos en{' '}
-              <a href="mailto:legal@piums.io" className="text-[#FF6B35] hover:underline">legal@piums.io</a>.
+              <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>.
             </p>
           </section>
 
@@ -193,7 +193,7 @@ export default function TerminosPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Contacto</h2>
             <p>
               Para cualquier consulta sobre estos términos, escríbenos a{' '}
-              <a href="mailto:legal@piums.io" className="text-[#FF6B35] hover:underline">legal@piums.io</a>{' '}
+              <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>{' '}
               o visita{' '}
               <a href="/contacto" className="text-[#FF6B35] hover:underline">nuestro formulario de contacto</a>.
             </p>

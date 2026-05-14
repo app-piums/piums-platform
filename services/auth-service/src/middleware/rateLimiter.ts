@@ -1,12 +1,21 @@
 import rateLimit from "express-rate-limit";
+import type { Request } from "express";
+
+// Normaliza IPv4-mapped IPv6 (::ffff:1.2.3.4) a IPv4 puro
+const normalizeIp = (req: Request): string =>
+  (req.ip || req.socket?.remoteAddress || 'unknown').replace(/^::ffff:/, '');
+
+// Desactiva validaciones de express-rate-limit v8 (no aplican detrás del proxy K8s/gateway)
+const noValidate = { validate: false as any };
 
 // Rate limiter para login: clave por IP+email para no bloquear toda la IP compartida
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // 10 intentos por ventana por clave IP+email
+  max: 10,
+  ...noValidate,
   keyGenerator: (req) => {
     const email = (req.body?.email || '').toLowerCase().trim();
-    return `login:${req.ip}:${email}`;
+    return `login:${normalizeIp(req)}:${email}`;
   },
   message: {
     status: "error",
@@ -21,6 +30,8 @@ export const loginLimiter = rateLimit({
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: process.env.NODE_ENV === "development" ? 50 : 3,
+  ...noValidate,
+  keyGenerator: normalizeIp,
   message: {
     status: "error",
     message: "Demasiados intentos de registro. Por favor intenta nuevamente en 1 hora.",
@@ -33,6 +44,8 @@ export const registerLimiter = rateLimit({
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: process.env.NODE_ENV === "development" ? 500 : 100,
+  ...noValidate,
+  keyGenerator: normalizeIp,
   message: {
     status: "error",
     message: "Demasiadas solicitudes desde esta IP. Por favor intenta nuevamente más tarde.",
@@ -41,13 +54,11 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/**
- * Rate limiter agresivo para forgot-password
- * 3 intentos por hora por IP
- */
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
-  max: 3, // 3 requests por hora
+  max: 3,
+  ...noValidate,
+  keyGenerator: normalizeIp,
   message: {
     status: "error",
     message: 'Demasiados intentos de recuperación de contraseña. Por favor, intenta más tarde.',
@@ -57,13 +68,11 @@ export const forgotPasswordLimiter = rateLimit({
   skipSuccessfulRequests: false,
 });
 
-/**
- * Rate limiter para reset-password
- * 5 intentos cada 15 minutos por IP
- */
 export const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5,
+  ...noValidate,
+  keyGenerator: normalizeIp,
   message: {
     status: "error",
     message: 'Demasiados intentos de reseteo de contraseña. Por favor, intenta más tarde.',
@@ -72,13 +81,11 @@ export const resetPasswordLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/**
- * Rate limiter para email verification resend
- * 3 intentos cada 10 minutos por IP
- */
 export const resendVerificationLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutos
   max: 3,
+  ...noValidate,
+  keyGenerator: normalizeIp,
   message: {
     status: "error",
     message: 'Demasiados intentos de reenvío. Por favor, intenta más tarde.',
@@ -87,13 +94,13 @@ export const resendVerificationLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/**
- * Rate limiter para refresh token
- * 10 intentos cada 5 minutos por IP
- */
+// El cliente ya autenticó, solo renueva sesión. Apps móviles refrescan frecuentemente.
 export const refreshTokenLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutos
-  max: 10,
+  max: 30,
+  ...noValidate,
+  keyGenerator: normalizeIp,
+  skipSuccessfulRequests: true,
   message: {
     status: "error",
     message: 'Demasiados intentos de renovación de token. Por favor, intenta más tarde.',
@@ -101,4 +108,3 @@ export const refreshTokenLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-

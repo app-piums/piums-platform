@@ -3,7 +3,7 @@ import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 import { authMiddleware } from "../middleware/auth";
 import { healthRouter } from "./health";
 import { logger } from "../utils/logger";
-import { authRateLimiter } from "../middleware/rateLimiter";
+import { authRateLimiter, oauthRateLimiter, refreshRateLimiter } from "../middleware/rateLimiter";
 
 // Middleware para transformar cookie en header Authorization
 const cookieToAuthHeader = (req: Request, res: Response, next: NextFunction) => {
@@ -61,6 +61,14 @@ export const setupRoutes = (app: Express) => {
   // Authentication Service (PUBLIC - sin auth middleware)
   // ============================================================================
   
+  // Refresh de token — aplica limiter permisivo, luego cae al proxy principal de /api/auth
+  app.use("/api/auth/refresh", refreshRateLimiter);
+
+  // OAuth routes — aplica limiter permisivo, luego cae al proxy principal de /api/auth
+  app.use("/api/auth/google", oauthRateLimiter);
+  app.use("/api/auth/facebook", oauthRateLimiter);
+  app.use("/api/auth/tiktok", oauthRateLimiter);
+
   app.use(
     "/api/auth",
     authRateLimiter,

@@ -21,8 +21,8 @@ export default function ContactoPage() {
                 </svg>
               ),
               title: 'Email',
-              value: 'hola@piums.com',
-              href: 'mailto:hola@piums.com',
+              value: 'soporte@piums.io',
+              href: 'mailto:soporte@piums.io',
               sub: 'Respuesta en menos de 24h',
             },
             {

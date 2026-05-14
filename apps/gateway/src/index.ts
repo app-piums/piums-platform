@@ -14,6 +14,7 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1); // Confiar en el primer proxy (ingress de K8s) para obtener IP real del cliente
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";

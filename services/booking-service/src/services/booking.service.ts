@@ -371,14 +371,14 @@ export class BookingService {
       })();
     }
 
-    // Crear conversación para el chat
-    chatClient.createConversation(data.clientId, data.artistId, booking.id)
-      .then(conv => {
-        if (conv) {
-          logger.info("Conversación de chat creada", "BOOKING_SERVICE", { bookingId: booking.id, conversationId: conv.conversation.id });
-        }
-      })
-      .catch(err => logger.error("Error creando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
+    // Crear conversación solo si se auto-confirma (sin intervención del artista)
+    if (initialStatus === "CONFIRMED") {
+      chatClient.createConversation(data.clientId, data.artistId, booking.id)
+        .then(conv => {
+          if (conv) logger.info("Conversación creada (auto-confirm)", "BOOKING_SERVICE", { bookingId: booking.id });
+        })
+        .catch(err => logger.error("Error creando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
+    }
 
     return {
       booking,
@@ -665,14 +665,12 @@ export class BookingService {
       }
     })();
 
-    // Activar conversación de chat
-    chatClient.activateConversation(id, booking.clientId)
-      .then(res => {
-        if (res) {
-          logger.info("Conversación de chat activada", "BOOKING_SERVICE", { bookingId: id });
-        }
+    // Crear conversación de chat al confirmar la reserva
+    chatClient.createConversation(booking.clientId, booking.artistId, id)
+      .then(conv => {
+        if (conv) logger.info("Conversación creada al confirmar", "BOOKING_SERVICE", { bookingId: id });
       })
-      .catch(err => logger.error("Error activando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
+      .catch(err => logger.error("Error creando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
 
     return updated;
   }
@@ -825,6 +823,13 @@ export class BookingService {
     // Liberar el slot de disponibilidad del artista
     removeAvailabilityReservation(id)
       .catch(() => { /* puede no existir si nunca fue CONFIRMED */ });
+
+    // Cerrar conversación solo si la reserva ya había sido confirmada
+    const confirmedStatuses = ["CONFIRMED", "PAYMENT_PENDING", "PAYMENT_COMPLETED", "IN_PROGRESS", "DELIVERED"];
+    if (confirmedStatuses.includes(booking.status)) {
+      chatClient.closeConversation(id, userId)
+        .catch(err => logger.error("Error cerrando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
+    }
 
     // Iniciar reembolso si hay monto a devolver
     if (refundAmount > 0 && booking.paidAmount > 0) {

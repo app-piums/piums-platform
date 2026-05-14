@@ -1537,3 +1537,998 @@ final class MockBookingRepository: BookingRepositoryProtocol {
 - Web cliente (referencia de UX/flujos): `apps/web-client/`
 - Web artista (referencia de UX/flujos): `apps/web-artist/`
 - Admin (solo web, nunca mobile): `apps/web-admin/`
+
+---
+
+## Piums Artist iOS — Contexto Real de la App
+
+> Repo: `piums-ios-artist` — `/Users/piums/Desktop/PiumsArtistaios/PiumsArtist/`
+> Última actualización contextual: 2026-05-11
+
+### Stack real
+
+| Capa | Tecnología |
+|------|-----------|
+| UI | SwiftUI |
+| Persistencia local | SwiftData (`@Model`) |
+| Networking | URLSession async/await |
+| Auth | Firebase Auth + Google Sign-In (SPM) |
+| Push | APNs + FCM via Firebase |
+| Mínimo iOS | iOS 17 |
+| Lenguaje | Swift 5.9+ |
+
+**SPM packages**: `firebase-ios-sdk` (FirebaseAuth, FirebaseMessaging), `GoogleSignIn-iOS`
+
+### Estructura real de archivos
+
+```
+PiumsArtist/
+├── PiumsArtistApp.swift          # Entry point, AppDelegate, push setup
+├── ContentView.swift             # Root: AuthenticatedView → MainTabView
+├── Models/
+│   └── Models.swift              # SwiftData: Artist, Service, Booking
+├── Views/
+│   ├── MainTabView.swift         # TabView raíz (5 tabs)
+│   ├── DashboardView.swift       # Tab 0 — Inicio
+│   ├── BookingsView.swift        # Tab 1 — Reservas
+│   ├── CalendarView.swift        # Tab 2 — Agenda
+│   ├── MessagesView.swift        # Tab 3 — Mensajes + ChatDetailView
+│   ├── MoreMenuView.swift        # Tab 4 — Más (menú secundario)
+│   ├── ServicesView.swift        # Sheet desde Dashboard y MoreMenu
+│   ├── ProfileView.swift         # Sheet desde MoreMenu
+│   ├── ReviewsView.swift         # Sheet desde MoreMenu
+│   ├── DisputasView.swift        # Sheet desde MoreMenu
+│   ├── AbsencesView.swift        # Sheet desde MoreMenu
+│   ├── WalletView.swift          # Sheet desde MoreMenu
+│   ├── CouponsView.swift         # Sheet desde MoreMenu
+│   ├── VerificacionView.swift    # Sheet desde MoreMenu
+│   ├── ArtistOnboardingView.swift
+│   ├── TutorialView.swift
+│   └── AuthService.swift         # LoginView, RegisterView, ForgotPasswordView
+├── ViewModels/
+│   └── ViewModels.swift          # TODOS los ViewModels en un archivo (~1300 líneas)
+├── Services/
+│   ├── APIService.swift          # Cliente HTTP central (singleton)
+│   ├── APIModels.swift           # DTOs Codable + extensiones toDomainModel()
+│   ├── AuthService.swift         # Auth singleton (@Published state)
+│   ├── PushNotificationService.swift
+│   └── ErrorHandling.swift
+└── Components/
+    └── PiumsComponents.swift     # Colores, fonts, componentes reutilizables
+```
+
+### Navegación real
+
+```
+ContentView
+└── AuthenticatedView  (guard: AuthService.shared.isAuthenticated)
+    ├── ArtistOnboardingView  ← si !hasSeenArtistOnboarding (UserDefaults)
+    └── MainTabView
+        ├── Tab 0: NavigationStack → DashboardView
+        │   └── Sheet: ServicesView (botón X izquierda)
+        ├── Tab 1: NavigationStack → BookingsView
+        │   └── Detail: BookingDetailView
+        ├── Tab 2: NavigationStack → CalendarView
+        ├── Tab 3: NavigationStack → MessagesView
+        │   └── Detail: ChatDetailView (push dentro del stack)
+        └── Tab 4: NavigationStack → MoreMenuView
+            ├── Sheet: ProfileView (X izquierda)
+            ├── Sheet: ServicesView (X izquierda)
+            ├── Sheet: ReviewsView
+            ├── Sheet: DisputasView
+            ├── Sheet: AbsencesView
+            ├── Sheet: WalletView
+            ├── Sheet: CouponsView
+            └── Sheet: VerificacionView
+```
+
+**Convención UX**: toda sheet tiene `xmark.circle.fill` en `navigationBarLeading`.
+
+### URLs reales
+
+```swift
+// DEBUG (simulador/dispositivo en desarrollo)
+currentURL = "https://backend.piums.io/api"
+// RELEASE (App Store)
+currentURL = "https://piums.com/api"
+```
+
+### AuthService — propiedades @Published
+
+```swift
+isAuthenticated: Bool
+currentArtist: Artist?
+avatarURL: String?             // reactivo — usar para UI, no SwiftData
+isLoading: Bool
+errorMessage: String?
+needsVerification: Bool
+verificationStatus: String?
+artistCategory: String         // "MUSICO" | "FOTOGRAFO" | etc.
+artistSpecialties: [String]
+artistBackendId: String?       // Keychain getter/setter
+```
+
+### Almacenamiento de credenciales (iOS)
+
+| Dato | Almacenamiento | Clave |
+|------|---------------|-------|
+| JWT Bearer | Keychain (`APIService.authToken`) | gestionado por APIService |
+| Refresh token | Keychain | `refresh_token` |
+| Artist backend ID | Keychain | `artist_backend_id` |
+| Avatar URL | Keychain | `user_avatar_url` |
+| Email (remember me) | Keychain | `user_email` |
+| Onboarding visto | UserDefaults | `hasSeenArtistOnboarding` |
+
+### Endpoints reales — iOS Artist
+
+```
+// Auth
+POST /auth/login           POST /auth/register      POST /auth/firebase
+POST /auth/refresh-token   POST /auth/logout         POST /auth/forgot-password
+GET  /auth/me
+
+// Usuario / Artista
+GET  /users/profile        PUT /users/profile        POST /users/me/avatar
+GET  /artists/dashboard/me
+PUT  /artists/profile
+GET  /artists/dashboard/me/bookings
+
+// Servicios
+GET    /catalog/services?artistId=
+POST   /catalog/services
+PUT    /catalog/services/:id
+DELETE /catalog/services/:id?artistId=
+PATCH  /catalog/services/:id/toggle-status
+GET    /catalog/categories
+
+// Reservas
+GET   /artists/dashboard/me/bookings?status=&page=
+GET   /bookings/:id
+PATCH /bookings/:id/accept
+PATCH /bookings/:id/decline
+PATCH /bookings/:id/complete
+PATCH /bookings/:id/cancel
+
+// Mensajes
+GET   /chat/conversations
+GET   /chat/messages/:conversationId
+POST  /chat/messages   { conversationId, content, type }
+PATCH /chat/conversations/:id/read
+PATCH /chat/messages/:id/read
+
+// Disponibilidad / Ausencias
+GET    /artists/me/blocked-slots
+POST   /artists/me/blocked-slots
+DELETE /artists/me/blocked-slots/:id
+GET    /artists/me/absences
+POST   /artists/me/absences
+DELETE /artists/me/absences/:id
+
+// Otros
+GET  /disputes/my      POST /disputes
+GET  /reviews?artistId=&page=
+GET  /payouts/artist?status=&page=
+GET  /coupons/artist   POST /coupons
+POST /notifications/register-token
+```
+
+### Manejo de errores HTTP
+
+```swift
+enum APIError {
+    case networkError(Error)
+    case decodingError(Error)
+    case httpError(Int, String)
+    case unauthorized          // 401 → borra token
+    case forbidden             // 403
+    case notFound              // 404
+    case serverError           // 5xx
+    case rateLimited(String)   // 429
+}
+```
+
+### Modelos SwiftData reales
+
+```swift
+// Artist (@Model)
+id: UUID; name, email, phone, profession, specialty, bio: String
+rating: Double; totalReviews, yearsOfExperience: Int
+isVerified: Bool; avatarURL: String?
+instagramURL, facebookURL, youtubeURL, tiktokURL, websiteURL: String?
+portfolioPhotos: [String]
+
+// Service (@Model)
+id: UUID; remoteId: String           // remoteId → usar para todas las llamadas API
+name, serviceDescription: String
+duration: Int                        // minutos
+price: Double                        // backend guarda centavos Int → dividir /100
+isActive: Bool                       // status == "ACTIVE" (NO usar isAvailable)
+category, categoryId, slug: String
+pricingType: String                  // "FIXED" | "HOURLY"
+
+// Booking (@Model)
+id: UUID; remoteId: String
+clientName, clientEmail, clientPhone, clientId: String
+clientAvatar: String?
+scheduledDate: Date; duration: Int
+status: BookingStatus; totalPrice: Double
+notes, serviceName: String
+bookingCode, eventType: String?
+```
+
+### ViewModels principales (iOS)
+
+**DashboardViewModel**
+- `GET /artists/dashboard/me`
+- `profileStrength: Int` (0-100, calculado localmente, se oculta al llegar a 100)
+- Checks: avatar (`AuthService.avatarURL`), servicios activos, datos de contacto
+
+**ServicesViewModel**
+- Toggle optimista: flip local inmediato → PATCH → revertir solo si error HTTP/red
+- En `decodingError`: mantener estado optimista (backend probablemente guardó)
+- `cachedArtistId`: evita fetch extra del dashboard en cada operación
+
+**MessagesViewModel**
+```swift
+@Published conversations: [ConversationItem]
+@Published activeMessages: [MessageItem]
+
+startMessagePolling(for conversationId: String)  // cada 3s — cancela inbox polling
+stopMessagePolling()
+startInboxPolling()   // cada 15s — se pausa con conversación abierta
+stopInboxPolling()
+
+sendMessage(_ content: String, conversationId: String)  // optimista inmediato
+```
+
+**CalendarViewModel** — reservas confirmadas + slots bloqueados + ausencias
+
+### Reglas críticas iOS Artist
+
+- `isActive` de servicios: usar solo `status == "ACTIVE"` — `isAvailable` en DB es siempre `true`
+- Toggle no re-hace `loadServices()` después de PATCH (causa state race)
+- Redes sociales: guardar handle solo → app construye URL completa al guardar (`https://instagram.com/handle`) y parsea al cargar
+- Precios: backend en **centavos** (Int) → dividir `/100` para mostrar
+- Verificación: evaluar `isVerified == true || verificationStatus == "VERIFIED"` (el campo puede ser `null`)
+- Real-time chat: polling cada 3s (no WebSocket en iOS aún)
+
+### Decoding defensivo (iOS)
+
+```swift
+// Muchos endpoints pueden devolver wrapped o bare array:
+if let wrapped = try? decode(ConversationsResponseDTO.self) { use wrapped.conversations }
+else { let dtos = try decode([ConversationDTO].self) }
+```
+
+### Bugs conocidos (iOS)
+
+| Bug | Causa | Workaround |
+|-----|-------|-----------|
+| SPM checkouts vacíos | DerivedData corrupto | `rm -rf ~/Library/Developer/Xcode/DerivedData && xcodebuild -resolvePackageDependencies` |
+| `isActive` siempre true | `isAvailable` en DB siempre `true` | Usar solo `status == "ACTIVE"` |
+| Toggle no persiste | loadServices() tras toggle cargaba estado viejo | Actualización optimista local + no re-fetch |
+| Chat no tiempo real | No hay WebSocket | Polling cada 3s en chat activo |
+
+### SourceKit errors en editor (iOS)
+
+Los errores de SourceKit (ej. "Cannot find 'AuthService' in scope") son **falsos positivos cross-module**. El proyecto compila correctamente con `xcodebuild`. Ignorar.
+
+---
+
+## Piums Artist Android — Contexto Real de la App
+
+> Repo: `piums-android-artist`
+> Referencia iOS para paridad de funcionalidad: repo `piums-ios-artist`
+
+### Stack real
+
+| Capa | Tecnología |
+|---|---|
+| UI | Jetpack Compose + Material 3 |
+| DI | Hilt (Dagger) + KSP |
+| Navegación | Navigation Compose |
+| Red | Retrofit 2 + OkHttp 3 + Gson |
+| Imágenes | Coil |
+| Auth local | EncryptedSharedPreferences (AES256) |
+| Firebase | Auth + FCM (push) |
+| Google Sign-In | Credential Manager API |
+| Video | ExoPlayer (Media3) |
+| minSdk / targetSdk | 26 / 35 |
+| Kotlin / JVM | 2.x / Java 17 |
+
+### Arquitectura Android Artist
+
+```
+MainActivity → PiumsNavGraph
+                ├── SplashScreen         (determina ruta inicial)
+                ├── OnboardingScreen     (video/intro, solo primera vez)
+                ├── Auth: Login / Register / ForgotPassword
+                └── MainScreen           (bottom navigation)
+                      ├── Dashboard
+                      ├── Bookings
+                      ├── Calendar
+                      ├── Messages
+                      └── More (menú extra)
+```
+
+**Patrón**: MVVM unidireccional — `ViewModel` expone `StateFlow<UiState>`, pantalla solo observa y dispara eventos.
+
+### Pantallas reales (28 total)
+
+#### Flujo de autenticación
+| Archivo | Descripción |
+|---|---|
+| `SplashScreen` | Evalúa token y redirige (Main / Onboarding / Login) |
+| `OnboardingScreen` | Video introductorio con animación |
+| `LoginScreen` | Email+contraseña o Google Sign-In |
+| `RegisterScreen` | Registro nuevo artista |
+| `ForgotPasswordScreen` | Recuperación de contraseña |
+
+#### Tabs principales
+| Tab | Route | Descripción |
+|---|---|---|
+| Dashboard | `tab_dashboard` | Stats, reservas hoy, fuerza de perfil |
+| Bookings | `tab_bookings` | Lista con filtros y acciones |
+| Calendar | `tab_calendar` | Calendario mensual + bloqueo de días |
+| Messages | `tab_messages` | Inbox + chat en tiempo real |
+| More | `tab_more` | Menú con acceso al resto |
+
+#### Sub-pantallas (desde More)
+`ProfileScreen`, `ServicesScreen`, `WalletScreen`, `ReviewsScreen`,
+`NotificationsScreen`, `AbsencesScreen`, `CouponsScreen`, `InvoicesScreen`,
+`DisputesScreen`, `VerificationScreen`, `SettingsScreen`, `TutorialOverlay`
+
+### URLs reales (Android)
+
+```kotlin
+// BuildEnv.kt
+PROD_URL    = "https://piums.com/api/"
+STAGING_URL = "https://backend.piums.io/api/"
+LOCAL_URL   = "http://10.0.2.2:3000/api/"
+// Debug → STAGING, Release → PROD
+```
+
+### AuthInterceptor real (Android)
+
+- Añade `Authorization: Bearer <token>` a todas las peticiones no públicas.
+- **Refresh proactivo**: renueva el token si expira en menos de 5 minutos.
+- **Cooldown**: 30 s entre intentos de refresh fallidos (evita loop 429).
+- En 401: reintenta una vez con token renovado; si falla → `clearOnUnauthorized()` → redirige a Login.
+- Endpoints públicos (sin Bearer): `login`, `firebase`, `refresh`, `register`, `forgot-password`, `reset-password`.
+
+### TokenStorage (Android)
+
+Almacena en `EncryptedSharedPreferences`:
+
+| Tipo | Campos |
+|------|--------|
+| Seguro | `accessToken`, `refreshToken` |
+| Plano | `artistBackendId`, `avatarUrl`, `userEmail`, `userName`, `onboardingDone`, `darkMode`, `fcmToken`, `tutorialDone`, `emailVerified` |
+| Computed | `currentUserId`: extrae `id` del payload JWT via Base64 |
+
+### Repositorios Android Artist
+
+| Repositorio | Responsabilidad |
+|---|---|
+| `AuthRepository` | Login, register, Google, refresh, logout, me() |
+| `DashboardRepository` | Dashboard snapshot, bookings CRUD, datos de sesión en caché |
+
+### Endpoints reales — Android Artist
+
+```
+// Auth
+auth/login, auth/register, auth/firebase, auth/refresh, auth/logout, auth/forgot-password, auth/reset-password
+
+// Artista
+artists/dashboard/me/            (dashboard)
+artists/dashboard/me/bookings
+artists/dashboard/me/payouts
+artists/dashboard/me/absences
+artists/{id}/blocked-slots
+blocked-slots
+
+// Catálogo
+catalog/services
+
+// Notificaciones
+notifications
+
+// Chat
+chat/conversations
+chat/messages/{id}
+
+// Reseñas
+reviews/artist/{artistId}
+
+// Disputas
+disputes/
+
+// Cupones
+coupons/artist
+```
+
+### DTOs clave (Android)
+
+**ArtistProfileDto**
+- Nombre: campos `nombre`, `name`, `displayName` (computed)
+- Teléfono: viene como `telefono` del backend → usar `resolvedPhone`
+- Verificación: `isVerified: Boolean?` + `verificationStatus: String?` — verificar **ambos**
+- Shadow ban: `shadowBannedAt`, `shadowBanReason`
+- `hasSocialLinks: Boolean?`, `reviewsCount: Int?`
+
+**BookingDto**
+- Estados activos: `"PENDING"`, `"CONFIRMED"`, `"IN_PROGRESS"`
+- Fecha efectiva: `effectiveDate` (computed del DTO, fusiona múltiples campos)
+
+**AbsenceDto**
+- Tipo extranjero: `"WORKING_ABROAD"` (no `"ABROAD_WORK"`)
+
+### Polling en Mensajes (Android)
+
+- **Inbox** (conversaciones): cada **15 s** — se pausa mientras hay conversación abierta.
+- **Chat activo** (mensajes): cada **8 s** — cancela el inbox polling mientras está activo.
+- Mensajes optimistas: se insertan con `id = "tmp-{timestamp}"` y se reemplazan al confirmar.
+
+### Tema y Branding (Android)
+
+```kotlin
+// Colores reales
+PiumsOrange     = #FF6B35   // primario / CTAs
+PiumsOrangeDark = #E85D2F   // pressed
+PiumsSuccess    = #10B981
+PiumsError      = #EF4444
+PiumsInfo       = #3B82F6
+PiumsLabel      = #FFFFFF   // texto primario (dark)
+PiumsLabelSecondary = #8E8E93
+```
+
+Logo: `R.drawable.piums_logo` en `mdpi`/`xhdpi`/`xxhdpi`.
+Uso: `Image(painter = painterResource(R.drawable.piums_logo), modifier = Modifier.height(80.dp))`.
+Ubicaciones: `DashboardHeader`, `BookingsHeader`, `RegisterScreen`.
+
+App es **dark-first** (fondo `#1C1C1E`). Modo claro activable desde Settings.
+
+### Format.kt (Android)
+
+```kotlin
+Format.priceFromNumber(value, currency)  // "Q150.00"
+Format.shortDate(iso)                    // "Jue 24 Abr"
+Format.time(iso)                         // "14:30"
+Format.relativeTime(iso)                 // "hace 5 min", "ayer", "24 abr"
+Format.initialsOf(name)                  // "RG"
+Format.isSameDayAsToday(iso)
+```
+
+Locale: `es_ES`. Símbolos: GTQ→"Q", USD/MXN→"$", EUR→"€".
+
+### Reglas críticas Android Artist
+
+- **Sin mock de DB en tests**: los tests de integración usan backend real.
+- **Paridad con iOS**: cuando haya duda de comportamiento, la versión iOS es la referencia.
+- **Refresh loop prevention**: el cooldown de 30 s en `AuthInterceptor` es intencional.
+- **Verificación**: siempre evaluar `isVerified == true || verificationStatus == "VERIFIED"`.
+- **Teléfono**: el backend envía `telefono`, no `phone`. Usar `resolvedPhone` del DTO.
+- **Servicios activos**: `status == "ACTIVE"` — no usar `isAvailable` (siempre `true` en DB).
+- **ConnectivityObserver**: `Flow<Boolean>` para estado de red en tiempo real.
+
+---
+
+## Piums Cliente iOS — Contexto Real de la App
+
+> Bundle ID: `io.piums.cliente`
+> Ruta local de referencia iOS: `/Users/ruben/Documents/piums-los-client/`
+> Última actualización contextual: 2026-05-14
+
+### Stack real
+
+| Capa | Tecnología |
+|------|-----------|
+| UI | SwiftUI |
+| Arquitectura | MVVM + `@Observable` / `@MainActor` (Swift 6+) |
+| Networking | URLSession async/await + certificate pinning |
+| Auth | Firebase Auth + Google Sign-In + Apple + Facebook + TikTok (OAuthWebLogin) |
+| Push | APNs + FCM via Firebase |
+| Mínimo iOS | iOS 16+ |
+| Lenguaje | Swift 5.9+ |
+| Chat | Socket.IO (`ChatSocketManager`) |
+| Pagos | Stripe SDK + Tilopay (WKWebView) |
+
+**URLs reales:**
+- Backend REST: `https://client.piums.io`
+- Socket.IO: `https://backend.piums.io`
+
+### Estructura real de archivos
+
+```
+PiumsCliente/
+├── App/
+│   ├── AppDelegate.swift          # Firebase, Google Sign-In, APNs
+│   ├── MainTabView.swift          # 5 tabs + deep links via NotificationCenter
+│   ├── PiumsClienteApp.swift      # Entry point, validación de keys
+│   ├── RootView.swift             # Auth gate: AuthFlowView vs MainTabView
+│   └── SplashVideoView.swift
+├── Components/
+│   ├── SharedComponents.swift     # PiumsTextField, PiumsButton, ErrorBannerView, etc.
+│   ├── DayButton.swift
+│   └── LocationSearchField.swift
+├── Core/
+│   ├── Auth/
+│   │   ├── AuthManager.swift      # Session management (login, logout, refresh, verify)
+│   │   ├── TokenStorage.swift     # Keychain + JWT exp check
+│   │   ├── LoginRateLimiter.swift # Rate limit con persistencia UserDefaults
+│   │   └── OAuthWebLogin.swift    # ASWebAuthenticationSession para FB/TikTok
+│   ├── Extensions/
+│   │   ├── JSONCoder+Piums.swift  # snakeCase + ISO 8601
+│   │   ├── Color+Piums.swift      # Color(hex:), colores de marca
+│   │   ├── LocationStore.swift    # Observable ubicación del usuario
+│   │   └── LocationManager.swift
+│   ├── Models/
+│   │   └── Models.swift           # TODOS los modelos Codable
+│   ├── Network/
+│   │   ├── APIClient.swift        # HTTP genérico con retry y refresh
+│   │   ├── APIEndpoint.swift      # Todos los endpoints
+│   │   ├── AppError.swift         # Enum errores en español
+│   │   └── NetworkSecurity.swift  # Certificate pinning SHA-256
+│   └── ThemeManager.swift
+├── Features/
+│   ├── ArtistProfile/
+│   ├── Auth/                      # Login, Register, ForgotPassword, AuthFlowView
+│   ├── Booking/                   # BookingFlowView (4 pasos), ArtistSearchByDateView
+│   ├── Chat/
+│   │   ├── ChatSocketManager.swift
+│   │   └── ChatRealtimeStore.swift
+│   ├── Coupons/
+│   ├── Events/
+│   ├── Favorites/                 # FavoritesView + FavoritesStore (singleton)
+│   ├── Home/
+│   ├── HowItWorks/                # TourOverlayView, TutorialManager
+│   ├── MyBookings/
+│   ├── Notifications/             # NotificationsView + NotificationsStore
+│   ├── Onboarding/                # 4 pasos: nombre, especialidades, ciudad, docs
+│   ├── Payments/                  # PaymentsView, WalletView, TilopayWebView
+│   ├── Profile/
+│   ├── Quejas/                    # Disputas: lista, detalle, crear
+│   ├── Reviews/
+│   └── Search/                    # SearchView, TalentPickerView
+```
+
+### Navegación real — 5 tabs
+
+| Tab | Vista | Badge |
+|-----|-------|-------|
+| Inicio (0) | `HomeView` | — |
+| Explorar (1) | `SearchView` | — |
+| Mi Espacio (2) | `MySpaceView` | — |
+| Mensajes (3) | `ChatInboxView` | `ChatRealtimeStore.unreadCount` |
+| Perfil (4) | `ProfileView` | — |
+
+**Deep links via NotificationCenter:**
+```swift
+.navigateToBooking      // Tab Mi Espacio → detalle
+.navigateToMySpace      // Tab Mi Espacio
+.navigateToProfile      // Tab Perfil
+.navigateToConversation // Tab Mensajes
+.notificationsNeedRefresh
+```
+
+### AuthManager — comportamiento real
+
+`@Observable @MainActor` singleton.
+
+- `login` → `POST /api/auth/login`
+- `register` → `POST /api/auth/register/client`
+- `loginWithGoogle/Apple` → Firebase → `POST /api/auth/firebase`
+- `loginWithFacebook/TikTok` → OAuthWebLogin (ASWebAuthenticationSession) → `POST /api/auth/facebook` / `POST /api/auth/tiktok`
+- `forgotPassword` — mínimo 600 ms de respuesta (anti-timing)
+- `logout` — limpia Keychain + UserDefaults + Google Sign-Out
+- **Inicio persistente**: restaura `currentUser` desde cache UserDefaults (sin red) → si access expirado → `refreshIfNeeded()` → `verify()` en background. Solo cierra sesión en `.unauthorized` explícito — errores de red mantienen sesión.
+
+### TokenStorage (iOS Cliente)
+
+**Keychain** (`kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`):
+- `piums.access_token`, `piums.refresh_token`
+
+**UserDefaults:**
+- `hasSeenHowItWorks`, `hasSeenTour`, `hasSeenOnboarding`, `piums_color_scheme`, `piums.currentUser` (JSON cache), `identityVerificationSubmitted`, `identityVerificationApproved`, `rl.lock.{email}` (rate limit)
+
+### LoginRateLimiter
+
+| Intentos fallidos | Bloqueo |
+|:-----------------:|---------|
+| 3–4 | Advertencia: "X intentos restantes" |
+| 5–9 | 5 minutos |
+| 10+ | 15 minutos |
+
+Persiste en UserDefaults. Cuenta regresiva live en `AuthViewModel`.
+
+### Certificate Pinning
+
+SHA-256 para `client.piums.io` y `backend.piums.io`:
+- Leaf cert (vence 2026-07-21): `bXcinqCEgWfTR8vYpEctiYO9Tq7YLAfUtvWLZJKvNhI=`
+- Let's Encrypt E8 Intermediate: `g2JP0zjI2bAjwYpny3qcBRnaQ9EXdbTGy9rUXD2ZfFI=`
+
+Pinning desactivado en DEBUG para Charles Proxy.
+
+```bash
+# Rotar certificado:
+echo | openssl s_client -connect client.piums.io:443 2>/dev/null \
+  | openssl x509 -outform der | openssl dgst -sha256 -binary | base64
+```
+
+### Endpoints reales — iOS Cliente
+
+```
+// Auth
+POST /api/auth/login            POST /api/auth/register/client
+POST /api/auth/firebase         POST /api/auth/facebook
+POST /api/auth/tiktok           POST /api/auth/refresh
+POST /api/auth/logout           GET  /api/auth/me
+POST /api/auth/forgot-password  PATCH /api/auth/complete-onboarding
+POST /api/auth/change-password  PATCH /api/auth/profile
+
+// Artistas y búsqueda
+GET /api/search/artists?q=&page=&limit=&specialty=&city=&minPrice=&maxPrice=&minRating=&isVerified=&sortBy=&sortOrder=
+GET /api/search/smart?q=&city=&lat=&lng=&page=&limit=
+GET /api/artists/{id}
+GET /api/artists/{id}/portfolio
+
+// Catálogo
+GET  /api/catalog/services?artistId=
+GET  /api/catalog/services/{id}
+POST /api/catalog/pricing/calculate
+
+// Reservas
+POST  /api/bookings
+GET   /api/bookings?page=&limit=20
+GET   /api/bookings/{id}
+POST  /api/bookings/{id}/cancel
+PATCH /api/bookings/{id}/reschedule
+GET   /api/availability/time-slots?artistId=&date=
+GET   /api/availability/calendar?artistId=&year=&month=
+POST  /api/bookings/{bookingId}/no-show
+
+// Reseñas
+GET  /api/reviews?artistId=&page=&limit=10
+POST /api/reviews   (bookingId obligatorio)
+
+// Notificaciones
+GET  /api/notifications?page=&limit=20
+POST /api/notifications/read
+POST /api/notifications/push-token
+GET  /api/notifications/preferences
+PUT  /api/notifications/preferences
+
+// Perfil y usuario
+POST   /api/users/me/avatar  (multipart)
+DELETE /api/users/{userId}
+POST   /api/users/documents/upload?folder={front|back|selfie}
+
+// Favoritos
+GET    /api/users/me/favorites?page=&limit=50&entityType=
+POST   /api/users/me/favorites
+DELETE /api/users/me/favorites/{id}
+GET    /api/users/me/favorites/check
+
+// Pagos
+POST  /api/payments/checkout
+POST  /api/payments/tilopay/confirm
+GET   /api/payments/credits/me
+GET   /api/payments/payments?page=&limit=20
+GET   /api/payments/payments/{id}
+GET   /api/payments/methods
+DELETE /api/payments/methods/{id}
+PATCH  /api/payments/methods/{id}/default
+POST   /api/payments/methods
+
+// Chat
+GET   /api/chat/conversations?page=&limit=20
+GET   /api/chat/conversations/{id}
+POST  /api/chat/conversations
+PATCH /api/chat/conversations/{id}/read
+GET   /api/chat/messages/{conversationId}?page=&limit=50
+POST  /api/chat/messages
+GET   /api/chat/messages/unread-count
+
+// Disputas
+GET  /api/disputes/me
+POST /api/disputes
+GET  /api/disputes/{id}
+POST /api/disputes/{id}/messages
+
+// Cupones
+GET  /api/coupons/my
+POST /api/coupons/validate
+
+// Eventos
+GET    /api/events
+POST   /api/events
+GET    /api/events/{id}
+PATCH  /api/events/{id}
+DELETE /api/events/{id}
+POST   /api/events/{eventId}/bookings/{bookingId}
+```
+
+### Chat en tiempo real — Socket.IO (iOS Cliente)
+
+**Conexión:** `https://backend.piums.io` con `auth: ["token": accessToken]`, 10 reintentos, espera inicial 3 s, máx 30 s.
+
+**Eventos out (client → server):**
+- `conversation:join`, `conversation:leave`, `conversation:read`, `message:send { conversationId, content, type: "TEXT" }`
+
+**Eventos in (server → client):**
+- `message:received` → `ChatMessage`
+- `message:sent` → echo propio
+- `message:read`, `unread:count { unreadCount }`, `message:error`
+
+**Quirk:** Si llega mensaje de conversación desconocida → `loadConversations()` para refrescar inbox.
+**`unread:count`** puede llegar como `{ unreadCount }` o como `Int` directo — manejar ambos.
+
+`ChatRealtimeStore` (singleton) mantiene `unreadCount` para el badge del tab. Auto-conecta al lanzar.
+
+### Flujo de pago (iOS Cliente)
+
+```
+POST /api/payments/checkout → PaymentIntentWrapper
+    ├── provider == "STRIPE" → clientSecret → Stripe SDK nativo
+    └── provider == "TILOPAY" → redirectUrl → TilopayWebView (WKWebView como .sheet)
+         └── intercepta callback → POST /api/payments/tilopay/confirm
+```
+
+Anticipo: si `booking.anticipoRequired == true` → solo se cobra `anticipoAmount`; resto al completar.
+
+### Flujo de reserva — 4 pasos (iOS Cliente)
+
+```
+Paso 1: Fecha → GET /api/availability/calendar + /time-slots
+Paso 2: Detalles (ubicación, notas, addons) → POST /api/catalog/pricing/calculate
+Paso 3: Confirmación (desglose: base + addons + travel - descuentos)
+Paso 4: POST /api/bookings → Booking → checkout (Stripe o Tilopay)
+```
+
+`scheduledDate` debe enviarse como ISO 8601 completo: `"2026-06-15T00:00:00.000Z"` (no solo `"YYYY-MM-DD"`).
+
+### Modelos clave (iOS Cliente)
+
+```swift
+// AuthUser
+id, email, nombre: String   // "nombre", no "name"
+role: String                 // "cliente" (minúscula)
+avatar: String?
+emailVerified, isVerified: Bool
+status: String               // "ACTIVE" | "BANNED" | "SUSPENDED"
+
+// Booking — estados
+pending, confirmed, paymentPending, paymentCompleted
+inProgress, delivered, disputeOpen, disputeResolved, completed
+rescheduled, reschedulePendingArtist, reschedulePendingClient
+cancelledClient, cancelledArtist, rejected, noShow, unknown
+
+// PaymentStatus
+pending, completed, anticipoPaid, depositPaid
+chargingRemaining, fullyPaid, frozen
+partiallyRefunded, refunded, failed, unknown
+
+// Precios: siempre Int (centavos) → extension Int { var piumsFormatted: String }
+// 250000 → "$ 2,500.00"
+```
+
+### Quirks críticos del backend (iOS Cliente)
+
+1. **`scheduledDate`** — ISO 8601 completo, no solo fecha.
+2. **Favoritos** — `GET` devuelve `{ favorites, pagination }` (no `{ data }`). `POST` devuelve `{ favorite: {...} }`.
+3. **Conversaciones** — `participant1Id`/`participant2Id` en lugar de `userId`/`artistId`. `lastMessagePreview` en lugar de `lastMessageContent`.
+4. **`getMe`** (`GET /api/auth/me`) — envía token si existe pero no falla si no hay.
+5. **Anticipo** — `anticipoRequired: Bool`, `anticipoAmount: Int` centavos, estado `anticipoPaid`.
+6. **`refreshToken`** — `POST /api/auth/refresh` — nunca enviar header `Authorization`.
+7. **Lazy provisioning** — `getUserByAuthId` en users-service crea perfil si no existe (social login).
+8. **`unread:count` socket** — puede llegar como `{ unreadCount }` o como `Int`. Manejar ambos.
+9. **Todos los precios** son centavos (`Int`) — nunca confundir con la unidad real.
+
+### Tour interactivo — TutorialManager (iOS Cliente)
+
+- 6 pasos cubriendo los 5 tabs + búsqueda por fecha/lugar
+- `@AppStorage("hasSeenTour")` — se muestra solo una vez
+- Swipe izquierda/derecha con `DragGesture(minimumDistance: 40)`
+- `stepDirection: StepDirection` (.forward/.backward) → `AnyTransition.asymmetric`
+
+### Onboarding — 4 pasos (iOS Cliente)
+
+1. Nombre (confirmar/editar)
+2. Especialidades (selección múltiple)
+3. Ciudad preferida
+4. Verificación de identidad → `uploadDocument(folder:)` → `PATCH /api/auth/complete-onboarding`
+
+---
+
+## Piums Cliente Android — Contexto Real de la App
+
+> Paquete: `com.piums.cliente`
+> Ruta local: `/Users/ruben/Desktop/ClientePiums/`
+> Referencia iOS para paridad: `/Users/ruben/Documents/piums-los-client/`
+> Última actualización contextual: 2026-05-14
+
+### Stack real
+
+| Capa | Tecnología |
+|---|---|
+| Lenguaje | Kotlin 2.0, `jvmTarget = 17`, `minSdk = 26` |
+| UI | Jetpack Compose + Material 3 |
+| Arquitectura | MVVM — `@HiltViewModel` + `mutableStateOf` (no StateFlow en VMs) |
+| DI | Hilt (`@AndroidEntryPoint`, `@Singleton`, `@ApplicationContext`) |
+| Red | Retrofit + OkHttp + Gson, `AuthInterceptor` (Bearer), `setLenient()` |
+| Auth | Firebase Auth + Google Sign-In (Credential Manager), `role = "cliente"` |
+| Push | Firebase Cloud Messaging — `PiumsFcmService` |
+| Imágenes | Coil (`AsyncImage`) |
+| Storage | `EncryptedSharedPreferences` (tokens) + `SharedPreferences` plain |
+| Ubicación | `FusedLocationProviderClient` → `LocationHelper` |
+| Chat | Socket.IO `2.1.0` → `ChatSocketManager` (`@Singleton`) |
+
+**URLs reales:**
+- Prod REST: `https://api.piums.com/`
+- Prod WebSocket: `https://backend.piums.io/`
+- Dev (emulador): `http://10.0.2.2:3005/`
+
+### Navegación real (Android Cliente)
+
+```
+NavGraph (outer)
+├── splash
+├── auth        → AuthScreen (login / registro / forgot password)
+├── onboarding  → OnboardingScreen (3 págs: Welcome + Intereses + Ready)
+└── main        → MainScaffold (inner NavController)
+    ├── TABS (bottom bar)
+    │   ├── home
+    │   ├── search
+    │   ├── myspace
+    │   ├── inbox
+    │   └── profile
+    └── DETAIL ROUTES
+        ├── artist/{artistId}
+        ├── booking/{artistId}
+        ├── booking-detail/{bookingId}
+        ├── dispute/{disputeId}
+        ├── notifications
+        ├── payments
+        ├── tutorial
+        ├── how-it-works
+        └── my-disputes
+```
+
+Bottom bar y FAB se ocultan cuando `currentRoute !in TAB_ROUTES`.
+Tutorial se auto-muestra si `tokenStorage.tutorialDone == false`.
+
+### Estado de la app — 17/17 fases completas
+
+1. Scaffold (NavGraph, MainScaffold, offline banner, FCM, TokenStorage)
+2. Auth (email/password + Google Sign-In, `role = "cliente"`)
+3. Onboarding (HorizontalPager 3 págs)
+4. Home (getMe + getBookings + searchArtists en paralelo, MiniCalendar, shimmer)
+5. Search/Explorar (debounce 400 ms, FilterSheet, CategoryGrid, geoloc)
+6. Perfil del Artista (paralelo artist+services+reviews+portfolio+favCheck, toggleFavorite optimista)
+7. Booking Flow (4 steps: Service/Date/Details/Confirm, time slots, `calculatePricing`)
+8. Mi Espacio (HorizontalPager: Reservas + Eventos + Favoritos)
+9. Inbox (Conversaciones con WebSocket + Quejas)
+10. Notificaciones (paginado, markAllRead, íconos por tipo)
+11. Reseñas (`ReviewDialog` 5 estrellas en BookingCard)
+12. Pagos (`PaymentsScreen` status-coloreado)
+13. Tutorial (`TourOverlay` canvas spotlight + pulsing ring)
+14. Perfil/Ajustes (editName, changePassword, logout)
+15. Eventos (CRUD en Mi Espacio)
+16. Geoloc (`LocationHelper`, "Cerca de mí" toggle)
+17. Polish (`DeepLinkManager`, FCM local notifications, deep links `onNewIntent`)
+
+### TokenStorage (Android Cliente)
+
+| Campo | Almacén |
+|---|---|
+| `accessToken`, `refreshToken` | `EncryptedSharedPreferences` (`piums_cliente_secure`) |
+| `userId`, `userName`, `userEmail`, `avatarUrl`, `fcmToken` | `SharedPreferences` plain |
+| `onboardingDone`, `tutorialDone` | `SharedPreferences` plain |
+| `isLoggedIn` | computed: `accessToken != null` |
+
+`clear()` limpia ambos stores al hacer logout.
+
+### WebSocket — ChatSocketManager (Android Cliente)
+
+- `@Singleton` en Hilt
+- Conecta a `https://backend.piums.io` con `IO.Options().auth = mapOf("token" to accessToken)`
+- **Eventos in**: `message:received` → `SharedFlow<ChatMessageDto>`, `unread:count`
+- **Eventos out**: `conversation:join`, `conversation:leave`, `conversation:read`
+- Send sigue por REST (no socket) para fiabilidad
+- `InboxViewModel` conecta en `init`, join al abrir conversación, leave al cerrar
+- Deduplicación por `message.id` (evita duplicados REST+socket)
+
+### Deep Links FCM (Android Cliente)
+
+`DeepLinkManager` → `SharedFlow<DeepLinkTarget>`: `Artist(id)`, `Booking(id)`, `Inbox`, `Notifications`
+
+| Tipo FCM | Destino |
+|----------|---------|
+| `NEW_MESSAGE` / `CHAT` | Inbox |
+| `BOOKING_*` | MySpace |
+| `NEW_REVIEW` / `ARTIST_PROFILE` | Artist |
+
+`MainActivity` (`singleTop`) → `onNewIntent` → `deepLinkManager.dispatchFromExtras(type, entityId)`
+
+### Colores de marca (Android Cliente)
+
+```kotlin
+PiumsOrange    = Color(0xFFFF6B35)   // naranja primario
+PiumsInfo      = Color(0xFF3B82F6)   // azul (CONFIRMED)
+PiumsSuccess   = Color(0xFF22C55E)   // verde
+PiumsWarning   = Color(0xFFF59E0B)   // amarillo
+PiumsError     = Color(0xFFEF4444)   // rojo
+PageBackground = Color(0xFF1C1C1E)   // fondo oscuro
+```
+
+**Colores de estado en BookingCard:**
+
+| Status | Color |
+|--------|-------|
+| PENDING | `PiumsWarning` |
+| CONFIRMED | `PiumsInfo` (azul) |
+| PAYMENT_PENDING | `PiumsWarning` |
+| COMPLETED | `PiumsSuccess` |
+| CANCELLED_* / REJECTED | `PiumsError` |
+| RESCHEDULED | `0xFF8B5CF6` (púrpura) |
+
+### Archivos clave (Android Cliente)
+
+```
+app/src/main/java/com/piums/cliente/
+├── data/
+│   ├── local/TokenStorage.kt
+│   └── remote/
+│       ├── PiumsApiService.kt
+│       └── dto/
+│           ├── BookingDtos.kt       # BookingDto, BookingStatus, BookingsListResponse
+│           ├── ArtistDtos.kt
+│           ├── ChatDtos.kt          # ConversationDto, ChatMessageDto
+│           └── OtherDtos.kt
+├── ui/
+│   ├── navigation/
+│   │   ├── NavGraph.kt
+│   │   ├── MainScaffold.kt
+│   │   └── MainViewModel.kt        # unreadCount, tourManager, socketManager
+│   ├── screens/
+│   │   ├── home/HomeScreen.kt
+│   │   ├── search/SearchScreen.kt
+│   │   ├── myspace/MySpaceScreen.kt  # BookingCard, EventCard, FavoriteCard
+│   │   ├── inbox/InboxScreen.kt      # chat, disputes
+│   │   ├── profile/ProfileScreen.kt
+│   │   ├── artist/ArtistProfileScreen.kt
+│   │   ├── booking/BookingScreen.kt
+│   │   └── reviews/ReviewScreen.kt
+│   ├── components/
+│   │   └── TourOverlay.kt          # spotlight Canvas + pulsing ring
+│   └── theme/
+│       └── Color.kt
+└── utils/
+    ├── ChatSocketManager.kt
+    ├── DeepLinkManager.kt
+    ├── TourManager.kt
+    └── LocationHelper.kt
+```
+
+### Quirks críticos del backend (Android Cliente)
+
+- `role = "cliente"` **en minúscula** → error 400 si se envía en mayúsculas
+- Precios en **centavos enteros** (`Int`) → dividir entre 100 para mostrar
+- `GET /api/artists/{id}` → responde `{"artist": {...}}` → usar `ArtistDetailResponse.resolved`
+- `SearchArtistsResponse` / `SmartSearchResponse` → campos `artists` y `data` ambos nullable → usar `.list` accessor
+- `UnreadCountResponse` → tiene `count` y `unreadCount` → usar computed `val count`
+- `ConversationDto` → `participant1Id`/`participant2Id` con `@SerializedName` (no `userId`)
+- `ChatMessageDto.status` → `String` ("SENT"/"DELIVERED"/"READ"), no `Boolean`
+- `isOwn` en mensajes → comparar `senderId == tokenStorage.userId`
+- `bookingId` **obligatorio** al crear reseña
+- API devuelve mensajes de chat **oldest-first** — **no invertir** el orden
+- `sortBy`/`sortOrder` **no pasar** en carga inicial del home (iOS no los usa)
+- Backend puede devolver camelCase o snake_case → Android asume camelCase (Gson default)
+
+### Fixes y mejoras recientes (2026-05-14)
+
+- **HTTP 429 en reopen**: `MainViewModel.setSocketActive()` solo gestiona WebSocket — no lanza API calls en cada `ON_RESUME`.
+- **Orden mensajes chat**: eliminado `.reversed()` en `InboxScreen` — la API ya devuelve oldest-first.
+- **TourOverlay**: reescrito con Canvas spotlight (`BlendMode.Clear`) + pulsing ring (`infiniteRepeatable`) + triángulo Canvas apuntando al tab activo.
+- **MySpaceScreen filtros**: añadido chip "Pago pend." (`PAYMENT_PENDING`); reservas ordenadas por `scheduledDate` ascending.
+- **BookingCard rediseñado** (estilo iOS `BookingRowView`): ícono de estado (48dp, rounded 12dp) con fondo `statusColor.copy(0.12f)`, precio naranja bold, sin elevación (`Box` plano).

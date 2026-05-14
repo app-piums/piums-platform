@@ -36,7 +36,7 @@ router.post("/register", registerLimiter, register);
 router.post("/register/artist", registerLimiter, registerArtist);
 router.post("/register/client", registerLimiter, registerClient);
 router.post("/login", loginLimiter, login);
-router.post("/firebase", loginLimiter, firebaseLogin);
+router.post("/firebase", refreshTokenLimiter, firebaseLogin);
 router.post("/refresh", refreshTokenLimiter, refreshToken);
 router.post("/verify", verify);
 router.post("/logout", logout);

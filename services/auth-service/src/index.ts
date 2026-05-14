@@ -19,6 +19,7 @@ import { configureFacebookStrategy } from "./strategies/facebook.strategy";
 const prismaInternal = new PrismaClient();
 
 const app = express();
+app.set("trust proxy", 1); // IP real del cliente via X-Forwarded-For del ingress
 
 // Configurar estrategias OAuth
 configureGoogleStrategy();

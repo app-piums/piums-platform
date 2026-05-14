@@ -901,6 +901,7 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
         },
       });
       logger.info('New user via Firebase Google', 'AUTH_CONTROLLER', { userId: user.id, email });
+      notificationsClient.sendWelcomeEmail(user.email, user.nombre, role as any).catch(() => {});
     }
 
     // Dual-role support: if this login is for the artist site (role='artista'),

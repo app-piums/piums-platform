@@ -6,7 +6,7 @@ export const APP = {
   NAME: 'Piums',
   FULL_NAME: 'Piums Platform',
   DOMAIN: 'piums.com',
-  SUPPORT_EMAIL: 'soporte@piums.com',
+  SUPPORT_EMAIL: 'soporte@piums.io',
   VERSION: '1.0.0',
 } as const;
 

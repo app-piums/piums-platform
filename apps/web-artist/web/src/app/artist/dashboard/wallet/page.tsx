@@ -136,7 +136,7 @@ export default function WalletPage() {
             </svg>
             <p className="text-sm text-blue-700">
               Los pagos se procesan manualmente por el equipo de Piums en 1–3 días hábiles tras completarse la reserva.
-              Si tienes dudas sobre un pago, contacta a <strong>pagos@piums.io</strong>.
+              Si tienes dudas sobre un pago, contacta a <strong>soporte@piums.io</strong>.
             </p>
           </div>
 
