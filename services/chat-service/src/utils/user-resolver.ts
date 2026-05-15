@@ -37,6 +37,20 @@ const resolveFromUsersService = async (authId: string): Promise<ParticipantInfo 
   }
 };
 
+const resolveAvatarByAuthId = async (authId: string): Promise<string | null> => {
+  try {
+    const response = await fetchWithTimeout(
+      `${ARTISTS_SERVICE_URL}/artists/internal/by-auth/${authId}`,
+      { headers: { 'x-internal-secret': INTERNAL_SECRET } }
+    );
+    if (!response.ok) return null;
+    const data = await response.json() as any;
+    return data.avatar ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const resolveFromArtistsService = async (artistId: string): Promise<ParticipantInfo | null> => {
   try {
     const response = await fetchWithTimeout(
@@ -54,10 +68,16 @@ const resolveFromArtistsService = async (artistId: string): Promise<ParticipantI
     const data = await response.json() as any;
     const artist = data.artists?.[0];
     if (!artist) return null;
+    // If artist.avatar is null, fall back to users-service avatar via authId (Google OAuth photo)
+    let avatar: string | undefined = artist.avatar ?? undefined;
+    if (!avatar && artist.authId) {
+      const userInfo = await resolveFromUsersService(artist.authId);
+      avatar = userInfo?.avatar ?? undefined;
+    }
     return {
       nombre: artist.nombre || 'Artista',
       email: '',
-      avatar: undefined,
+      avatar,
     };
   } catch {
     return null;
@@ -70,6 +90,10 @@ export const resolveUserInfo = async (participantId: string): Promise<Participan
   // Try users service first (works for client auth IDs)
   const userInfo = await resolveFromUsersService(participantId);
   if (userInfo) {
+    // If no avatar, check artists-service by authId (artist may have uploaded photo there)
+    if (!userInfo.avatar) {
+      userInfo.avatar = (await resolveAvatarByAuthId(participantId)) ?? undefined;
+    }
     cache.set(participantId, userInfo);
     return userInfo;
   }

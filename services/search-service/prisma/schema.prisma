@@ -57,6 +57,10 @@ model ArtistIndex {
   // Full-text search fields
   searchVector      Unsupported("tsvector")?
   
+  // Photos (synced from artists-service)
+  avatar      String?
+  coverPhoto  String?
+
   // Absence tracking (synced from artists-service blackouts)
   activeAbsenceType   String?   // 'VACATION' | 'WORKING_ABROAD' | null
   activeAbsenceUntil  DateTime? // When the current absence ends

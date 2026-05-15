@@ -904,6 +904,11 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
       notificationsClient.sendWelcomeEmail(user.email, user.nombre, role as any).catch(() => {});
     }
 
+    // Sincronizar avatar de Google al users-service (fire-and-forget)
+    if (picture) {
+      usersClient.syncUserAvatar(user.id, picture).catch(() => {});
+    }
+
     // Dual-role support: if this login is for the artist site (role='artista'),
     // ensure an artist profile exists — regardless of whether the user was just
     // created, or already existed as a client logging in to the artist app.

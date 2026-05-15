@@ -54,9 +54,17 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             `}
           >
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                A
-              </div>
+              {(conversation as { artistAvatar?: string | null }).artistAvatar ? (
+                <img
+                  src={(conversation as { artistAvatar?: string | null }).artistAvatar!}
+                  alt={(conversation as { artistName?: string }).artistName ?? 'Artista'}
+                  className="h-10 w-10 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-pink-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  {((conversation as { artistName?: string }).artistName ?? 'A')[0].toUpperCase()}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
                   <h3 className={`text-sm font-semibold truncate ${hasUnread ? 'text-gray-900' : 'text-gray-700'}`}>

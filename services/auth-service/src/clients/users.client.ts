@@ -38,6 +38,18 @@ export class UsersClient {
       });
     }
   }
+
+  async syncUserAvatar(authId: string, avatar: string) {
+    try {
+      await axios.patch(
+        `${USERS_SERVICE_URL}/api/users/internal/by-auth/${authId}/avatar`,
+        { avatar },
+        { timeout: 3000, headers: { 'x-internal-secret': process.env.INTERNAL_SERVICE_SECRET || '' } }
+      );
+    } catch {
+      // fire-and-forget — no bloquea el login
+    }
+  }
 }
 
 export const usersClient = new UsersClient();

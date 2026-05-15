@@ -117,14 +117,15 @@ router.post(
           }).catch(() => null);
         }
 
-        // Notificar al booking-service
+        // Notificar al booking-service.
+        // Sin paymentType explícito: booking-service determina ANTICIPO_PAID vs FULLY_PAID
+        // comparando amountCents con anticipoAmount / totalPrice del booking.
         if (bookingId) {
           await bookingClient.markPayment(
             bookingId,
             amountCents,
             "TILOPAY",
             providerRef,
-            "FULL_PAYMENT",
           ).catch((err: any) =>
             logger.error("Error notificando booking-service del pago Tilopay", "CALLBACK_TILOPAY", {
               bookingId, error: err.message,

@@ -439,7 +439,7 @@ export default function BookingsPage() {
     const fetchBookings = async () => {
       try {
         setLoading(true);
-        const data = await sdk.listBookings({ limit: 100 });
+        const data = await sdk.listBookings({ limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
         const bookingsList = data?.bookings || [];
 
         if (Array.isArray(bookingsList)) {

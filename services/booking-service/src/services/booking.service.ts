@@ -449,10 +449,14 @@ export class BookingService {
     endDate?: Date;
     page?: number;
     limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }) {
     const page = filters.page || 1;
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
+    const sortField = filters.sortBy || 'scheduledDate';
+    const sortOrder = filters.sortOrder || 'asc';
 
     const where: any = {};
 
@@ -472,7 +476,7 @@ export class BookingService {
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
         where,
-        orderBy: { scheduledDate: "asc" },
+        orderBy: { [sortField]: sortOrder } as any,
         skip,
         take: limit,
       }),

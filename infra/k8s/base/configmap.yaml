@@ -23,6 +23,21 @@ data:
   # CORS — allowed browser origins that may call the gateway directly
   ALLOWED_ORIGINS: "https://artist.piums.io,https://client.piums.io,https://admin.piums.io,https://piums.io,https://www.piums.io,https://backend.piums.io,http://localhost:3000,http://localhost:3001,http://localhost:3002"
 
+  # Frontend URLs
+  FRONTEND_URL: "https://client.piums.io"
+
+  # Email
+  EMAIL_FROM_NAME: "Piums"
+  ADMIN_ALERT_EMAIL: "soporte@piums.io"
+
+  # Push notifications
+  ENABLE_PUSH: "true"
+
+  # OAuth callback URLs
+  GOOGLE_CALLBACK_URL: "https://backend.piums.io/api/auth/google/callback"
+  FACEBOOK_CALLBACK_URL: "https://backend.piums.io/api/auth/facebook/callback"
+  TIKTOK_CALLBACK_URL: "https://backend.piums.io/api/auth/tiktok/callback"
+
   # Infrastructure
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"

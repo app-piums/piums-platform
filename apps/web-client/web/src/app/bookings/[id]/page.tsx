@@ -9,6 +9,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
 import { ModifyDateModal } from '@/components/bookings/ModifyDateModal';
 import { sdk, type Service, type ArtistProfile, type Booking } from '@piums/sdk';
+import { formatArtistCategory } from '@/lib/artistCategory';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 import { cImg } from '@/lib/cloudinaryImg';
@@ -63,6 +64,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const [noShowReason, setNoShowReason] = useState('');
   const [noShowSubmitting, setNoShowSubmitting] = useState(false);
   const [noShowDone, setNoShowDone] = useState(false);
+  const [payingRemaining, setPayingRemaining] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -154,6 +156,31 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
     NO_SHOW_ELIGIBLE.includes(booking.status?.toUpperCase() || '') &&
     !noShowDone &&
     booking.status?.toUpperCase() !== 'NO_SHOW';
+
+  const handlePayRemaining = async () => {
+    if (!booking) return;
+    setPayingRemaining(true);
+    try {
+      const anticipo = Number(booking.anticipoAmount ?? 0);
+      const paid     = Number((booking as any).paidAmount ?? anticipo);
+      const remaining = Number(booking.totalPrice) - paid;
+      if (remaining <= 0) return;
+      const intent = await sdk.initCheckout(
+        booking.id,
+        remaining,
+        booking.currency ?? 'USD',
+        artist?.country,
+        'Saldo restante de reserva'
+      );
+      if (intent.redirectUrl) {
+        window.location.href = intent.redirectUrl;
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al iniciar el pago');
+    } finally {
+      setPayingRemaining(false);
+    }
+  };
 
   const handleReportNoShow = async () => {
     setNoShowSubmitting(true);
@@ -392,6 +419,26 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                        Ver Evento asociado
                      </Link>
                    )}
+                   {booking.paymentStatus?.toLowerCase() === 'anticipo_paid' && (() => {
+                     const anticipo  = Number(booking.anticipoAmount ?? 0);
+                     const paid      = Number((booking as any).paidAmount ?? anticipo);
+                     const remaining = Number(booking.totalPrice) - paid;
+                     if (remaining <= 0) return null;
+                     const fmt = (cents: number) =>
+                       new Intl.NumberFormat('en-US', { style: 'currency', currency: booking.currency ?? 'USD' }).format(cents / 100);
+                     return (
+                       <button
+                         onClick={handlePayRemaining}
+                         disabled={payingRemaining}
+                         className="w-full py-2.5 bg-[#FF6B35] text-white font-semibold rounded-xl text-sm hover:bg-[#e55f00] transition disabled:opacity-60 flex items-center justify-center gap-2"
+                       >
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                         </svg>
+                         {payingRemaining ? 'Iniciando pago…' : `Pagar saldo restante (${fmt(remaining)})`}
+                       </button>
+                     );
+                   })()}
                    {canReportNoShow && (
                      <button
                        onClick={() => setNoShowModalOpen(true)}
@@ -474,7 +521,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-500">Artista</p>
                         <p className="text-sm font-semibold text-gray-900 truncate">{artist.nombre}</p>
-                        {artist.category && <p className="text-xs text-gray-400 truncate">{artist.category}</p>}
+                        {artist.category && <p className="text-xs text-gray-400 truncate">{formatArtistCategory(artist.category, artist.specialties)}</p>}
                       </div>
                     </div>
                   )}

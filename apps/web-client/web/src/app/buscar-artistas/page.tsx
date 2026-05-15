@@ -24,6 +24,7 @@ const CATEGORY_OPTIONS = [
   { value: 'FOTOGRAFO',          label: 'Fotógrafo' },
   { value: 'VIDEOGRAFO',         label: 'Videógrafo' },
   { value: 'ANIMADOR',           label: 'Animador' },
+  { value: 'CREADOR_CONTENIDO',  label: 'Creador de Contenido' },
 ];
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   CATEGORY_OPTIONS.filter(o => o.value).map(o => [o.value, o.label])
@@ -74,6 +75,18 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   'mc':                 ['ANIMADOR'],
   'boda':               ['ANIMADOR'],
   'quinceañera':        ['ANIMADOR'],
+  'tiktok':             ['CREADOR_CONTENIDO'],
+  'tiktoker':           ['CREADOR_CONTENIDO'],
+  'youtuber':           ['CREADOR_CONTENIDO'],
+  'youtube':            ['CREADOR_CONTENIDO'],
+  'influencer':         ['CREADOR_CONTENIDO'],
+  'podcast':            ['CREADOR_CONTENIDO'],
+  'podcaster':          ['CREADOR_CONTENIDO'],
+  'streamer':           ['CREADOR_CONTENIDO'],
+  'reels':              ['CREADOR_CONTENIDO'],
+  'contenido':          ['CREADOR_CONTENIDO'],
+  'ugc':                ['CREADOR_CONTENIDO'],
+  'creador':            ['CREADOR_CONTENIDO'],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

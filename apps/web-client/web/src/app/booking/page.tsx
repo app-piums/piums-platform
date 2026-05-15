@@ -17,6 +17,7 @@ import { sdk } from '@piums/sdk';
 import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload, CouponValidation } from '@piums/sdk';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { toast } from '@/lib/toast';
+import { formatArtistCategory } from '@/lib/artistCategory';
 import { CurrencyToggle, useCurrency } from '@/contexts/CurrencyContext';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import {
@@ -1505,7 +1506,7 @@ function BookingContent() {
                         <Avatar src={artist.avatar} fallback={artist.nombre} size="lg" />
                         <div>
                           <p className="font-semibold text-gray-900">{artist.nombre}</p>
-                          <p className="text-sm text-gray-600">{artist.category}</p>
+                          <p className="text-sm text-gray-600">{formatArtistCategory(artist.category, artist.specialties)}</p>
                           {artist.rating && (
                             <div className="flex items-center mt-1">
                               <svg className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -1924,7 +1925,7 @@ function BookingContent() {
                 <Avatar src={artist.avatar} fallback={artist.nombre} size="md" />
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">{artist.nombre}</p>
-                  <p className="text-xs text-gray-500">{artist.category}</p>
+                  <p className="text-xs text-gray-500">{formatArtistCategory(artist.category, artist.specialties)}</p>
                 </div>
               </div>
               {/* Details rows */}

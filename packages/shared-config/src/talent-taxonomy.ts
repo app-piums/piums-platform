@@ -7,7 +7,8 @@ export type ArtistCategory =
   | 'MUSICO'
   | 'FOTOGRAFO'
   | 'VIDEOGRAFO'
-  | 'ANIMADOR';
+  | 'ANIMADOR'
+  | 'CREADOR_CONTENIDO';
 
 export interface Talent {
   id: string;
@@ -114,6 +115,28 @@ const ANIMADOR: TalentGroup = {
   ],
 };
 
+// ─── 5. CREADORES DE CONTENIDO ───────────────────────────────────────────────
+const CREADORES: TalentGroup = {
+  id: 'creadores',
+  label: 'Creadores de Contenido',
+  icon: 'Smartphone',
+  subCategories: [
+    {
+      id: 'creador_contenido',
+      label: 'Creador de Contenido',
+      talents: [
+        { id: 'tiktoker',         label: 'TikToker',                  category: 'CREADOR_CONTENIDO', keywords: ['tiktok', 'tiktoker', 'reels', 'short video'] },
+        { id: 'youtuber',         label: 'YouTuber',                  category: 'CREADOR_CONTENIDO', keywords: ['youtube', 'youtuber', 'video youtube', 'canal'] },
+        { id: 'influencer',       label: 'Influencer',                category: 'CREADOR_CONTENIDO', keywords: ['influencer', 'instagram', 'brand deal', 'colaboración'] },
+        { id: 'podcaster',        label: 'Podcaster',                 category: 'CREADOR_CONTENIDO', keywords: ['podcast', 'podcaster', 'audio', 'entrevista'] },
+        { id: 'streamer',         label: 'Streamer',                  category: 'CREADOR_CONTENIDO', keywords: ['streamer', 'streaming', 'twitch', 'live gaming'] },
+        { id: 'creador_reels',    label: 'Creador de Reels / Shorts', category: 'CREADOR_CONTENIDO', keywords: ['reels', 'shorts', 'contenido corto', 'viral'] },
+        { id: 'ugc_creator',      label: 'UGC Creator',               category: 'CREADOR_CONTENIDO', keywords: ['ugc', 'user generated content', 'contenido marcas'] },
+      ],
+    },
+  ],
+};
+
 // ─── Master export ────────────────────────────────────────────────────────────
 
 export const TALENT_GROUPS: TalentGroup[] = [
@@ -121,6 +144,7 @@ export const TALENT_GROUPS: TalentGroup[] = [
   FOTOGRAFIA,
   VIDEO,
   ANIMADOR,
+  CREADORES,
 ];
 
 export const ALL_TALENTS: Talent[] = TALENT_GROUPS.flatMap(g =>

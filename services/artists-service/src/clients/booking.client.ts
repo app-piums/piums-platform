@@ -9,6 +9,8 @@ interface BookingFilters {
   limit?: number;
   startDate?: string;
   endDate?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   authToken?: string;
 }
 
@@ -60,6 +62,8 @@ export class BookingServiceClient {
         ...(filters.limit && { limit: filters.limit.toString() }),
         ...(filters.startDate && { startDate: filters.startDate }),
         ...(filters.endDate && { endDate: filters.endDate }),
+        ...(filters.sortBy && { sortBy: filters.sortBy }),
+        ...(filters.sortOrder && { sortOrder: filters.sortOrder }),
       });
 
       const headers: Record<string, string> = {

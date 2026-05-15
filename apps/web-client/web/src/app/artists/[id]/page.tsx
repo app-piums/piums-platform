@@ -15,6 +15,7 @@ import { useFavorites } from '@/contexts/FavoritesContext';
 import { ReportModal } from '@/components/ReportModal';
 import type { ArtistProfile, Review, Service } from '@piums/sdk';
 import { getMockArtist, getMockServices, getMockReviews } from '@/lib/mockData';
+import { formatArtistCategory } from '@/lib/artistCategory';
 import { toast } from '@/lib/toast';
 
 export default function ArtistProfilePage() {
@@ -374,7 +375,7 @@ export default function ArtistProfilePage() {
               )}
             </div>
 
-            <p className="text-lg text-gray-600 mb-2">{artist.category}</p>
+            <p className="text-lg text-gray-600 mb-2">{formatArtistCategory(artist.category, artist.specialties)}</p>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
               {artist.cityId && (

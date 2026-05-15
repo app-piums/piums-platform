@@ -42,6 +42,7 @@ export class UsersService {
     ciudad?: string;
     telefono?: string;
     pais?: string;
+    avatar?: string;
   }) {
     try {
       // Verificar que no exista
@@ -60,6 +61,7 @@ export class UsersService {
           nombre: data.nombre,
           telefono: data.telefono,
           pais: data.pais,
+          avatar: data.avatar ?? null,
           lastLoginAt: new Date(),
         },
       });

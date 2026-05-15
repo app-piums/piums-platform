@@ -23,7 +23,7 @@ class UsersClient {
         signal: AbortSignal.timeout(4000),
       });
       if (!res.ok) return null;
-      const data = await res.json();
+      const data = await res.json() as any;
       // users-service wraps the response as { user: {...} }
       return (data.user ?? data) as UserProfile;
     } catch (error: any) {

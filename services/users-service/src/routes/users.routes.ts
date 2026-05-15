@@ -43,6 +43,28 @@ router.get("/internal/by-auth/:authId", async (req, res, next) => {
   }
 });
 
+// Internal endpoint: sync avatar from auth-service after Google login
+router.patch("/internal/by-auth/:authId/avatar", async (req, res, next) => {
+  try {
+    const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const providedSecret = req.headers['x-internal-secret'];
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { authId } = req.params;
+    const { avatar } = req.body;
+    if (!avatar) return res.status(400).json({ error: 'avatar required' });
+    const prisma = new PrismaClient();
+    const user = await prisma.user.findUnique({ where: { authId } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.avatar === avatar) return res.json({ synced: false });
+    await prisma.user.update({ where: { authId }, data: { avatar } });
+    res.json({ synced: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Internal endpoint: delete a user profile by authId (called from auth-service admin)
 router.delete("/internal/by-auth/:authId", async (req, res, next) => {
   try {

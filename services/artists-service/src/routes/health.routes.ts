@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 const startTime = Date.now();
 

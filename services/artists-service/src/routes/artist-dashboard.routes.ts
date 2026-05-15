@@ -23,7 +23,7 @@ import { paymentsServiceClient } from "../clients/payments.client";
 
 const artistsService = new ArtistsService();
 
-const router = Router();
+const router: import("express").Router = Router();
 
 // Todas las rutas requieren autenticación
 router.use(authenticateToken);

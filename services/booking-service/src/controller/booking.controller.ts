@@ -147,6 +147,8 @@ export class BookingController {
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+        sortBy: req.query.sortBy as string | undefined,
+        sortOrder: req.query.sortOrder as 'asc' | 'desc' | undefined,
       };
 
       const result = await bookingService.searchBookings(query);

@@ -46,6 +46,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use("/health", healthRoutes);
+
 // Rate limiting general
 app.use(apiLimiter);
 
@@ -59,8 +62,6 @@ app.use((req, res, next) => {
 });
 
 // ==================== RUTAS ====================
-
-app.use("/health", healthRoutes);
 app.use("/api", bookingRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api", disputeRoutes);

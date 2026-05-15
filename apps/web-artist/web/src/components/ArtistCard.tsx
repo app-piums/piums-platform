@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import type { Artist } from '@piums/sdk';
+import { formatArtistCategory } from '@/lib/artistCategory';
 
 interface ArtistCardProps {
   artist: Artist;
@@ -57,7 +58,7 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
             <div className="flex-1 mt-1">
               <h3 className="text-lg font-semibold text-gray-900">{artist.nombre}</h3>
               {artist.category && (
-                <p className="text-sm text-gray-600">{artist.category}</p>
+                <p className="text-sm text-gray-600">{formatArtistCategory(artist.category, (artist as any).specialties)}</p>
               )}
             </div>
           </div>

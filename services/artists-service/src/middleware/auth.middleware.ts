@@ -67,7 +67,7 @@ export const authorizeArtistOwner = async (
   next: NextFunction
 ) => {
   try {
-    const artistId = req.params.id;
+    const artistId = req.params.id as string;
     const authenticatedUserId = req.user?.id;
     const userRole = req.user?.role;
 

@@ -727,7 +727,8 @@ export class PaymentService {
     external_orden_id?: string;
     userId: string;
   }) {
-    const approved = data.responseCode === '00';
+    // Tilopay uses "1" in redirect URL params, "00" in server-side webhooks
+    const approved = data.responseCode === '00' || data.responseCode === '1';
 
     if (!approved) {
       logger.warn("Tilopay redirect: pago no aprobado", "PAYMENT_SERVICE", {
@@ -737,7 +738,8 @@ export class PaymentService {
       return { success: false, responseCode: data.responseCode };
     }
 
-    const amountCents = Math.round(parseFloat(data.amount) * 100);
+    const rawAmount = parseFloat(data.amount);
+    const amountCents = isNaN(rawAmount) ? 0 : Math.round(rawAmount * 100);
 
     // Verificar que no se haya procesado ya este orderNumber
     const existing = await (prisma as any).paymentIntent.findFirst({
@@ -759,12 +761,13 @@ export class PaymentService {
         logger.error("Error guardando paymentIntent Tilopay", "PAYMENT_SERVICE", { error: err.message })
       );
 
+      // No pasar paymentType — booking-service determina ANTICIPO_PAID vs FULLY_PAID
+      // comparando el monto contra anticipoAmount / totalPrice del booking.
       await bookingClient.markPayment(
         data.bookingId,
         amountCents,
         "TILOPAY",
         data.orderNumber,
-        "FULL_PAYMENT",
       );
 
       logger.info("Tilopay redirect: pago confirmado", "PAYMENT_SERVICE", {

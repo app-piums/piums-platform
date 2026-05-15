@@ -10,6 +10,7 @@ import { useFavorites } from '@/contexts/FavoritesContext';
 import { Loading } from '@/components/Loading';
 import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
+import { formatArtistCategory } from '@/lib/artistCategory';
 
 export default function BookmarksPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -130,7 +131,7 @@ export default function BookmarksPage() {
                       <div>
                         <p className="text-lg font-semibold text-gray-900">{artist.nombre}</p>
                         {artist.category && (
-                          <p className="text-sm text-gray-500">{artist.category}</p>
+                          <p className="text-sm text-gray-500">{formatArtistCategory(artist.category, (artist as any).specialties)}</p>
                         )}
                         {artist.cityId && (
                           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">

@@ -15,6 +15,7 @@ enum ArtistCategory {
   FOTOGRAFO
   VIDEOGRAFO
   ANIMADOR
+  CREADOR_CONTENIDO
   OTRO
 }
 

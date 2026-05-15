@@ -10,14 +10,20 @@
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);max-width:600px;width:100%;">
 
-        <!-- Header -->
+        <!-- Logo bar -->
         <tr>
-          <td style="background:linear-gradient(135deg,#FF4500 0%,#FF6A00 60%,#ff8c42 100%);padding:40px 40px 36px;text-align:center;">
-            <img src="https://client.piums.io/logo-white.png"
+          <td align="center" style="background:#ffffff;padding:28px 40px 0;">
+            <img src="https://artist.piums.io/logo.png"
                  alt="Piums"
-                 width="140"
+                 width="110"
                  style="display:block;margin:0 auto;height:auto;" />
-            <p style="margin:14px 0 0;color:rgba(255,255,255,.90);font-size:14px;letter-spacing:0.3px;">Panel de artistas</p>
+          </td>
+        </tr>
+
+        <!-- Orange tagline band -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#FF4500 0%,#FF6A00 100%);padding:16px 40px 20px;text-align:center;">
+            <p style="margin:0;color:rgba(255,255,255,.92);font-size:13px;letter-spacing:0.4px;font-weight:500;">Panel de artistas</p>
           </td>
         </tr>
 
@@ -25,7 +31,7 @@
         <tr>
           <td style="padding:40px 40px 8px;">
             <h2 style="margin:0 0 12px;color:#111827;font-size:26px;font-weight:800;line-height:1.25;">
-              ¡Hola, {{userName}}! 🎨
+              ¡Hola, {{userName}}!
             </h2>
             <p style="margin:0;color:#4b5563;font-size:16px;line-height:1.7;">
               Tu cuenta de artista en <strong style="color:#FF6A00;">Piums</strong> está lista. Ahora puedes mostrarle tu talento a miles de clientes que buscan artistas justo como tú. ¡Esto es solo el comienzo!
@@ -90,7 +96,7 @@
               <tr>
                 <td style="padding:14px 16px;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;">
                   <p style="margin:0;color:#92400e;font-size:14px;line-height:1.5;">
-                    ⏳ <strong>Tu documentación está siendo revisada.</strong> Te avisaremos por correo cuando tu perfil sea verificado — normalmente en 24 a 48 horas.
+                    <strong>Documentación en revisión.</strong> Te avisaremos por correo cuando tu perfil sea verificado, normalmente en 24 a 48 horas.
                   </p>
                 </td>
               </tr>
@@ -104,7 +110,7 @@
           <td style="padding:36px 40px 40px;text-align:center;">
             <a href="{{artistAppUrl}}/artist/dashboard"
                style="display:inline-block;background:linear-gradient(135deg,#FF4500,#FF6A00);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 48px;border-radius:10px;letter-spacing:0.2px;">
-              Ir a mi dashboard →
+              Ir a mi dashboard
             </a>
             <p style="margin:16px 0 0;color:#9ca3af;font-size:13px;">
               ¿Dudas? Escríbenos a <a href="mailto:soporte@piums.io" style="color:#FF6A00;text-decoration:none;font-weight:600;">soporte@piums.io</a>
@@ -120,7 +126,8 @@
             </p>
             <p style="margin:0;color:#9ca3af;font-size:12px;">
               © {{currentYear}} Piums · Guatemala ·
-              <a href="{{clientAppUrl}}" style="color:#FF6A00;text-decoration:none;">piums.io</a>
+              <a href="{{artistAppUrl}}" style="color:#FF6A00;text-decoration:none;">piums.io</a>
+              · <a href="mailto:soporte@piums.io" style="color:#FF6A00;text-decoration:none;">soporte@piums.io</a>
             </p>
           </td>
         </tr>

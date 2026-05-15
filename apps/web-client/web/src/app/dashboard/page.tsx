@@ -10,6 +10,7 @@ import { PageHelpButton } from '@/components/PageHelpButton';
 import { NotificationBell } from '@/components/NotificationBell';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk, Artist, Booking } from '@piums/sdk';
+import { formatArtistCategory } from '@/lib/artistCategory';
 
 // Colors for artist avatar placeholders
 const COLORS = [
@@ -177,7 +178,7 @@ export default function DashboardPage() {
       setLoadingData(true);
       const [artistsRes, bookingsRes] = await Promise.allSettled([
         sdk.getArtists({ limit: 8 } as any),
-        sdk.listBookings({ limit: 20 }),
+        sdk.listBookings({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
       ]);
 
       if (artistsRes.status === 'fulfilled') {
@@ -368,7 +369,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="p-3">
                       <p className="font-semibold text-gray-900 text-sm truncate">{artist.nombre}</p>
-                      <p className="text-xs text-gray-400 truncate">{artist.category ?? artist.categoria ?? '—'}</p>
+                      <p className="text-xs text-gray-400 truncate">{formatArtistCategory(artist.category ?? artist.categoria, (artist as any).specialties) || '—'}</p>
                       {artist.precioDesde && (
                         <p className="text-sm font-bold text-[#FF6B35] mt-1">desde ${artist.precioDesde}</p>
                       )}

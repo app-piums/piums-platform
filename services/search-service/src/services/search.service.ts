@@ -451,6 +451,8 @@ export class SearchService {
           const main = services.find((s: ServiceData) => s.isMainService) || services[0] || null;
           return main ? main.title : null;
         })(),
+        avatar: artist.avatar ?? null,
+        coverPhoto: artist.coverPhoto ?? null,
         lastSyncedAt: new Date(),
         // Absence tracking: manual blackout takes priority; fall back to GPS-detected country
         ...((() => {

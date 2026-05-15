@@ -245,30 +245,30 @@
                 <div>
                     <p class="artist-name">{{artistName}}</p>
                     <p class="artist-category">{{artistCategory}}</p>
-                    <p class="artist-rating">⭐ {{artistRating}} • {{reviewCount}} reseñas</p>
+                    <p class="artist-rating">&#9733; {{artistRating}} &bull; {{reviewCount}} reseñas</p>
                 </div>
             </div>
 
             <!-- Booking Details -->
             <div class="details-box">
                 <div class="detail-row">
-                    <div class="detail-label">📅 Fecha y Hora</div>
+                    <div class="detail-label">Fecha y Hora</div>
                     <div class="detail-value">{{bookingDate}} a las {{bookingTime}}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">⏱️ Duración</div>
+                    <div class="detail-label">Duración</div>
                     <div class="detail-value">{{duration}}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">📍 Ubicación</div>
+                    <div class="detail-label">Ubicación</div>
                     <div class="detail-value">{{location}}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">🎨 Servicio</div>
+                    <div class="detail-label">Servicio</div>
                     <div class="detail-value">{{serviceName}}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">💰 Total</div>
+                    <div class="detail-label">Total</div>
                     <div class="detail-value" style="font-weight: 600; color: #10B981;">{{totalPrice}}</div>
                 </div>
             </div>
@@ -277,7 +277,7 @@
             {{#if depositRequired}}
             <div class="highlight-box">
                 <p>
-                    💳 <strong>Pago requerido:</strong> Para asegurar tu reserva, necesitas pagar un depósito de {{depositAmount}}. 
+                    <strong>Pago requerido:</strong> Para asegurar tu reserva, necesitas pagar un depósito de {{depositAmount}}. 
                     Puedes realizarlo desde tu panel de reservas.
                 </p>
             </div>
@@ -285,8 +285,8 @@
 
             <!-- Calendar Actions -->
             <div class="calendar-actions">
-                <a href="{{googleCalendarUrl}}" class="calendar-button">📅 Google Calendar</a>
-                <a href="{{appleCalendarUrl}}" class="calendar-button">🍎 Apple Calendar</a>
+                <a href="{{googleCalendarUrl}}" class="calendar-button">Google Calendar</a>
+                <a href="{{appleCalendarUrl}}" class="calendar-button">Apple Calendar</a>
             </div>
 
             <!-- Primary CTA -->
@@ -298,19 +298,19 @@
             <div class="info-section">
                 <h3>Qué Esperar</h3>
                 <div class="info-item">
-                    <span class="info-icon">📧</span>
+                    <span class="info-icon" style="color:#16a34a;">&#9679;</span>
                     <span class="info-text">Recibirás un recordatorio 24 horas antes de tu cita</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">⏰</span>
+                    <span class="info-icon" style="color:#16a34a;">&#9679;</span>
                     <span class="info-text">Te enviaremos otro recordatorio 2 horas antes</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">💬</span>
+                    <span class="info-icon" style="color:#16a34a;">&#9679;</span>
                     <span class="info-text">Puedes contactar al artista directamente desde tu panel</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">📸</span>
+                    <span class="info-icon" style="color:#16a34a;">&#9679;</span>
                     <span class="info-text">Después del servicio, podrás dejar una reseña</span>
                 </div>
             </div>

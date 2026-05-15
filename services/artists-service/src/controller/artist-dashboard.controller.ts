@@ -109,7 +109,7 @@ export const getMyBookings = async (
     // Query params para filtros
     const status = req.query.status as string | undefined;
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || 50;
 
     // Llamar al booking-service para obtener las reservas del artista
     const authToken = req.headers.authorization?.substring(7);
@@ -118,6 +118,8 @@ export const getMyBookings = async (
       status,
       page,
       limit,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
       authToken,
     });
 

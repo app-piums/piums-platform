@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from '@/lib/toast';
 import { ThemeToggle } from '@/contexts/ThemeContext';
-import { Globe, Music, Camera, Video, Sparkles, Check } from 'lucide-react';
+import { Globe, Music, Camera, Video, Sparkles, Check, Smartphone } from 'lucide-react';
 
 // Disciplinas creativas disponibles
 const creativeDisciplines = [
-  { id: 'musician',     name: 'Músico',     subtitle: 'Cantante, Compositor, Banda',    Icon: Music },
-  { id: 'photographer', name: 'Fotógrafo',  subtitle: 'Eventos, Retratos, Bodas',       Icon: Camera },
-  { id: 'filmmaker',    name: 'Videógrafo',  subtitle: 'Clips, Eventos, Comerciales',    Icon: Video },
-  { id: 'animador',     name: 'Animador',    subtitle: 'Payaso, Maestro de Ceremonia',   Icon: Sparkles },
+  { id: 'musician',     name: 'Músico',                 subtitle: 'Cantante, Compositor, Banda',    Icon: Music },
+  { id: 'photographer', name: 'Fotógrafo',              subtitle: 'Eventos, Retratos, Bodas',       Icon: Camera },
+  { id: 'filmmaker',    name: 'Videógrafo',              subtitle: 'Clips, Eventos, Comerciales',    Icon: Video },
+  { id: 'animador',     name: 'Animador',                subtitle: 'Payaso, Maestro de Ceremonia',   Icon: Sparkles },
+  { id: 'creator',      name: 'Creador de Contenido',   subtitle: 'TikToker, YouTuber, Influencer', Icon: Smartphone },
 ];
 
 // Especialidades específicas por disciplina
@@ -50,6 +51,15 @@ const TALENT_BY_DISCIPLINE: Record<string, { id: string; label: string; keywords
     { id: 'payaso',            label: 'Payaso',              keywords: ['payaso', 'show infantil', 'globoflexia', 'magia', 'animación niños'] },
     { id: 'maestro_ceremonia', label: 'Maestro de Ceremonia', keywords: ['mc', 'maestro ceremonias', 'animador eventos', 'presentador'] },
   ],
+  creator: [
+    { id: 'tiktoker',      label: 'TikToker',                  keywords: ['tiktok', 'tiktoker', 'reels', 'short video'] },
+    { id: 'youtuber',      label: 'YouTuber',                  keywords: ['youtube', 'youtuber', 'video youtube', 'canal'] },
+    { id: 'influencer',    label: 'Influencer',                keywords: ['influencer', 'instagram', 'brand deal', 'colaboración'] },
+    { id: 'podcaster',     label: 'Podcaster',                 keywords: ['podcast', 'podcaster', 'audio', 'entrevista'] },
+    { id: 'streamer',      label: 'Streamer',                  keywords: ['streamer', 'twitch', 'live gaming'] },
+    { id: 'creador_reels', label: 'Creador de Reels / Shorts', keywords: ['reels', 'shorts', 'contenido corto', 'viral'] },
+    { id: 'ugc_creator',   label: 'UGC Creator',               keywords: ['ugc', 'user generated content', 'contenido marcas'] },
+  ],
 };
 
 // Sugerencias de nombre/categoría/descripción de servicio por talent ID
@@ -77,8 +87,15 @@ const SERVICE_SUGGESTIONS: Record<string, { name: string; category: string; desc
   director_audiovisual: { name: 'Producción Audiovisual',                  category: 'Videografía y edición', description: 'Dirección y producción audiovisual para comerciales, videoclips y documentales.' },
   drone_video:          { name: 'Video Aéreo con Drone',                   category: 'Videografía y edición', description: 'Video aéreo con drone para eventos, inmuebles y producciones audiovisuales.' },
   streaming:            { name: 'Streaming en Vivo de Eventos',            category: 'Videografía y edición', description: 'Transmisión profesional en vivo de eventos, conferencias y ceremonias.' },
-  payaso:               { name: 'Show de Payaso para Eventos',             category: 'Entretenimiento',       description: 'Show completo de payaso para fiestas infantiles y eventos: globos, juegos, magia y diversión.' },
-  maestro_ceremonia:    { name: 'Maestro de Ceremonia para Eventos',       category: 'Animación de eventos',  description: 'Conducción profesional de bodas, quinceañeras, graduaciones y eventos especiales.' },
+  payaso:               { name: 'Show de Payaso para Eventos',             category: 'Entretenimiento',         description: 'Show completo de payaso para fiestas infantiles y eventos: globos, juegos, magia y diversión.' },
+  maestro_ceremonia:    { name: 'Maestro de Ceremonia para Eventos',       category: 'Animación de eventos',    description: 'Conducción profesional de bodas, quinceañeras, graduaciones y eventos especiales.' },
+  tiktoker:             { name: 'Creación de Contenido para TikTok',       category: 'Creación de contenido',   description: 'Producción de videos cortos virales para TikTok: guion, grabación y edición.' },
+  youtuber:             { name: 'Producción de Videos para YouTube',       category: 'Creación de contenido',   description: 'Creación de contenido para YouTube: guion, filmación, edición y optimización SEO.' },
+  influencer:           { name: 'Colaboración con Influencer',             category: 'Creación de contenido',   description: 'Promoción de marca o producto en redes sociales con audiencia segmentada.' },
+  podcaster:            { name: 'Producción de Podcast',                   category: 'Creación de contenido',   description: 'Grabación, edición y publicación de episodios de podcast. Disponible para entrevistas.' },
+  streamer:             { name: 'Streaming en Vivo',                       category: 'Creación de contenido',   description: 'Transmisión en vivo para eventos, lanzamientos de productos y entretenimiento.' },
+  creador_reels:        { name: 'Creación de Reels y Shorts',              category: 'Creación de contenido',   description: 'Videos cortos creativos para Instagram Reels, TikTok y YouTube Shorts.' },
+  ugc_creator:          { name: 'Creación de Contenido UGC para Marcas',   category: 'Creación de contenido',   description: 'Contenido auténtico estilo usuario para campañas de marketing y publicidad digital.' },
 };
 
 // Opciones de equipo por disciplina
@@ -139,6 +156,20 @@ const EQUIPMENT_BY_DISCIPLINE: Record<string, { section: string; items: string[]
       items: ['Micrófono inalámbrico', 'Micrófono de solapa', 'Altavoz portátil', 'Bocina portátil', 'Laptop + presentaciones'],
     },
   ],
+  creator: [
+    {
+      section: 'Grabación',
+      items: ['Smartphone de alta gama', 'Cámara mirrorless / DSLR', 'Trípode / soporte', 'Aro de luz (ring light)', 'Estabilizador / gimbal'],
+    },
+    {
+      section: 'Audio',
+      items: ['Micrófono de solapa', 'Micrófono de condensador', 'Interfaz de audio', 'Auriculares de monitoreo'],
+    },
+    {
+      section: 'Edición y producción',
+      items: ['Laptop + software de edición', 'Adobe Premiere / CapCut / DaVinci', 'Librería de música y efectos', 'Fondos y props para grabación'],
+    },
+  ],
 };
 
 // Opciones de categorías para servicios
@@ -149,6 +180,7 @@ const serviceCategories = [
   'Videografía y edición',
   'Entretenimiento',
   'Animación de eventos',
+  'Creación de contenido',
 ];
 
 export default function ArtistOnboardingPage() {
@@ -365,15 +397,21 @@ export default function ArtistOnboardingPage() {
         photographer: 'FOTOGRAFO',
         filmmaker:   'VIDEOGRAFO',
         animador:    'ANIMADOR',
+        creator:     'CREADOR_CONTENIDO',
       };
       const category = disciplineCategoryMap[selectedDiscipline || ''] || 'OTRO';
 
-      // Build specialties: talent label + custom role
+      // Build specialties: for OTRO, custom text goes first as the display label
       const talentList = selectedTalentId ? TALENT_BY_DISCIPLINE[selectedDiscipline || ''] ?? [] : [];
       const talentEntry = talentList.find(t => t.id === selectedTalentId);
-      const specialties: string[] = [category];
-      if (talentEntry) specialties.push(talentEntry.label);
-      if (customRole.trim()) specialties.push(customRole.trim());
+      const specialties: string[] = [];
+      if (category === 'OTRO' && customRole.trim()) {
+        specialties.push(customRole.trim());
+      } else {
+        specialties.push(category);
+        if (talentEntry) specialties.push(talentEntry.label);
+        if (customRole.trim()) specialties.push(customRole.trim());
+      }
 
       // Register custom role in smartsearch if it's new
       if (customRole.trim().length >= 2) {

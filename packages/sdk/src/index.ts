@@ -1524,6 +1524,8 @@ class PiumsSDK {
     endDate?: string;
     page?: number;
     limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<{ bookings: Booking[]; total: number; page: number; totalPages: number }> {
     try {
       const params = new URLSearchParams();
@@ -1533,6 +1535,8 @@ class PiumsSDK {
       if (filters?.endDate) params.append('endDate', filters.endDate);
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.limit) params.append('limit', filters.limit.toString());
+      if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
 
       const queryString = params.toString();
       const url = `${this.baseUrl}/bookings${queryString ? `?${queryString}` : ''}`;

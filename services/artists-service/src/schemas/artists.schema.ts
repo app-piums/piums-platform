@@ -6,6 +6,7 @@ export const ArtistCategoryEnum = z.enum([
   "FOTOGRAFO",
   "VIDEOGRAFO",
   "ANIMADOR",
+  "CREADOR_CONTENIDO",
   "OTRO",
 ]);
 

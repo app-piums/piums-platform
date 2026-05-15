@@ -69,7 +69,7 @@ export class ArtistsService {
       this.alertAdmins('admin:alert', {
         type: 'artist_pending',
         title: 'Nuevo artista pendiente',
-        message: `${artist.name || artist.email} está esperando verificación`,
+        message: `${artist.nombre || artist.email} está esperando verificación`,
         actionUrl: '/artists',
       });
       return artist;

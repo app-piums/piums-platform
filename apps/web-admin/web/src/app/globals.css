@@ -7,9 +7,9 @@
   --foreground: #171717;
 
   /* Piúms Brand Colors */
-  --color-primary: #FF6A00;
-  --color-primary-dark: #E65F00;
-  --color-primary-light: #FF8533;
+  --color-primary: #FF6B35;
+  --color-primary-dark: #E85D2F;
+  --color-primary-light: #FF8C61;
   --color-accent: #00AEEF;
   --color-accent-dark: #009DD6;
   --color-accent-light: #33BDFF;
@@ -23,90 +23,90 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0F172A;
-    --foreground: #F1F5F9;
+    --background: #1C1C1E;
+    --foreground: #FFFFFF;
   }
 }
 
-/* ─── Dark Soft Mode (Piums) ─────────────────────────────────────── */
+/* ─── Dark Mode (Piums — alineado con paleta iOS) ───────────────── */
 .dark {
-  --background: #0F172A;
-  --foreground: #F1F5F9;
+  --background: #1C1C1E;  /* piumsBackgroundSecondary = fondo de página */
+  --foreground: #FFFFFF;  /* piumsLabel */
   color-scheme: dark;
 }
 
 html.dark,
 .dark body {
-  background-color: #0F172A !important;
-  color: #F1F5F9 !important;
+  background-color: #1C1C1E !important;
+  color: #FFFFFF !important;
 }
 
 /* ── Surfaces ── */
-.dark [class*="bg-white"]    { background-color: #1E293B !important; }
-.dark [class*="bg-gray-50"]  { background-color: #0F172A !important; }
-.dark [class*="bg-gray-100"] { background-color: #1E293B !important; }
-.dark [class*="bg-gray-200"] { background-color: #243044 !important; }
-.dark [class*="bg-gray-300"] { background-color: #334155 !important; }
-.dark [class*="bg-gray-800"] { background-color: #0F172A !important; }
-.dark [class*="bg-gray-900"] { background-color: #060D1A !important; }
+.dark [class*="bg-white"]    { background-color: #2C2C2E !important; }  /* cards */
+.dark [class*="bg-gray-50"]  { background-color: #1C1C1E !important; }  /* fondo de página */
+.dark [class*="bg-gray-100"] { background-color: #2C2C2E !important; }  /* cards */
+.dark [class*="bg-gray-200"] { background-color: #28282A !important; }  /* piumsBackgroundElevated */
+.dark [class*="bg-gray-300"] { background-color: #383840 !important; }  /* piumsSeparator */
+.dark [class*="bg-gray-800"] { background-color: #1C1C1E !important; }
+.dark [class*="bg-gray-900"] { background-color: #000000 !important; }  /* fondo base */
 
 /* ── Typography ── */
-.dark [class*="text-gray-900"] { color: #F1F5F9 !important; }
-.dark [class*="text-gray-800"] { color: #E2E8F0 !important; }
-.dark [class*="text-gray-700"] { color: #CBD5E1 !important; }
-.dark [class*="text-gray-600"] { color: #94A3B8 !important; }
-.dark [class*="text-gray-500"] { color: #64748B !important; }
-.dark [class*="text-gray-400"] { color: #475569 !important; }
-.dark [class*="text-black"]    { color: #F1F5F9 !important; }
+.dark [class*="text-gray-900"] { color: #FFFFFF !important; }    /* piumsLabel */
+.dark [class*="text-gray-800"] { color: #E5E5EA !important; }
+.dark [class*="text-gray-700"] { color: #C7C7CC !important; }
+.dark [class*="text-gray-600"] { color: #8E8E93 !important; }    /* piumsLabelSecondary */
+.dark [class*="text-gray-500"] { color: #6E6E73 !important; }    /* piumsLabelSecondary light */
+.dark [class*="text-gray-400"] { color: #48484A !important; }
+.dark [class*="text-black"]    { color: #FFFFFF !important; }
 
 /* ── Borders ── */
-.dark [class*="border-gray-100"] { border-color: #1E293B !important; }
-.dark [class*="border-gray-200"] { border-color: #334155 !important; }
-.dark [class*="border-gray-300"] { border-color: #475569 !important; }
+.dark [class*="border-gray-100"] { border-color: #28282A !important; }
+.dark [class*="border-gray-200"] { border-color: #383840 !important; }  /* piumsSeparator */
+.dark [class*="border-gray-300"] { border-color: #48484A !important; }
 
 /* ── Zinc surfaces ── */
-.dark [class*="bg-zinc-50"]  { background-color: #0F172A !important; }
-.dark [class*="bg-zinc-100"] { background-color: #1E293B !important; }
-.dark [class*="bg-zinc-200"] { background-color: #243044 !important; }
-.dark [class*="bg-zinc-800"] { background-color: #0F172A !important; }
-.dark [class*="bg-zinc-900"] { background-color: #060D1A !important; }
+.dark [class*="bg-zinc-50"]  { background-color: #1C1C1E !important; }
+.dark [class*="bg-zinc-100"] { background-color: #2C2C2E !important; }
+.dark [class*="bg-zinc-200"] { background-color: #28282A !important; }
+.dark [class*="bg-zinc-800"] { background-color: #1C1C1E !important; }
+.dark [class*="bg-zinc-900"] { background-color: #000000 !important; }
 
 /* ── Zinc typography ── */
-.dark [class*="text-zinc-900"] { color: #F1F5F9 !important; }
-.dark [class*="text-zinc-800"] { color: #E2E8F0 !important; }
-.dark [class*="text-zinc-700"] { color: #CBD5E1 !important; }
-.dark [class*="text-zinc-600"] { color: #94A3B8 !important; }
-.dark [class*="text-zinc-500"] { color: #64748B !important; }
-.dark [class*="text-zinc-400"] { color: #94A3B8 !important; }
-.dark [class*="text-zinc-300"] { color: #CBD5E1 !important; }
+.dark [class*="text-zinc-900"] { color: #FFFFFF !important; }
+.dark [class*="text-zinc-800"] { color: #E5E5EA !important; }
+.dark [class*="text-zinc-700"] { color: #C7C7CC !important; }
+.dark [class*="text-zinc-600"] { color: #8E8E93 !important; }
+.dark [class*="text-zinc-500"] { color: #6E6E73 !important; }
+.dark [class*="text-zinc-400"] { color: #8E8E93 !important; }
+.dark [class*="text-zinc-300"] { color: #C7C7CC !important; }
 
 /* ── Zinc borders ── */
-.dark [class*="border-zinc-100"] { border-color: #1E293B !important; }
-.dark [class*="border-zinc-200"] { border-color: #334155 !important; }
-.dark [class*="border-zinc-300"] { border-color: #475569 !important; }
+.dark [class*="border-zinc-100"] { border-color: #28282A !important; }
+.dark [class*="border-zinc-200"] { border-color: #383840 !important; }
+.dark [class*="border-zinc-300"] { border-color: #48484A !important; }
 
 /* ── Custom hardcoded bg colors ── */
-.dark [class*="bg-[#FAFAFA]"] { background-color: #0F172A !important; }
-.dark [class*="bg-[#F9FAFB]"] { background-color: #0F172A !important; }
-.dark [class*="bg-[#F3F4F6]"] { background-color: #1E293B !important; }
+.dark [class*="bg-[#FAFAFA]"] { background-color: #1C1C1E !important; }
+.dark [class*="bg-[#F9FAFB]"] { background-color: #1C1C1E !important; }
+.dark [class*="bg-[#F3F4F6]"] { background-color: #2C2C2E !important; }
 
 /* ── Inputs & Forms ── */
 .dark input:not([type="submit"]):not([type="button"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 .dark textarea,
 .dark select {
-  background-color: #1E293B !important;
-  color: #F1F5F9 !important;
-  border-color: #334155 !important;
+  background-color: #28282A !important;  /* piumsBackgroundElevated */
+  color: #FFFFFF !important;
+  border-color: #383840 !important;      /* piumsSeparator */
 }
 .dark input::placeholder,
-.dark textarea::placeholder { color: #64748B !important; }
+.dark textarea::placeholder { color: #6E6E73 !important; }
 
 /* ── Card hover glow in dark mode ── */
 .dark a[class*="rounded-2xl"][class*="border"]:hover,
 .dark a[class*="rounded-xl"][class*="border"]:hover,
 .dark div[class*="rounded-xl"][class*="border"]:hover,
 .dark div[class*="rounded-2xl"][class*="border"]:hover {
-  box-shadow: 0 0 0 1px #334155, 0 0 0 3px rgba(255,106,0,0.18), 0 8px 24px rgba(0,0,0,0.45) !important;
+  box-shadow: 0 0 0 1px #383840, 0 0 0 3px rgba(255,107,53,0.18), 0 8px 24px rgba(0,0,0,0.45) !important;
 }
 
 body {
@@ -121,7 +121,7 @@ body {
 /* ─── Microinteracciones Piums ────────────────────────────────────── */
 
 /* 1. Spinners → azul acento (naranja = CTA, azul = estado de carga) */
-[class~="animate-spin"][class*="border-[#FF6A00]"] {
+[class~="animate-spin"][class*="border-[#FF6B35]"] {
   border-color: #00AEEF;
   border-top-color: transparent;
 }
@@ -152,11 +152,11 @@ div[class*="rounded-2xl"][class*="border"][class*="bg-white"]:hover {
   to   { transform: translate(-50%, -50%) scale(4); opacity: 0; }
 }
 
-button[class*="bg-[#FF6A00]"] {
+button[class*="bg-[#FF6B35]"] {
   position: relative;
   overflow: hidden;
 }
-button[class*="bg-[#FF6A00]"]::after {
+button[class*="bg-[#FF6B35]"]::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -169,6 +169,6 @@ button[class*="bg-[#FF6A00]"]::after {
   transform: translate(-50%, -50%) scale(0);
   opacity: 0;
 }
-button[class*="bg-[#FF6A00]"]:active::after {
+button[class*="bg-[#FF6B35]"]:active::after {
   animation: piums-ripple 0.45s ease-out forwards;
 }

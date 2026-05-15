@@ -21,7 +21,7 @@ import { PrismaClient } from "@prisma/client";
 import { triggerArtistReindex, triggerArtistUnindex } from "../utils/searchReindex";
 
 const prisma = new PrismaClient();
-const router = Router();
+const router: import("express").Router = Router();
 
 // ─── Internal service-to-service routes (internal network only) ─────────────
 // Validates a shared internal secret header to prevent abuse if accidentally exposed.
@@ -80,7 +80,7 @@ router.post("/internal/by-ids", async (req, res, next) => {
     if (!Array.isArray(ids) || ids.length === 0) return res.json({ artists: [] });
     const artists = await prisma.artist.findMany({
       where: { id: { in: ids }, deletedAt: null },
-      select: { id: true, authId: true, nombre: true, category: true },
+      select: { id: true, authId: true, nombre: true, category: true, avatar: true },
     });
     res.json({ artists });
   } catch (error) {
@@ -98,12 +98,12 @@ router.get("/internal/by-auth/:authId", async (req, res, next) => {
     const { authId } = req.params;
     const artist = await prisma.artist.findUnique({
       where: { authId },
-      select: { id: true, authId: true, artistName: true, email: true },
+      select: { id: true, authId: true, artistName: true, email: true, avatar: true },
     });
     if (!artist || (artist as any).deletedAt) {
       return res.status(404).json({ error: 'Artist not found' });
     }
-    res.json({ id: artist.id, authId: artist.authId, artistName: artist.artistName });
+    res.json({ id: artist.id, authId: artist.authId, artistName: artist.artistName, avatar: (artist as any).avatar });
   } catch (error) {
     next(error);
   }

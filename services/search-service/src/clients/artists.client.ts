@@ -30,6 +30,8 @@ export interface ArtistData {
     destinationCountry?: string | null;
   }>;
   geoCountry?: string | null; // Real-time GPS country code
+  avatar?: string | null;
+  coverPhoto?: string | null;
 }
 
 export const artistsClient = {
