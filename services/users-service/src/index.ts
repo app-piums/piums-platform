@@ -18,10 +18,13 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use("/health", healthRoutes);
+
 app.use(apiLimiter as any);
 
 // Rutas
-app.use("/health", healthRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/users/me/profile", profileRoutes);
 app.use("/api/users/me/favorites", favoriteRoutes);

@@ -26,6 +26,9 @@ app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use(healthRoutes);
+
 // Rate limiting
 app.use(apiRateLimiter);
 
@@ -41,8 +44,6 @@ app.use((req, _res, next) => {
 // ============================================================================
 // Routes
 // ============================================================================
-
-app.use(healthRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/notifications/booking', bookingRoutes);
 

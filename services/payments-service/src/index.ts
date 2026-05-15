@@ -45,6 +45,9 @@ app.use("/api/webhooks", express.raw({ type: "application/json" }), webhookRoute
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use("/health", healthRoutes);
+
 // Rate limiting
 app.use(apiLimiter);
 
@@ -58,7 +61,6 @@ app.use((req, _res, next) => {
 });
 
 // Routes
-app.use("/health", healthRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/payments", paymentMethodRoutes);
 app.use("/api", payoutRoutes);

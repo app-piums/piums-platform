@@ -37,10 +37,12 @@ app.use(session({
 }) as any);
 app.use(passport.initialize() as any);
 app.use(passport.session() as any);
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use("/health", healthRoutes);
+
 app.use(apiLimiter); // Rate limiting general
 
 // Rutas
-app.use("/health", healthRoutes);
 app.use("/auth", authRoutes);
 app.use("/auth", oauthRoutes); // OAuth routes under /auth
 app.use("/admin", adminRoutes);

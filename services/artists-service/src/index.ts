@@ -17,11 +17,14 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use("/health", healthRoutes);
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use(apiLimiter as any);
 
 // Rutas
-app.use("/health", healthRoutes);
 app.use("/artists/dashboard", artistDashboardRoutes);
 app.use("/artists", artistsRoutes);
 

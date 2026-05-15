@@ -23,6 +23,9 @@ app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Health check first — exempt from rate limiting (kube probes would exhaust the limit)
+app.use('/health', healthRoutes);
+
 // Rate limiting
 app.use(apiLimiter);
 
@@ -38,7 +41,6 @@ app.use((req, _res, next) => {
 });
 
 // Routes
-app.use('/health', healthRoutes);
 app.use('/api/search', searchRoutes);
 
 // 404 handler
