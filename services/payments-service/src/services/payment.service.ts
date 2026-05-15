@@ -729,6 +729,8 @@ export class PaymentService {
     orderHash?: string;
     external_orden_id?: string;
     cardHash?: string;
+    cardBrand?: string;
+    cardLast4?: string;
     userId: string;
   }) {
     // Tilopay uses "1" in redirect URL params, "00" in server-side webhooks
@@ -779,6 +781,8 @@ export class PaymentService {
         paymentMethodService.saveProviderToken(data.userId, {
           provider: 'TILOPAY',
           token: data.cardHash,
+          cardBrand: data.cardBrand,
+          cardLast4: data.cardLast4,
         }).catch((e: any) =>
           logger.warn("Error guardando token de tarjeta Tilopay", "PAYMENT_SERVICE", { error: e.message })
         );

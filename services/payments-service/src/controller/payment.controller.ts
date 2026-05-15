@@ -174,7 +174,7 @@ export class PaymentController {
 
   async confirmTilopayRedirect(req: Request, res: Response, next: NextFunction) {
     try {
-      const { bookingId, responseCode, orderNumber, auth, amount, currency, orderHash, external_orden_id, cardHash } = req.body as {
+      const { bookingId, responseCode, orderNumber, auth, amount, currency, orderHash, external_orden_id, cardHash, cardBrand, cardLast4 } = req.body as {
         bookingId: string;
         responseCode: string;
         orderNumber: string;
@@ -184,6 +184,8 @@ export class PaymentController {
         orderHash?: string;
         external_orden_id?: string;
         cardHash?: string;
+        cardBrand?: string;
+        cardLast4?: string;
       };
 
       if (!bookingId || !responseCode || !orderNumber) {
@@ -200,6 +202,8 @@ export class PaymentController {
         orderHash,
         external_orden_id,
         cardHash,
+        cardBrand,
+        cardLast4,
         userId: req.user!.id,
       });
 
