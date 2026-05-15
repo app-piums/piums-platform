@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 
 function getAuthHeaders(): Record<string, string> {
   const token = typeof window !== 'undefined' ? window.localStorage.getItem('token') : null;
@@ -40,9 +41,10 @@ interface PaymentMethod {
 }
 
 export default function PaymentsTab() {
-  const [methods,  setMethods]  = useState<PaymentMethod[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [actionId, setActionId] = useState<string | null>(null);
+  const [methods,   setMethods]   = useState<PaymentMethod[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [actionId,  setActionId]  = useState<string | null>(null);
+  const [showInfo,  setShowInfo]  = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,9 +95,17 @@ export default function PaymentsTab() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Métodos de Pago</h2>
-        <p className="text-sm text-gray-600 mt-1">Tus tarjetas guardadas para pagar reservas</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Métodos de Pago</h2>
+          <p className="text-sm text-gray-600 mt-1">Tus tarjetas guardadas para pagar reservas</p>
+        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="px-4 py-2 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors"
+        >
+          + Agregar tarjeta
+        </button>
       </div>
 
       {/* Cards list */}
@@ -113,9 +123,15 @@ export default function PaymentsTab() {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">Sin tarjetas guardadas</h3>
-          <p className="text-sm text-gray-500 max-w-xs mx-auto">
-            Tu tarjeta se guardará automáticamente al completar tu primer pago con Tilopay.
+          <p className="text-sm text-gray-500 max-w-xs mx-auto mb-5">
+            Tu tarjeta se guardará automáticamente al completar tu primer pago.
           </p>
+          <button
+            onClick={() => setShowInfo(true)}
+            className="px-5 py-2 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors"
+          >
+            + Agregar tarjeta
+          </button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -170,6 +186,43 @@ export default function PaymentsTab() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal informativo */}
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 bg-[#FF6B35]/10 rounded-full flex items-center justify-center">
+                <svg className="w-7 h-7 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">¿Cómo guardo mi tarjeta?</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Tu tarjeta se guarda <strong>automáticamente</strong> al completar tu primer pago con Tilopay.
+                  No necesitas ingresarla manualmente — quedará lista para futuros pagos con un solo toque.
+                </p>
+              </div>
+              <div className="w-full flex flex-col gap-2 pt-2">
+                <Link
+                  href="/buscar-artistas"
+                  className="w-full py-2.5 bg-[#FF6B35] text-white text-sm font-semibold rounded-xl hover:bg-[#e55f00] transition-colors text-center"
+                  onClick={() => setShowInfo(false)}
+                >
+                  Explorar artistas
+                </Link>
+                <button
+                  onClick={() => setShowInfo(false)}
+                  className="w-full py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
