@@ -31,7 +31,9 @@ export class TilopayProvider implements IPaymentProvider {
       currency: params.currency.toUpperCase(),
       orderNumber,
       capture: '1',
-      tokenize: '1',  // request card tokenization — Tilopay returns hash in redirect URL
+      // Tilopay tokenization: returns card hash in `crd` field of the redirect URL
+      // so future payments can be done with subscriptionPayment endpoint
+      subscription: '1',
       // redirect = página del frontend a la que Tilopay redirige al usuario tras el pago
       redirect: params.returnUrl ||
         `${process.env.CLIENT_APP_URL || 'http://localhost:3000'}/booking/confirmation/${params.bookingId}`,
@@ -73,6 +75,7 @@ export class TilopayProvider implements IPaymentProvider {
       providerRef,
       hasRedirect: !!redirectUrl,
       bookingId: params.bookingId,
+      responseKeys: Object.keys(data),  // log all keys to debug tokenization fields
     });
 
     return {
