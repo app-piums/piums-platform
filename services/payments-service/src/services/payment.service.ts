@@ -4,6 +4,9 @@ import { logger } from "../utils/logger";
 import { stripeProvider } from "../providers/stripe.provider";
 import { bookingClient } from "../clients/booking.client";
 import { notificationsClient } from "../clients/notifications.client";
+import { PaymentMethodService } from "./paymentMethod.service";
+
+const paymentMethodService = new PaymentMethodService();
 
 const prisma = new PrismaClient();
 
@@ -725,6 +728,7 @@ export class PaymentService {
     currency: string;
     orderHash?: string;
     external_orden_id?: string;
+    cardHash?: string;
     userId: string;
   }) {
     // Tilopay uses "1" in redirect URL params, "00" in server-side webhooks
@@ -770,10 +774,21 @@ export class PaymentService {
         data.orderNumber,
       );
 
+      // Guardar token de tarjeta para futuros cobros con un toque
+      if (data.cardHash) {
+        paymentMethodService.saveProviderToken(data.userId, {
+          provider: 'TILOPAY',
+          token: data.cardHash,
+        }).catch((e: any) =>
+          logger.warn("Error guardando token de tarjeta Tilopay", "PAYMENT_SERVICE", { error: e.message })
+        );
+      }
+
       logger.info("Tilopay redirect: pago confirmado", "PAYMENT_SERVICE", {
         bookingId: data.bookingId,
         orderNumber: data.orderNumber,
         amountCents,
+        cardSaved: !!data.cardHash,
       });
     } else {
       logger.info("Tilopay redirect: pago ya procesado (idempotente)", "PAYMENT_SERVICE", {
