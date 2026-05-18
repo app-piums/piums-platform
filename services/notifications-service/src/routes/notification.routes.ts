@@ -62,7 +62,7 @@ router.post(
     if (!secret || req.headers['x-internal-secret'] !== secret) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    next();
+    return next();
   },
   notificationController.sendTemplateEmail.bind(notificationController)
 );

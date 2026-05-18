@@ -41,7 +41,7 @@ class PushProvider {
         notification: { title: options.title, body: options.body },
         data: options.data ?? {},
         apns: {
-          payload: { aps: { sound: 'default', badge: 1, contentAvailable: 1 } },
+          payload: { aps: { sound: 'default', badge: 1, contentAvailable: true } },
         },
       });
 

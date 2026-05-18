@@ -238,7 +238,6 @@ export async function sendBookingConfirmedArtistEmail(data: BookingEmailData) {
 export async function sendBookingReminder7dEmail(data: BookingEmailData) {
   try {
     const startDate = new Date(data.scheduledDate);
-    const mapsUrl = getGoogleMapsUrl(data.location);
     const calUrl = getGoogleCalendarUrl({
       title: `${data.serviceName} con ${data.artistName}`,
       startDate: startDate,
@@ -289,7 +288,6 @@ h1{font-size:20px;color:#111;margin:0 0 8px}p{color:#555;line-height:1.6;margin:
 export async function sendBookingReminder3dEmail(data: BookingEmailData) {
   try {
     const startDate = new Date(data.scheduledDate);
-    const mapsUrl = getGoogleMapsUrl(data.location);
     const calUrl = getGoogleCalendarUrl({
       title: `${data.serviceName} con ${data.artistName}`,
       startDate: startDate,
@@ -342,13 +340,6 @@ export async function sendBookingReminderSameDayEmail(data: BookingEmailData) {
   try {
     const startDate = new Date(data.scheduledDate);
     const mapsUrl = getGoogleMapsUrl(data.location);
-    const calUrl = getGoogleCalendarUrl({
-      title: `${data.serviceName} con ${data.artistName}`,
-      startDate: startDate,
-      endDate: new Date(startDate.getTime() + data.durationMinutes * 60000),
-      location: data.location,
-      description: `Reserva #${data.bookingCode} — ${BASE_URL}/booking/confirmation/${data.bookingId}`,
-    });
 
     const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
