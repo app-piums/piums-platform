@@ -146,7 +146,8 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const cancelReason = booking.cancellationReason || booking.cancelReason;
   const canReview = booking.status?.toLowerCase() === 'completed' && !reviewed && !booking.reviewId;
   const canAddToEvent = booking.status?.toUpperCase() === 'PENDING' && !booking.eventId;
-  const canRequestReschedule = ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(booking.status?.toUpperCase() || '') && !rescheduleRequestSent;
+  const bookingIsUpcoming = dateObj ? dateObj.getTime() > Date.now() + 24 * 60 * 60 * 1000 : false;
+  const canRequestReschedule = ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED'].includes(booking.status?.toUpperCase() || '') && !rescheduleRequestSent && bookingIsUpcoming;
   const hasPendingReschedule = ['RESCHEDULE_PENDING_ARTIST', 'RESCHEDULE_PENDING_CLIENT'].includes(booking.status?.toUpperCase() || '');
 
   const NO_SHOW_ELIGIBLE = ['CONFIRMED', 'IN_PROGRESS', 'ANTICIPO_PAID', 'PAYMENT_COMPLETED'];

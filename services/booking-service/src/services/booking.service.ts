@@ -1223,14 +1223,18 @@ export class BookingService {
       throw new AppError(400, "Has alcanzado el límite de reprogramaciones para esta reserva");
     }
 
-    // Verificar ventana de cambio (no permitir <24h antes)
+    // Verificar ventana de cambio (no permitir si la fecha ya pasó o es <24h)
     const hoursUntilOriginalBooking =
       (booking.scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60);
+
+    if (hoursUntilOriginalBooking < 0) {
+      throw new AppError(400, "No puedes reprogramar una reserva cuya fecha ya pasó");
+    }
 
     if (hoursUntilOriginalBooking < 24) {
       throw new AppError(
         400,
-        "No puedes reprogramar con menos de 24 horas de anticipación"
+        "No puedes solicitar cambio de fecha con menos de 24 horas de anticipación"
       );
     }
 
