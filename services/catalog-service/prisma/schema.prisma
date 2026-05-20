@@ -121,6 +121,7 @@ model Service {
   status      ServiceStatus    @default(ACTIVE)
   isAvailable Boolean          @default(true)
   isFeatured  Boolean          @default(false)
+  isOnSale    Boolean          @default(false)
   
   // Qué incluye el servicio
   whatIsIncluded      String[]         // Lista de ítems incluidos (ej: "Equipo de sonido", "Micrófono")

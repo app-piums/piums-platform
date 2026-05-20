@@ -120,7 +120,8 @@ model ServiceIndex {
   // Status
   isActive          Boolean  @default(true)
   isAvailable       Boolean  @default(true)
-  
+  isOnSale          Boolean  @default(false)
+
   // Booking Stats
   totalBookings     Int      @default(0)
   

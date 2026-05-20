@@ -12,7 +12,7 @@ import { ReportarQuejaModal } from '@/components/quejas/ReportarQuejaModal';
 import { toast } from '@/lib/toast';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
-type BookingStatus = 'confirmed' | 'accepted' | 'pending' | 'completed' | 'cancelled' | 'rejected';
+type BookingStatus = 'confirmed' | 'accepted' | 'pending' | 'completed' | 'delivered' | 'dispute_open' | 'cancelled' | 'rejected';
 
 interface MockBooking {
   id: string;
@@ -37,6 +37,8 @@ interface MockBooking {
   anticipoAmount?: number;
   totalPriceCents?: number;
   currency?: string;
+  scheduledDateISO?: string;
+  paidAmount?: number;
 }
 
 
@@ -47,22 +49,25 @@ const STATS = [
   { label: 'Completadas',      value: 0, icon: CheckCircleIcon, color: 'text-green-600 bg-green-50' },
 ];
 
-type TabKey = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
+type TabKey = 'all' | 'pending' | 'confirmed' | 'completed' | 'delivered' | 'cancelled';
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all',       label: 'Todas las reservas' },
   { key: 'pending',   label: 'Pendientes'         },
   { key: 'confirmed', label: 'Confirmadas'        },
+  { key: 'delivered', label: 'Por confirmar'      },
   { key: 'completed', label: 'Completadas'        },
   { key: 'cancelled', label: 'Canceladas'         },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700'  },
-  accepted:  { label: 'Aceptada',    className: 'bg-green-100 text-green-700'  },
-  pending:   { label: 'Pendiente',  className: 'bg-yellow-100 text-yellow-700'},
-  completed: { label: 'Completada', className: 'bg-blue-100 text-blue-700'   },
-  cancelled: { label: 'Cancelada',  className: 'bg-red-100 text-red-600'     },
-  rejected:  { label: 'Rechazada',  className: 'bg-red-100 text-red-600'     },
+  confirmed:    { label: 'Confirmada',    className: 'bg-green-100 text-green-700'   },
+  accepted:     { label: 'Aceptada',      className: 'bg-green-100 text-green-700'   },
+  pending:      { label: 'Pendiente',     className: 'bg-yellow-100 text-yellow-700' },
+  completed:    { label: 'Completada',    className: 'bg-blue-100 text-blue-700'     },
+  delivered:    { label: 'Por confirmar', className: 'bg-purple-100 text-purple-700' },
+  dispute_open: { label: 'En disputa',    className: 'bg-red-100 text-red-700'       },
+  cancelled:    { label: 'Cancelada',     className: 'bg-red-100 text-red-600'       },
+  rejected:     { label: 'Rechazada',     className: 'bg-red-100 text-red-600'       },
 };
 
 // ─── Booking card ─────────────────────────────────────────────────────────────
@@ -193,6 +198,15 @@ function BookingCard({ b, onReview, onQueja, onMessage, onAddToEvent, onCancel }
                 <Btn variant="ghost" className="ml-auto !text-[#FF6B35]" href={`/services/${b.serviceId || '1'}`} data-serviceid={b.serviceId}>Volver a reservar</Btn>
                 <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
               </>
+            )}
+            {b.status === 'delivered' && (
+              <>
+                <Btn variant="primary-solid" href={`/bookings/${b.id}`}>Confirmar servicio</Btn>
+                <Btn variant="danger-ghost" icon={<FlagIcon className="h-4 w-4" />} onClick={() => onQueja(b)}>Reportar queja</Btn>
+              </>
+            )}
+            {b.status === 'dispute_open' && (
+              <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver disputa</Btn>
             )}
             {(b.status === 'cancelled' || b.status === 'rejected') && (
               <Btn variant="ghost" href={`/bookings/${b.id}`}>Ver Detalles</Btn>
@@ -402,7 +416,13 @@ export default function BookingsPage() {
   };
 
   const handleCancelBooking = async (b: MockBooking) => {
-    const reason = prompt('¿Razón de la cancelación? (mínimo 10 caracteres)');
+    const isConfirmed = ['confirmed', 'accepted'].includes(b.status);
+    const paid = b.paidAmount ?? 0;
+    let refundInfo = '';
+    if (isConfirmed && paid > 0) {
+      refundInfo = `\nReembolso: ${b.currency ?? 'USD'} ${(Math.floor(paid * 0.5) / 100).toFixed(2)} (50% de lo pagado)`;
+    }
+    const reason = prompt(`¿Razón de la cancelación? (mínimo 10 caracteres)${refundInfo}`);
     if (reason === null) return;
     if (reason.trim().length < 10) { toast.warning('La razón debe tener al menos 10 caracteres'); return; }
     try {
@@ -470,6 +490,8 @@ export default function BookingsPage() {
               anticipoAmount: b.anticipoAmount != null ? Number(b.anticipoAmount) : undefined,
               totalPriceCents: b.totalPrice != null ? Number(b.totalPrice) : undefined,
               currency: b.currency || 'USD',
+              scheduledDateISO: b.scheduledDate || undefined,
+              paidAmount: b.paidAmount != null ? Number(b.paidAmount) : undefined,
             };
           });
 

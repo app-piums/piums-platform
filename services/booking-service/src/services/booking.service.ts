@@ -152,6 +152,7 @@ export class BookingService {
     const servicePrice = priceQuote.breakdown.baseCents;
     const addonsPrice = priceQuote.breakdown.addonsCents;
     const travelPrice = priceQuote.breakdown.travelCents;
+    const dayOfferDiscountAmount = priceQuote.breakdown.discountsCents ?? 0;
     let totalPrice = priceQuote.totalCents;
 
     // Validate coupon before creating booking (use placeholder bookingId='')
@@ -224,6 +225,7 @@ export class BookingService {
         eventId: data.eventId || null,
         couponCode: data.couponCode || null,
         couponDiscountAmount,
+        dayOfferDiscountAmount,
       },
     });
 
@@ -799,12 +801,16 @@ export class BookingService {
     let refundAmount = 0;
 
     if (isClient) {
-      // Cliente solo puede cancelar dentro de las 48h desde la creación
-      if (hoursSinceCreation > 48) {
-        throw new AppError(400, "El plazo de cancelación de 48 horas desde la creación de la reserva ya venció");
+      const isConfirmed = ["CONFIRMED", "PAYMENT_PENDING", "PAYMENT_COMPLETED", "ANTICIPO_PAID"].includes(booking.status);
+      if (isConfirmed) {
+        // Reserva confirmada: solo se puede cancelar dentro de las 48h desde la creación
+        if (hoursSinceCreation > 48) {
+          throw new AppError(400, "El plazo de cancelación de 48 horas desde la creación de la reserva ya venció");
+        }
+        // Reembolso del 50% de lo pagado
+        refundAmount = Math.floor(booking.paidAmount * 0.5);
       }
-      // Reembolso del 50% de lo pagado
-      refundAmount = Math.floor(booking.paidAmount * 0.5);
+      // Reserva no confirmada (PENDING): cancelación libre, sin cargo (paidAmount = 0)
     } else {
       // Artista cancela: reembolso 100% al cliente
       refundAmount = booking.paidAmount;

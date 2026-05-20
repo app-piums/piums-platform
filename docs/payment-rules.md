@@ -29,8 +29,9 @@ La comisión se descuenta del payout al artista cuando se procesa el pago.
 
 | Momento | Reembolso |
 |---|---|
-| Dentro de las **48h desde que se creó** la reserva | **50%** del monto pagado |
-| Pasadas las 48h desde creación | **No permitido** — devuelve error 400 |
+| Dentro de las **48h desde que se creó** la reserva (solo si `CONFIRMED`) | **50%** del monto pagado |
+| Pasadas las 48h desde creación (reserva `CONFIRMED`) | **No permitido** — devuelve error 400 |
+| Reserva **no confirmada** (`PENDING`) | Cancelación libre, sin cargo |
 
 ### Artista cancela una reserva `CONFIRMED`
 

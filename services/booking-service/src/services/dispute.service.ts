@@ -23,7 +23,6 @@ export class DisputeService {
     evidence?: Record<string, any>;
     priority?: number;
   }) {
-    // Validar que la reserva existe
     const booking = await prisma.booking.findUnique({
       where: { id: data.bookingId },
     });
@@ -32,26 +31,56 @@ export class DisputeService {
       throw new AppError(404, "Reserva no encontrada");
     }
 
-    // Crear disputa
-    const dispute = await prisma.dispute.create({
-      data: {
-        bookingId: data.bookingId,
-        reportedBy: data.reportedBy,
-        reportedAgainst: data.reportedAgainst,
-        disputeType: data.disputeType,
-        status: "OPEN",
-        subject: data.subject,
-        description: data.description,
-        evidence: data.evidence,
-        priority: data.priority || 0,
-      },
-      include: {
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        },
-      },
+    // Solo el cliente de la reserva puede abrir una disputa
+    if (booking.clientId !== data.reportedBy) {
+      throw new AppError(403, "Solo el cliente de la reserva puede abrir una disputa");
+    }
+
+    // Solo tiene sentido disputar en estados post-entrega
+    const disputableStatuses = ["DELIVERED", "COMPLETED", "DISPUTE_OPEN"];
+    if (!disputableStatuses.includes(booking.status)) {
+      throw new AppError(400, `No se puede abrir una disputa en una reserva con estado ${booking.status}`);
+    }
+
+    // Si ya existe una disputa abierta para este booking, no crear otra
+    const existing = await prisma.dispute.findFirst({
+      where: { bookingId: data.bookingId, status: { not: "CLOSED" }, deletedAt: null },
     });
+    if (existing) {
+      throw new AppError(409, "Ya existe una disputa activa para esta reserva");
+    }
+
+    // reportedAgainst: usar el artistId del booking si no fue provisto explícitamente
+    const reportedAgainst = data.reportedAgainst || booking.artistId;
+
+    const [dispute] = await Promise.all([
+      prisma.dispute.create({
+        data: {
+          bookingId: data.bookingId,
+          reportedBy: data.reportedBy,
+          reportedAgainst,
+          disputeType: data.disputeType,
+          status: "OPEN",
+          subject: data.subject,
+          description: data.description,
+          evidence: data.evidence,
+          priority: data.priority || 0,
+        },
+        include: {
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
+        },
+      }),
+      // Marcar el booking como en disputa
+      (prisma as any).booking.update({
+        where: { id: data.bookingId },
+        data: { status: "DISPUTE_OPEN" },
+      }),
+      // Cancelar el payout hold para que el artista no cobre mientras la disputa está activa
+      paymentsClient.schedulePayoutHold(data.bookingId, null),
+    ]);
 
     logger.info("Disputa creada", "DISPUTE_SERVICE", {
       disputeId: dispute.id,
@@ -233,19 +262,26 @@ export class DisputeService {
       throw new AppError(400, "La disputa ya está resuelta o cerrada");
     }
 
-    const resolved = await prisma.dispute.update({
-      where: { id: data.disputeId },
-      data: {
-        status: "RESOLVED",
-        resolution: data.resolution,
-        resolutionNotes: data.resolutionNotes,
-        resolvedBy: data.resolvedBy,
-        resolvedAt: new Date(),
-        refundAmount: data.refundAmount,
-        refundIssued: !!data.refundAmount,
-        refundIssuedAt: data.refundAmount ? new Date() : undefined,
-      },
-    });
+    const [resolved] = await Promise.all([
+      prisma.dispute.update({
+        where: { id: data.disputeId },
+        data: {
+          status: "RESOLVED",
+          resolution: data.resolution,
+          resolutionNotes: data.resolutionNotes,
+          resolvedBy: data.resolvedBy,
+          resolvedAt: new Date(),
+          refundAmount: data.refundAmount,
+          // refundIssued se marcará true solo cuando el pago se confirme, no al resolver
+          refundIssued: false,
+        },
+      }),
+      // Booking vuelve a COMPLETED al resolverse la disputa
+      (prisma as any).booking.update({
+        where: { id: dispute.bookingId },
+        data: { status: "COMPLETED" },
+      }),
+    ]);
 
     // Crear mensaje de resolución
     await prisma.disputeMessage.create({
@@ -266,6 +302,13 @@ export class DisputeService {
       refundAmount: data.refundAmount,
       resolvedBy: data.resolvedBy,
     });
+
+    // Si la resolución no implica reembolso, reprogramar payout hold para liberar al artista
+    const noPayoutResolutions: DisputeResolution[] = ["FULL_REFUND", "SUSPENSION", "BAN"];
+    if (!noPayoutResolutions.includes(data.resolution)) {
+      paymentsClient.schedulePayoutHold(dispute.bookingId, new Date(Date.now() + 60 * 60 * 1000).toISOString())
+        .catch(err => logger.error("Error reprogramando payout hold tras disputa", "DISPUTE_SERVICE", { error: err.message }));
+    }
 
     // Ejecutar acciones según la resolución
     if (dispute.disputeType === "ARTIST_NO_SHOW") {
@@ -401,12 +444,17 @@ export class DisputeService {
       throw new AppError(404, "Disputa no encontrada");
     }
 
-    const closed = await prisma.dispute.update({
-      where: { id: disputeId },
-      data: {
-        status: "CLOSED",
-      },
-    });
+    const [closed] = await Promise.all([
+      prisma.dispute.update({
+        where: { id: disputeId },
+        data: { status: "CLOSED" },
+      }),
+      // Booking vuelve a COMPLETED al cerrar la disputa sin resolución
+      (prisma as any).booking.update({
+        where: { id: dispute.bookingId },
+        data: { status: "COMPLETED" },
+      }),
+    ]);
 
     // Crear mensaje de cierre
     await prisma.disputeMessage.create({

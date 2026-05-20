@@ -148,7 +148,8 @@ model Booking {
   paymentMethod   String?
   savedCardToken  String?     // Token de tarjeta guardada para cobro automático del saldo
   couponCode            String?   // Código de cupón aplicado
-  couponDiscountAmount  Int       @default(0) // Descuento aplicado en centavos
+  couponDiscountAmount  Int       @default(0) // Descuento de cupón en centavos
+  dayOfferDiscountAmount Int      @default(0) // Descuento de oferta de día en centavos
 
   // Add-ons contratados (array de IDs)
   selectedAddons  String[]

@@ -121,6 +121,7 @@ export interface Service {
   isActive?: boolean;      // legacy
   status?: string;         // ACTIVE | INACTIVE | ARCHIVED
   isAvailable?: boolean;
+  isOnSale?: boolean;
   thumbnail?: string;
   images?: string[];
   addons?: ServiceAddon[];
@@ -164,6 +165,7 @@ export interface UpdateServicePayload {
   durationMin?: number;
   durationMax?: number;
   status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  isOnSale?: boolean;
   whatIsIncluded?: string[];
   minGuests?: number;
   maxGuests?: number;
@@ -225,6 +227,9 @@ export interface Booking {
   distanceKm?: number;
   sameDayBookingApplied?: boolean;
   minAdvanceHours?: number;
+  couponCode?: string;
+  couponDiscountAmount?: number;
+  dayOfferDiscountAmount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -1124,6 +1129,24 @@ class PiumsSDK {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
+  }
+
+  async toggleServiceSale(id: string, artistId: string): Promise<Service> {
+    const response = await fetch(
+      `${this.baseUrl}/catalog/services/${id}/toggle-sale`,
+      this.withAuth({
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ artistId }),
+      })
+    );
+    if (!response.ok) {
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
+    }
+    return response.json();
   }
 
   async toggleServiceStatus(id: string, artistId: string): Promise<Service> {

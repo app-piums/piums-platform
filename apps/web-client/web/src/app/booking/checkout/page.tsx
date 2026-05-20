@@ -175,7 +175,7 @@ function BookingSummary({ booking }: { booking: Booking }) {
         </div>
         <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1.5">
           <ShieldIcon className="h-3.5 w-3.5 text-green-500" />
-          Cancelación gratuita dentro de las primeras 48 horas
+          Cancelación gratuita hasta 48 horas antes del evento
         </p>
       </div>
     </div>

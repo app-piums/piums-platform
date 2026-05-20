@@ -545,6 +545,7 @@ export class SearchService {
           isActive: service.isActive,
           isAvailable: service.isAvailable,
           isMainService: service.isMainService || false,
+          isOnSale: (service as any).isOnSale || false,
           totalBookings: stats?.completed || 0,
         lastSyncedAt: new Date()
       };

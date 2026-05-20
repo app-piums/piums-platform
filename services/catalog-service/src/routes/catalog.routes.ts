@@ -123,6 +123,16 @@ router.patch(
 );
 
 /**
+ * PATCH /api/services/:id/toggle-sale
+ * Activar/Desactivar etiqueta de oferta en el servicio
+ */
+router.patch(
+  "/services/:id/toggle-sale",
+  authenticateToken,
+  catalogController.toggleServiceSale.bind(catalogController)
+);
+
+/**
  * PATCH /api/services/:id/set-main
  * Establecer servicio como servicio principal del artista
  * Requiere autenticación (propietario del servicio)

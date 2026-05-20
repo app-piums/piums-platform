@@ -159,6 +159,22 @@ export class CatalogController {
     }
   }
 
+  async toggleServiceSale(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const { artistId } = req.body;
+
+      if (!artistId) {
+        return res.status(400).json({ message: "artistId es requerido" });
+      }
+
+      const service = await catalogService.toggleServiceSale(id, artistId);
+      res.json(service);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async setMainService(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;

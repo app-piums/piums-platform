@@ -479,6 +479,31 @@ export class CatalogService {
     return updated;
   }
 
+  async toggleServiceSale(id: string, artistId: string) {
+    const service = await prisma.service.findUnique({ where: { id } });
+
+    if (!service) {
+      throw new AppError(404, "Servicio no encontrado");
+    }
+
+    if (service.artistId !== artistId) {
+      throw new AppError(403, "No tienes permiso para modificar este servicio");
+    }
+
+    const updated = await prisma.service.update({
+      where: { id },
+      data: { isOnSale: !(service as any).isOnSale },
+      include: { category: true, addons: true },
+    });
+
+    logger.info("Oferta de servicio actualizada", "CATALOG_SERVICE", {
+      serviceId: id,
+      isOnSale: (updated as any).isOnSale,
+    });
+
+    return updated;
+  }
+
   // ==================== ADD-ONS ====================
 
   /**
