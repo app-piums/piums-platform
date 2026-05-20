@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { sdk, TicketEvent, TicketTier } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
+import ClientSidebar from '@/components/ClientSidebar';
 
 const CalendarIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -100,24 +101,32 @@ export default function TicketEventPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400">Cargando evento...</div>
-      </main>
+      <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+        <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-gray-400">Cargando evento...</div>
+        </main>
+      </div>
     );
   }
 
   if (!event) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">{error || 'Evento no encontrado'}</div>
-      </main>
+      <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+        <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-gray-500">{error || 'Evento no encontrado'}</div>
+        </main>
+      </div>
     );
   }
 
   const availableTiers = event.tiers?.filter(t => t.soldQty < t.totalQty) || [];
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+      <ClientSidebar userName={user?.nombre ?? 'Usuario'} />
+    <main className="flex-1 min-w-0 bg-gray-50">
       {event.imageUrl && (
         <div className="w-full h-64 md:h-80 overflow-hidden bg-gray-900">
           <img src={event.imageUrl} alt={event.name} className="w-full h-full object-cover opacity-80" />
@@ -252,5 +261,6 @@ export default function TicketEventPage() {
         </div>
       </div>
     </main>
+    </div>
   );
 }

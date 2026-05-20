@@ -53,6 +53,10 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
       toast.error('Sesión expirada. Vuelve a intentarlo.');
       window.history.replaceState({}, '', window.location.pathname);
     }
+    if (params.get('error') === 'calendar_failed') {
+      toast.error('Error al conectar Google Calendar. Vuelve a intentarlo.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
   const [formData, setFormData] = useState<ProfileFormData>({
     nombre: '',

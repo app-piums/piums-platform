@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { sdk, TicketPurchase } from '@piums/sdk';
 import Link from 'next/link';
+import ClientSidebar from '@/components/ClientSidebar';
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '';
@@ -67,30 +68,38 @@ export default function TicketConfirmationPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Verificando tu pago...</p>
-        </div>
-      </main>
+      <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+        <ClientSidebar userName="" />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Verificando tu pago...</p>
+          </div>
+        </main>
+      </div>
     );
   }
 
   if (error || !purchase) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-sm px-4">
-          <p className="text-red-500 mb-4">{error || 'No se encontro el boleto'}</p>
-          <Link href="/mis-tickets" className="text-indigo-600 hover:underline text-sm">Ver mis boletos</Link>
-        </div>
-      </main>
+      <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+        <ClientSidebar userName="" />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-sm px-4">
+            <p className="text-red-500 mb-4">{error || 'No se encontro el boleto'}</p>
+            <Link href="/mis-tickets" className="text-indigo-600 hover:underline text-sm">Ver mis boletos</Link>
+          </div>
+        </main>
+      </div>
     );
   }
 
   const isPaid = purchase.status === 'PAGADO' || purchase.status === 'USADO';
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+      <ClientSidebar userName="" />
+    <main className="flex-1 flex items-center justify-center px-4 py-10">
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm max-w-sm w-full overflow-hidden">
 
         {/* Header */}
@@ -177,5 +186,6 @@ export default function TicketConfirmationPage() {
         </div>
       </div>
     </main>
+    </div>
   );
 }

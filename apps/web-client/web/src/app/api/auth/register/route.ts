@@ -62,12 +62,12 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
 
-      // Token de acceso (1 hora)
+      // Token de acceso (7 días — matches JWT expiry)
       responseWithCookies.cookies.set('auth_token', data.token, {
         httpOnly: true,
         secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
-        maxAge: 3600, // 1 hora
+        maxAge: 604800,
         path: '/',
       });
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: process.env.HTTPS_ENABLED === 'true',
         sameSite: 'strict',
-        maxAge: 3600,
+        maxAge: 604800,
         path: '/',
       });
 

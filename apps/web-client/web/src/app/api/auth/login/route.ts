@@ -48,16 +48,16 @@ export async function POST(request: NextRequest) {
       path: "/",
     };
 
-    // Token de acceso (1 hora)
+    // Token de acceso (7 días — matches JWT expiry)
     nextResponse.cookies.set("auth_token", data.token, {
       ...cookieOptions,
-      maxAge: 3600,
+      maxAge: 604800,
     });
 
     // Rol del usuario
     nextResponse.cookies.set("user_role", data.user?.role ?? "cliente", {
       ...cookieOptions,
-      maxAge: 3600,
+      maxAge: 604800,
     });
 
     // Refresh token (7 días)
