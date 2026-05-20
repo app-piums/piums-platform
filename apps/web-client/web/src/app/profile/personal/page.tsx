@@ -45,6 +45,14 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
       toast.error('Conexion con Google Calendar cancelada');
       window.history.replaceState({}, '', window.location.pathname);
     }
+    if (params.get('error') === 'google_not_configured') {
+      toast.error('Google Calendar no está disponible aún. Contacta al administrador.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    if (params.get('error') === 'calendar_invalid') {
+      toast.error('Sesión expirada. Vuelve a intentarlo.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
   const [formData, setFormData] = useState<ProfileFormData>({
     nombre: '',
