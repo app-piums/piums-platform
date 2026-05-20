@@ -530,9 +530,12 @@ export default function PostulacionesPage() {
   };
 
   const handleApplicationRespond = async (appId: string, accept: boolean) => {
-    await sdk.respondToApplication(appId, accept);
-    // Reload to get updated state
+    const { application } = await sdk.respondToApplication(appId, accept);
     await fetchMyPostings();
+    // Navigate to coordination chat if one was created
+    if (accept && (application as any).chatGroupId) {
+      router.push(`/chat/grupo?groupId=${(application as any).chatGroupId}`);
+    }
   };
 
   return (

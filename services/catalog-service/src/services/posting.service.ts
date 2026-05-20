@@ -3,6 +3,10 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { notificationsClient } from '../clients/notifications.client';
 import { artistsClient } from '../clients/artists.client';
+import { chatClient } from '../clients/chat.client';
+
+const MAX_ACTIVE_APPLICATIONS = 10;
+const POSTING_EXPIRY_DAYS = 30;
 
 const prisma = new PrismaClient();
 
@@ -162,6 +166,14 @@ export class PostingService {
       throw new AppError(409, 'Ya has aplicado a esta postulación');
     }
 
+    // Limit active applications per artist
+    const activeCount = await prisma.postingApplication.count({
+      where: { artistId, status: { in: ['PENDING', 'REVIEWED'] } },
+    });
+    if (activeCount >= MAX_ACTIVE_APPLICATIONS) {
+      throw new AppError(400, `Límite de ${MAX_ACTIVE_APPLICATIONS} aplicaciones activas alcanzado. Retira algunas antes de aplicar a nuevas.`);
+    }
+
     const application = existing
       ? await prisma.postingApplication.update({
           where: { id: existing.id },
@@ -188,19 +200,35 @@ export class PostingService {
       data: { applicationCount: { increment: 1 } },
     }).catch(() => {});
 
-    // Notify posting artist
-    const applicantInfo = await artistsClient.getArtist(artistId).catch(() => null);
+    // Notify posting artist (in-app + email)
+    const [applicantInfo, posterInfo] = await Promise.all([
+      artistsClient.getArtist(artistId).catch(() => null),
+      artistsClient.getArtist(posting.artistId).catch(() => null),
+    ]);
     const applicantName = (applicantInfo as any)?.displayName ?? (applicantInfo as any)?.nombre ?? 'Un artista';
+    const posterEmail = (posterInfo as any)?.email ?? null;
 
-    await notificationsClient.sendNotification({
-      userId: posting.artistId,
-      type: 'APPLICATION_RECEIVED',
-      channel: 'IN_APP',
-      title: 'Nueva postulación recibida',
-      message: `${applicantName} aplicó a tu postulación "${posting.title}".`,
-      data: { postingId, applicationId: application.id, applicantId: artistId },
-      priority: 'normal',
-    }).catch(err => logger.error('Error notificando aplicación', 'POSTING', err));
+    await notificationsClient.sendBoth(
+      {
+        userId: posting.artistId,
+        type: 'APPLICATION_RECEIVED',
+        channel: 'IN_APP',
+        title: 'Nueva postulación recibida',
+        message: `${applicantName} aplicó a tu postulación "${posting.title}".`,
+        data: { postingId, applicationId: application.id, applicantId: artistId },
+        priority: 'normal',
+      },
+      posterEmail ? {
+        userId: posting.artistId,
+        type: 'APPLICATION_RECEIVED',
+        title: 'Nueva postulación recibida',
+        message: `${applicantName} aplicó a tu postulación "${posting.title}". Revisa su perfil y responde.`,
+        emailTo: posterEmail,
+        emailSubject: `Nueva postulación: ${posting.title}`,
+        data: { postingId, applicationId: application.id },
+        priority: 'normal',
+      } : undefined
+    ).catch(err => logger.error('Error notificando aplicación', 'POSTING', err));
 
     logger.info(`Application ${application.id} created for posting ${postingId}`, 'POSTING');
     return application;
@@ -249,28 +277,57 @@ export class PostingService {
       data: { status: newStatus, respondedAt: new Date() },
     });
 
-    // If accepted, close the posting as FILLED
+    let chatGroupId: string | null = null;
+
     if (accept) {
+      // Close the posting as FILLED
       await prisma.artistPosting.update({
         where: { id: application.postingId },
         data: { status: 'FILLED', closedAt: new Date() },
       }).catch(() => {});
+
+      // Create a coordination group chat between the two artists
+      // We use applicationId as bookingId to get idempotent group creation
+      const groupResult = await chatClient.createOrGetGroupConversation({
+        bookingId: applicationId,
+        createdBy: postingArtistId,
+        participantIds: [postingArtistId, application.artistId],
+        name: `Coordinación: ${application.posting.title}`,
+      }).catch(err => { logger.error('Error creando chat para postulación', 'POSTING', err); return null; });
+      chatGroupId = groupResult?.group?.id ?? null;
     }
 
-    // Notify applicant
-    await notificationsClient.sendNotification({
-      userId: application.artistId,
-      type: accept ? 'APPLICATION_ACCEPTED' : 'APPLICATION_REJECTED',
-      channel: 'IN_APP',
-      title: accept ? 'Tu postulación fue aceptada' : 'Tu postulación fue rechazada',
-      message: accept
-        ? `Tu aplicación para "${application.posting.title}" fue aceptada. Pronto te contactarán.`
-        : `Tu aplicación para "${application.posting.title}" no fue seleccionada.`,
-      data: { postingId: application.postingId, applicationId, accepted: accept },
-      priority: 'normal',
-    }).catch(err => logger.error('Error notificando respuesta a aplicación', 'POSTING', err));
+    // Notify applicant (in-app + email)
+    const applicantInfo = await artistsClient.getArtist(application.artistId).catch(() => null);
+    const applicantEmail = (applicantInfo as any)?.email ?? null;
 
-    return updated;
+    const acceptMsg = chatGroupId
+      ? `Tu aplicación para "${application.posting.title}" fue aceptada. Ya tienes acceso al chat de coordinación.`
+      : `Tu aplicación para "${application.posting.title}" fue aceptada. Pronto te contactará el artista.`;
+
+    await notificationsClient.sendBoth(
+      {
+        userId: application.artistId,
+        type: accept ? 'APPLICATION_ACCEPTED' : 'APPLICATION_REJECTED',
+        channel: 'IN_APP',
+        title: accept ? 'Postulación aceptada' : 'Postulación no seleccionada',
+        message: accept ? acceptMsg : `Tu aplicación para "${application.posting.title}" no fue seleccionada esta vez.`,
+        data: { postingId: application.postingId, applicationId, accepted: accept, chatGroupId },
+        priority: 'normal',
+      },
+      applicantEmail ? {
+        userId: application.artistId,
+        type: accept ? 'APPLICATION_ACCEPTED' : 'APPLICATION_REJECTED',
+        title: accept ? 'Postulación aceptada' : 'Postulación no seleccionada',
+        message: accept ? acceptMsg : `Tu aplicación para "${application.posting.title}" no fue seleccionada esta vez.`,
+        emailTo: applicantEmail,
+        emailSubject: accept ? `Aceptado: ${application.posting.title}` : `Postulación: ${application.posting.title}`,
+        data: { postingId: application.postingId, applicationId, accepted: accept },
+        priority: 'normal',
+      } : undefined
+    ).catch(err => logger.error('Error notificando respuesta a aplicación', 'POSTING', err));
+
+    return { ...updated, chatGroupId };
   }
 
   async markApplicationReviewed(applicationId: string, postingArtistId: string) {

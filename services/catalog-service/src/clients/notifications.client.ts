@@ -10,6 +10,9 @@ interface SendNotificationPayload {
   data?: Record<string, any>;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   category?: string;
+  emailTo?: string;
+  emailSubject?: string;
+  emailHtml?: string;
 }
 
 export class NotificationsClient {
@@ -36,6 +39,14 @@ export class NotificationsClient {
     } catch {
       return null;
     }
+  }
+
+  async sendBoth(inApp: SendNotificationPayload, emailPayload?: Omit<SendNotificationPayload, 'channel'> & { emailTo: string }): Promise<void> {
+    const tasks: Promise<any>[] = [this.sendNotification(inApp)];
+    if (emailPayload) {
+      tasks.push(this.sendNotification({ ...emailPayload, channel: 'EMAIL' }));
+    }
+    await Promise.allSettled(tasks);
   }
 }
 

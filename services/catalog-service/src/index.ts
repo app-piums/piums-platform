@@ -12,6 +12,7 @@ import categoryRoutes from "./routes/category.routes";
 import locationRoutes from "./routes/location.routes";
 import dayOfferRoutes from "./routes/day-offer.routes";
 import postingRoutes from "./routes/posting.routes";
+import { PrismaClient } from "@prisma/client";
 
 // Cargar variables de entorno
 dotenv.config();
@@ -77,6 +78,24 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // ==================== SERVIDOR ====================
+
+// Auto-expire OPEN postings older than 30 days
+const prismaForCron = new PrismaClient();
+const runPostingExpiration = async () => {
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const { count } = await prismaForCron.artistPosting.updateMany({
+      where: { status: 'OPEN', createdAt: { lt: cutoff } },
+      data: { status: 'CLOSED', closedAt: new Date() },
+    });
+    if (count > 0) logger.info(`Auto-expired ${count} postings`, 'POSTING_CRON');
+  } catch (err: any) {
+    logger.error('Error in posting expiration cron', 'POSTING_CRON', { error: err.message });
+  }
+};
+// Run at startup and every 6 hours
+runPostingExpiration();
+setInterval(runPostingExpiration, 6 * 60 * 60 * 1000);
 
 app.listen(PORT, () => {
   logger.info(`🚀 Catalog Service running on port ${PORT}`, "SERVER", {

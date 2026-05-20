@@ -6,7 +6,8 @@ import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk } from '@piums/sdk';
 import type { ArtistPosting } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calendar, DollarSign, Users, ChevronLeft, Send, X, Search } from 'lucide-react';
+import { Calendar, DollarSign, Users, ChevronLeft, Send, X, Search, AlertCircle, Sparkles } from 'lucide-react';
+import type { ArtistProfile } from '@piums/sdk';
 
 const ROLES = ['Guitarrista', 'Bajista', 'Baterista', 'Tecladista', 'Violinista', 'Saxofonista', 'DJ', 'Cantante', 'Fotógrafo', 'Videógrafo', 'Sonidista', 'MC / Animador'];
 
@@ -14,10 +15,12 @@ function ApplyModal({
   posting,
   onClose,
   onApplied,
+  onError,
 }: {
   posting: ArtistPosting;
   onClose: () => void;
   onApplied: () => void;
+  onError?: (msg: string) => void;
 }) {
   const [message, setMessage] = useState('');
   const [portfolioLinks, setPortfolioLinks] = useState('');
@@ -37,7 +40,13 @@ function ApplyModal({
       await sdk.applyToPosting(posting.id, { message: message.trim(), portfolioLinks: links });
       onApplied();
     } catch (err: any) {
-      setError(err.message || 'Error enviando aplicación');
+      const msg = err.message || 'Error enviando aplicación';
+      // Limit errors are shown as banner, not inline
+      if (msg.includes('Límite') && onError) {
+        onError(msg);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -163,15 +172,23 @@ function PostingCard({ posting, myApplicationIds, onApply }: {
   );
 }
 
+// Profile completeness check
+function isProfileIncomplete(profile: ArtistProfile | null): boolean {
+  if (!profile) return false;
+  return !profile.bio || !profile.avatar || !profile.categoria;
+}
+
 export default function TableroPostulacionesPage() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
 
   const [postings, setPostings] = useState<ArtistPosting[]>([]);
   const [myApplicationPostingIds, setMyApplicationPostingIds] = useState<Set<string>>(new Set());
+  const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyTarget, setApplyTarget] = useState<ArtistPosting | null>(null);
   const [appliedDone, setAppliedDone] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -182,9 +199,10 @@ export default function TableroPostulacionesPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [boardRes, myAppsRes] = await Promise.all([
+      const [boardRes, myAppsRes, profileRes] = await Promise.all([
         sdk.getPostings({ status: 'OPEN', role: roleFilter || undefined }),
         sdk.getMyApplications(),
+        sdk.getArtistProfile().catch(() => null),
       ]);
       const filtered = searchQuery
         ? (boardRes.postings ?? []).filter(p =>
@@ -194,6 +212,7 @@ export default function TableroPostulacionesPage() {
         : (boardRes.postings ?? []);
       setPostings(filtered);
       setMyApplicationPostingIds(new Set((myAppsRes.applications ?? []).map(a => a.postingId)));
+      if (profileRes) setArtistProfile(profileRes);
     } catch {
       // non-critical
     } finally {
@@ -208,8 +227,15 @@ export default function TableroPostulacionesPage() {
   const handleApplied = async () => {
     setApplyTarget(null);
     setAppliedDone(true);
+    setApplyError(null);
     await fetchData();
-    setTimeout(() => setAppliedDone(false), 3000);
+    setTimeout(() => setAppliedDone(false), 4000);
+  };
+
+  const handleApplyError = (msg: string) => {
+    setApplyTarget(null);
+    setApplyError(msg);
+    setTimeout(() => setApplyError(null), 5000);
   };
 
   // Filter out own postings from board
@@ -217,6 +243,19 @@ export default function TableroPostulacionesPage() {
   const visiblePostings = myArtistId
     ? postings.filter(p => p.artistId !== myArtistId)
     : postings;
+
+  // Suggested: postings whose role matches the artist's category (fuzzy)
+  const artistCategory = (artistProfile?.categoria ?? '').toLowerCase();
+  const suggestedPostings = artistCategory
+    ? visiblePostings.filter(p =>
+        p.role.toLowerCase().includes(artistCategory) ||
+        artistCategory.includes(p.role.toLowerCase()))
+    : [];
+  const otherPostings = suggestedPostings.length > 0
+    ? visiblePostings.filter(p => !suggestedPostings.some(s => s.id === p.id))
+    : visiblePostings;
+
+  const profileIncomplete = isProfileIncomplete(artistProfile);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -226,6 +265,7 @@ export default function TableroPostulacionesPage() {
           posting={applyTarget}
           onClose={() => setApplyTarget(null)}
           onApplied={handleApplied}
+          onError={handleApplyError}
         />
       )}
       <main className="flex-1 lg:ml-72 p-6 pt-20 lg:pt-6 max-w-2xl mx-auto w-full">
@@ -243,9 +283,32 @@ export default function TableroPostulacionesPage() {
           </div>
         </div>
 
+        {/* Incomplete profile banner */}
+        {profileIncomplete && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
+            <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800">Completa tu perfil para destacar</p>
+              <p className="text-xs text-amber-700 mt-0.5">Los artistas con foto, bio y categoría tienen más probabilidades de ser seleccionados.</p>
+            </div>
+            <button
+              onClick={() => router.push('/artist/dashboard/settings')}
+              className="shrink-0 text-xs font-semibold text-amber-700 hover:text-amber-900 hover:underline transition"
+            >
+              Completar
+            </button>
+          </div>
+        )}
+
         {appliedDone && (
           <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 font-medium">
             Aplicación enviada. El artista revisará tu perfil y te contactará si eres seleccionado.
+          </div>
+        )}
+
+        {applyError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 font-medium">
+            {applyError}
           </div>
         )}
 
@@ -279,16 +342,41 @@ export default function TableroPostulacionesPage() {
             <p className="text-xs text-gray-400 mt-1">Vuelve pronto o publica tu propia vacante</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-500">{visiblePostings.length} vacante{visiblePostings.length !== 1 ? 's' : ''} disponible{visiblePostings.length !== 1 ? 's' : ''}</p>
-            {visiblePostings.map(p => (
-              <PostingCard
-                key={p.id}
-                posting={p}
-                myApplicationIds={myApplicationPostingIds}
-                onApply={setApplyTarget}
-              />
-            ))}
+          <div className="space-y-5">
+            {/* Suggested section */}
+            {suggestedPostings.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Sparkles size={14} className="text-[#FF6B35]" />
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">Para ti</span>
+                </div>
+                <div className="space-y-2">
+                  {suggestedPostings.map(p => (
+                    <PostingCard key={p.id} posting={p} myApplicationIds={myApplicationPostingIds} onApply={setApplyTarget} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* All other postings */}
+            {otherPostings.length > 0 && (
+              <div>
+                {suggestedPostings.length > 0 && (
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Todas las vacantes</p>
+                )}
+                <p className="text-xs text-gray-400 mb-2">{otherPostings.length} vacante{otherPostings.length !== 1 ? 's' : ''}</p>
+                <div className="space-y-2">
+                  {otherPostings.map(p => (
+                    <PostingCard
+                      key={p.id}
+                      posting={p}
+                      myApplicationIds={myApplicationPostingIds}
+                      onApply={setApplyTarget}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
