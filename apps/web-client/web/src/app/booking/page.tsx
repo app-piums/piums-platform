@@ -1651,11 +1651,12 @@ function BookingContent() {
                             <h4 className="text-sm font-medium text-yellow-800 mb-1">
                               Política de Cancelación
                             </h4>
-                            <ul className="text-sm text-yellow-700 space-y-1">
-                              <li>• Cancelación gratuita hasta 48 horas antes</li>
-                              <li>• Cargo del 25% entre 24-48 horas antes</li>
-                              <li>• Sin reembolso con menos de 24 horas</li>
-                            </ul>
+                            <p className="text-sm text-yellow-700">
+                              Aplican restricciones según el estado y fecha de creación de la reserva.{' '}
+                              <a href="/terminos#cancelacion" className="underline font-medium" target="_blank" rel="noopener noreferrer">
+                                Ver política completa
+                              </a>
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1854,7 +1855,7 @@ function BookingContent() {
                       <svg className="h-5 w-5 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      Cancelación gratuita (48h antes)
+                      Aplican restricciones de cancelación
                     </li>
                     <li className="flex items-start gap-2">
                       {/* Headset — 24/7 support */}

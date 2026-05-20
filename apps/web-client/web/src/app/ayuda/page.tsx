@@ -13,7 +13,7 @@ export default function AyudaPage() {
     },
     {
       q: '¿Puedo cancelar una reserva?',
-      a: 'Sí. Puedes cancelar gratuitamente hasta 48 horas antes del evento. Entre 24 y 48 horas se aplica un cargo del 25%. No hay reembolso con menos de 24 horas.',
+      a: 'Sí, con restricciones según el estado de tu reserva. Consulta nuestra política completa en los Términos y Condiciones.',
     },
     {
       q: '¿Cómo me registro como artista?',

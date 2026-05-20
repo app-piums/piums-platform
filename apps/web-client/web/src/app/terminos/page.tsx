@@ -91,7 +91,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Política de cancelación</h2>
+            <h2 id="cancelacion" className="text-xl font-semibold text-gray-900 mb-3">5. Política de cancelación</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse border border-gray-200 rounded-lg overflow-hidden">
                 <thead>
@@ -102,16 +102,16 @@ export default function TerminosPage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="p-3 border border-gray-200">Más de 48 horas antes del evento</td>
-                    <td className="p-3 border border-gray-200 text-green-700 font-medium">100 %</td>
+                    <td className="p-3 border border-gray-200">Reserva aún no confirmada</td>
+                    <td className="p-3 border border-gray-200 text-green-700 font-medium">Sin cargo — cancelación libre</td>
                   </tr>
                   <tr className="bg-gray-50">
-                    <td className="p-3 border border-gray-200">Entre 24 y 48 horas antes</td>
-                    <td className="p-3 border border-gray-200 text-yellow-700 font-medium">75 %</td>
+                    <td className="p-3 border border-gray-200">Reserva confirmada, dentro de las 48h desde la creación</td>
+                    <td className="p-3 border border-gray-200 text-yellow-700 font-medium">50% de reembolso</td>
                   </tr>
                   <tr>
-                    <td className="p-3 border border-gray-200">Menos de 24 horas antes</td>
-                    <td className="p-3 border border-gray-200 text-red-700 font-medium">Sin reembolso</td>
+                    <td className="p-3 border border-gray-200">Reserva confirmada, pasadas las 48h desde la creación</td>
+                    <td className="p-3 border border-gray-200 text-red-700 font-medium">Sin reembolso — no se permite cancelar</td>
                   </tr>
                 </tbody>
               </table>
