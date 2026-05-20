@@ -395,8 +395,7 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps = {}) {
               type="button"
               disabled={calendarLoading}
               onClick={() => {
-                if (!user?.token) return;
-                window.location.href = `/api/auth/google/calendar-connect?token=${user.token}`;
+                window.location.href = '/api/auth/google/calendar-connect';
               }}
               className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#4285F4] hover:bg-[#3367D6] px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
