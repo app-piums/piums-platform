@@ -40,6 +40,20 @@ export class ChatClient {
       return null;
     }
   }
+  async getGroupByBookingId(bookingId: string): Promise<{ id: string } | null> {
+    try {
+      const url = `${this.baseUrl}/internal/group-conversations/by-reference?bookingId=${encodeURIComponent(bookingId)}`;
+      const response = await fetch(url, {
+        headers: { 'x-internal-secret': this.getInternalSecret() },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as any;
+      return data?.group ?? null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const chatClient = new ChatClient();

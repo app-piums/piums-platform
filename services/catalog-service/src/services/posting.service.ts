@@ -62,7 +62,7 @@ export class PostingService {
     if (cityId) where.cityId = cityId;
     if (artistId) where.artistId = artistId;
 
-    const [postings, total] = await Promise.all([
+    const [rawPostings, total] = await Promise.all([
       prisma.artistPosting.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -73,6 +73,11 @@ export class PostingService {
       prisma.artistPosting.count({ where }),
     ]);
 
+    const postings = rawPostings.map(p => ({
+      ...p,
+      applicationCount: p.applications.length,
+    }));
+
     return { postings, total, page, limit };
   }
 
@@ -80,17 +85,19 @@ export class PostingService {
     const posting = await prisma.artistPosting.findUnique({
       where: { id },
       include: {
+        _count: { select: { applications: true } },
         applications: requesterId
           ? { where: { artistId: requesterId }, select: { id: true, status: true } }
           : false,
       },
     });
     if (!posting) throw new AppError(404, 'Postulación no encontrada');
-    return posting;
+    const { _count, ...rest } = posting as any;
+    return { ...rest, applicationCount: _count.applications };
   }
 
   async getMyPostings(artistId: string) {
-    return prisma.artistPosting.findMany({
+    const postings = await prisma.artistPosting.findMany({
       where: { artistId },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -100,6 +107,34 @@ export class PostingService {
         },
       },
     });
+
+    // Collect all unique applicant artist IDs across all postings
+    const allArtistIds = [...new Set(
+      postings.flatMap(p => p.applications.map(a => a.artistId))
+    )];
+
+    // Batch-resolve artist profiles (one request per unique artist, in parallel)
+    const profileMap = new Map<string, any>();
+    await Promise.all(
+      allArtistIds.map(async id => {
+        const info = await artistsClient.getArtist(id).catch(() => null);
+        if (info) profileMap.set(id, info);
+      })
+    );
+
+    return postings.map(p => ({
+      ...p,
+      applicationCount: p.applications.length,
+      applications: p.applications.map(a => {
+        const info = profileMap.get(a.artistId);
+        return {
+          ...a,
+          artistName: info?.displayName ?? info?.nombre ?? a.artistId,
+          artistAvatar: info?.profileImageUrl ?? info?.imagenPerfil ?? null,
+          artistCategory: info?.categoria ?? null,
+        };
+      }),
+    }));
   }
 
   async updatePosting(id: string, artistId: string, data: {
@@ -117,6 +152,8 @@ export class PostingService {
     const posting = await prisma.artistPosting.findUnique({ where: { id } });
     if (!posting) throw new AppError(404, 'Postulación no encontrada');
     if (posting.artistId !== artistId) throw new AppError(403, 'Sin permiso para editar esta postulación');
+
+    const isClosing = (data.status === 'CLOSED' || data.status === 'CANCELLED') && posting.status === 'OPEN';
 
     const updated = await prisma.artistPosting.update({
       where: { id },
@@ -136,6 +173,26 @@ export class PostingService {
           : {}),
       },
     });
+
+    // Notify pending applicants when the posting is closed/cancelled
+    if (isClosing) {
+      const pendingApps = await prisma.postingApplication.findMany({
+        where: { postingId: id, status: { in: ['PENDING', 'REVIEWED'] } },
+        select: { artistId: true },
+      });
+      for (const app of pendingApps) {
+        notificationsClient.sendNotification({
+          userId: app.artistId,
+          type: 'APPLICATION_REJECTED',
+          channel: 'IN_APP',
+          title: 'Vacante cerrada',
+          message: `La vacante "${posting.title}" fue cerrada por el artista.`,
+          data: { postingId: id },
+          priority: 'normal',
+        }).catch(() => {});
+      }
+    }
+
     return updated;
   }
 
@@ -193,12 +250,6 @@ export class PostingService {
             status: 'PENDING',
           },
         });
-
-    // Increment application count
-    await prisma.artistPosting.update({
-      where: { id: postingId },
-      data: { applicationCount: { increment: 1 } },
-    }).catch(() => {});
 
     // Notify posting artist (in-app + email)
     const [applicantInfo, posterInfo] = await Promise.all([
@@ -356,12 +407,6 @@ export class PostingService {
       data: { status: 'WITHDRAWN', respondedAt: new Date() },
     });
 
-    // Decrement application count
-    await prisma.artistPosting.update({
-      where: { id: application.postingId },
-      data: { applicationCount: { decrement: 1 } },
-    }).catch(() => {});
-
     return updated;
   }
 
@@ -384,7 +429,17 @@ export class PostingService {
         },
       },
     });
-    return applications;
+
+    // For accepted applications, look up the group chat created with applicationId as bookingId
+    const enriched = await Promise.all(
+      applications.map(async app => {
+        if (app.status !== 'ACCEPTED') return app;
+        const group = await chatClient.getGroupByBookingId(app.id).catch(() => null);
+        return { ...app, chatGroupId: group?.id ?? null };
+      })
+    );
+
+    return enriched;
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk } from '@piums/sdk';
@@ -191,10 +191,19 @@ export default function TableroPostulacionesPage() {
   const [applyError, setApplyError] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push('/login');
   }, [isAuthenticated, authLoading, router]);
+
+  // Debounce search input — only update debouncedSearch after 300ms of inactivity
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -204,21 +213,21 @@ export default function TableroPostulacionesPage() {
         sdk.getMyApplications(),
         sdk.getArtistProfile().catch(() => null),
       ]);
-      const filtered = searchQuery
+      const filtered = debouncedSearch
         ? (boardRes.postings ?? []).filter(p =>
-            p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.role.toLowerCase().includes(searchQuery.toLowerCase()))
+            p.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            p.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            p.role.toLowerCase().includes(debouncedSearch.toLowerCase()))
         : (boardRes.postings ?? []);
       setPostings(filtered);
-      setMyApplicationPostingIds(new Set((myAppsRes.applications ?? []).map(a => a.postingId)));
+      setMyApplicationPostingIds(new Set((myAppsRes.applications ?? []).filter(a => a.status !== 'WITHDRAWN').map(a => a.postingId)));
       if (profileRes) setArtistProfile(profileRes);
     } catch {
       // non-critical
     } finally {
       setLoading(false);
     }
-  }, [roleFilter, searchQuery]);
+  }, [roleFilter, debouncedSearch]);
 
   useEffect(() => {
     if (isAuthenticated) fetchData();

@@ -9,16 +9,32 @@ export class ArtistsClient {
     this.baseUrl = ARTISTS_SERVICE_URL;
   }
 
-  async getArtist(artistId: string): Promise<any> {
+  private getInternalSecret(): string {
+    return process.env.INTERNAL_SERVICE_SECRET || '';
+  }
+
+  // artistId here is always the auth user ID (from booking/posting/application)
+  async getArtist(authId: string): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}/artists/${artistId}`, {
+      const response = await fetch(`${this.baseUrl}/artists/internal/by-auth/${authId}`, {
+        headers: { 'x-internal-secret': this.getInternalSecret() },
         signal: AbortSignal.timeout(5000),
       });
       if (!response.ok) return null;
       const data = await response.json();
-      return data?.artist ?? data ?? null;
+      // Normalize fields: internal endpoint returns { id, authId, artistName, avatar, nombre?, email?, category? }
+      // Provide aliases expected by posting.service.ts
+      if (!data || data.error) return null;
+      return {
+        ...data,
+        displayName: data.artistName || data.nombre || null,
+        nombre: data.nombre || data.artistName || null,
+        profileImageUrl: data.avatar || null,
+        imagenPerfil: data.avatar || null,
+        categoria: data.category || null,
+      };
     } catch (error: any) {
-      logger.error('Error calling artists-service', 'ARTISTS_CLIENT', { error: error.message, artistId });
+      logger.error('Error calling artists-service', 'ARTISTS_CLIENT', { error: error.message, authId });
       return null;
     }
   }

@@ -65,6 +65,24 @@ app.post('/internal/group-conversations', async (req, res) => {
   }
 });
 
+app.get('/internal/group-conversations/by-reference', async (req, res) => {
+  const secret = process.env.INTERNAL_SERVICE_SECRET;
+  if (!secret || req.headers['x-internal-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  const { bookingId, eventId } = req.query as { bookingId?: string; eventId?: string };
+  if (!bookingId && !eventId) {
+    return res.status(400).json({ error: 'bookingId or eventId required' });
+  }
+  try {
+    const group = await groupChatServiceInternal.getGroupByReference({ bookingId, eventId });
+    if (!group) return res.status(404).json({ error: 'Not found' });
+    return res.json({ group });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/internal/group-conversations/add-participant', async (req, res) => {
   const secret = process.env.INTERNAL_SERVICE_SECRET;
   if (!secret || req.headers['x-internal-secret'] !== secret) {

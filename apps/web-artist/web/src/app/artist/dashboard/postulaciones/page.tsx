@@ -8,7 +8,8 @@ import type { ArtistPosting, PostingApplication } from '@piums/sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Plus, ChevronDown, ChevronUp, Users, Calendar, DollarSign,
-  CheckCircle, XCircle, Clock, Eye, Trash2, ExternalLink, X, Link2
+  CheckCircle, XCircle, Clock, Eye, Trash2, ExternalLink, X, Link2,
+  MessageSquare, Send
 } from 'lucide-react';
 
 const CLIENT_APP_URL = process.env.NEXT_PUBLIC_CLIENT_URL || 'https://client.piums.io';
@@ -473,9 +474,11 @@ export default function PostulacionesPage() {
   const router = useRouter();
 
   const [postings, setPostings] = useState<PostingWithApps[]>([]);
+  const [myApplications, setMyApplications] = useState<(PostingApplication & { posting?: any })[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [activeTab, setActiveTab] = useState<'mine' | 'board'>('mine');
+  const [activeTab, setActiveTab] = useState<'mine' | 'applied' | 'board'>('mine');
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push('/login');
@@ -484,21 +487,13 @@ export default function PostulacionesPage() {
   const fetchMyPostings = useCallback(async () => {
     try {
       setLoading(true);
-      const [postingsRes, ...applicationsRes] = await Promise.all([
-        sdk.getMyPostings(),
+      const [postingsRes, myAppsRes] = await Promise.all([
+        sdk.getMyPostings(),   // applications already enriched server-side
+        sdk.getMyApplications(),
       ]);
-      // For each posting, load applications
-      const enriched = await Promise.all(
-        (postingsRes.postings ?? []).map(async p => {
-          try {
-            const { applications } = await sdk.getPostingApplications(p.id);
-            return { ...p, applications: applications ?? [] };
-          } catch {
-            return { ...p, applications: [] };
-          }
-        })
-      );
-      setPostings(enriched as PostingWithApps[]);
+      // Applications come pre-enriched from getMyPostings — no extra requests needed
+      setPostings((postingsRes.postings ?? []) as PostingWithApps[]);
+      setMyApplications(myAppsRes.applications ?? []);
     } catch {
       // non-critical
     } finally {
@@ -532,9 +527,21 @@ export default function PostulacionesPage() {
   const handleApplicationRespond = async (appId: string, accept: boolean) => {
     const { application } = await sdk.respondToApplication(appId, accept);
     await fetchMyPostings();
-    // Navigate to coordination chat if one was created
     if (accept && (application as any).chatGroupId) {
       router.push(`/chat/grupo?groupId=${(application as any).chatGroupId}`);
+    }
+  };
+
+  const handleWithdraw = async (appId: string) => {
+    if (!confirm('¿Retirar esta aplicación?')) return;
+    setWithdrawingId(appId);
+    try {
+      await sdk.withdrawApplication(appId);
+      await fetchMyPostings();
+    } catch (err: any) {
+      alert(err.message || 'Error al retirar la aplicación');
+    } finally {
+      setWithdrawingId(null);
     }
   };
 
@@ -575,6 +582,17 @@ export default function PostulacionesPage() {
             Mis vacantes
           </button>
           <button
+            onClick={() => setActiveTab('applied')}
+            className={`relative px-4 py-1.5 rounded-lg text-sm font-semibold transition ${activeTab === 'applied' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Aplicaciones enviadas
+            {myApplications.filter(a => a.status === 'PENDING' || a.status === 'REVIEWED').length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#FF6B35] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {myApplications.filter(a => a.status === 'PENDING' || a.status === 'REVIEWED').length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => { setActiveTab('board'); router.push('/artist/dashboard/postulaciones/tablero'); }}
             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${activeTab === 'board' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
@@ -584,6 +602,89 @@ export default function PostulacionesPage() {
 
         {loading ? (
           <div className="text-center py-16 text-gray-400 text-sm">Cargando...</div>
+        ) : activeTab === 'applied' ? (
+          /* ── Mis aplicaciones enviadas ── */
+          myApplications.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-16 text-center">
+              <Send size={36} className="mx-auto mb-3 text-gray-300" />
+              <p className="text-sm font-medium text-gray-600">Sin aplicaciones enviadas</p>
+              <p className="text-xs text-gray-400 mt-1 mb-4">Ve al Tablero de vacantes para encontrar oportunidades</p>
+              <button
+                onClick={() => router.push('/artist/dashboard/postulaciones/tablero')}
+                className="inline-flex items-center gap-1.5 bg-[#FF6B35] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#e55a28] transition"
+              >
+                Ver tablero
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myApplications.map(app => {
+                const statusColors: Record<string, string> = {
+                  PENDING: 'bg-yellow-100 text-yellow-700',
+                  REVIEWED: 'bg-blue-100 text-blue-700',
+                  ACCEPTED: 'bg-green-100 text-green-700',
+                  REJECTED: 'bg-red-100 text-red-600',
+                  WITHDRAWN: 'bg-gray-100 text-gray-500',
+                };
+                const statusLabels: Record<string, string> = {
+                  PENDING: 'Pendiente',
+                  REVIEWED: 'Revisada',
+                  ACCEPTED: 'Aceptada',
+                  REJECTED: 'No seleccionado',
+                  WITHDRAWN: 'Retirada',
+                };
+                const posting = (app as any).posting;
+                const chatGroupId = (app as any).chatGroupId;
+                return (
+                  <div key={app.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {posting?.title ?? 'Vacante'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">{posting?.role}</p>
+                        {posting?.eventDate && (
+                          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                            <Calendar size={11} />
+                            {new Date(posting.eventDate).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[app.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                        {statusLabels[app.status] ?? app.status}
+                      </span>
+                    </div>
+
+                    {app.status === 'REVIEWED' && (
+                      <p className="mt-2 text-xs text-blue-600 font-medium">El publicador revisó tu perfil</p>
+                    )}
+
+                    <div className="mt-3 flex gap-2">
+                      {app.status === 'ACCEPTED' && (
+                        <button
+                          onClick={() => router.push(`/chat/grupo?groupId=${chatGroupId ?? ''}`)}
+                          disabled={!chatGroupId}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 disabled:opacity-40 transition"
+                        >
+                          <MessageSquare size={13} />
+                          Ir al chat de coordinación
+                        </button>
+                      )}
+                      {(app.status === 'PENDING' || app.status === 'REVIEWED') && (
+                        <button
+                          onClick={() => handleWithdraw(app.id)}
+                          disabled={withdrawingId === app.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold hover:bg-gray-200 disabled:opacity-50 transition"
+                        >
+                          {withdrawingId === app.id ? 'Retirando...' : 'Retirar aplicación'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
         ) : postings.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-16 text-center">
             <Users size={36} className="mx-auto mb-3 text-gray-300" />
