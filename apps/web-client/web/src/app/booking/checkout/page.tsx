@@ -237,7 +237,7 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
     { id: 'paypal' as const, label: 'PayPal', icon: <PayPalIcon className="h-4 w-4" /> },
   ];
 
-  const canSubmit = paymentMethod === 'transfer' || paymentMethod === 'paypal' || (!!stripe && !!elements);
+  const canSubmit = paymentMethod === 'transfer' || paymentMethod === 'paypal' || (paymentMethod === 'card' && !!stripePromise && !!stripe && !!elements);
 
   return (
     <div className="space-y-5">
@@ -291,7 +291,18 @@ function PaymentFormInner({ booking, bookingId }: { booking: Booking; bookingId:
         </div>
 
         {paymentMethod === 'card' && (
-          <PaymentElement options={{ layout: 'tabs', paymentMethodOrder: ['card'] }} />
+          stripePromise ? (
+            <PaymentElement options={{ layout: 'tabs', paymentMethodOrder: ['card'] }} />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/40">
+              <CreditCardIcon className="h-12 w-12 text-gray-300" />
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-700">Pago con Tarjeta</p>
+                <p className="text-xs text-gray-500 mt-1">El pago con tarjeta estará disponible próximamente.<br />Mientras tanto, usa Transferencia.</p>
+              </div>
+              <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-3 py-1 rounded-full uppercase tracking-wide">Próximamente</span>
+            </div>
+          )
         )}
 
         {paymentMethod === 'transfer' && (

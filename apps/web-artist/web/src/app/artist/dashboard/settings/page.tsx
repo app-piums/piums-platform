@@ -89,11 +89,17 @@ export default function ArtistSettingsPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('calendarConnected') === 'true') {
       setCalendarEnabled(true);
+      setActiveTab('integraciones');
       toast.success('Google Calendar conectado correctamente');
       window.history.replaceState({}, '', window.location.pathname);
     }
-    if (params.get('error') === 'calendar_denied') {
-      toast.error('Conexion con Google Calendar cancelada');
+    const calendarError = params.get('error');
+    if (calendarError === 'calendar_denied' || calendarError === 'calendar_failed' || calendarError === 'calendar_invalid') {
+      setActiveTab('integraciones');
+      const msg = calendarError === 'calendar_denied'
+        ? 'Conexion con Google Calendar cancelada'
+        : 'Error al conectar Google Calendar';
+      toast.error(msg);
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -1742,9 +1748,7 @@ export default function ArtistSettingsPage() {
                         type="button"
                         disabled={calendarLoading}
                         onClick={() => {
-                          const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                          if (!token) return;
-                          window.location.href = `/api/auth/google/calendar-connect?token=${token}`;
+                          window.location.href = '/api/auth/google/calendar-connect';
                         }}
                         className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#4285F4] hover:bg-[#3367D6] px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
                       >

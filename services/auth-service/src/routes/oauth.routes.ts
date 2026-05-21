@@ -25,7 +25,8 @@ router.get('/google/calendar-connect', (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return res.redirect(`${frontendUrl}/profile/personal?error=google_not_configured`);
+    const returnUrl = (req.query.return_url as string) || `${frontendUrl}/profile/personal`;
+    return res.redirect(`${returnUrl.split('?')[0]}?error=google_not_configured`);
   }
 
   const token = req.query.token as string | undefined;
@@ -36,9 +37,10 @@ router.get('/google/calendar-connect', (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     const userId = decoded.id;
+    const returnUrl = (req.query.return_url as string) || `${frontendUrl}/profile/personal?calendarConnected=true`;
 
-    // Encode userId in a short-lived state token
-    const state = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '10m' });
+    // Encode userId + returnUrl in a short-lived state token
+    const state = jwt.sign({ userId, returnUrl }, process.env.JWT_SECRET!, { expiresIn: '10m' });
 
     const callbackUrl =
       process.env.GOOGLE_CALENDAR_CALLBACK_URL ||
@@ -66,21 +68,36 @@ router.get('/google/calendar-connect', (req, res) => {
 
 router.get('/google/calendar-connect/callback', async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const defaultBase = `${frontendUrl}/profile/personal`;
+
+  // Resolve returnBase early (before try) so catch block can use it too
+  let returnBase = defaultBase;
+  const rawState = req.query.state as string | undefined;
+  if (rawState) {
+    try {
+      const s = jwt.verify(rawState, process.env.JWT_SECRET!) as any;
+      if (s.returnUrl) {
+        // returnUrl already includes the success query param — strip it for error redirects
+        returnBase = s.returnUrl.split('?')[0];
+      }
+    } catch { /* ignore, use default */ }
+  }
 
   try {
     const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
 
     if (error) {
       logger.warn(`Google Calendar OAuth denied: ${error}`, 'OAUTH');
-      return res.redirect(`${frontendUrl}/profile/personal?error=calendar_denied`);
+      return res.redirect(`${returnBase}?error=calendar_denied`);
     }
 
     if (!code || !state) {
-      return res.redirect(`${frontendUrl}/profile/personal?error=calendar_invalid`);
+      return res.redirect(`${returnBase}?error=calendar_invalid`);
     }
 
     const decoded = jwt.verify(state, process.env.JWT_SECRET!) as any;
     const userId: string = decoded.userId;
+    const returnUrl: string = decoded.returnUrl || `${defaultBase}?calendarConnected=true`;
 
     const callbackUrl =
       process.env.GOOGLE_CALENDAR_CALLBACK_URL ||
@@ -105,11 +122,10 @@ router.get('/google/calendar-connect/callback', async (req, res) => {
     });
 
     logger.info('Google Calendar connected', 'OAUTH', { userId });
-    return res.redirect(`${frontendUrl}/profile/personal?calendarConnected=true`);
+    return res.redirect(returnUrl);
   } catch (err: any) {
     logger.error(`Calendar connect callback error: ${err.message}`, 'OAUTH');
-    const frontendUrl2 = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl2}/profile/personal?error=calendar_failed`);
+    return res.redirect(`${returnBase}?error=calendar_failed`);
   }
 });
 

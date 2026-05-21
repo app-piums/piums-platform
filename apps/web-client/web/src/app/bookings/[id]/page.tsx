@@ -8,7 +8,7 @@ import { Loading } from '@/components/Loading';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ReviewModal } from '@/components/bookings/ReviewModal';
 import { ModifyDateModal } from '@/components/bookings/ModifyDateModal';
-import { sdk, type Service, type ArtistProfile, type Booking } from '@piums/sdk';
+import { sdk, type Service, type ArtistProfile, type Booking, type BookingCollaborator } from '@piums/sdk';
 import { formatArtistCategory } from '@/lib/artistCategory';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
@@ -65,6 +65,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const [noShowSubmitting, setNoShowSubmitting] = useState(false);
   const [noShowDone, setNoShowDone] = useState(false);
   const [payingRemaining, setPayingRemaining] = useState(false);
+  const [collaborators, setCollaborators] = useState<BookingCollaborator[]>([]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -86,14 +87,16 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
           if (b.reviewId) setReviewed(true);
         }
         
-        // Parallel fetch for associated service and artist
-        const [s, a] = await Promise.all([
+        // Parallel fetch for associated service, artist, and collaborators
+        const [s, a, collabs] = await Promise.all([
           b.serviceId ? sdk.getService(b.serviceId).catch(() => null) : Promise.resolve(null),
           b.artistId  ? sdk.getArtist(b.artistId).catch(() => null)  : Promise.resolve(null),
+          sdk.getBookingCollaborators(id).catch(() => ({ collaborators: [] as BookingCollaborator[] })),
         ]);
         if (isMounted) {
           setService(s);
           if (a) setArtist(a);
+          setCollaborators((collabs.collaborators ?? []).filter((c: BookingCollaborator) => c.status === 'ACCEPTED'));
         }
         
       } catch (err) {
@@ -299,6 +302,32 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {/* Equipo adicional (colaboradores aceptados) */}
+            {collaborators.length > 0 && (
+              <section className="bg-white rounded-2xl border border-gray-100 p-5 md:p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Equipo adicional</h2>
+                <div className="space-y-3">
+                  {collaborators.map(c => (
+                    <div key={c.id} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {(c as any).artistName || 'Colaborador'}
+                        </p>
+                        {c.role && (
+                          <p className="text-xs text-gray-500">{c.role}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
 
