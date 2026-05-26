@@ -71,3 +71,26 @@ export const authenticateToken: RequestHandler = (
     next(error);
   }
 };
+
+/**
+ * Middleware de revocación de sesión (PII-M6).
+ * Debe usarse DESPUÉS de authenticateToken en rutas sensibles.
+ * Verifica contra auth-service que el JTI del token siga activo.
+ * Falla abierto (fail-open) si auth-service no responde, para no
+ * bloquear operaciones cuando el servicio de auth está caído.
+ */
+export const requireActiveSession: RequestHandler = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) return next(new AppError(401, 'Token no proporcionado'));
+    const token = authHeader.substring(7);
+    const decoded = jwt.decode(token) as { jti?: string } | null;
+    if (!decoded?.jti) return next(); // token sin jti — omitir (legado)
+    const { isJtiActive } = await import('../utils/jtiVerifier');
+    const active = await isJtiActive(decoded.jti);
+    if (!active) return next(new AppError(401, 'Sesión revocada. Por favor inicia sesión nuevamente.'));
+    next();
+  } catch (err) {
+    next(err);
+  }
+};

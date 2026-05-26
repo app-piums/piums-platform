@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
 import { payoutController } from "../controller/payout.controller";
 import { payoutService } from "../services/payout.service";
-import { authenticateToken } from "../middleware/auth.middleware";
+import { authenticateToken, requireActiveSession } from "../middleware/auth.middleware";
 
 const prisma = new PrismaClient();
 
@@ -18,6 +18,7 @@ const router: Router = Router();
 router.post(
   "/payouts",
   authenticateToken,
+  requireActiveSession,
   payoutController.createPayout.bind(payoutController)
 );
 

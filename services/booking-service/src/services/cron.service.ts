@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "../utils/logger";
+import { withCronLock } from "../utils/distributedLock";
 import { bookingService } from "./booking.service";
 import { paymentsClient } from "../clients/payments.client";
 import { notificationsClient } from "../clients/notifications.client";
@@ -615,37 +616,37 @@ async function runPayoutHoldRelease() {
 
 export function startCronJobs() {
   // No-show auto-actions: cada hora
-  setInterval(runNoShowAutoActions, 60 * 60 * 1000);
+  setInterval(() => withCronLock('no-show', 3300, runNoShowAutoActions).catch(() => {}), 60 * 60 * 1000);
 
   // 72h pre-event charge: cada hora
-  setInterval(runPreEventCharge, 60 * 60 * 1000);
+  setInterval(() => withCronLock('pre-event-charge', 3300, runPreEventCharge).catch(() => {}), 60 * 60 * 1000);
 
   // Escalación de pago fallido (T-48h y T-24h): cada hora
-  setInterval(runPaymentEscalation, 60 * 60 * 1000);
+  setInterval(() => withCronLock('payment-escalation', 3300, runPaymentEscalation).catch(() => {}), 60 * 60 * 1000);
 
   // Auto-complete de bookings IN_PROGRESS: cada hora
-  setInterval(runAutoComplete, 60 * 60 * 1000);
+  setInterval(() => withCronLock('auto-complete', 3300, runAutoComplete).catch(() => {}), 60 * 60 * 1000);
 
   // Liberacion automatica de payout hold tras 24h sin confirmacion: cada hora
-  setInterval(runPayoutHoldRelease, 60 * 60 * 1000);
+  setInterval(() => withCronLock('payout-hold-release', 3300, runPayoutHoldRelease).catch(() => {}), 60 * 60 * 1000);
 
   // Recordatorios multi-etapa (cliente 7d/3d/sameday + artista 7d/3d/24h/sameday): cada hora
-  setInterval(runReminder7d, 60 * 60 * 1000);
-  setInterval(runReminder3d, 60 * 60 * 1000);
-  setInterval(runReminderSameDay, 60 * 60 * 1000);
-  setInterval(runArtistReminders, 60 * 60 * 1000);
+  setInterval(() => withCronLock('reminder-7d', 3300, runReminder7d).catch(() => {}), 60 * 60 * 1000);
+  setInterval(() => withCronLock('reminder-3d', 3300, runReminder3d).catch(() => {}), 60 * 60 * 1000);
+  setInterval(() => withCronLock('reminder-same-day', 3300, runReminderSameDay).catch(() => {}), 60 * 60 * 1000);
+  setInterval(() => withCronLock('artist-reminders', 3300, runArtistReminders).catch(() => {}), 60 * 60 * 1000);
 
   // Ejecutar inmediatamente al iniciar (con delay para que el servidor arranque)
   setTimeout(() => {
-    runNoShowAutoActions().catch(() => {});
-    runPreEventCharge().catch(() => {});
-    runPaymentEscalation().catch(() => {});
-    runAutoComplete().catch(() => {});
-    runPayoutHoldRelease().catch(() => {});
-    runReminder7d().catch(() => {});
-    runReminder3d().catch(() => {});
-    runReminderSameDay().catch(() => {});
-    runArtistReminders().catch(() => {});
+    withCronLock('no-show-boot', 3300, runNoShowAutoActions).catch(() => {});
+    withCronLock('pre-event-charge-boot', 3300, runPreEventCharge).catch(() => {});
+    withCronLock('payment-escalation-boot', 3300, runPaymentEscalation).catch(() => {});
+    withCronLock('auto-complete-boot', 3300, runAutoComplete).catch(() => {});
+    withCronLock('payout-hold-release-boot', 3300, runPayoutHoldRelease).catch(() => {});
+    withCronLock('reminder-7d-boot', 3300, runReminder7d).catch(() => {});
+    withCronLock('reminder-3d-boot', 3300, runReminder3d).catch(() => {});
+    withCronLock('reminder-same-day-boot', 3300, runReminderSameDay).catch(() => {});
+    withCronLock('artist-reminders-boot', 3300, runArtistReminders).catch(() => {});
   }, 30 * 1000); // 30s después del boot
 
   logger.info("Cron jobs iniciados (no-show + cobro 72h + escalacion pagos + auto-complete + payout hold release + recordatorios multi-etapa)", "CRON");

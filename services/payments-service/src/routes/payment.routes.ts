@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { paymentController } from "../controller/payment.controller";
-import { authenticateToken } from "../middleware/auth.middleware";
+import { authenticateToken, requireActiveSession } from "../middleware/auth.middleware";
 import { createPaymentLimiter, refundLimiter } from "../middleware/rateLimiter";
 
 const router: Router = Router();
@@ -11,6 +11,7 @@ const router: Router = Router();
 router.post(
   "/checkout",
   authenticateToken,
+  requireActiveSession,
   createPaymentLimiter,
   paymentController.initCheckout.bind(paymentController)
 );
@@ -19,6 +20,7 @@ router.post(
 router.post(
   "/ticket-checkout",
   authenticateToken,
+  requireActiveSession,
   createPaymentLimiter,
   paymentController.initTicketCheckout.bind(paymentController)
 );

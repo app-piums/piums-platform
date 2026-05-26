@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { bookingController } from "../controller/booking.controller";
-import { authenticateToken, requireAdmin, internalAuth } from "../middleware/auth.middleware";
+import { authenticateToken, requireAdmin, internalAuth, requireActiveSession } from "../middleware/auth.middleware";
 import {
   createBookingLimiter,
   updateLimiter,
@@ -19,6 +19,7 @@ const router: Router = Router();
 router.post(
   "/bookings",
   authenticateToken,
+  requireActiveSession,
   createBookingLimiter,
   bookingController.createBooking.bind(bookingController)
 );
@@ -159,6 +160,7 @@ router.patch(
 router.patch(
   "/bookings/:id/status",
   authenticateToken,
+  requireActiveSession,
   bookingController.changeStatus.bind(bookingController)
 );
 

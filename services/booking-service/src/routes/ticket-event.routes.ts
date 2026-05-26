@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticateToken, internalAuth } from '../middleware/auth.middleware';
+import { authenticateToken, internalAuth, requireActiveSession } from '../middleware/auth.middleware';
 import { ticketEventService } from '../services/ticket-event.service';
 
 const router = Router();
@@ -64,7 +64,7 @@ router.delete('/ticket-events/:id/tiers/:tierId', authenticateToken, async (req:
   } catch (err) { next(err); }
 });
 
-router.post('/ticket-events/:id/purchase', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/ticket-events/:id/purchase', authenticateToken, requireActiveSession, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = (req as any).user;
     const { tierId, quantity = 1, couponCode, returnUrl } = req.body as {

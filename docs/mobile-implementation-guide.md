@@ -1,3 +1,4 @@
+
 # Guía de implementación para la versión móvil
 
 Referencia de todo lo implementado en web (pagos → emails) para replicar en la app móvil.

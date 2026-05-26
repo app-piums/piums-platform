@@ -1,0 +1,1 @@
+ALTER TABLE "ticket_tiers" ADD COLUMN "maxPerOrder" INTEGER NOT NULL DEFAULT 10;

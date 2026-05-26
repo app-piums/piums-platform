@@ -572,6 +572,7 @@ model TicketTier {
   currency      String         @default("USD")
   totalQty      Int
   soldQty       Int            @default(0)
+  maxPerOrder   Int            @default(10)
   purchases     TicketPurchase[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

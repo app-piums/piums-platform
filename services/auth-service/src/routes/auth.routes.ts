@@ -79,5 +79,21 @@ router.get("/internal/fcm-token/:userId", async (req, res) => {
   }
 });
 
+// Internal endpoint — verifica si un JTI de sesión sigue activo
+// Usado por otros servicios para revocación de sesiones (PII-M6)
+router.get("/internal/sessions/:jti", async (req, res) => {
+  const secret = process.env.INTERNAL_SERVICE_SECRET || "";
+  if (!secret || req.headers['x-internal-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const { jti } = req.params;
+    const session = await prisma.session.findFirst({ where: { jti, status: 'ACTIVE' } });
+    return res.json({ active: !!session });
+  } catch {
+    return res.status(500).json({ error: 'Internal error' });
+  }
+});
+
 export default router;
 

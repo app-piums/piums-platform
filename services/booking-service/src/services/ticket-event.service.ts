@@ -125,11 +125,13 @@ export const ticketEventService = {
     priceCents: number;
     currency?: string;
     totalQty: number;
+    maxPerOrder?: number;
   }) {
     const event = await (prisma as any).ticketEvent.findUnique({ where: { id: eventId } });
     if (!event) throw Object.assign(new Error('Evento no encontrado'), { statusCode: 404 });
     if (event.artistId !== artistId) throw Object.assign(new Error('Sin permiso'), { statusCode: 403 });
 
+    const maxPerOrder = Math.max(1, Math.min(payload.maxPerOrder ?? 10, 100));
     return (prisma as any).ticketTier.create({
       data: {
         ticketEventId: eventId,
@@ -138,6 +140,7 @@ export const ticketEventService = {
         priceCents: payload.priceCents,
         currency: payload.currency || 'USD',
         totalQty: payload.totalQty,
+        maxPerOrder,
       },
     });
   },
@@ -171,6 +174,8 @@ export const ticketEventService = {
     if (!tier) throw Object.assign(new Error('Tier no encontrado'), { statusCode: 404 });
     if (tier.ticketEventId !== data.eventId) throw Object.assign(new Error('Tier no pertenece al evento'), { statusCode: 400 });
     if (tier.ticketEvent.status !== 'PUBLICADO') throw Object.assign(new Error('El evento no esta disponible'), { statusCode: 400 });
+    if (data.quantity < 1) throw Object.assign(new Error('La cantidad debe ser al menos 1'), { statusCode: 400 });
+    if (data.quantity > tier.maxPerOrder) throw Object.assign(new Error(`Solo se pueden comprar hasta ${tier.maxPerOrder} boletos por orden`), { statusCode: 400 });
 
     const subtotalCents = tier.priceCents * data.quantity;
     let discountCents = 0;
@@ -179,6 +184,9 @@ export const ticketEventService = {
     // Atomic: reserve seats + create purchase
     let purchase = await (prisma as any).$transaction(async (tx: any) => {
       const fresh = await tx.ticketTier.findUnique({ where: { id: data.tierId } });
+      if (data.quantity > fresh.maxPerOrder) {
+        throw Object.assign(new Error(`Solo se pueden comprar hasta ${fresh.maxPerOrder} boletos por orden`), { statusCode: 400 });
+      }
       if (fresh.soldQty + data.quantity > fresh.totalQty) {
         throw Object.assign(new Error('No hay suficientes boletos disponibles'), { statusCode: 409 });
       }
