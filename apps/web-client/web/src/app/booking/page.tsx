@@ -69,8 +69,6 @@ const calculateDistanceKm = (from: Coordinates, to: Coordinates): number => {
 };
 
 const DEFAULT_SLOT_TIMES = ['09:00', '11:30', '15:00', '18:30'];
-const MARCH_MONTH_INDEX = 2; // 0-based index for March
-
 const getDateKey = (date: Date) => date.toISOString().split('T')[0];
 
 const createTimeSlotForDate = (date: Date, time: string, durationMinutes: number): TimeSlot => {
@@ -86,22 +84,6 @@ const createTimeSlotForDate = (date: Date, time: string, durationMinutes: number
     endTime: end.toISOString(),
   };
 };
-
-const buildMarchAvailability = (year: number, durationMinutes: number): DayAvailability[] => {
-  const daysInMarch = new Date(year, MARCH_MONTH_INDEX + 1, 0).getDate();
-  const entries: DayAvailability[] = [];
-
-  for (let day = 1; day <= daysInMarch; day++) {
-    const date = new Date(year, MARCH_MONTH_INDEX, day);
-    const dateKey = getDateKey(date);
-    const slots = DEFAULT_SLOT_TIMES.map((slot) => createTimeSlotForDate(date, slot, durationMinutes));
-    entries.push({ date: dateKey, slots });
-  }
-
-  return entries;
-};
-
-const isMarchDate = (date: Date) => date.getMonth() === MARCH_MONTH_INDEX;
 
 const buildFallbackQuote = (
   service: Service,
@@ -288,25 +270,9 @@ function BookingContent() {
       return [...filtered, { date: dateKey, slots }];
     });
   }, []);
-  const injectFallbackSlots = useCallback(
-    (date: Date, service: Service | null) => {
-      const duration = getDurationMinutes(service);
-      const slots = DEFAULT_SLOT_TIMES.map((time) => createTimeSlotForDate(date, time, duration));
-      upsertAvailabilityForDate(getDateKey(date), slots);
-    },
-    [upsertAvailabilityForDate]
-  );
-  const marchYear = useMemo(() => new Date().getFullYear(), []);
-  const marchAvailability = useMemo(
-    () => buildMarchAvailability(marchYear, getDurationMinutes(selectedService)),
-    [marchYear, selectedService]
-  );
   const availability = useMemo(() => {
-    const map = new Map<string, DayAvailability>();
-    marchAvailability.forEach((day) => map.set(day.date, day));
-    apiAvailability.forEach((day) => map.set(day.date, day));
-    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [marchAvailability, apiAvailability]);
+    return [...apiAvailability].sort((a, b) => a.date.localeCompare(b.date));
+  }, [apiAvailability]);
   const minSelectableDate = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -592,25 +558,13 @@ function BookingContent() {
       const slots = data.slots || [];
       const hasAvailableSlots = slots.some((slot) => slot.available);
 
-      if (isMarchDate(date)) {
-        if (hasAvailableSlots) {
-          upsertAvailabilityForDate(dateStr, slots);
-        } else {
-          injectFallbackSlots(date, selectedService);
-        }
-      } else {
-        upsertAvailabilityForDate(dateStr, slots);
-      }
-    } catch (error) {
-      if (isMarchDate(date)) {
-        injectFallbackSlots(date, selectedService);
-      } else if (process.env.NODE_ENV !== 'production') {
-        console.info('Availability API error, showing fallback slots.');
-      }
+      upsertAvailabilityForDate(dateStr, slots);
+    } catch {
+      // API unavailable — no slots shown for this date
     } finally {
       setSlotsLoading(false);
     }
-  }, [resolvedArtistId, injectFallbackSlots, selectedService, upsertAvailabilityForDate]);
+  }, [resolvedArtistId, upsertAvailabilityForDate]);
 
   useEffect(() => {
     if (!selectedService) {
@@ -753,11 +707,7 @@ function BookingContent() {
     const hasBookableSlots = dayAvailability?.slots.some((slot) => slot.available) ?? false;
 
     if (!hasBookableSlots) {
-      if (isMarchDate(date)) {
-        injectFallbackSlots(date, selectedService);
-      } else {
-        fetchTimeSlotsForDate(date);
-      }
+      fetchTimeSlotsForDate(date);
     }
   };
 

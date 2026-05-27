@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.HTTPS_ENABLED === 'true',
       sameSite: 'strict',
-      maxAge: 3600,
+      maxAge: 604800,
       path: '/',
     });
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.HTTPS_ENABLED === 'true',
       sameSite: 'strict',
-      maxAge: 3600,
+      maxAge: 604800,
       path: '/',
     });
 

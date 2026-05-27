@@ -23,6 +23,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       id: decoded.id,
       role: decoded.role,
     };
+    (req as any).jti = decoded.jti;
 
     next();
   } catch (error: any) {

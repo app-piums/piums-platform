@@ -27,12 +27,19 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: React.Ele
   pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: ClockIcon },
   confirmed: { label: 'Confirmada', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircleIcon },
   completed: { label: 'Completada', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircleIcon },
+  delivered: { label: 'Entregada', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircleIcon },
   cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
+  cancelled_client: { label: 'Cancelada por cliente', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
+  cancelled_artist: { label: 'Cancelada por artista', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
   rejected: { label: 'Rechazada', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
   no_show: { label: 'No se presentó', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircleIcon },
   in_progress: { label: 'En curso', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: ClockIcon },
-  anticipo_paid: { label: 'Anticipo pagado', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircleIcon },
+  payment_pending: { label: 'Pago pendiente', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: ClockIcon },
   payment_completed: { label: 'Pago completo', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircleIcon },
+  anticipo_paid: { label: 'Anticipo pagado', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircleIcon },
+  rescheduled: { label: 'Reprogramada', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: ClockIcon },
+  reschedule_pending_artist: { label: 'Cambio pendiente (artista)', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: ClockIcon },
+  reschedule_pending_client: { label: 'Cambio pendiente (cliente)', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: ClockIcon },
 };
 
 function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {

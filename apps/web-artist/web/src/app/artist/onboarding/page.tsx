@@ -844,7 +844,7 @@ export default function ArtistOnboardingPage() {
               <button
                 onClick={() => {
                   if (!canContinueStep2) return;
-                  const hasBanda = (selectedTalentIds['musico'] ?? []).includes('banda_musical');
+                  const hasBanda = (selectedTalentIds['musician'] ?? []).includes('banda_musical');
                   if (hasBanda && bandSubStep === null) {
                     setBandSubStep('ask');
                   } else {

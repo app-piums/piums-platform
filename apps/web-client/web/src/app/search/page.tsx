@@ -13,15 +13,15 @@ import type { Artist, Service } from '@piums/sdk';
 import { TalentPicker } from '@/components/TalentPicker';
 
 type TabType = 'all' | 'artists' | 'services';
-type SortOption = 'relevance' | 'rating' | 'price_asc' | 'price_desc';
+type SortOption = 'relevance' | 'rating' | 'price_low' | 'price_high';
 
 const CATEGORIES = [
   { value: '', label: 'Todas las categorías' },
-  { value: 'musica', label: 'Música' },
-  { value: 'fotografia', label: 'Fotografía' },
-  { value: 'catering', label: 'Catering' },
-  { value: 'decoracion', label: 'Decoración' },
-  { value: 'animacion', label: 'Animación' },
+  { value: 'MUSICO', label: 'Música' },
+  { value: 'FOTOGRAFO', label: 'Fotografía' },
+  { value: 'CATERING', label: 'Catering' },
+  { value: 'DECORADOR', label: 'Decoración' },
+  { value: 'ANIMADOR', label: 'Animación' },
 ];
 const CITIES = [
   { value: '', label: 'Todas las ciudades' },
@@ -34,8 +34,8 @@ const CITIES = [
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'relevance',  label: 'Relevancia' },
   { value: 'rating',     label: 'Mejor calificados' },
-  { value: 'price_asc',  label: 'Precio: menor a mayor' },
-  { value: 'price_desc', label: 'Precio: mayor a menor' },
+  { value: 'price_low',  label: 'Precio: menor a mayor' },
+  { value: 'price_high', label: 'Precio: mayor a menor' },
 ];
 const POPULAR = ['DJ', 'Fotografía', 'Catering', 'Banda en vivo', 'Decoración'];
 
@@ -68,7 +68,8 @@ function SearchContent() {
         const results = await sdk.smartSearch({
           q: query,
           city: selectedCity || undefined,
-        });
+          sortBy: sortBy !== 'relevance' ? sortBy : undefined,
+        } as any);
         setArtists(results.artists ?? []);
         setExpandedTerms(results.expandedTerms ?? []);
       } else {
@@ -76,6 +77,7 @@ function SearchContent() {
         const results = await sdk.searchArtists({
           category: selectedCategory || undefined,
           cityId: selectedCity || undefined,
+          sortBy: sortBy !== 'relevance' ? sortBy : undefined,
         } as any);
         setArtists((results as any).artists ?? []);
         setExpandedTerms([]);

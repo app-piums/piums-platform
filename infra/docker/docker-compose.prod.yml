@@ -76,6 +76,7 @@ services:
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
       BOOKING_SERVICE_URL: http://booking-service:4008
       SEARCH_SERVICE_URL: http://search-service:4009
+      CHAT_SERVICE_URL: http://chat-service:4010
     depends_on:
       - auth-service
       - users-service
@@ -86,6 +87,7 @@ services:
       - reviews-service
       - notifications-service
       - search-service
+      - chat-service
     networks:
       - piums-network
     restart: always
@@ -172,6 +174,7 @@ services:
       BOOKING_SERVICE_URL: http://booking-service:4008
       PAYMENTS_SERVICE_URL: http://payments-service:4005
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
+      USERS_SERVICE_URL: http://users-service:4002
     depends_on:
       postgres:
         condition: service_healthy
@@ -221,6 +224,12 @@ services:
       CATALOG_SERVICE_URL: http://catalog-service:4004
       PAYMENTS_SERVICE_URL: http://payments-service:4005
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
+      USERS_SERVICE_URL: http://users-service:4002
+      ARTISTS_SERVICE_URL: http://artists-service:4003
+      CHAT_SERVICE_URL: http://chat-service:4010
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -294,11 +303,13 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      ENABLE_EMAIL: "true"
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
     depends_on:
       postgres:
         condition: service_healthy
@@ -351,6 +362,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -376,6 +391,8 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
+      GATEWAY_INTERNAL_URL: http://gateway:3000
+      HTTPS_ENABLED: "true"
       NEXT_PUBLIC_API_URL: ${API_URL}/api
       NEXT_PUBLIC_APP_URL: ${CLIENT_APP_URL}
       NEXT_PUBLIC_CLIENT_URL: ${CLIENT_APP_URL}
@@ -403,6 +420,8 @@ services:
       - "3001:3001"
     environment:
       NODE_ENV: production
+      GATEWAY_INTERNAL_URL: http://gateway:3000
+      HTTPS_ENABLED: "true"
       NEXT_PUBLIC_API_URL: ${API_URL}/api
       NEXT_PUBLIC_APP_URL: ${ARTIST_APP_URL}
       NEXT_PUBLIC_CLIENT_URL: ${CLIENT_APP_URL}

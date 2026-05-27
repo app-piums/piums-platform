@@ -22,10 +22,14 @@ export const BookingStatusEnum = z.enum([
   "PAYMENT_COMPLETED",
   "IN_PROGRESS",
   "COMPLETED",
+  "DELIVERED",
   "CANCELLED_CLIENT",
   "CANCELLED_ARTIST",
   "REJECTED",
   "NO_SHOW",
+  "RESCHEDULED",
+  "RESCHEDULE_PENDING_ARTIST",
+  "RESCHEDULE_PENDING_CLIENT",
 ]);
 
 export const PaymentStatusEnum = z.enum([

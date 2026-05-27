@@ -387,6 +387,41 @@ export const setupRoutes = (app: Express) => {
     })
   );
 
+  // Payouts — montados en /api/payouts dentro de payments-service
+  app.use(
+    "/api/payouts",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/payouts" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // Commissions — montados en /api/commissions dentro de payments-service
+  app.use(
+    "/api/commissions",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/commissions" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // Stripe webhook — sin auth middleware, Stripe firma con su propio secret
+  app.use(
+    "/api/webhooks",
+    createProxyMiddleware({
+      target: process.env.PAYMENTS_SERVICE_URL || "http://localhost:4005",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/webhooks" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
   // ============================================================================
   // Reviews Service (MIXTO)
   // ============================================================================

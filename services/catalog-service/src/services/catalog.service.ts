@@ -186,7 +186,7 @@ export class CatalogService {
     const limit = filters.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { isActive: true, status: 'ACTIVE' };
 
     if (filters.artistId) where.artistId = filters.artistId;
     if (filters.categoryId) where.categoryId = filters.categoryId;

@@ -69,12 +69,12 @@ function ChatPageInner() {
       );
     });
 
-    socket.on('typing:start', ({ userId }: { userId: string }) => {
-      if (userId !== user.id) setIsTyping(true);
+    socket.on('typing:start', ({ userId, conversationId }: { userId: string; conversationId?: string }) => {
+      if (userId !== user.id && (!conversationId || conversationId === currentConversation?.id)) setIsTyping(true);
     });
 
-    socket.on('typing:stop', ({ userId }: { userId: string }) => {
-      if (userId !== user.id) setIsTyping(false);
+    socket.on('typing:stop', ({ userId, conversationId }: { userId: string; conversationId?: string }) => {
+      if (userId !== user.id && (!conversationId || conversationId === currentConversation?.id)) setIsTyping(false);
     });
 
     socketRef.current = socket;
