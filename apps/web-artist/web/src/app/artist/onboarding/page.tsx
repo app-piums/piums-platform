@@ -236,6 +236,14 @@ export default function ArtistOnboardingPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Step 2.5: Sub-step de banda (solo cuando selecciona banda_musical)
+  const [bandSubStep, setBandSubStep] = useState<null | 'ask' | 'create' | 'search'>(null);
+  const [bandName, setBandName] = useState('');
+  const [bandSearchQuery, setBandSearchQuery] = useState('');
+  const [bandSearchResults, setBandSearchResults] = useState<Array<{ id: string; name: string; city: string; country: string }>>([]);
+  const [bandSearchLoading, setBandSearchLoading] = useState(false);
+  const [pendingBandId, setPendingBandId] = useState<string | null>(null);
+
   // Identity verification (OAuth only — still step 4 for OAuth, between equipment and portfolio)
   const [isOAuthUser, setIsOAuthUser] = useState(false);
   const [docType, setDocType] = useState('');
@@ -546,6 +554,23 @@ export default function ArtistOnboardingPage() {
         });
       }
 
+      // Create or join band if artist selected banda_musical in onboarding
+      if (bandName.trim()) {
+        fetch('/api/bands', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: bandName.trim(), country: 'GT', city: 'Guatemala' }),
+        }).catch(() => { toast.warning('Tu perfil fue creado. Puedes configurar tu banda desde el dashboard.'); });
+      } else if (pendingBandId) {
+        fetch(`/api/bands/${pendingBandId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ join: true }),
+        }).catch(() => {});
+      }
+
       // Upload avatar if selected
       if (profilePhotoFile) {
         const fd = new FormData();
@@ -691,7 +716,7 @@ export default function ArtistOnboardingPage() {
         )}
 
         {/* ── Step 2: Creative Superpower ───────────────────────── */}
-        {currentStep === 2 && (
+        {currentStep === 2 && bandSubStep === null && (
           <div className="max-w-3xl mx-auto piums-fade-in">
             <h2 className="text-4xl font-bold text-gray-900 mb-3">
               ¿Cuál es tu <span className="text-orange-600">superpoder creativo</span>?
@@ -817,7 +842,16 @@ export default function ArtistOnboardingPage() {
                 Atrás
               </button>
               <button
-                onClick={() => canContinueStep2 && setCurrentStep(3)}
+                onClick={() => {
+                  if (!canContinueStep2) return;
+                  const hasBanda = (selectedTalentIds['musico'] ?? []).includes('banda_musical');
+                  if (hasBanda && bandSubStep === null) {
+                    setBandSubStep('ask');
+                  } else {
+                    setBandSubStep(null);
+                    setCurrentStep(3);
+                  }
+                }}
                 disabled={!canContinueStep2}
                 className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-full hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -827,6 +861,178 @@ export default function ArtistOnboardingPage() {
                 </svg>
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── Step 2.5: Sub-step banda ────────────────────────────── */}
+        {currentStep === 2 && bandSubStep !== null && (
+          <div className="max-w-lg mx-auto piums-fade-in">
+            {/* Ask */}
+            {bandSubStep === 'ask' && (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">¡Las bandas en Piums son diferentes!</h2>
+                  <p className="text-gray-600">
+                    Tu banda puede tener su propio perfil, miembros y recibir bookings directamente. ¿Ya tienes una banda formada?
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setBandSubStep('create')}
+                    className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-orange-200 bg-orange-50 hover:border-orange-400 hover:bg-orange-100 transition-all text-left group"
+                  >
+                    <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shrink-0">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Crear perfil de banda nueva</p>
+                      <p className="text-sm text-gray-500">Fundas la banda aquí en Piums e invitas a tus músicos</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setBandSubStep('search')}
+                    className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
+                      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Unirme a una banda existente</p>
+                      <p className="text-sm text-gray-500">Busca tu banda y solicita unirte</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => { setBandSubStep(null); setCurrentStep(3); }}
+                    className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-100 bg-gray-50 hover:bg-gray-100 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center shrink-0">
+                      <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Continuar como músico individual</p>
+                      <p className="text-sm text-gray-500">Puedes crear o unirte a una banda más adelante</p>
+                    </div>
+                  </button>
+                </div>
+
+                <button onClick={() => setBandSubStep(null)} className="mt-6 flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mx-auto">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Volver a disciplinas
+                </button>
+              </>
+            )}
+
+            {/* Create band */}
+            {bandSubStep === 'create' && (
+              <>
+                <button onClick={() => setBandSubStep('ask')} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mb-6">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Atrás
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">¿Cómo se llama tu banda?</h2>
+                <p className="text-gray-600 mb-6">Podrás editarlo después. Elige un nombre que te represente.</p>
+                <input
+                  type="text"
+                  value={bandName}
+                  onChange={(e) => setBandName(e.target.value)}
+                  placeholder="ej: Los Terrícolas, Marimba Chapina, The Groove..."
+                  maxLength={80}
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500 outline-none transition-all text-lg mb-6"
+                />
+                <button
+                  onClick={() => { setBandSubStep(null); setCurrentStep(3); }}
+                  disabled={bandName.trim().length < 2}
+                  className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Crear banda y continuar
+                </button>
+                <p className="text-xs text-gray-400 text-center mt-3">La banda se crea cuando completes tu registro</p>
+              </>
+            )}
+
+            {/* Search band */}
+            {bandSubStep === 'search' && (
+              <>
+                <button onClick={() => setBandSubStep('ask')} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mb-6">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Atrás
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Busca tu banda</h2>
+                <p className="text-gray-600 mb-6">Encuentra tu banda en Piums y envía una solicitud para unirte.</p>
+                <input
+                  type="text"
+                  value={bandSearchQuery}
+                  onChange={async (e) => {
+                    setBandSearchQuery(e.target.value);
+                    if (e.target.value.trim().length < 2) { setBandSearchResults([]); return; }
+                    setBandSearchLoading(true);
+                    try {
+                      const res = await fetch(`/api/bands?q=${encodeURIComponent(e.target.value)}`);
+                      if (res.ok) setBandSearchResults(await res.json());
+                    } finally { setBandSearchLoading(false); }
+                  }}
+                  placeholder="Nombre de la banda..."
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500 outline-none transition-all mb-4"
+                />
+                {bandSearchLoading && <p className="text-sm text-gray-500 mb-3">Buscando...</p>}
+                {bandSearchResults.length > 0 && (
+                  <div className="space-y-2 mb-6">
+                    {bandSearchResults.map((band) => (
+                      <button
+                        key={band.id}
+                        onClick={() => { setPendingBandId(band.id); setBandSubStep(null); setCurrentStep(3); }}
+                        className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left ${
+                          pendingBandId === band.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-semibold text-gray-900">{band.name}</p>
+                          <p className="text-sm text-gray-500">{band.city}, {band.country}</p>
+                        </div>
+                        {pendingBandId === band.id && (
+                          <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2.5 py-1 rounded-full">Seleccionada</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {bandSearchResults.length === 0 && bandSearchQuery.length >= 2 && !bandSearchLoading && (
+                  <div className="text-center py-6 text-gray-500">
+                    <p className="text-sm">No encontramos esa banda.</p>
+                    <button onClick={() => setBandSubStep('create')} className="mt-2 text-sm text-orange-600 font-medium hover:underline">
+                      ¿Quieres crearla?
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() => { setBandSubStep(null); setCurrentStep(3); }}
+                  disabled={!pendingBandId}
+                  className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Solicitar unirme y continuar
+                </button>
+              </>
+            )}
           </div>
         )}
 

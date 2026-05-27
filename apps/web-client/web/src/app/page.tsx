@@ -190,7 +190,7 @@ export default function Home() {
           className="relative z-20 flex items-center justify-between px-6 md:px-12 py-4"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
         >
-          <Image src="/logo-white.png" alt="Piums" width={100} height={30} className="h-7 w-auto" priority />
+          <Image src="/logo-white.png" alt="Piums" width={100} height={30} className="h-7 w-auto" priority unoptimized />
           <div className="flex items-center gap-3">
             <Link href="/login" className="hidden sm:block text-sm font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
               Iniciar sesión

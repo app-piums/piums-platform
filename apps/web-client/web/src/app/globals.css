@@ -62,6 +62,11 @@ html.dark,
 
 /* ── Surfaces ── */
 .dark [class*="bg-white"]    { background-color: #2C2C2E !important; }  /* cards */
+/* Glass panels (login, register) — preserve transparency in dark mode */
+.dark [class*="backdrop-blur"][class*="bg-white"] { background-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .glass-form input:not([type="submit"]):not([type="button"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+.dark .glass-form select,
+.dark .glass-form textarea { background-color: rgba(255, 255, 255, 0.05) !important; border-color: rgba(255, 255, 255, 0.2) !important; color: #FFFFFF !important; }
 .dark [class*="bg-gray-50"]  { background-color: #1C1C1E !important; }  /* fondo de página */
 .dark [class*="bg-gray-100"] { background-color: #2C2C2E !important; }  /* cards */
 .dark [class*="bg-gray-200"] { background-color: #28282A !important; }  /* piumsBackgroundElevated */

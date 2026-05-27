@@ -23,6 +23,9 @@ html.dark,
 
 /* ── Surfaces ── */
 .dark [class*="bg-white"]    { background-color: #2C2C2E !important; }  /* cards */
+/* Glass panels (login, modals) — preserve transparency in dark mode */
+.dark [class*="backdrop-blur"][class*="bg-white"] { background-color: rgba(255, 255, 255, 0.1) !important; }
+.dark .glass-form input:not([type="submit"]):not([type="button"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]) { background-color: transparent !important; border-color: rgba(255,255,255,0.4) !important; }
 .dark [class*="bg-gray-50"]  { background-color: #1C1C1E !important; }  /* fondo de página */
 .dark [class*="bg-gray-100"] { background-color: #2C2C2E !important; }  /* cards */
 .dark [class*="bg-gray-200"] { background-color: #28282A !important; }  /* piumsBackgroundElevated */

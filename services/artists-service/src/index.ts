@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import artistsRoutes from "./routes/artists.routes";
 import artistDashboardRoutes from "./routes/artist-dashboard.routes";
+import bandsRoutes from "./routes/bands.routes";
 import healthRoutes from "./routes/health.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
@@ -27,6 +28,7 @@ app.use(apiLimiter as any);
 // Rutas
 app.use("/artists/dashboard", artistDashboardRoutes);
 app.use("/artists", artistsRoutes);
+app.use("/bands", bandsRoutes);
 
 // Middleware de error handling (debe ir al final)
 app.use(errorHandler);

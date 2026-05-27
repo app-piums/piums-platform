@@ -5,13 +5,9 @@ WORKDIR /app
 
 # Copiar archivos de dependencias
 COPY package*.json ./
-COPY pnpm-lock.yaml* ./
-
-# Instalar pnpm
-RUN npm install -g pnpm
 
 # Instalar dependencias
-RUN pnpm install --frozen-lockfile
+RUN npm install --legacy-peer-deps
 
 # Copiar código fuente
 COPY . .
@@ -20,7 +16,7 @@ COPY . .
 RUN if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
 
 # Compilar TypeScript
-RUN if [ -f "tsconfig.json" ]; then pnpm run build 2>/dev/null || npm run build 2>/dev/null || echo "No build script found"; fi
+RUN npm run build
 
 # ============================================================================
 # Imagen final
@@ -28,9 +24,6 @@ RUN if [ -f "tsconfig.json" ]; then pnpm run build 2>/dev/null || npm run build 
 FROM node:20-alpine
 
 WORKDIR /app
-
-# Instalar pnpm
-RUN npm install -g pnpm
 
 # Copiar dependencias y build desde builder
 COPY --from=builder /app/node_modules ./node_modules

@@ -1,7 +1,7 @@
 // Service Worker Registration
 // This script registers the service worker for PWA functionality
 
-const ENABLE_PWA = false;
+const ENABLE_PWA = true;
 
 export function registerServiceWorker() {
   if (typeof window === 'undefined') {

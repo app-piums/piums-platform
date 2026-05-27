@@ -149,6 +149,7 @@ function HeroPiums({
               height={320}
               className="h-64 sm:h-80 w-auto"
               priority
+              unoptimized
             />
           </motion.div>
         </FadeUp>
