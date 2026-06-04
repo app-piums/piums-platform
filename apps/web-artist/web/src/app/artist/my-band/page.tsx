@@ -12,6 +12,7 @@ interface BandMember {
   id: string;
   artistId: string;
   role: string | null;
+  inviteMessage: string | null;
   status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
   isAdmin: boolean;
   joinedAt: string;
@@ -49,32 +50,101 @@ interface Band {
   isBookable: boolean;
   members: BandMember[];
   openings: BandOpening[];
+  myRole?: string;
+  myStatus?: string;
+  isMyBandAdmin?: boolean;
 }
 
-// ── Sections ──────────────────────────────────────────────────────────────────
+interface Invitation {
+  id: string;
+  role: string | null;
+  inviteMessage: string | null;
+  joinedAt: string;
+  band: { id: string; name: string; slug: string; avatar: string | null; city: string; country: string };
+}
 
-function MembersSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: boolean; onRefresh: () => void }) {
-  const [inviteId, setInviteId] = useState('');
+interface ArtistSearchResult {
+  id: string;
+  nombre?: string;
+  artistName?: string;
+  name?: string;
+  city?: string;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function initials(name: string) {
+  return name.trim().charAt(0).toUpperCase();
+}
+
+function AvatarCircle({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
+  const sizes = { sm: 'w-8 h-8 text-sm', md: 'w-11 h-11 text-base', lg: 'w-14 h-14 text-xl' };
+  return (
+    <div className={`${sizes[size]} rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0`}>
+      {initials(name)}
+    </div>
+  );
+}
+
+// ── Members Section ───────────────────────────────────────────────────────────
+
+function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
+  band: Band;
+  isAdmin: boolean;
+  currentUserId: string | undefined;
+  onRefresh: () => void;
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ArtistSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState<ArtistSearchResult | null>(null);
   const [inviteRole, setInviteRole] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
   const [inviting, setInviting] = useState(false);
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/artists?q=${encodeURIComponent(searchQuery)}&limit=5`, { credentials: 'include' });
+      const data = await res.json();
+      const list: ArtistSearchResult[] = (data.artists ?? data.data ?? []).map((a: ArtistSearchResult) => ({
+        id: a.id,
+        nombre: a.nombre ?? a.artistName ?? a.name ?? 'Artista',
+        city: a.city,
+      }));
+      setSearchResults(list);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const handleInvite = async () => {
-    if (!inviteId.trim()) return;
+    if (!selectedArtist) return;
     setInviting(true);
     try {
-      const res = await fetch(`/api/bands/${band.id}/members`, {
+      const res = await fetch(`/api/bands/${band.id}/members/invite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ artistId: inviteId.trim(), role: inviteRole.trim() || undefined }),
+        body: JSON.stringify({
+          artistId: selectedArtist.id,
+          role: inviteRole.trim() || undefined,
+          inviteMessage: inviteMessage.trim() || undefined,
+        }),
       });
       if (!res.ok) {
         const d = await res.json();
         toast.error(d.error || 'Error al invitar');
       } else {
         toast.success('Invitación enviada');
-        setInviteId('');
+        setSelectedArtist(null);
+        setSearchQuery('');
+        setSearchResults([]);
         setInviteRole('');
+        setInviteMessage('');
         onRefresh();
       }
     } finally {
@@ -110,30 +180,35 @@ function MembersSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: boo
           <p className="text-sm text-gray-400">Sin integrantes activos aún.</p>
         ) : (
           <ul className="space-y-2">
-            {active.map((m) => (
-              <li key={m.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {m.artistId.slice(0, 8)}...
-                    {m.isAdmin && <span className="ml-2 text-xs bg-orange-100 text-orange-700 rounded px-1.5 py-0.5">Admin</span>}
-                  </p>
-                  {m.role && <p className="text-xs text-gray-500">{m.role}</p>}
-                </div>
-                {isAdmin && !m.isAdmin && (
-                  <button
-                    onClick={() => handleRemove(m.artistId)}
-                    className="text-xs text-red-500 hover:text-red-700"
-                  >
-                    Remover
-                  </button>
-                )}
-              </li>
-            ))}
+            {active.map((m) => {
+              const isLead = m.artistId === band.leadArtistId;
+              const isMe = m.artistId === currentUserId;
+              return (
+                <li key={m.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {isMe ? 'Yo' : `···${m.artistId.slice(-8)}`}
+                      {m.isAdmin && <span className="ml-2 text-xs bg-orange-100 text-orange-700 rounded px-1.5 py-0.5">Admin</span>}
+                      {isLead && <span className="ml-1 text-xs bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">Fundador</span>}
+                    </p>
+                    {m.role && <p className="text-xs text-gray-500">{m.role}</p>}
+                  </div>
+                  {isAdmin && !isLead && !isMe && (
+                    <button
+                      onClick={() => handleRemove(m.artistId)}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Remover
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
 
-      {/* Pending invitations */}
+      {/* Pending */}
       {pending.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -143,7 +218,7 @@ function MembersSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: boo
             {pending.map((m) => (
               <li key={m.id} className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{m.artistId.slice(0, 8)}...</p>
+                  <p className="text-sm font-medium text-gray-900">···{m.artistId.slice(-8)}</p>
                   {m.role && <p className="text-xs text-gray-500">{m.role}</p>}
                 </div>
                 <span className="text-xs text-yellow-700 font-medium">Pendiente</span>
@@ -157,23 +232,73 @@ function MembersSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: boo
       {isAdmin && (
         <div className="border border-gray-200 rounded-xl p-4 space-y-3">
           <h3 className="text-sm font-semibold text-gray-700">Invitar músico</h3>
-          <input
-            type="text"
-            placeholder="ID del artista"
-            value={inviteId}
-            onChange={(e) => setInviteId(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
-          <input
-            type="text"
-            placeholder="Rol (ej. Baterista, opcional)"
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
+
+          {/* Search */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Buscar por nombre..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setSearchResults([]); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            <button
+              onClick={handleSearch}
+              disabled={isSearching || !searchQuery.trim()}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+            >
+              {isSearching ? '...' : 'Buscar'}
+            </button>
+          </div>
+
+          {/* Results */}
+          {searchResults.length > 0 && (
+            <ul className="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
+              {searchResults.map((a) => (
+                <li key={a.id}>
+                  <button
+                    onClick={() => { setSelectedArtist(a); setSearchResults([]); }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-orange-50 transition-colors text-sm"
+                  >
+                    <span className="font-medium text-gray-900">{a.nombre}</span>
+                    {a.city && <span className="ml-2 text-gray-400">{a.city}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Selected artist */}
+          {selectedArtist && (
+            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm">
+              <span className="text-green-700 font-medium flex-1">{selectedArtist.nombre}</span>
+              <button onClick={() => setSelectedArtist(null)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+            </div>
+          )}
+
+          {selectedArtist && (
+            <>
+              <input
+                type="text"
+                placeholder="Rol (ej. Baterista, opcional)"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+              <textarea
+                placeholder="Mensaje de invitación (opcional)"
+                value={inviteMessage}
+                onChange={(e) => setInviteMessage(e.target.value)}
+                rows={2}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+              />
+            </>
+          )}
+
           <button
             onClick={handleInvite}
-            disabled={!inviteId.trim() || inviting}
+            disabled={!selectedArtist || inviting}
             className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg py-2 transition-colors"
           >
             {inviting ? 'Enviando...' : 'Enviar invitación'}
@@ -183,6 +308,8 @@ function MembersSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: boo
     </div>
   );
 }
+
+// ── Openings Section ──────────────────────────────────────────────────────────
 
 function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: boolean; onRefresh: () => void }) {
   const [newRole, setNewRole] = useState('');
@@ -208,27 +335,18 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
         toast.error(d.error || 'Error al crear posición');
       } else {
         toast.success('Posición publicada');
-        setNewRole('');
-        setNewDesc('');
-        setNewSlots(1);
+        setNewRole(''); setNewDesc(''); setNewSlots(1);
         onRefresh();
       }
-    } finally {
-      setCreating(false);
-    }
+    } finally { setCreating(false); }
   };
 
   const handleClose = async (oid: string) => {
-    const res = await fetch(`/api/bands/${band.id}/openings/${oid}`, {
+    const res = await fetch(`/api/bands/${band.id}/openings/${oid}/close`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ close: true }),
     });
-    if (res.ok) {
-      toast.success('Posición cerrada');
-      onRefresh();
-    }
+    if (res.ok) { toast.success('Posición cerrada'); onRefresh(); }
   };
 
   const loadApplications = async (oid: string) => {
@@ -238,13 +356,11 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
       const res = await fetch(`/api/bands/${band.id}/openings/${oid}/applications`, { credentials: 'include' });
       const data = await res.json();
       setApplications(Array.isArray(data) ? data : []);
-    } finally {
-      setLoadingApps(false);
-    }
+    } finally { setLoadingApps(false); }
   };
 
   const handleRespond = async (aid: string, accept: boolean) => {
-    const res = await fetch(`/api/bands/applications/${aid}`, {
+    const res = await fetch(`/api/bands/applications/${aid}/respond`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -257,14 +373,15 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
     }
   };
 
+  const openings = band.openings.filter((o) => o.isOpen);
+
   return (
     <div className="space-y-6">
-      {/* Existing openings */}
-      {band.openings.length === 0 ? (
+      {openings.length === 0 ? (
         <p className="text-sm text-gray-400">No hay posiciones abiertas.</p>
       ) : (
         <ul className="space-y-3">
-          {band.openings.map((o) => (
+          {openings.map((o) => (
             <li key={o.id} className="border border-gray-200 rounded-xl p-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -274,27 +391,24 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
                     {o._count?.applications ?? 0} postulaciones · {o.slots} cupo(s)
                   </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  {isAdmin && (
-                    <>
-                      <button
-                        onClick={() => loadApplications(o.id)}
-                        className="text-xs text-orange-600 hover:text-orange-700 font-medium"
-                      >
-                        Ver postulantes
-                      </button>
-                      <button
-                        onClick={() => handleClose(o.id)}
-                        className="text-xs text-gray-400 hover:text-red-500"
-                      >
-                        Cerrar
-                      </button>
-                    </>
-                  )}
-                </div>
+                {isAdmin && (
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => loadApplications(o.id)}
+                      className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                    >
+                      Ver postulantes
+                    </button>
+                    <button
+                      onClick={() => handleClose(o.id)}
+                      className="text-xs text-gray-400 hover:text-red-500"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Applications drawer */}
               {selectedOpening === o.id && (
                 <div className="mt-4 border-t border-gray-100 pt-4">
                   {loadingApps ? (
@@ -302,35 +416,38 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
                   ) : applications.length === 0 ? (
                     <p className="text-sm text-gray-400">Sin postulaciones aún.</p>
                   ) : (
-                    <ul className="space-y-2">
-                      {applications.map((a) => (
-                        <li key={a.id} className="flex items-start justify-between bg-gray-50 rounded-lg px-3 py-2">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{a.artistId.slice(0, 8)}...</p>
-                            {a.message && <p className="text-xs text-gray-500 mt-0.5 italic">"{a.message}"</p>}
-                            <span className={`text-xs font-medium mt-1 inline-block ${
-                              a.status === 'ACCEPTED' ? 'text-green-600' :
-                              a.status === 'REJECTED' ? 'text-red-500' : 'text-yellow-600'
-                            }`}>
-                              {a.status === 'ACCEPTED' ? 'Aceptada' : a.status === 'REJECTED' ? 'Rechazada' : 'Pendiente'}
-                            </span>
-                          </div>
-                          {a.status === 'PENDING' && isAdmin && (
-                            <div className="flex gap-2 ml-3">
-                              <button
-                                onClick={() => handleRespond(a.id, true)}
-                                className="text-xs bg-green-500 hover:bg-green-600 text-white rounded px-2 py-1"
-                              >
-                                Aceptar
-                              </button>
-                              <button
-                                onClick={() => handleRespond(a.id, false)}
-                                className="text-xs bg-red-400 hover:bg-red-500 text-white rounded px-2 py-1"
-                              >
-                                Rechazar
-                              </button>
+                    <ul className="space-y-3">
+                      {applications.map((app) => (
+                        <li key={app.id} className="bg-gray-50 rounded-lg px-4 py-3">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">···{app.artistId.slice(-8)}</p>
+                              {app.message && <p className="text-xs text-gray-500 mt-0.5">"{app.message}"</p>}
                             </div>
-                          )}
+                            {app.status === 'PENDING' && isAdmin && (
+                              <div className="flex gap-2 flex-shrink-0">
+                                <button
+                                  onClick={() => handleRespond(app.id, true)}
+                                  className="text-xs bg-green-500 hover:bg-green-600 text-white font-medium rounded px-2 py-1"
+                                >
+                                  Aceptar
+                                </button>
+                                <button
+                                  onClick={() => handleRespond(app.id, false)}
+                                  className="text-xs border border-gray-300 hover:bg-gray-100 text-gray-600 rounded px-2 py-1"
+                                >
+                                  Rechazar
+                                </button>
+                              </div>
+                            )}
+                            {app.status !== 'PENDING' && (
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                app.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                              }`}>
+                                {app.status === 'ACCEPTED' ? 'Aceptado' : 'Rechazado'}
+                              </span>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -342,13 +459,12 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
         </ul>
       )}
 
-      {/* Create new opening */}
       {isAdmin && (
-        <div className="border border-dashed border-orange-300 rounded-xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Publicar nueva posición</h3>
+        <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700">Abrir nueva posición</h3>
           <input
             type="text"
-            placeholder="Rol buscado (ej. Baterista)"
+            placeholder="Rol * (ej. Baterista, Guitarrista)"
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
@@ -361,15 +477,10 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
           />
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600">Cupos:</label>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={newSlots}
-              onChange={(e) => setNewSlots(Math.max(1, Number(e.target.value)))}
-              className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
+            <span className="text-sm text-gray-600">Cupos:</span>
+            <button onClick={() => setNewSlots((s) => Math.max(1, s - 1))} className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold">−</button>
+            <span className="text-sm font-semibold w-4 text-center">{newSlots}</span>
+            <button onClick={() => setNewSlots((s) => Math.min(10, s + 1))} className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold">+</button>
           </div>
           <button
             onClick={handleCreate}
@@ -384,10 +495,20 @@ function OpeningsSection({ band, isAdmin, onRefresh }: { band: Band; isAdmin: bo
   );
 }
 
-function EditBandSection({ band, onRefresh }: { band: Band; onRefresh: () => void }) {
+// ── Edit Band Section ─────────────────────────────────────────────────────────
+
+function EditBandSection({ band, isLead, onRefresh, onDeleted }: {
+  band: Band;
+  isLead: boolean;
+  onRefresh: () => void;
+  onDeleted: () => void;
+}) {
   const [name, setName] = useState(band.name);
   const [bio, setBio] = useState(band.bio ?? '');
+  const [city, setCity] = useState(band.city);
+  const [country, setCountry] = useState(band.country);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -396,7 +517,7 @@ function EditBandSection({ band, onRefresh }: { band: Band; onRefresh: () => voi
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name: name.trim(), bio: bio.trim() || undefined }),
+        body: JSON.stringify({ name: name.trim(), bio: bio.trim() || undefined, city: city.trim(), country: country.trim() }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -405,21 +526,41 @@ function EditBandSection({ band, onRefresh }: { band: Band; onRefresh: () => voi
         toast.success('Banda actualizada');
         onRefresh();
       }
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
+
+  const handleDelete = async () => {
+    if (!confirm(`¿Eliminar la banda "${band.name}"? Esta acción es permanente.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/bands/${band.id}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok || res.status === 204) {
+        toast.success('Banda eliminada');
+        onDeleted();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'No se pudo eliminar');
+      }
+    } finally { setDeleting(false); }
+  };
+
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400';
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la banda</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+          <input type="text" value={city} onChange={(e) => setCity(e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">País</label>
+          <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} className={inputClass} />
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
@@ -428,94 +569,36 @@ function EditBandSection({ band, onRefresh }: { band: Band; onRefresh: () => voi
           onChange={(e) => setBio(e.target.value)}
           rows={4}
           placeholder="Cuéntanos sobre la banda..."
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+          className={`${inputClass} resize-none`}
         />
       </div>
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <span className="font-medium text-gray-700">Slug:</span>
         <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{band.slug}</span>
       </div>
-      <button
-        onClick={handleSave}
-        disabled={!name.trim() || saving}
-        className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg px-6 py-2 transition-colors"
-      >
-        {saving ? 'Guardando...' : 'Guardar cambios'}
-      </button>
-    </div>
-  );
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-function EmptyBandState({ onCreate }: { onCreate: (name: string) => void }) {
-  const [name, setName] = useState('');
-  const [creating, setCreating] = useState(false);
-
-  const handleCreate = async () => {
-    if (name.trim().length < 2) return;
-    setCreating(true);
-    try {
-      const res = await fetch('/api/bands', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: name.trim(), country: 'GT', city: 'Guatemala' }),
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        toast.error(d.error || 'Error al crear banda');
-      } else {
-        const band = await res.json();
-        toast.success('Banda creada');
-        onCreate(band.name);
-      }
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">No tienes una banda en Piums</h2>
-      <p className="text-sm text-gray-500 mb-8 max-w-sm">
-        Crea el perfil de tu banda para gestionarla, invitar músicos y publicar posiciones abiertas.
-      </p>
-      <div className="w-full max-w-sm space-y-3">
-        <input
-          type="text"
-          placeholder="Nombre de tu banda"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
+      <div className="flex items-center gap-3">
         <button
-          onClick={handleCreate}
-          disabled={name.trim().length < 2 || creating}
-          className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-xl py-3 transition-colors"
+          onClick={handleSave}
+          disabled={!name.trim() || saving}
+          className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg px-6 py-2 transition-colors"
         >
-          {creating ? 'Creando...' : 'Crear banda'}
+          {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
+        {isLead && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50 font-medium"
+          >
+            {deleting ? 'Eliminando...' : 'Eliminar banda'}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
-type Tab = 'members' | 'openings' | 'edit';
-
-interface Invitation {
-  id: string;
-  role: string | null;
-  joinedAt: string;
-  band: { id: string; name: string; slug: string; avatar: string | null; city: string; country: string };
-}
+// ── Pending Invitations ───────────────────────────────────────────────────────
 
 function PendingInvitationsSection({ onAccepted }: { onAccepted: () => void }) {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -523,7 +606,7 @@ function PendingInvitationsSection({ onAccepted }: { onAccepted: () => void }) {
   const [responding, setResponding] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/bands/invitations', { credentials: 'include' })
+    fetch('/api/bands/invitations/my', { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setInvitations(Array.isArray(d) ? d : []))
       .catch(() => setInvitations([]))
@@ -533,11 +616,11 @@ function PendingInvitationsSection({ onAccepted }: { onAccepted: () => void }) {
   const handleRespond = async (bandId: string, accept: boolean) => {
     setResponding(bandId);
     try {
-      const res = await fetch(`/api/bands/${bandId}/members`, {
+      const res = await fetch(`/api/bands/${bandId}/members/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ respond: true, accept }),
+        body: JSON.stringify({ accept }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -547,26 +630,26 @@ function PendingInvitationsSection({ onAccepted }: { onAccepted: () => void }) {
         setInvitations((prev) => prev.filter((i) => i.band.id !== bandId));
         if (accept) onAccepted();
       }
-    } finally {
-      setResponding(null);
-    }
+    } finally { setResponding(null); }
   };
 
-  if (loading) return null;
-  if (invitations.length === 0) return null;
+  if (loading || invitations.length === 0) return null;
 
   return (
     <div className="mb-8">
       <h2 className="text-base font-semibold text-gray-900 mb-3">Invitaciones pendientes</h2>
       <ul className="space-y-3">
         {invitations.map((inv) => (
-          <li key={inv.id} className="bg-white border border-orange-200 rounded-2xl p-4 flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-              {inv.band.name.charAt(0).toUpperCase()}
-            </div>
+          <li key={inv.id} className="bg-white border border-orange-200 rounded-2xl p-4 flex items-start gap-4">
+            <AvatarCircle name={inv.band.name} />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900">{inv.band.name}</p>
-              <p className="text-xs text-gray-500">{inv.band.city}, {inv.band.country}{inv.role ? ` · ${inv.role}` : ''}</p>
+              <p className="text-xs text-gray-500">
+                {inv.band.city}, {inv.band.country}{inv.role ? ` · ${inv.role}` : ''}
+              </p>
+              {inv.inviteMessage && (
+                <p className="text-xs text-gray-400 mt-1 italic">"{inv.inviteMessage}"</p>
+              )}
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <button
@@ -591,28 +674,187 @@ function PendingInvitationsSection({ onAccepted }: { onAccepted: () => void }) {
   );
 }
 
+// ── Create Band Modal ─────────────────────────────────────────────────────────
+
+function CreateBandModal({ onCreated, onClose }: { onCreated: () => void; onClose: () => void }) {
+  const [name, setName] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('Guatemala');
+  const [bio, setBio] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    if (name.trim().length < 2 || !city.trim()) return;
+    setCreating(true);
+    try {
+      const res = await fetch('/api/bands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: name.trim(), city: city.trim(), country: country.trim(), bio: bio.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(d.error || 'Error al crear banda');
+      } else {
+        toast.success('Banda creada');
+        onCreated();
+      }
+    } finally { setCreating(false); }
+  };
+
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">Crear banda</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre de la banda" className={inputClass} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad *</label>
+            <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ciudad" className={inputClass} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">País</label>
+            <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} className={inputClass} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Bio (opcional)</label>
+          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Cuéntanos sobre la banda..." className={`${inputClass} resize-none`} />
+        </div>
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg py-2 transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={name.trim().length < 2 || !city.trim() || creating}
+            className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg py-2 transition-colors"
+          >
+            {creating ? 'Creando...' : 'Crear banda'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Band List View ────────────────────────────────────────────────────────────
+
+function BandListView({ bands, filterQuery, onFilterChange, onSelect, onCreateClick }: {
+  bands: Band[];
+  filterQuery: string;
+  onFilterChange: (q: string) => void;
+  onSelect: (band: Band) => void;
+  onCreateClick: () => void;
+}) {
+  const filtered = filterQuery
+    ? bands.filter((b) => b.name.toLowerCase().includes(filterQuery.toLowerCase()) || b.city.toLowerCase().includes(filterQuery.toLowerCase()))
+    : bands;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o ciudad..."
+          value={filterQuery}
+          onChange={(e) => onFilterChange(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+        />
+        <button
+          onClick={onCreateClick}
+          className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl px-4 py-2.5 transition-colors flex-shrink-0"
+        >
+          <span className="text-lg leading-none">+</span> Nueva
+        </button>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-8">No se encontraron bandas.</p>
+      ) : (
+        <ul className="space-y-3">
+          {filtered.map((band) => {
+            const activeCount = band.members?.filter((m) => m.status === 'ACTIVE').length ?? 0;
+            return (
+              <li key={band.id}>
+                <button
+                  onClick={() => onSelect(band)}
+                  className="w-full text-left bg-white border border-gray-100 hover:border-orange-200 hover:shadow-sm rounded-2xl p-4 flex items-center gap-4 transition-all"
+                >
+                  <AvatarCircle name={band.name} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{band.name}</p>
+                    <p className="text-xs text-gray-500">{band.city}, {band.country}</p>
+                    <p className="text-xs text-orange-500 mt-0.5">{activeCount} miembro{activeCount !== 1 ? 's' : ''}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+type Tab = 'members' | 'openings' | 'edit';
+
 export default function MyBandPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [band, setBand] = useState<Band | null>(null);
+  const [bands, setBands] = useState<Band[]>([]);
+  const [selectedBand, setSelectedBand] = useState<Band | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('members');
+  const [filterQuery, setFilterQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const fetchBand = useCallback(async () => {
+  const fetchBands = useCallback(async () => {
     try {
-      const res = await fetch('/api/bands/my', { credentials: 'include' });
+      const res = await fetch('/api/bands/my/all', { credentials: 'include' });
       if (res.status === 401) { router.push('/login?redirect=/artist/my-band'); return; }
-      if (!res.ok) { setBand(null); return; }  // 404 = no tiene banda aún
+      if (!res.ok) { setBands([]); return; }
       const data = await res.json();
-      setBand(data && data.id ? data : null);
+      const list: Band[] = data.bands ?? data.data ?? (data.id ? [data] : []);
+      setBands(list);
+      if (selectedBand) {
+        const updated = list.find((b) => b.id === selectedBand.id);
+        setSelectedBand(updated ?? null);
+      }
     } catch {
-      setBand(null);
+      setBands([]);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, selectedBand]);
 
-  useEffect(() => { void fetchBand(); }, [fetchBand]);
+  useEffect(() => { void fetchBands(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleBandCreated = async () => {
+    setShowCreateModal(false);
+    setLoading(true);
+    await fetchBands();
+  };
+
+  const handleBandDeleted = async () => {
+    setSelectedBand(null);
+    setLoading(true);
+    await fetchBands();
+  };
 
   if (loading) {
     return (
@@ -644,39 +886,89 @@ export default function MyBandPage() {
     );
   }
 
-  if (!band) {
+  // ── No bands yet ──
+  if (bands.length === 0 && !selectedBand) {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <DashboardSidebar />
         <main className="flex-1 px-4 lg:px-8 pt-20 lg:pt-8 pb-8 max-w-2xl mx-auto w-full">
-          <PendingInvitationsSection onAccepted={fetchBand} />
-          <EmptyBandState onCreate={() => fetchBand()} />
+          <PendingInvitationsSection onAccepted={() => { setLoading(true); fetchBands(); }} />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">No tienes una banda en Piums</h2>
+            <p className="text-sm text-gray-500 mb-8 max-w-sm">Crea el perfil de tu banda para gestionarla, invitar músicos y publicar posiciones abiertas.</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl px-8 py-3 transition-colors"
+            >
+              Crear banda
+            </button>
+          </div>
+          {showCreateModal && <CreateBandModal onCreated={handleBandCreated} onClose={() => setShowCreateModal(false)} />}
         </main>
       </div>
     );
   }
 
-  const members = band.members ?? [];
-  const isAdmin = members.some((m) => m.status === 'ACTIVE' && m.isAdmin);
+  // ── Band list (no selected) ──
+  if (!selectedBand) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <DashboardSidebar />
+        <main className="flex-1 px-4 lg:px-8 pt-20 lg:pt-8 pb-8 max-w-3xl mx-auto w-full">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Mis bandas</h1>
+          </div>
+          <PendingInvitationsSection onAccepted={() => { setLoading(true); fetchBands(); }} />
+          <BandListView
+            bands={bands}
+            filterQuery={filterQuery}
+            onFilterChange={setFilterQuery}
+            onSelect={(b) => { setSelectedBand(b); setActiveTab('members'); }}
+            onCreateClick={() => setShowCreateModal(true)}
+          />
+          {showCreateModal && <CreateBandModal onCreated={handleBandCreated} onClose={() => setShowCreateModal(false)} />}
+        </main>
+      </div>
+    );
+  }
+
+  // ── Band detail ──
+  const band = selectedBand;
+  const myId = user?.id ?? '';
+  const isLead = band.leadArtistId === myId;
+  const isAdmin = isLead || band.members?.some((m) => m.artistId === myId && m.isAdmin && m.status === 'ACTIVE');
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'members', label: `Integrantes (${members.filter((m) => m.status !== 'INACTIVE').length})` },
-    { id: 'openings', label: `Postulaciones (${band.openings.length})` },
-    { id: 'edit', label: 'Editar banda' },
+    { id: 'members', label: `Integrantes (${(band.members ?? []).filter((m) => m.status !== 'INACTIVE').length})` },
+    { id: 'openings', label: `Posiciones (${(band.openings ?? []).filter((o) => o.isOpen).length})` },
+    { id: 'edit', label: 'Editar' },
   ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <DashboardSidebar />
       <main className="flex-1 px-4 lg:px-8 pt-20 lg:pt-8 pb-8 max-w-3xl mx-auto w-full">
-        {/* Header */}
+        {/* Back + header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
-            {band.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{band.name}</h1>
-            <p className="text-sm text-gray-500">{band.city}, {band.country}</p>
+          {bands.length > 1 && (
+            <button
+              onClick={() => setSelectedBand(null)}
+              className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1"
+            >
+              ← Mis bandas
+            </button>
+          )}
+          <div className="flex items-center gap-4 flex-1">
+            <AvatarCircle name={band.name} size="lg" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{band.name}</h1>
+              <p className="text-sm text-gray-500">{band.city}, {band.country}</p>
+            </div>
           </div>
         </div>
 
@@ -687,9 +979,7 @@ export default function MyBandPage() {
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                activeTab === t.id
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                activeTab === t.id ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {t.label}
@@ -700,17 +990,16 @@ export default function MyBandPage() {
         {/* Tab content */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           {activeTab === 'members' && (
-            <MembersSection band={band} isAdmin={isAdmin} onRefresh={fetchBand} />
+            <MembersSection band={band} isAdmin={!!isAdmin} currentUserId={myId} onRefresh={() => { setLoading(true); fetchBands(); }} />
           )}
           {activeTab === 'openings' && (
-            <OpeningsSection band={band} isAdmin={isAdmin} onRefresh={fetchBand} />
+            <OpeningsSection band={band} isAdmin={!!isAdmin} onRefresh={() => { setLoading(true); fetchBands(); }} />
           )}
-          {activeTab === 'edit' && isAdmin && (
-            <EditBandSection band={band} onRefresh={fetchBand} />
-          )}
-          {activeTab === 'edit' && !isAdmin && (
+          {activeTab === 'edit' && isAdmin ? (
+            <EditBandSection band={band} isLead={isLead} onRefresh={() => { setLoading(true); fetchBands(); }} onDeleted={handleBandDeleted} />
+          ) : activeTab === 'edit' ? (
             <p className="text-sm text-gray-500">Solo los administradores pueden editar la banda.</p>
-          )}
+          ) : null}
         </div>
       </main>
     </div>
