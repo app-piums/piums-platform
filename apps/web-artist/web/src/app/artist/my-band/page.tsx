@@ -919,6 +919,8 @@ export default function MyBandPage() {
   const [activeTab, setActiveTab] = useState<Tab>('members');
   const [filterQuery, setFilterQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [uploadingBandPhoto, setUploadingBandPhoto] = useState(false);
+  const bandAvatarInputRef = useRef<HTMLInputElement>(null);
 
   const fetchBands = useCallback(async () => {
     try {
@@ -1039,8 +1041,6 @@ export default function MyBandPage() {
   const myId = user?.id ?? '';
   const isLead = band.leadArtistId === myId;
   const isAdmin = isLead || band.members?.some((m) => m.artistId === myId && m.isAdmin && m.status === 'ACTIVE');
-  const [uploadingBandPhoto, setUploadingBandPhoto] = useState(false);
-  const bandAvatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleBandAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
