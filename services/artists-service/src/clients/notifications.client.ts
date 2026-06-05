@@ -4,6 +4,27 @@ const NOTIFICATIONS_SERVICE_URL = process.env.NOTIFICATIONS_SERVICE_URL || 'http
 const SERVICE_TOKEN = process.env.JWT_SECRET || '';
 
 class NotificationsClient {
+  async sendBandInvitationEmail(data: {
+    invitedArtistEmail: string;
+    invitedArtistName: string;
+    bandName: string;
+    inviterName: string;
+    role?: string;
+    inviteMessage?: string;
+  }): Promise<void> {
+    try {
+      const secret = process.env.INTERNAL_SERVICE_SECRET || '';
+      await fetch(`${NOTIFICATIONS_SERVICE_URL}/api/notifications/band/invitation`, {
+        signal: AbortSignal.timeout(8_000),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+        body: JSON.stringify(data),
+      });
+    } catch {
+      logger.error('Error enviando email de invitación de banda', 'NOTIF_CLIENT');
+    }
+  }
+
   async send(payload: {
     userId: string;
     type: string;

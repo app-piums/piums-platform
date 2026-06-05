@@ -68,6 +68,7 @@ interface ArtistSearchResult {
   nombre: string;
   city?: string | null;
   avatar?: string | null;
+  specialties?: string[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -83,6 +84,10 @@ function AvatarCircle({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' 
       {initials(name)}
     </div>
   );
+}
+
+function artistSubtitle(a: ArtistSearchResult): string | null {
+  return a.specialties?.[0] ?? a.city ?? null;
 }
 
 // ── Members Section ───────────────────────────────────────────────────────────
@@ -270,7 +275,7 @@ function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
               <ArtistAvatar artist={selectedArtist} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{selectedArtist.nombre}</p>
-                {selectedArtist.city && <p className="text-xs text-gray-500">{selectedArtist.city}</p>}
+                {artistSubtitle(selectedArtist) && <p className="text-xs text-gray-500">{artistSubtitle(selectedArtist)}</p>}
               </div>
               <button
                 onClick={() => { setSelectedArtist(null); setSearchQuery(''); }}
@@ -283,7 +288,7 @@ function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
             <div className="relative" ref={dropdownRef}>
               <input
                 type="text"
-                placeholder="Buscar por nombre..."
+                placeholder="Buscar músico por nombre..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
@@ -302,7 +307,7 @@ function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
                         <ArtistAvatar artist={a} size="sm" />
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{a.nombre}</p>
-                          {a.city && <p className="text-xs text-gray-400">{a.city}</p>}
+                          {artistSubtitle(a) && <p className="text-xs text-gray-400">{artistSubtitle(a)}</p>}
                         </div>
                       </button>
                     ))

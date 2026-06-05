@@ -186,6 +186,22 @@ export const inviteMember = async (bandId: string, adminId: string, artistId: st
     data: { bandId, role, inviteMessage },
   });
 
+  // Email de invitación — fire-and-forget
+  prisma.artist.findUnique({ where: { id: artistId }, select: { email: true, nombre: true, artistName: true } })
+    .then((invited) => {
+      if (!invited?.email) return;
+      return prisma.artist.findUnique({ where: { id: adminId }, select: { nombre: true, artistName: true } })
+        .then((inviter) => notificationsClient.sendBandInvitationEmail({
+          invitedArtistEmail: invited.email!,
+          invitedArtistName: invited.artistName || invited.nombre,
+          bandName: band?.name ?? 'una banda',
+          inviterName: inviter?.artistName || inviter?.nombre || 'Un músico',
+          role,
+          inviteMessage,
+        }));
+    })
+    .catch(() => {});
+
   return member;
 };
 

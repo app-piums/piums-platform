@@ -13,15 +13,17 @@ export async function GET(req: NextRequest) {
   if (!q.trim()) return NextResponse.json({ artists: [] }, { status: 200 });
 
   try {
-    const res = await fetch(
-      `${ARTISTS_SERVICE_URL}/artists/search?q=${encodeURIComponent(q)}&limit=${limit}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const url = new URL(`${ARTISTS_SERVICE_URL}/artists/search`);
+    url.searchParams.set("q", q);
+    url.searchParams.set("limit", limit);
+    url.searchParams.set("category", "MUSICO");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (!res.ok) return NextResponse.json({ artists: [] }, { status: 200 });
 
@@ -32,11 +34,13 @@ export async function GET(req: NextRequest) {
       artistName?: string;
       avatar?: string;
       city?: string;
+      specialties?: string[];
     }) => ({
       id: a.id,
       nombre: a.artistName || a.nombre || "Artista",
       city: a.city ?? null,
       avatar: a.avatar ?? null,
+      specialties: a.specialties ?? [],
     }));
 
     return NextResponse.json({ artists }, { status: 200 });

@@ -14,6 +14,7 @@ import {
   sendBookingReminderSameDayEmail,
   sendArtistReminderEmail,
 } from '../services/booking-emails.service';
+import { sendBandInvitationEmail } from '../services/band-emails.service';
 
 const router: Router = Router();
 
@@ -355,6 +356,23 @@ router.post('/booking/delivery-confirmed-artist', async (req, res) => {
   }
   try {
     await sendDeliveryConfirmedArtistEmail({ artistEmail, artistName, clientName, serviceName, bookingCode, dashboardUrl });
+    return res.json({ ok: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/notifications/band/invitation
+ * Envía email de invitación a banda — solo inter-servicios (x-internal-secret)
+ */
+router.post('/band/invitation', internalOnly, async (req, res) => {
+  const { invitedArtistEmail, invitedArtistName, bandName, inviterName, role, inviteMessage } = req.body;
+  if (!invitedArtistEmail || !bandName) {
+    return res.status(400).json({ error: 'invitedArtistEmail y bandName son requeridos' });
+  }
+  try {
+    await sendBandInvitationEmail({ invitedArtistEmail, invitedArtistName, bandName, inviterName, role, inviteMessage });
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
