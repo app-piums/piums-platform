@@ -1,5 +1,8 @@
 import rateLimit from "express-rate-limit";
 
+const isDev = process.env.NODE_ENV !== "production";
+const skipInDev = () => isDev;
+
 // Rate limiter general para todas las rutas
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -7,6 +10,7 @@ export const apiLimiter = rateLimit({
   message: "Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde",
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInDev,
 });
 
 // Rate limiter más estricto para actualizaciones de perfil
@@ -16,6 +20,7 @@ export const updateLimiter = rateLimit({
   message: "Límite de actualizaciones alcanzado, intenta más tarde",
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInDev,
 });
 
 // Rate limiter para eliminación de cuenta
@@ -25,4 +30,5 @@ export const deleteLimiter = rateLimit({
   message: "Demasiados intentos de eliminación, contacta soporte",
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInDev,
 });

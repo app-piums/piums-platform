@@ -17,6 +17,7 @@ CREATE DATABASE piums_reviews;
 CREATE DATABASE piums_notifications;
 CREATE DATABASE piums_search;
 CREATE DATABASE piums_chat;
+CREATE DATABASE piums_moderation;
 
 -- Otorgar permisos
 GRANT ALL PRIVILEGES ON DATABASE piums_auth TO piums;
@@ -29,6 +30,7 @@ GRANT ALL PRIVILEGES ON DATABASE piums_reviews TO piums;
 GRANT ALL PRIVILEGES ON DATABASE piums_notifications TO piums;
 GRANT ALL PRIVILEGES ON DATABASE piums_search TO piums;
 GRANT ALL PRIVILEGES ON DATABASE piums_chat TO piums;
+GRANT ALL PRIVILEGES ON DATABASE piums_moderation TO piums;
 
 -- Confirmar creación
 \l

@@ -318,15 +318,17 @@ const isNewArtist = (a: { createdAt?: string }) =>
 function ArtistResultCard({
   artist,
   selectedDate,
+  clientLocation,
   matchedServicePrice,
 }: {
   artist: ArtistWithMeta;
   selectedDate: string;
+  clientLocation?: { lat: number; lng: number } | null;
   matchedServicePrice?: { name: string; price: number; currency: string };
 }) {
   const { formatPrice } = useCurrency();
   const href = `/artists/${artist.slug || artist.id}`;
-  const bookHref = `/booking?artistId=${artist.id}&date=${selectedDate}`;
+  const bookHref = `/booking?artistId=${artist.id}&date=${selectedDate}${clientLocation ? `&lat=${clientLocation.lat}&lng=${clientLocation.lng}` : ''}`;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
@@ -1214,6 +1216,7 @@ function BuscarArtistasContent() {
                           key={artist.id}
                           artist={artist}
                           selectedDate={selectedDate}
+                          clientLocation={location}
                           matchedServicePrice={smartPriceMap[artist.id]}
                         />
                       ))}

@@ -50,6 +50,7 @@ model Review {
   
   // Estado y moderación
   status      ReviewStatus @default(APPROVED)
+  isShadowBanned Boolean  @default(false)
   
   // Estadísticas de utilidad
   helpfulCount    Int      @default(0) // Número de "útil"

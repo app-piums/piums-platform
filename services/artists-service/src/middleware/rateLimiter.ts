@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 // Rate limiter general para todas las rutas
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === "development" ? 500 : 300,
+  max: process.env.NODE_ENV === "development" ? 5000 : 300,
   message: "Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde",
   standardHeaders: true,
   legacyHeaders: false,

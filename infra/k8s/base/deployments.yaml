@@ -551,3 +551,59 @@ spec:
               port: 4010
             initialDelaySeconds: 5
             periodSeconds: 10
+---
+# ─────────────────────── Moderation Service ─────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moderation-service
+  namespace: piums
+  labels:
+    app: moderation-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moderation-service
+  template:
+    metadata:
+      labels:
+        app: moderation-service
+    spec:
+      containers:
+        - name: moderation-service
+          image: ghcr.io/app-piums/piums-platform/moderation-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4011
+          envFrom:
+            - configMapRef:
+                name: piums-config
+            - secretRef:
+                name: piums-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: piums-secrets
+                  key: MODERATION_DATABASE_URL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4011
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4011
+            initialDelaySeconds: 5
+            periodSeconds: 10

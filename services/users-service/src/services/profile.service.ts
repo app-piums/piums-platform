@@ -2,6 +2,9 @@ import { PrismaClient } from '@prisma/client';
 
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { ModerationClient } from "../clients/moderation.client";
+
+const moderationClient = new ModerationClient();
 
 // Using string literals for enums — Prisma client will be regenerated on deploy
 type ProfileType = "USER" | "ARTIST" | "BOTH";
@@ -72,6 +75,31 @@ export class ProfileService {
       });
       if (slugTaken) {
         throw new AppError(409, "El slug ya está en uso");
+      }
+
+      // Moderar displayName y bio antes de guardar
+      const textsToCheck = [
+        { field: 'displayName' as const, value: data.displayName, contentType: 'USERNAME' as const },
+        { field: 'bio' as const, value: data.bio, contentType: 'USER_BIO' as const },
+      ];
+      for (const { field, value, contentType } of textsToCheck) {
+        if (!value) continue;
+        const modResult = await moderationClient.check({
+          userId: data.userId,
+          contentType,
+          content: value,
+          service: 'users-service',
+        });
+        if (
+          modResult.action === 'REJECT' ||
+          modResult.action === 'STRIKE' ||
+          modResult.action === 'MANUAL_REVIEW'
+        ) {
+          throw new AppError(400, modResult.rejectMessage);
+        }
+        if (modResult.action === 'CENSOR') {
+          (data as Record<string, unknown>)[field] = modResult.censored ?? value;
+        }
       }
 
       const profile = await prisma.profile.create({
@@ -171,6 +199,31 @@ export class ProfileService {
         throw new AppError(409, "El slug ya está en uso");
       }
       data.slug = data.slug.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    }
+
+    // Moderar campos de texto libre antes de actualizar
+    const textsToCheck = [
+      { field: 'displayName' as const, value: data.displayName, contentType: 'USERNAME' as const },
+      { field: 'bio' as const, value: data.bio, contentType: 'USER_BIO' as const },
+    ];
+    for (const { field, value, contentType } of textsToCheck) {
+      if (!value) continue;
+      const modResult = await moderationClient.check({
+        userId,
+        contentType,
+        content: value,
+        service: 'users-service',
+      });
+      if (
+        modResult.action === 'REJECT' ||
+        modResult.action === 'STRIKE' ||
+        modResult.action === 'MANUAL_REVIEW'
+      ) {
+        throw new AppError(400, modResult.rejectMessage);
+      }
+      if (modResult.action === 'CENSOR') {
+        (data as Record<string, unknown>)[field] = modResult.censored ?? value;
+      }
     }
 
     const updated = await prisma.profile.update({

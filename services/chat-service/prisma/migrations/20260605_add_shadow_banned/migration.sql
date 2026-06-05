@@ -1,0 +1,1 @@
+ALTER TABLE "messages" ADD COLUMN IF NOT EXISTS "isShadowBanned" BOOLEAN NOT NULL DEFAULT false;

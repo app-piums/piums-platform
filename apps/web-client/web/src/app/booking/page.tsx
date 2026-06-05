@@ -187,6 +187,9 @@ function BookingContent() {
   const artistId = sanitizeParam(searchParams.get('artistId'));
   const serviceId = sanitizeParam(searchParams.get('serviceId'));
   const eventId = sanitizeParam(searchParams.get('eventId'));
+  const dateParam = sanitizeParam(searchParams.get('date'));
+  const latParam = sanitizeParam(searchParams.get('lat'));
+  const lngParam = sanitizeParam(searchParams.get('lng'));
   const [resolvedArtistId, setResolvedArtistId] = useState<string | null>(artistId);
 
   // Funnel tracking session
@@ -215,8 +218,24 @@ function BookingContent() {
 
   // Form state
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    if (dateParam) {
+      const parts = dateParam.split('-').map(Number);
+      if (parts.length === 3) {
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        if (!isNaN(d.getTime())) return d;
+      }
+    }
+    if (typeof window === 'undefined') return undefined;
+    const saved = localStorage.getItem('piums_booking_date');
+    if (!saved) return undefined;
+    const d = new Date(saved);
+    return isNaN(d.getTime()) ? undefined : d;
+  });
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(() => {
+    if (typeof window === 'undefined') return undefined;
+    return localStorage.getItem('piums_booking_time') || undefined;
+  });
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>(undefined);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -227,8 +246,22 @@ function BookingContent() {
   const effectiveDurationMinutes = isMultiDay
     ? Math.max(numDays, 1) * 24 * 60
     : getDurationMinutes(selectedService);
-  const [location, setLocation] = useState('');
-  const [clientCoords, setClientCoords] = useState<Coordinates | null>(null);
+  const [location, setLocation] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('piums_booking_location_address') || '';
+  });
+  const [clientCoords, setClientCoords] = useState<Coordinates | null>(() => {
+    if (latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = localStorage.getItem('piums_booking_location_coords');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
   const artistBaseCoords = useMemo(() => {
     if (artist?.baseLocationLat == null || artist?.baseLocationLng == null) {
       return null;
@@ -253,6 +286,26 @@ function BookingContent() {
   const [requestingLocation, setRequestingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  useEffect(() => {
+    if (location) localStorage.setItem('piums_booking_location_address', location);
+    else localStorage.removeItem('piums_booking_location_address');
+  }, [location]);
+
+  useEffect(() => {
+    if (clientCoords) localStorage.setItem('piums_booking_location_coords', JSON.stringify(clientCoords));
+    else localStorage.removeItem('piums_booking_location_coords');
+  }, [clientCoords]);
+
+  useEffect(() => {
+    if (selectedDate) localStorage.setItem('piums_booking_date', selectedDate.toISOString());
+    else localStorage.removeItem('piums_booking_date');
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedTime) localStorage.setItem('piums_booking_time', selectedTime);
+    else localStorage.removeItem('piums_booking_time');
+  }, [selectedTime]);
   const [autoLocationRequestSent, setAutoLocationRequestSent] = useState(false);
   const [clientEvents, setClientEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -313,7 +366,7 @@ function BookingContent() {
       },
       (error: GeolocationPositionError) => {
         setRequestingLocation(false);
-        setClientCoords(null);
+        if (!isAutoAttempt) setClientCoords(null);
         setLocationMode('manual');
         const errorMessage =
           error.code === error.PERMISSION_DENIED
@@ -346,8 +399,8 @@ function BookingContent() {
   useEffect(() => {
     if (autoLocationRequestSent) return;
     setAutoLocationRequestSent(true);
-    handleUseDetectedLocation(true);
-  }, [autoLocationRequestSent, handleUseDetectedLocation]);
+    if (!clientCoords) handleUseDetectedLocation(true);
+  }, [autoLocationRequestSent, handleUseDetectedLocation, clientCoords]);
 
   useEffect(() => {
     if (step !== 'details') return;
@@ -691,7 +744,7 @@ function BookingContent() {
     setSelectedService(service);
     setSelectedAddons(getDefaultAddonIds(service));
     setApiAvailability([]);
-    setSelectedDate(undefined);
+    if (!dateParam) setSelectedDate(undefined);
     setSelectedTime(undefined);
     setSelectedTimeSlot(undefined);
     setStep('datetime');

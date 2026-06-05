@@ -5,13 +5,15 @@ import { logger } from '../utils/logger';
 import { EventEmitter } from 'events';
 import { SPANISH_PROFANITY_LIST, cleanProfanity } from '../utils/profanity';
 import { resolveUserInfo } from '../utils/user-resolver';
+import { ModerationClient } from '../clients/moderation.client';
 
 export const chatEmitter = new EventEmitter();
 
 const prisma = new PrismaClient();
 const filter = new Filter();
-// Extend bad-words filter with Spanish single-word entries
+// Extend bad-words filter with Spanish single-word entries (fallback local)
 filter.addWords(...SPANISH_PROFANITY_LIST.filter(w => !w.includes(' ')));
+const moderationClient = new ModerationClient();
 
 export class ChatService {
   // ==================== CONVERSATIONS ====================
@@ -239,13 +241,26 @@ export class ChatService {
 
       const [messages, total] = await Promise.all([
         prisma.message.findMany({
-          where: { conversationId },
+          where: {
+            conversationId,
+            // Mensajes shadow-banned solo visibles para el autor
+            OR: [
+              { isShadowBanned: false },
+              { senderId: userId },
+            ],
+          },
           orderBy: { createdAt: 'desc' },
           skip,
           take: limit,
         }),
         prisma.message.count({
-          where: { conversationId },
+          where: {
+            conversationId,
+            OR: [
+              { isShadowBanned: false },
+              { senderId: userId },
+            ],
+          },
         }),
       ]);
 
@@ -277,10 +292,34 @@ export class ChatService {
         throw new AppError(403, 'No tienes acceso a esta conversación');
       }
 
-      // Moderation: filtrar malas palabras (inglés vía bad-words + español vía cleanProfanity)
+      // Moderation: verificar contenido contra blacklist centralizada (moderation-service)
+      // Fallback al filtro local si el servicio no está disponible
       let filteredContent = content;
+      let isShadowBanned = false;
       if (type === 'TEXT') {
-        filteredContent = cleanProfanity(filter.clean(content));
+        const modResult = await moderationClient.check({
+          userId: senderId,
+          contentType: 'MESSAGE',
+          content,
+          service: 'chat-service',
+        });
+
+        if (
+          modResult.action === 'REJECT' ||
+          modResult.action === 'STRIKE' ||
+          modResult.action === 'MANUAL_REVIEW'
+        ) {
+          throw new AppError(400, modResult.rejectMessage);
+        }
+
+        if (modResult.action === 'CENSOR') {
+          filteredContent = modResult.censored ?? content;
+        } else if (modResult.action === 'ALLOW') {
+          // Si moderation-service permitió o no respondió, aplicar filtro local como respaldo
+          filteredContent = cleanProfanity(filter.clean(content));
+        }
+
+        isShadowBanned = modResult.shadowBanned;
       }
 
       // Crear mensaje
@@ -292,6 +331,7 @@ export class ChatService {
           type: type as any,
           status: 'SENT',
           deliveredAt: new Date(),
+          isShadowBanned,
         },
       });
 

@@ -1,0 +1,3 @@
+-- Prisma Migration Baseline
+-- The current schema already exists in the database.
+-- No changes will be made by this migration.

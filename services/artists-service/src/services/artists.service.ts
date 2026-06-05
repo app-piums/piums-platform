@@ -2,8 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { triggerArtistReindex } from "../utils/searchReindex";
+import { ModerationClient } from "../clients/moderation.client";
 
 const prisma = new PrismaClient();
+const moderationClient = new ModerationClient();
 
 // Algunos clientes siguen enviando campos legacy en español.
 // Normalizamos esos payloads para que Prisma reciba los nombres correctos.
@@ -50,6 +52,31 @@ export class ArtistsService {
       }
 
       const normalizedData = normalizeArtistPayload(data);
+
+      // Moderar bio y nombre del artista antes de crear
+      const createTexts = [
+        { field: 'nombre', value: normalizedData.nombre, contentType: 'USERNAME' as const },
+        { field: 'bio', value: normalizedData.bio, contentType: 'ARTIST_BIO' as const },
+      ];
+      for (const { field, value, contentType } of createTexts) {
+        if (!value || typeof value !== 'string') continue;
+        const modResult = await moderationClient.check({
+          userId: data.authId || 'unknown',
+          contentType,
+          content: value,
+          service: 'artists-service',
+        });
+        if (
+          modResult.action === 'REJECT' ||
+          modResult.action === 'STRIKE' ||
+          modResult.action === 'MANUAL_REVIEW'
+        ) {
+          throw new AppError(400, modResult.rejectMessage);
+        }
+        if (modResult.action === 'CENSOR') {
+          normalizedData[field] = modResult.censored ?? value;
+        }
+      }
 
       const artist = await prisma.artist.create({
         data: {
@@ -138,6 +165,31 @@ export class ArtistsService {
       }
 
       const normalizedData = normalizeArtistPayload(data);
+
+      // Moderar bio y nombre del artista
+      const artistTexts = [
+        { field: 'nombre', value: normalizedData.nombre, contentType: 'USERNAME' as const },
+        { field: 'bio', value: normalizedData.bio, contentType: 'ARTIST_BIO' as const },
+      ];
+      for (const { field, value, contentType } of artistTexts) {
+        if (!value || typeof value !== 'string') continue;
+        const modResult = await moderationClient.check({
+          userId: normalizedData.authId || id,
+          contentType,
+          content: value,
+          service: 'artists-service',
+        });
+        if (
+          modResult.action === 'REJECT' ||
+          modResult.action === 'STRIKE' ||
+          modResult.action === 'MANUAL_REVIEW'
+        ) {
+          throw new AppError(400, modResult.rejectMessage);
+        }
+        if (modResult.action === 'CENSOR') {
+          normalizedData[field] = modResult.censored ?? value;
+        }
+      }
 
       // Validar pricing si se actualiza
       if (normalizedData.hourlyRateMin !== undefined && normalizedData.hourlyRateMax !== undefined) {

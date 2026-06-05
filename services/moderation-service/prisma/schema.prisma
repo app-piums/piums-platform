@@ -1,0 +1,121 @@
+// ============================================================================
+// Moderation Service — Prisma Schema
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum Severity {
+  LOW      // Censurar la palabra con ***
+  MEDIUM   // Rechazar el contenido con mensaje al usuario
+  HIGH     // Rechazar + registrar strike en la cuenta
+  CRITICAL // Rechazar + enviar a revisión manual de administrador
+}
+
+enum ModerationAction {
+  ALLOW         // Contenido permitido
+  CENSOR        // LOW: palabras reemplazadas con ***
+  REJECT        // MEDIUM: contenido no publicado
+  STRIKE        // HIGH: rechazar + strike en cuenta
+  MANUAL_REVIEW // CRITICAL: enviado a cola de revisión manual
+  SHADOW_BAN    // Publicar pero invisible para otros usuarios
+}
+
+enum WordCategory {
+  PROFANITY      // Groserías generales
+  HATE_SPEECH    // Discurso de odio (racial, étnico, religioso)
+  SEXUAL         // Contenido sexual / acoso
+  VIOLENCE       // Violencia y amenazas
+  THREAT         // Amenazas directas
+  SPAM           // Spam y fraude
+  DISCRIMINATION // Discriminación (orientación sexual, género, etc.)
+}
+
+enum ContentType {
+  MESSAGE           // Mensajes de chat
+  REVIEW            // Reseñas de clientes
+  REVIEW_RESPONSE   // Respuestas de artistas a reseñas
+  USER_BIO          // Biografía de usuario
+  ARTIST_BIO        // Biografía de artista
+  EVENT_DESCRIPTION // Descripción de evento en reserva
+  BOOKING_NOTE      // Notas del cliente en reserva
+  USERNAME          // Nombre / displayName
+}
+
+// ── Modelos ──────────────────────────────────────────────────────────────────
+
+/// Palabras y frases en la blacklist, gestionadas por admins
+model BlacklistWord {
+  id           String      @id @default(uuid())
+  word         String      @unique
+  language     String      @default("es") // ISO 639-1
+  category     WordCategory
+  severity     Severity
+  active       Boolean     @default(true)
+  // Si true, detecta variantes con acentos, leet speak (4→a, 3→e, etc.)
+  variations   Boolean     @default(true)
+  // Si true, detecta la palabra como substring (sin límites de palabra)
+  partialMatch Boolean     @default(false)
+  reason       String?     // Por qué fue agregada
+  createdBy    String?     // userId del admin que la agregó
+  updatedBy    String?     // userId del admin que la actualizó
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([severity, active])
+  @@index([category, active])
+}
+
+/// Registro de auditoría: cada vez que se evalúa un contenido
+model ModerationLog {
+  id          String           @id @default(uuid())
+  userId      String           // Autor del contenido
+  contentType ContentType
+  // SHA-256 del contenido original (preserva privacidad en auditoría)
+  contentHash String
+  service     String           // Nombre del servicio que disparó la moderación
+  action      ModerationAction
+  // Palabras detectadas que causaron la decisión
+  matchedWords String[]
+  severity    Severity?
+  shadowBanned Boolean         @default(false)
+  // Revisión manual (para action = MANUAL_REVIEW)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNote  String?
+
+  createdAt DateTime @default(now())
+
+  strikes AccountStrike[]
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([contentType, createdAt])
+}
+
+/// Strikes acumulados por usuario
+model AccountStrike {
+  id          String      @id @default(uuid())
+  userId      String
+  reason      String
+  severity    Severity
+  contentType ContentType
+  logId       String
+  log         ModerationLog @relation(fields: [logId], references: [id])
+  resolvedAt  DateTime?   // Null = activo
+  resolvedBy  String?     // Admin que resolvió
+  resolveNote String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, resolvedAt])
+}

@@ -186,6 +186,22 @@ spec:
     - port: 4010
       targetPort: 4010
 ---
+# ─────────────────────── Moderation Service ─────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: moderation-service
+  namespace: piums
+  labels:
+    app: moderation-service
+spec:
+  type: ClusterIP
+  selector:
+    app: moderation-service
+  ports:
+    - port: 4011
+      targetPort: 4011
+---
 # ─────────────────────── Redis ──────────────────────────────────────────────
 apiVersion: v1
 kind: Service

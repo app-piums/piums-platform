@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,10 +65,9 @@ interface Invitation {
 
 interface ArtistSearchResult {
   id: string;
-  nombre?: string;
-  artistName?: string;
-  name?: string;
-  city?: string;
+  nombre: string;
+  city?: string | null;
+  avatar?: string | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -88,6 +87,24 @@ function AvatarCircle({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' 
 
 // ── Members Section ───────────────────────────────────────────────────────────
 
+function ArtistAvatar({ artist, size = 'sm' }: { artist: ArtistSearchResult; size?: 'sm' | 'md' }) {
+  const dim = size === 'sm' ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-base';
+  if (artist.avatar) {
+    return (
+      <img
+        src={artist.avatar}
+        alt={artist.nombre}
+        className={`${dim} rounded-full object-cover flex-shrink-0`}
+      />
+    );
+  }
+  return (
+    <div className={`${dim} rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0`}>
+      {artist.nombre.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
 function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
   band: Band;
   isAdmin: boolean;
@@ -101,24 +118,38 @@ function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
   const [inviteRole, setInviteRole] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
   const [inviting, setInviting] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/artists/search?q=${encodeURIComponent(searchQuery)}&limit=5`, { credentials: 'include' });
-      const data = await res.json();
-      const list: ArtistSearchResult[] = (data.artists ?? data.data ?? data.results ?? []).map((a: ArtistSearchResult) => ({
-        id: a.id,
-        nombre: a.nombre ?? a.artistName ?? a.name ?? 'Artista',
-        city: a.city,
-      }));
-      setSearchResults(list);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setSearchResults([]);
+      }
     }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setSelectedArtist(null);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (value.length < 2) { setSearchResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/artists/search?q=${encodeURIComponent(value)}&limit=8`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.artists ?? []);
+        }
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
   };
 
   const handleInvite = async () => {
@@ -233,47 +264,51 @@ function MembersSection({ band, isAdmin, currentUserId, onRefresh }: {
         <div className="border border-gray-200 rounded-xl p-4 space-y-3">
           <h3 className="text-sm font-semibold text-gray-700">Invitar músico</h3>
 
-          {/* Search */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Buscar por nombre..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setSearchResults([]); }}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={isSearching || !searchQuery.trim()}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-            >
-              {isSearching ? '...' : 'Buscar'}
-            </button>
-          </div>
-
-          {/* Results */}
-          {searchResults.length > 0 && (
-            <ul className="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
-              {searchResults.map((a) => (
-                <li key={a.id}>
-                  <button
-                    onClick={() => { setSelectedArtist(a); setSearchResults([]); }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-orange-50 transition-colors text-sm"
-                  >
-                    <span className="font-medium text-gray-900">{a.nombre}</span>
-                    {a.city && <span className="ml-2 text-gray-400">{a.city}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* Selected artist */}
-          {selectedArtist && (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm">
-              <span className="text-green-700 font-medium flex-1">{selectedArtist.nombre}</span>
-              <button onClick={() => setSelectedArtist(null)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+          {/* Search with typeahead dropdown */}
+          {selectedArtist ? (
+            <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+              <ArtistAvatar artist={selectedArtist} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{selectedArtist.nombre}</p>
+                {selectedArtist.city && <p className="text-xs text-gray-500">{selectedArtist.city}</p>}
+              </div>
+              <button
+                onClick={() => { setSelectedArtist(null); setSearchQuery(''); }}
+                className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="relative" ref={dropdownRef}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+              {(searchResults.length > 0 || isSearching) && (
+                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                  {isSearching ? (
+                    <p className="text-xs text-gray-400 px-4 py-3">Buscando...</p>
+                  ) : (
+                    searchResults.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => { setSelectedArtist(a); setSearchResults([]); setSearchQuery(''); }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-orange-50 transition-colors"
+                      >
+                        <ArtistAvatar artist={a} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{a.nombre}</p>
+                          {a.city && <p className="text-xs text-gray-400">{a.city}</p>}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
 

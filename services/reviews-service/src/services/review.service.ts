@@ -3,8 +3,10 @@ import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { bookingClient } from "../clients/booking.client";
 import { notificationsClient } from "../clients/notifications.client";
+import { ModerationClient } from "../clients/moderation.client";
 
 const prisma = new PrismaClient();
+const moderationClient = new ModerationClient();
 
 export class ReviewService {
   // ==================== REVIEWS ====================
@@ -48,6 +50,28 @@ export class ReviewService {
 
     if (existingReview) {
       throw new AppError(409, "Ya existe una reseña para este booking");
+    }
+
+    // Moderar contenido del comentario antes de guardar
+    if (data.comment) {
+      const modResult = await moderationClient.check({
+        userId: data.clientId,
+        contentType: 'REVIEW',
+        content: data.comment,
+        service: 'reviews-service',
+      });
+
+      if (
+        modResult.action === 'REJECT' ||
+        modResult.action === 'STRIKE' ||
+        modResult.action === 'MANUAL_REVIEW'
+      ) {
+        throw new AppError(400, modResult.rejectMessage);
+      }
+
+      if (modResult.action === 'CENSOR') {
+        data.comment = modResult.censored ?? data.comment;
+      }
     }
 
     // Crear la reseña
@@ -306,11 +330,32 @@ export class ReviewService {
       throw new AppError(409, "Ya has respondido a esta reseña");
     }
 
+    // Moderar respuesta del artista antes de guardar
+    let finalMessage = message;
+    const modResult = await moderationClient.check({
+      userId: artistId,
+      contentType: 'REVIEW_RESPONSE',
+      content: message,
+      service: 'reviews-service',
+    });
+
+    if (
+      modResult.action === 'REJECT' ||
+      modResult.action === 'STRIKE' ||
+      modResult.action === 'MANUAL_REVIEW'
+    ) {
+      throw new AppError(400, modResult.rejectMessage);
+    }
+
+    if (modResult.action === 'CENSOR') {
+      finalMessage = modResult.censored ?? message;
+    }
+
     const response = await prisma.reviewResponse.create({
       data: {
         reviewId,
         artistId,
-        message,
+        message: finalMessage,
       },
     });
 

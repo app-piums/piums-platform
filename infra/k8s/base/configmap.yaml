@@ -19,6 +19,7 @@ data:
   BOOKING_SERVICE_URL: "http://booking-service:4008"
   SEARCH_SERVICE_URL: "http://search-service:4009"
   CHAT_SERVICE_URL: "http://chat-service:4010"
+  MODERATION_SERVICE_URL: "http://moderation-service:4011"
 
   # Tilopay
   TILOPAY_API_URL: "https://app.tilopay.com/api/v1"
@@ -70,3 +71,4 @@ data:
   BOOKING_PORT: "4008"
   SEARCH_PORT: "4009"
   CHAT_PORT: "4010"
+  MODERATION_PORT: "4011"

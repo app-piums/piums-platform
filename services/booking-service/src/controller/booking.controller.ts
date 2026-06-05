@@ -24,6 +24,9 @@ import {
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
 import { catalogClient } from "../clients/catalog.client";
+import { ModerationClient } from "../clients/moderation.client";
+
+const moderationClient = new ModerationClient();
 
 export class BookingController {
   /**
@@ -50,6 +53,26 @@ export class BookingController {
       const identity = await usersClient.checkClientIdentity(clientId);
       if (!identity.hasDocuments) {
         throw new AppError(403, 'Debes verificar tu identidad antes de realizar una reserva. Completa tu perfil con tu documento de identidad.');
+      }
+
+      // Moderar clientNotes antes de crear la reserva
+      if (validatedData.clientNotes) {
+        const modResult = await moderationClient.check({
+          userId: clientId,
+          contentType: 'BOOKING_NOTE',
+          content: validatedData.clientNotes,
+          service: 'booking-service',
+        });
+        if (
+          modResult.action === 'REJECT' ||
+          modResult.action === 'STRIKE' ||
+          modResult.action === 'MANUAL_REVIEW'
+        ) {
+          throw new AppError(400, modResult.rejectMessage);
+        }
+        if (modResult.action === 'CENSOR') {
+          validatedData.clientNotes = modResult.censored ?? validatedData.clientNotes;
+        }
       }
 
       const { booking } = await bookingService.createBooking({

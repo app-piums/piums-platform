@@ -4,6 +4,9 @@ import { RequestHandler } from 'express';
 const asRequestHandler = (h: ReturnType<typeof rateLimit>): RequestHandler =>
   h as unknown as RequestHandler;
 
+const isDev = process.env.NODE_ENV !== "production";
+const skipInDev = () => isDev;
+
 // General API rate limiter
 export const apiLimiter: RequestHandler = asRequestHandler(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -11,6 +14,7 @@ export const apiLimiter: RequestHandler = asRequestHandler(rateLimit({
   message: 'Demasiadas solicitudes desde esta IP, por favor intenta más tarde',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInDev,
 }));
 
 // Search rate limiter (more permissive)
@@ -20,6 +24,7 @@ export const searchLimiter: RequestHandler = asRequestHandler(rateLimit({
   message: 'Demasiadas búsquedas, por favor espera un momento',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInDev,
 }));
 
 // Autocomplete rate limiter (very permissive for UX)
@@ -29,7 +34,8 @@ export const autocompleteLimiter: RequestHandler = asRequestHandler(rateLimit({
   message: 'Demasiadas solicitudes de autocompletado',
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // Don't count successful requests
+  skip: skipInDev,
+  skipSuccessfulRequests: true,
 }));
 
 // Index management rate limiter (restrictive)

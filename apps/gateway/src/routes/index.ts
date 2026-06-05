@@ -563,6 +563,20 @@ export const setupRoutes = (app: Express) => {
   );
 
   // ============================================================================
+  // Moderation Service (PROTEGIDO — admin + service tokens internos)
+  // ============================================================================
+  app.use(
+    "/api/moderation",
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.MODERATION_SERVICE_URL || "http://localhost:4011",
+      changeOrigin: true,
+      pathRewrite: { "^": "/api/moderation" },
+      on: { proxyReq: fixRequestBody },
+    })
+  );
+
+  // ============================================================================
   // 404 Handler
   // ============================================================================
   

@@ -71,6 +71,7 @@ model Message {
   deliveredAt    DateTime?
   replyToId      String?
   deletedAt      DateTime?
+  isShadowBanned Boolean       @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

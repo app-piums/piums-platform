@@ -106,3 +106,5 @@ images:
     newTag: latest
   - name: ghcr.io/app-piums/piums-platform/chat-service
     newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/moderation-service
+    newTag: latest
