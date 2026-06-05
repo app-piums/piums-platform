@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     let data = await res.json().catch(() => ({}));
 
     // 409 = already exists (bootstrap stub); 429 = rate-limited — both cases: update existing profile.
+    // Only send fields explicitly provided by the user — never override existing data with defaults.
     if (res.status === 409 || res.status === 429) {
       const meRes = await fetch(`${ARTISTS_SERVICE_URL}/artists/dashboard/me`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -61,10 +62,23 @@ export async function POST(request: NextRequest) {
       const meData = await meRes.json().catch(() => ({}));
       const artistId = meData?.artist?.id ?? meData?.id;
       if (artistId) {
+        const updatePayload: Record<string, unknown> = {};
+        if (body.category) updatePayload.category = body.category;
+        if (body.specialties?.length) updatePayload.specialties = body.specialties;
+        if (body.city) updatePayload.city = body.city;
+        if (body.country) updatePayload.country = body.country;
+        if (body.bio) updatePayload.bio = body.bio;
+        if (body.instagram) updatePayload.instagram = body.instagram;
+        if (body.website) updatePayload.website = body.website;
+        if (body.youtube) updatePayload.youtube = body.youtube;
+        if (body.hourlyRateMin != null) updatePayload.hourlyRateMin = body.hourlyRateMin;
+        if (body.hourlyRateMax != null) updatePayload.hourlyRateMax = body.hourlyRateMax;
+        if ('coverageRadius' in body) updatePayload.coverageRadius = body.coverageRadius;
+        if (body.equipment?.length) updatePayload.equipment = body.equipment;
         res = await fetch(`${ARTISTS_SERVICE_URL}/artists/${artistId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(updatePayload),
         });
         data = await res.json().catch(() => ({}));
       } else {
