@@ -5,8 +5,9 @@ import {
   inviteMember, respondToInvite, listMembers, removeMember, requestToJoin,
   createOpening, listOpenings, closeOpening,
   applyToOpening, listApplications, respondToApplication,
-  getAllOpenings, getMyInvitations,
+  getAllOpenings, getMyInvitations, uploadBandAvatar,
 } from "../controller/bands.controller";
+import { upload, handleMulterError } from "../middleware/upload.middleware";
 
 const router: Router = Router();
 
@@ -28,6 +29,7 @@ router.post("/", authenticateToken, createBand);
 router.get("/:id", getBand);
 router.put("/:id", authenticateToken, updateBand);
 router.delete("/:id", authenticateToken, deleteBand);
+router.post("/:id/avatar", authenticateToken, upload.single("avatar"), handleMulterError, uploadBandAvatar);
 
 // Miembros
 router.get("/:id/members", authenticateToken, listMembers);

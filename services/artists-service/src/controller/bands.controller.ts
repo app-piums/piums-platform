@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import * as bandsService from "../services/bands.service";
+import { cloudinaryProvider } from "../providers/cloudinary.provider";
 
 const p = (v: string | string[] | undefined): string => (Array.isArray(v) ? v[0] : v ?? "");
 
@@ -157,5 +158,24 @@ export const getMyInvitations = async (req: AuthRequest, res: Response, next: Ne
   try {
     const invitations = await bandsService.getMyInvitations(req.user!.id);
     res.json(invitations);
+  } catch (err) { next(err); }
+};
+
+export const uploadBandAvatar = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const bandId = p(req.params.id);
+    if (!req.file) return res.status(400).json({ error: "No se recibió ningún archivo." });
+
+    const band = await bandsService.getBandById(bandId);
+    if (!band) return res.status(404).json({ error: "Banda no encontrada." });
+
+    const oldAvatar = (band as any).avatar as string | null;
+    const avatarUrl = await cloudinaryProvider.uploadBandAvatar(req.file.buffer, bandId);
+
+    const updated = await bandsService.updateBand(bandId, req.user!.id, { avatar: avatarUrl });
+
+    if (oldAvatar) cloudinaryProvider.deleteBandAvatar(oldAvatar).catch(() => {});
+
+    res.json(updated);
   } catch (err) { next(err); }
 };

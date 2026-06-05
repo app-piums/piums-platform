@@ -77,8 +77,17 @@ function initials(name: string) {
   return name.trim().charAt(0).toUpperCase();
 }
 
-function AvatarCircle({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
+function AvatarCircle({ name, size = 'md', src }: { name: string; size?: 'sm' | 'md' | 'lg'; src?: string | null }) {
   const sizes = { sm: 'w-8 h-8 text-sm', md: 'w-11 h-11 text-base', lg: 'w-14 h-14 text-xl' };
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`${sizes[size]} rounded-xl object-cover flex-shrink-0`}
+      />
+    );
+  }
   return (
     <div className={`${sizes[size]} rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0`}>
       {initials(name)}
@@ -551,6 +560,23 @@ function EditBandSection({ band, isLead, onRefresh, onDeleted }: {
   const [country, setCountry] = useState(band.country);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(band.avatar ?? null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarPreview(URL.createObjectURL(file));
+    setUploadingPhoto(true);
+    try {
+      const form = new FormData();
+      form.append('avatar', file);
+      const res = await fetch(`/api/bands/${band.id}/avatar`, { method: 'POST', credentials: 'include', body: form });
+      if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Error al subir foto'); }
+      else { toast.success('Foto actualizada'); onRefresh(); }
+    } finally { setUploadingPhoto(false); }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -590,6 +616,35 @@ function EditBandSection({ band, isLead, onRefresh, onDeleted }: {
 
   return (
     <div className="space-y-4">
+      {/* Avatar upload */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-shrink-0">
+          {avatarPreview ? (
+            <img src={avatarPreview} alt={name} className="w-16 h-16 rounded-xl object-cover" />
+          ) : (
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-xl font-bold">
+              {initials(name)}
+            </div>
+          )}
+          {uploadingPhoto && (
+            <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+        <div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="text-sm text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50"
+          >
+            {uploadingPhoto ? 'Subiendo...' : 'Cambiar foto'}
+          </button>
+          <p className="text-xs text-gray-400 mt-0.5">JPG, PNG o WebP · máx. 5 MB</p>
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} />
+        </div>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
@@ -832,7 +887,7 @@ function BandListView({ bands, filterQuery, onFilterChange, onSelect, onCreateCl
                   onClick={() => onSelect(band)}
                   className="w-full text-left bg-white border border-gray-100 hover:border-orange-200 hover:shadow-sm rounded-2xl p-4 flex items-center gap-4 transition-all"
                 >
-                  <AvatarCircle name={band.name} size="md" />
+                  <AvatarCircle name={band.name} size="md" src={band.avatar} />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{band.name}</p>
                     <p className="text-xs text-gray-500">{band.city}, {band.country}</p>
@@ -1006,7 +1061,7 @@ export default function MyBandPage() {
             </button>
           )}
           <div className="flex items-center gap-4 flex-1">
-            <AvatarCircle name={band.name} size="lg" />
+            <AvatarCircle name={band.name} size="lg" src={band.avatar} />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{band.name}</h1>
               <p className="text-sm text-gray-500">{band.city}, {band.country}</p>
