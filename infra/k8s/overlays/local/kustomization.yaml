@@ -47,6 +47,9 @@ images:
   - name: ghcr.io/app-piums/piums-platform/chat-service
     newName: docker-chat-service
     newTag: latest
+  - name: ghcr.io/app-piums/piums-platform/moderation-service
+    newName: docker-moderation-service
+    newTag: latest
 
 patches:
   # ── Never pull images from registry — use local Docker daemon ─────────────
@@ -263,6 +266,23 @@ patches:
                 env:
                   - name: DATABASE_URL
                     value: "postgresql://piums:piums_dev_password@postgres-service:5432/piums_chat"
+
+  - target:
+      kind: Deployment
+      name: moderation-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: moderation-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: moderation-service
+                env:
+                  - name: DATABASE_URL
+                    value: "postgresql://piums:piums_dev_password@postgres-service:5432/piums_moderation"
 
   # ── Fix PORT env var: services use process.env.PORT but K8s configmap only
   # has BOOKING_PORT, PAYMENTS_PORT etc. — must set PORT explicitly. ─────────
