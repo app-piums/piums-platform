@@ -9,14 +9,17 @@ export const globalRateLimiter = rateLimit({
     error: "Too Many Requests",
     message: "You have exceeded the request limit. Please try again later.",
   },
-  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
-  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Socket.IO polling makes many HTTP requests per connection — exclude from global limiter.
+  // WebSocket upgrades never reach this limiter anyway, but polling handshakes do.
+  skip: (req) => req.path.startsWith('/socket.io'),
   handler: (req, res) => {
     logger.warn(`Rate limit exceeded for IP: ${req.ip}`, "RATE_LIMITER", {
       ip: req.ip,
       url: req.url,
     });
-    
+
     res.status(429).json({
       error: "Too Many Requests",
       message: "You have exceeded the request limit. Please try again later.",

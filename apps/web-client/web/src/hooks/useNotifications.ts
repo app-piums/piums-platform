@@ -100,9 +100,12 @@ export function useNotifications(limit: number = 6) {
 
         socket = io(CHAT_SOCKET_URL, {
           path: '/socket.io/',
-          transports: ['polling', 'websocket'],
+          transports: ['websocket', 'polling'],
           auth: { token: data.token },
-          reconnectionAttempts: 3,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 30000,
+          randomizationFactor: 0.5,
         });
 
         socket.on('notification:new', (notif: RawNotification) => {

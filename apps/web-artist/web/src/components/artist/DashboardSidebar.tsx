@@ -38,7 +38,10 @@ function NotificationBell() {
 
         socket = io(CHAT_SOCKET_URL, {
           path: '/socket.io/',
-          transports: ['polling', 'websocket'],
+          transports: ['websocket', 'polling'],
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 30000,
+          randomizationFactor: 0.5,
           auth: { token: data.token },
           reconnectionAttempts: 3,
         });
