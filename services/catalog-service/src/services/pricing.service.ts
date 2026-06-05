@@ -185,13 +185,13 @@ export const calculateServicePrice = async (
 
   // ==================== CALCULAR VIAJE / VIÁTICOS ====================
 
-  // Tarifas de viáticos configurables por variable de entorno (en centavos GTQ)
-  const VIATICOS_FOOD_PER_DAY_CENTS     = parseInt(process.env.VIATICOS_FOOD_CENTS     ?? '15000', 10); // Q 150/día
-  const VIATICOS_LODGING_PER_DAY_CENTS  = parseInt(process.env.VIATICOS_LODGING_CENTS  ?? '40000', 10); // Q 400/día
-  const VIATICOS_TRANSPORT_CENTS        = parseInt(process.env.VIATICOS_TRANSPORT_CENTS ?? '20000', 10); // Q 200 fijo
+  // Tasa de cambio GTQ→USD y tarifas en centavos GTQ (se convierten a USD al calcular)
+  const GTQ_TO_USD         = parseFloat(process.env.GTQ_TO_USD_RATE     ?? '7.75');
+  const VIATICOS_DAILY_GTQ = parseInt(process.env.VIATICOS_DAILY_GTQ    ?? '38000', 10); // Q 380/día (comida+hospedaje)
+  const DEFAULT_KM_GTQ     = parseInt(process.env.VIATICOS_KM_PRICE_GTQ ?? '100',   10); // Q 1.00/km
+  const DEFAULT_INCLUDED_KM = 10;
 
-  const DEFAULT_PRICE_PER_KM_CENTS = 2000; // Q 20.00 por km adicional por defecto
-  const DEFAULT_INCLUDED_KM = 10;          // 10 km incluidos por defecto
+  const gtqToUsd = (gtqCents: number) => Math.round(gtqCents / GTQ_TO_USD);
 
   // numDays: derivado de durationMinutes — multi-día cuando >= 1440 min (24h)
   const numDays = durationMinutes ? Math.ceil(durationMinutes / 1440) : 1;
@@ -210,17 +210,14 @@ export const calculateServicePrice = async (
     }
 
     if (extraKm > 0) {
-      const pricePerKmCents = travelRules?.pricePerKmCents ?? DEFAULT_PRICE_PER_KM_CENTS;
+      const pricePerKmCents = travelRules?.pricePerKmCents ?? gtqToUsd(DEFAULT_KM_GTQ);
 
       if (numDays > 1) {
         // ── VIÁTICOS: multi-día + fuera de cobertura ──
-        // Transporte: proporcional a la distancia extra (igual que traslado), no tarifa plana
-        const foodTotal      = VIATICOS_FOOD_PER_DAY_CENTS    * numDays;
-        const lodgingTotal   = VIATICOS_LODGING_PER_DAY_CENTS * numDays;
-        const transportTotal = pricePerKmCents > 0
-          ? Math.round(extraKm * pricePerKmCents)
-          : VIATICOS_TRANSPORT_CENTS;
-        travelCostCents = foodTotal + lodgingTotal + transportTotal;
+        const dailyUsdCents = gtqToUsd(VIATICOS_DAILY_GTQ);
+        const dailyTotal    = dailyUsdCents * numDays;
+        const transportUsd  = pricePerKmCents > 0 ? Math.round(extraKm * pricePerKmCents) : 0;
+        travelCostCents = dailyTotal + transportUsd;
 
         items.push({
           type: 'TRAVEL',
@@ -231,15 +228,13 @@ export const calculateServicePrice = async (
           metadata: {
             type: 'VIATICOS',
             numDays,
-            foodPerDay:    VIATICOS_FOOD_PER_DAY_CENTS,
-            lodgingPerDay: VIATICOS_LODGING_PER_DAY_CENTS,
-            transport:     transportTotal,
-            foodTotal,
-            lodgingTotal,
+            dailyUsdCents,
+            dailyGtqCents: VIATICOS_DAILY_GTQ,
+            transportUsdCents: transportUsd,
             distanceKm,
             includedKm,
             extraKm,
-            pricePerKm: pricePerKmCents,
+            pricePerKmUsd: pricePerKmCents,
           },
         });
       } else {
