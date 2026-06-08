@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { io } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
+
+const CHAT_SOCKET_URL =
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? (process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'https://backend.piums.io')
+    : (process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:4010');
 
 interface Props {
   userName: string;
@@ -32,7 +38,37 @@ type SidebarContentProps = {
 export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const { logout } = useAuth();
+
+  useEffect(() => {
+    fetch('/api/chat/conversations', { credentials: 'include' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        const convs = data?.conversations ?? data ?? [];
+        setUnreadMessages(convs.reduce((s: number, c: any) => s + (c.unreadCount ?? 0), 0));
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const socket = io(CHAT_SOCKET_URL, {
+      path: '/socket.io/',
+      transports: ['polling', 'websocket'],
+      auth: (cb: (data: object) => void) => {
+        fetch('/api/chat/token', { credentials: 'include' })
+          .then(r => (r.ok ? r.json() : null))
+          .then(data => cb({ token: data?.token || '' }))
+          .catch(() => cb({ token: '' }));
+      },
+    });
+    socket.on('message:received', () => setUnreadMessages(prev => prev + 1));
+    return () => { socket.disconnect(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (pathname === '/chat') setUnreadMessages(0);
+  }, [pathname]);
 
   const navItems: NavItem[] = [
     { href: '/dashboard',        icon: HomeIcon,     label: 'Inicio' },
@@ -43,7 +79,7 @@ export default function ClientSidebar({ userName, onNavigateAttempt }: Props) {
     { href: '/mis-tickets',      icon: TicketIcon,   label: 'Mis Boletos' },
     { href: '/bookmarks',        icon: HeartIcon,    label: 'Favoritos' },
     { href: '/coupons',          icon: TicketIcon,   label: 'Cupones' },
-    { href: '/chat',             icon: ChatIcon,     label: 'Mensajes', badge: 3 },
+    { href: '/chat',             icon: ChatIcon,     label: 'Mensajes', badge: unreadMessages > 0 ? unreadMessages : undefined },
     { href: '/notifications',    icon: BellIcon,     label: 'Notificaciones' },
     { href: '/quejas',           icon: AlertIcon,    label: 'Quejas' },
     { href: '/tutorial',         icon: TutorialIcon, label: 'Tutorial' },

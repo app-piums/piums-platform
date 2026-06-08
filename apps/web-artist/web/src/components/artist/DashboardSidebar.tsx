@@ -153,7 +153,6 @@ const tabs: DashboardTab[] = [
     label: 'Mensajes', 
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, 
     href: '/chat',
-    badge: 3
   },
   { 
     id: 'schedule', 
@@ -243,11 +242,12 @@ interface NavContentProps {
   onNavigate: () => void;
   user: any;
   onLogout: () => void;
+  unreadMessages: number;
 }
 
 const MUSICO_ONLY_TABS = new Set(['banda', 'auditions']);
 
-const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, onNavigate, user, onLogout }) => {
+const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, onNavigate, user, onLogout, unreadMessages }) => {
   const isMusico = !user?.category || user.category === 'MUSICO';
   const visibleTabs = isMusico ? tabs : tabs.filter(t => !MUSICO_ONLY_TABS.has(t.id));
 
@@ -295,11 +295,18 @@ const SidebarNavContent: React.FC<NavContentProps> = ({ pathname, onNavigate, us
                 <div className={isActive ? 'text-orange-600' : 'text-gray-400'}>{tab.icon}</div>
                 <span>{tab.label}</span>
               </div>
-              {tab.badge && (
-                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {tab.badge}
-                </span>
-              )}
+              {tab.id === 'messages'
+                ? unreadMessages > 0 && (
+                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </span>
+                  )
+                : tab.badge && (
+                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {tab.badge}
+                    </span>
+                  )
+              }
             </Link>
           );
         })}
@@ -408,13 +415,43 @@ export const DashboardSidebar: React.FC = () => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const handleClose = () => setIsOpen(false);
+
+  useEffect(() => {
+    fetch('/api/chat/conversations', { credentials: 'include' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        const convs = data?.conversations ?? data ?? [];
+        setUnreadMessages(convs.reduce((s: number, c: any) => s + (c.unreadCount ?? 0), 0));
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const socket = io(CHAT_SOCKET_URL, {
+      path: '/socket.io/',
+      transports: ['polling', 'websocket'],
+      auth: (cb: (data: object) => void) => {
+        fetch('/api/chat/token', { credentials: 'include' })
+          .then(r => (r.ok ? r.json() : null))
+          .then(data => cb({ token: data?.token || '' }))
+          .catch(() => cb({ token: '' }));
+      },
+    });
+    socket.on('message:received', () => setUnreadMessages(prev => prev + 1));
+    return () => { socket.disconnect(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (pathname === '/chat') setUnreadMessages(0);
+  }, [pathname]);
 
   return (
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 min-h-screen flex-col">
-        <SidebarNavContent pathname={pathname} onNavigate={() => {}} user={user} onLogout={logout} />
+        <SidebarNavContent pathname={pathname} onNavigate={() => {}} user={user} onLogout={logout} unreadMessages={unreadMessages} />
       </aside>
 
       {/* ── Mobile: top bar with hamburger ── */}
@@ -446,7 +483,7 @@ export const DashboardSidebar: React.FC = () => {
           />
           {/* Drawer panel */}
           <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-xl">
-            <SidebarNavContent pathname={pathname} onNavigate={handleClose} user={user} onLogout={logout} />
+            <SidebarNavContent pathname={pathname} onNavigate={handleClose} user={user} onLogout={logout} unreadMessages={unreadMessages} />
           </aside>
         </div>
       )}
