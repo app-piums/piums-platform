@@ -106,40 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Las cookies httpOnly se envían automáticamente
       const response = await fetch("/api/auth/me");
-      
+
       if (response.ok) {
         const data = await response.json();
-        let userData = data.user;
-
-        // Si es artista puro, resolvemos su Profile ID (reemplaza user.id)
-        // Para rol 'ambos', el gateway ya agrega user.artistId directamente.
-        if (userData && userData.role === 'artista') {
-          console.log("[AUTH] Artista detectado, resolviendo Profile ID...", { authId: userData.id });
-          try {
-            const profileRes = await fetch("/api/artists/dashboard/me");
-            if (profileRes.ok) {
-              const profileData = await profileRes.json();
-              if (profileData.artist?.id) {
-                console.log("[AUTH] Profile ID resuelto exitosamente:", profileData.artist.id);
-                userData = {
-                  ...userData,
-                  authId: userData.id, // Guardamos el Auth ID original
-                  id: profileData.artist.id // Usamos el Profile ID como principal
-                };
-              }
-            } else {
-              console.warn("[AUTH] No se pudo obtener el perfil del artista:", profileRes.status);
-            }
-          } catch (e) {
-            console.error("[AUTH] Error al resolver perfil de artista:", e);
-          }
-        } else {
-          console.log("[AUTH] Usuario autenticado. Role:", userData?.role);
-        }
-
-        setUser(userData);
+        // /api/auth/me ya enriquece el user: para artista, id=artistProfileId y authId=authUserId
+        setUser(data.user);
       } else {
-        console.log("[AUTH] No hay sesión activa");
         setUser(null);
       }
     } catch (error) {

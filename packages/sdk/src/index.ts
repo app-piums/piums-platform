@@ -1035,10 +1035,13 @@ class PiumsSDK {
     }
   }
 
-  async getArtistServices(artistId: string): Promise<Service[]> {
+  async getArtistServices(_artistId: string): Promise<Service[]> {
     try {
+      // Use /mine endpoint so the artist sees ALL their services (active + paused/draft),
+      // not the public search endpoint which only returns status=ACTIVE.
       const response = await fetch(
-        `${this.baseUrl}/catalog/services?artistId=${encodeURIComponent(artistId)}`,
+        `${this.baseUrl}/catalog/services/mine`,
+        this.withAuth({ credentials: 'include' }),
       );
 
       if (!response.ok) {

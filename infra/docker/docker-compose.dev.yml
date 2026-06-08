@@ -45,8 +45,8 @@ services:
   
   gateway:
     build:
-      context: ../../apps/gateway
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: apps/gateway/Dockerfile
     container_name: piums-gateway
     ports:
       - "3005:3000"
