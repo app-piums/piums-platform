@@ -15,7 +15,7 @@ export interface Conversation {
   participant1Id?: string;
   participant2Id?: string;
   bookingId?: string | null;
-  status?: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
+  status?: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED' | 'PENDING';
   artistId?: string;
   artistName?: string | null;
   artistAvatar?: string | null;
