@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CSSProperties } from "react";
 
 function ElegantShape({
   className,
@@ -65,14 +66,12 @@ function FadeUp({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9, delay, ease: "easeOut" }}
+    <div
       className={className}
+      style={{ animation: `fade-up 0.9s ease-out ${delay}s both` } as CSSProperties}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -128,31 +127,19 @@ function HeroPiums({
           </div>
         </FadeUp>
 
-        <FadeUp delay={0.49}>
-          <motion.div
-            className="inline-block mb-3"
-            animate={{
-              y: [0, -10, 0],
-              scale: [1, 1.03, 1],
-              filter: [
-                "drop-shadow(0 0 32px rgba(255,107,53,0.2))",
-                "drop-shadow(0 0 72px rgba(255,107,53,0.6))",
-                "drop-shadow(0 0 32px rgba(255,107,53,0.2))",
-              ],
-            }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Image
-              src={logoSrc}
-              alt="Piums"
-              width={320}
-              height={320}
-              className="h-64 sm:h-80 w-auto"
-              priority
-              unoptimized
-            />
-          </motion.div>
-        </FadeUp>
+        <div
+          className="inline-block mb-3 hero-logo-float"
+          style={{ animation: `fade-up 0.9s ease-out 0.49s both, hero-logo-float 5s ease-in-out 1.5s infinite` } as CSSProperties}
+        >
+          <Image
+            src={logoSrc}
+            alt="Piums"
+            width={320}
+            height={320}
+            className="h-64 sm:h-80 w-auto"
+            priority
+          />
+        </div>
 
         {/* Headline */}
         <FadeUp delay={0.63}>

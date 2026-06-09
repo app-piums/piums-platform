@@ -1,8 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PiumsCinematicFooter } from "@/components/ui/motion-footer";
+import dynamic from "next/dynamic";
 import { RevealObserver } from "@/components/RevealObserver";
 import { HeroPiums } from "@/components/ui/shape-landing-hero";
+
+const PiumsCinematicFooter = dynamic(
+  () => import("@/components/ui/motion-footer").then((m) => ({ default: m.PiumsCinematicFooter })),
+  { ssr: true }
+);
 import {
   Camera, Music, Mic2, Monitor, Video, Sparkles,
   ShieldCheck, DollarSign, Clock, ArrowRight, Check, TrendingUp, MapPin,
@@ -232,7 +237,7 @@ export default function Home() {
           />
 
           {/* ── Talent chart ──────────────────────────────────────── */}
-          <div className="w-full max-w-sm mx-auto px-6 md:px-12 mt-10 mb-12 reveal">
+          <div className="w-full max-w-sm mx-auto px-6 md:px-12 mt-10 mb-12" style={{ animation: "fade-up 0.9s ease-out 1.2s both" }}>
             <div
               className="rounded-2xl overflow-hidden"
               style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.08)" }}
