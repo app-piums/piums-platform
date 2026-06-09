@@ -455,9 +455,6 @@ export default function ArtistProfilePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={handleBookNow} size="lg">
-                Reservar Ahora
-              </Button>
               <button
                 type="button"
                 onClick={handleFavoriteToggle}
@@ -887,11 +884,7 @@ export default function ArtistProfilePage() {
             <Card className="sticky top-8">
               <CardTitle className="mb-4">Información de Contacto</CardTitle>
               <CardContent>
-                <Button fullWidth size="lg" onClick={handleBookNow}>
-                  Reservar Ahora
-                </Button>
-                
-                <div className="mt-6 pt-6 border-t border-gray-200">
+                <div>
                   <h4 className="font-medium text-gray-900 mb-3">Tiempo de Respuesta</h4>
                   <p className="text-sm text-gray-600">Generalmente responde en menos de 2 horas</p>
                 </div>
