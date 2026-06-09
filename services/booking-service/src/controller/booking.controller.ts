@@ -15,6 +15,7 @@ import {
   availabilityConfigSchema,
   checkAvailabilitySchema,
   searchBookingsSchema,
+  verifyAttendanceCodeSchema,
 } from "../schemas/booking.schema";
 import {
   rescheduleBookingSchema,
@@ -102,7 +103,27 @@ export class BookingController {
         return res.status(403).json({ message: "No tienes permiso para ver esta reserva" });
       }
 
-      res.json(booking);
+      // El código de asistencia solo se expone al cliente (y al admin).
+      // El artista debe pedírselo en persona al cliente — no puede verse en su propia app.
+      const isClient = req.user!.role === 'cliente' || (req.user!.role === 'ambos' && booking.clientId === userId);
+      const isAdmin = req.user!.role === 'admin';
+      const responseBooking = (isClient || isAdmin)
+        ? booking
+        : { ...booking, attendanceCode: undefined };
+
+      res.json(responseBooking);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verifyAttendanceCode(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const { code } = verifyAttendanceCodeSchema.parse(req.body);
+      const artistId = await this.resolveArtistId(req.user!.id);
+      const booking = await bookingService.verifyAttendanceCode(id, artistId, code);
+      res.json({ message: 'Asistencia confirmada exitosamente', booking });
     } catch (error) {
       next(error);
     }
@@ -258,6 +279,7 @@ export class BookingController {
     try {
       const id = req.params.id as string;
       const { status, reason } = changeStatusSchema.parse(req.body);
+      const productDeliveryUrl = typeof req.body.productDeliveryUrl === 'string' ? req.body.productDeliveryUrl : undefined;
 
       const authId = req.user!.id;
       const artistStatuses = ['IN_PROGRESS', 'COMPLETED', 'NO_SHOW'] as const;
@@ -267,7 +289,7 @@ export class BookingController {
         if (artistId) userId = artistId;
       }
 
-      const booking = await bookingService.changeStatus(id, userId, status, reason);
+      const booking = await bookingService.changeStatus(id, userId, status, reason, productDeliveryUrl);
       res.json(booking);
     } catch (error) {
       next(error);

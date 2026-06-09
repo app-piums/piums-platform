@@ -509,7 +509,46 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
           <div className="w-full lg:w-[360px] shrink-0 space-y-6">
             
             <div className="sticky top-28 space-y-6">
-              
+
+              {/* ── Código de Asistencia ── */}
+              {(booking.status?.toUpperCase() === 'CONFIRMED' || booking.status?.toUpperCase() === 'IN_PROGRESS') &&
+                (booking as any).attendanceCode && (
+                <div className="w-full bg-white rounded-2xl border border-[#FF6B35]/30 shadow-sm overflow-hidden">
+                  <div className="px-5 py-3 bg-orange-50 border-b border-[#FF6B35]/20 flex items-center gap-2">
+                    <svg className="h-4 w-4 text-[#FF6B35] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-[#FF6B35]">Código de Asistencia</span>
+                  </div>
+                  <div className="p-5 flex flex-col items-center gap-4">
+                    <p className="text-xs text-gray-500 text-center">
+                      Dáselo al artista cuando llegue para confirmar el servicio al instante
+                    </p>
+                    <div className="flex gap-2">
+                      {((booking as any).attendanceCode as string).split('').map((digit: string, i: number) => (
+                        <span
+                          key={i}
+                          className="w-10 h-12 flex items-center justify-center bg-gray-900 text-white text-xl font-mono font-bold rounded-xl shadow"
+                        >
+                          {digit}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText((booking as any).attendanceCode);
+                      }}
+                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copiar código
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className={`px-5 py-4 flex items-center justify-between gap-3 ${booking.status === 'completed' ? 'bg-blue-600' : 'bg-[#FF6B35]'}`}>
                   <span className="text-white font-semibold flex items-center gap-2">

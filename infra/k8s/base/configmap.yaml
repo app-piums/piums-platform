@@ -25,7 +25,7 @@ data:
   TILOPAY_API_URL: "https://app.tilopay.com/api/v1"
 
   # Rate limiting
-  RATE_LIMIT_MAX_REQUESTS: "100"
+  RATE_LIMIT_MAX_REQUESTS: "1000"
 
   # Platform fee (percentage)
   PLATFORM_FEE_PERCENTAGE: "18"

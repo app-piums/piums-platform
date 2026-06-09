@@ -302,6 +302,7 @@ export class CatalogService {
     depositAmount?: number;
     depositPercentage?: number;
     requiresConsultation?: boolean;
+    requiresProductDelivery?: boolean;
     whatIsIncluded?: string[];
     cancellationPolicy?: string;
     termsAndConditions?: string;
@@ -347,6 +348,7 @@ export class CatalogService {
         depositAmount: data.depositAmount,
         depositPercentage: data.depositPercentage,
         requiresConsultation: data.requiresConsultation || false,
+        requiresProductDelivery: data.requiresProductDelivery || false,
         whatIsIncluded: data.whatIsIncluded || [],
         cancellationPolicy: data.cancellationPolicy,
         termsAndConditions: data.termsAndConditions,

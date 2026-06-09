@@ -133,6 +133,7 @@ export interface Service {
   viewCount?: number;
   minGuests?: number;
   maxGuests?: number;
+  requiresProductDelivery?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -151,6 +152,7 @@ export interface CreateServicePayload {
   whatIsIncluded?: string[];
   minGuests?: number;
   maxGuests?: number;
+  requiresProductDelivery?: boolean;
 }
 
 export interface UpdateServicePayload {
@@ -169,6 +171,7 @@ export interface UpdateServicePayload {
   whatIsIncluded?: string[];
   minGuests?: number;
   maxGuests?: number;
+  requiresProductDelivery?: boolean;
 }
 
 export interface ServiceCategory {
@@ -2579,13 +2582,15 @@ class PiumsSDK {
    * Marca una reserva como completada (solo artistas)
    * @param bookingId ID de la reserva
    */
-  async completeBooking(bookingId: string): Promise<{ message: string; bookingId: string }> {
+  async completeBooking(bookingId: string, productDeliveryUrl?: string): Promise<{ message: string; bookingId: string }> {
     try {
+      const body = productDeliveryUrl ? JSON.stringify({ productDeliveryUrl }) : undefined;
       const response = await fetch(
         `${this.baseUrl}/artists/dashboard/me/bookings/${bookingId}/complete`,
         this.withAuth({
           method: 'PATCH',
           credentials: 'include',
+          ...(body ? { headers: { 'Content-Type': 'application/json' }, body } : {}),
         })
       );
 
@@ -2598,6 +2603,31 @@ class PiumsSDK {
       return await response.json();
     } catch (error) {
       console.error('Error completing booking:', error);
+      throw error;
+    }
+  }
+
+  async verifyAttendanceCode(bookingId: string, code: string): Promise<{ message: string; booking: any }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/bookings/${bookingId}/verify-attendance`,
+        this.withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ code }),
+        })
+      );
+
+      if (!response.ok) {
+        let errMsg = `HTTP error! status: ${response.status}`;
+        try { const e = await response.json(); errMsg = (e as any).message || errMsg; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error verifying attendance code:', error);
       throw error;
     }
   }

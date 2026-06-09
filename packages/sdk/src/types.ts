@@ -100,13 +100,17 @@ export interface Service {
   categoryId?: string;
   basePrice: number;
   duration: number;
+  durationMin?: number;
   isActive: boolean;
   isMainService?: boolean;
   isOnSale?: boolean;
   currency?: string;
   whatIsIncluded?: string[];
+  minGuests?: number;
+  maxGuests?: number;
   pricingType?: string;
   status?: string;
+  requiresProductDelivery?: boolean;
   createdAt: string;
 }
 
@@ -133,6 +137,11 @@ export interface Booking {
   anticipoAmount?: number;
   quoteSnapshot?: any;
   createdAt: string;
+  // Código de asistencia y entrega de producto
+  attendanceCode?: string;
+  attendanceCodeUsedAt?: string | null;
+  requiresProductDelivery?: boolean;
+  productDeliveryUrl?: string | null;
 }
 
 export enum BookingStatus {

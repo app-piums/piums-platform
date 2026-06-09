@@ -581,18 +581,35 @@ async function runAutoComplete() {
 // y el cliente no confirmó entrega (artista siempre cobra).
 
 async function runPayoutHoldRelease() {
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // hace 24h
+  const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
   try {
-    const bookings = await (prisma as any).booking.findMany({
+    // Servicios estándar (músicos, DJs, etc.): ventana de 24h
+    const standardBookings = await (prisma as any).booking.findMany({
       where: {
         status: "DELIVERED",
-        deliveredAt: { lte: cutoff },
+        deliveredAt: { lte: cutoff24h },
         deliveryConfirmedAt: null,
+        requiresProductDelivery: false,
         deletedAt: null,
       },
       select: { id: true, code: true, clientId: true },
     });
+
+    // Servicios con entrega de producto (foto/video): ventana de 48h
+    const deliverableBookings = await (prisma as any).booking.findMany({
+      where: {
+        status: "DELIVERED",
+        deliveredAt: { lte: cutoff48h },
+        deliveryConfirmedAt: null,
+        requiresProductDelivery: true,
+        deletedAt: null,
+      },
+      select: { id: true, code: true, clientId: true },
+    });
+
+    const bookings = [...standardBookings, ...deliverableBookings];
 
     const clientAppUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
     let released = 0;

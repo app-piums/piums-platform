@@ -250,7 +250,8 @@ export const completeBooking = async (
     const artist = await artistsService.getArtistByAuthId(authId);
     const bookingId = req.params.id as string;
     const authToken = req.headers.authorization?.substring(7);
-    const success = await bookingServiceClient.completeBooking(bookingId, artist.id, authToken);
+    const productDeliveryUrl = typeof req.body?.productDeliveryUrl === 'string' ? req.body.productDeliveryUrl : undefined;
+    const success = await bookingServiceClient.completeBooking(bookingId, artist.id, authToken, productDeliveryUrl);
 
     if (!success) {
       throw new AppError(500, "Error al completar la reserva");

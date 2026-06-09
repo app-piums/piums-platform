@@ -132,6 +132,17 @@ router.post(
 );
 
 /**
+ * POST /api/bookings/:id/verify-attendance
+ * Artista ingresa el código de asistencia del cliente → completa la reserva sin esperar 24h.
+ * Para servicios con entrega de producto, solo marca IN_PROGRESS (pago se libera al entregar).
+ */
+router.post(
+  "/bookings/:id/verify-attendance",
+  authenticateToken,
+  bookingController.verifyAttendanceCode.bind(bookingController)
+);
+
+/**
  * POST /api/bookings/:id/confirm-delivery
  * Confirmar recepcion del servicio (solo el cliente de la reserva)
  */

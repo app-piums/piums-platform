@@ -147,3 +147,8 @@ export const searchBookingsSchema = z.object({
   page: z.number().int().min(1).optional(),
   limit: z.number().int().min(1).max(100).optional(),
 });
+
+
+export const verifyAttendanceCodeSchema = z.object({
+  code: z.string().length(6, 'El código debe tener exactamente 6 dígitos').regex(/^\d{6}$/, 'El código debe ser numérico'),
+});

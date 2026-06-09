@@ -209,7 +209,7 @@ export class BookingServiceClient {
   /**
    * Completar booking (CONFIRMED → COMPLETED)
    */
-  async completeBooking(bookingId: string, artistId: string, authToken?: string): Promise<boolean> {
+  async completeBooking(bookingId: string, artistId: string, authToken?: string, productDeliveryUrl?: string): Promise<boolean> {
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -224,7 +224,7 @@ export class BookingServiceClient {
           signal: AbortSignal.timeout(10_000),
           method: "PATCH",
           headers,
-          body: JSON.stringify({ status: "COMPLETED", artistId }),
+          body: JSON.stringify({ status: "COMPLETED", artistId, productDeliveryUrl }),
         }
       );
 

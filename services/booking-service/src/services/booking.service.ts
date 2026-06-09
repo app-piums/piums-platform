@@ -17,6 +17,10 @@ import { createReplacementPrompt } from "./replacement.service";
 const prisma = new PrismaClient();
 
 export class BookingService {
+  private generateAttendanceCode(): string {
+    return String(crypto.randomInt(100000, 999999));
+  }
+
   // ==================== RESERVAS ====================
 
   /**
@@ -137,14 +141,17 @@ export class BookingService {
       );
     }
 
-    // Obtener precio del servicio desde catalog-service
-    const priceQuote = await catalogClient.calculatePrice({
-      serviceId: data.serviceId,
-      durationMinutes: data.durationMinutes,
-      selectedAddonIds: data.selectedAddons || [],
-      distanceKm,
-      scheduledDate: scheduledDate.toISOString().split('T')[0],
-    });
+    // Obtener precio del servicio desde catalog-service (y metadatos del servicio en paralelo)
+    const [priceQuote, serviceDetails] = await Promise.all([
+      catalogClient.calculatePrice({
+        serviceId: data.serviceId,
+        durationMinutes: data.durationMinutes,
+        selectedAddonIds: data.selectedAddons || [],
+        distanceKm,
+        scheduledDate: scheduledDate.toISOString().split('T')[0],
+      }),
+      catalogClient.getService(data.serviceId),
+    ]);
 
     if (!priceQuote) {
       throw new AppError(500, "No se pudo calcular el precio del servicio");
@@ -193,6 +200,9 @@ export class BookingService {
     const depositRequired = config.requiresDeposit;
     const depositAmount = priceQuote.depositRequiredCents || (depositRequired ? Math.floor(totalPrice * 0.5) : 0);
 
+    // Copiar del servicio si aplica entrega de producto (fotógrafos, videógrafos, etc.)
+    const requiresProductDelivery = serviceDetails?.requiresProductDelivery ?? false;
+
     // Determinar estado inicial
     const initialStatus = config.autoConfirm ? "CONFIRMED" : "PENDING";
 
@@ -227,6 +237,7 @@ export class BookingService {
         couponCode: data.couponCode || null,
         couponDiscountAmount,
         dayOfferDiscountAmount,
+        requiresProductDelivery,
       },
     });
 
@@ -443,7 +454,7 @@ export class BookingService {
    * Obtener reserva por ID
    */
   async getBookingById(id: string) {
-    const booking = await prisma.booking.findUnique({
+    let booking = await prisma.booking.findUnique({
       where: { id },
       include: {
         statusHistory: {
@@ -455,6 +466,18 @@ export class BookingService {
 
     if (!booking) {
       throw new AppError(404, "Reserva no encontrada");
+    }
+
+    // Lazy-generation para reservas confirmadas antes de que existiera el código de asistencia
+    if (
+      (booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') &&
+      !(booking as any).attendanceCode
+    ) {
+      booking = await (prisma as any).booking.update({
+        where: { id },
+        data: { attendanceCode: this.generateAttendanceCode() },
+        include: { statusHistory: { orderBy: { createdAt: 'desc' }, take: 10 } },
+      });
     }
 
     return booking;
@@ -641,6 +664,7 @@ export class BookingService {
         confirmedAt: new Date(),
         confirmedBy: artistId,
         artistNotes,
+        attendanceCode: this.generateAttendanceCode(),
       },
     });
 
@@ -1487,7 +1511,8 @@ export class BookingService {
     id: string,
     userId: string,
     newStatus: BookingStatus,
-    reason?: string
+    reason?: string,
+    productDeliveryUrl?: string
   ) {
     const booking = await this.getBookingById(id);
 
@@ -1523,9 +1548,17 @@ export class BookingService {
     // Artista marca como completado → transición a DELIVERED para iniciar ventana de confirmación
     if (newStatus === "COMPLETED") {
       const now = new Date();
+      // Servicios con entrega de producto (foto/video) usan ventana de 48h en lugar de 24h
+      const autoCompleteHours = (booking as any).requiresProductDelivery ? 48 : 24;
+      const autoCompleteAt = new Date(now.getTime() + autoCompleteHours * 60 * 60 * 1000);
       const updated = await (prisma as any).booking.update({
         where: { id },
-        data: { status: "DELIVERED", deliveredAt: now },
+        data: {
+          status: "DELIVERED",
+          deliveredAt: now,
+          autoCompleteAt,
+          ...(productDeliveryUrl ? { productDeliveryUrl } : {}),
+        },
       });
 
       await this.recordStatusChange(id, booking.status, "DELIVERED", userId, reason || "Artista marcó el servicio como completado");
@@ -1821,6 +1854,147 @@ export class BookingService {
         }
       })();
     }
+
+    return updated;
+  }
+
+  // ==================== CÓDIGO DE ASISTENCIA ====================
+
+  async verifyAttendanceCode(bookingId: string, artistId: string, code: string) {
+    const booking = await this.getBookingById(bookingId);
+
+    if (booking.artistId !== artistId) {
+      throw new AppError(403, 'No tienes permiso para verificar esta reserva');
+    }
+
+    const validStatuses = ['CONFIRMED', 'IN_PROGRESS'];
+    if (!validStatuses.includes(booking.status)) {
+      throw new AppError(400, `La reserva no está en estado activo (estado actual: ${booking.status})`);
+    }
+
+    if ((booking as any).attendanceCodeUsedAt) {
+      throw new AppError(400, 'El código de asistencia ya fue utilizado para esta reserva');
+    }
+
+    if ((booking as any).attendanceCode !== code.trim()) {
+      throw new AppError(400, 'Código de asistencia incorrecto');
+    }
+
+    const now = new Date();
+    const requiresProductDelivery = (booking as any).requiresProductDelivery ?? false;
+
+    if (requiresProductDelivery) {
+      // Fotógrafos/videógrafos: solo confirmar asistencia, sin cobro todavía
+      const updated = await (prisma as any).booking.update({
+        where: { id: bookingId },
+        data: {
+          status: 'IN_PROGRESS',
+          attendanceCodeUsedAt: now,
+        },
+      });
+
+      await this.recordStatusChange(
+        bookingId,
+        booking.status as BookingStatus,
+        'IN_PROGRESS',
+        artistId,
+        'Asistencia confirmada con código — pendiente entrega de producto'
+      );
+
+      logger.info('Código de asistencia verificado (con entrega de producto)', 'BOOKING_SERVICE', { bookingId, artistId });
+
+      // Notificar al cliente que el artista llegó
+      ;(async () => {
+        try {
+          const artistProfile = await artistsClient.getArtist(booking.artistId).catch(() => null);
+          const artistName = (artistProfile as any)?.artistName || 'El artista';
+          notificationsClient.sendNotification({
+            userId: (booking as any).clientId,
+            type: 'ATTENDANCE_CONFIRMED',
+            channel: 'IN_APP',
+            title: 'Artista presente',
+            message: `${artistName} confirmó su asistencia. Recibirás el producto terminado en los próximos días.`,
+            data: { bookingId },
+            priority: 'normal',
+            category: 'booking',
+          }).catch(() => {});
+        } catch { /* notif no crítica */ }
+      })();
+
+      return updated;
+    }
+
+    // Servicio en vivo (músicos, DJs, etc.): completar y cobrar inmediatamente
+    const updated = await (prisma as any).booking.update({
+      where: { id: bookingId },
+      data: {
+        status: 'COMPLETED',
+        attendanceCodeUsedAt: now,
+        deliveredAt: now,
+        deliveryConfirmedAt: now,
+        deliveryConfirmedBy: artistId,
+      },
+    });
+
+    await this.recordStatusChange(
+      bookingId,
+      booking.status as BookingStatus,
+      'COMPLETED',
+      artistId,
+      'Código de asistencia verificado — servicio completado'
+    );
+
+    logger.info('Código de asistencia verificado — reserva completada y pago en proceso', 'BOOKING_SERVICE', { bookingId, artistId });
+
+    // Pago en background (patrón fire-and-forget idéntico al resto del servicio)
+    ;(async () => {
+      try {
+        if ((booking as any).paymentStatus === 'CARD_AUTHORIZED') {
+          await paymentsClient.captureBooking(bookingId);
+        } else if ((booking as any).paymentStatus === 'ANTICIPO_PAID') {
+          await paymentsClient.chargeRemainingBalance(bookingId);
+        }
+        await paymentsClient.schedulePayoutHold(bookingId, null);
+      } catch (err: any) {
+        logger.error('Error procesando pago tras verificación de código', 'BOOKING_SERVICE', { bookingId, error: err.message });
+      }
+    })();
+
+    // Notificaciones en background
+    ;(async () => {
+      try {
+        const [clientUser, artistProfile, service] = await Promise.all([
+          usersClient.getUser((booking as any).clientId).catch(() => null),
+          artistsClient.getArtist(booking.artistId).catch(() => null),
+          catalogClient.getService((booking as any).serviceId).catch(() => null),
+        ]);
+
+        const artistName = (artistProfile as any)?.artistName || 'Artista';
+        const clientAppUrl = process.env.CLIENT_APP_URL || 'http://localhost:3000';
+
+        notificationsClient.sendNotification({
+          userId: booking.artistId,
+          type: 'DELIVERY_CONFIRMED',
+          channel: 'IN_APP',
+          title: 'Asistencia confirmada',
+          message: 'El código fue verificado. El pago será liberado a tu cuenta.',
+          data: { bookingId },
+          priority: 'high',
+          category: 'booking',
+        }).catch(() => {});
+
+        notificationsClient.sendNotification({
+          userId: (booking as any).clientId,
+          type: 'REVIEW_REQUEST',
+          channel: 'IN_APP',
+          title: '¿Cómo fue tu experiencia?',
+          message: `Deja una reseña sobre el servicio de ${artistName}.`,
+          data: { bookingId, reviewUrl: `${clientAppUrl}/bookings/${bookingId}?review=1` },
+          priority: 'normal',
+          category: 'review',
+        }).catch(() => {});
+      } catch { /* notif no crítica */ }
+    })();
 
     return updated;
   }

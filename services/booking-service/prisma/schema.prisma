@@ -182,7 +182,13 @@ model Booking {
   autoCompleteAt        DateTime? // Programado = deliveredAt + 24h (auto-complete si cliente no responde)
   deliveryConfirmedAt   DateTime? // Cuándo el cliente confirmó recepción
   deliveryConfirmedBy   String?   // clientId que confirmó
+  productDeliveryUrl    String?   // URL opcional a galería/drive al entregar el producto (foto/video)
   disputeReason         String?   @db.Text
+
+  // Código de asistencia (flujo fast-path, estilo Uber)
+  requiresProductDelivery Boolean  @default(false) // Copiado del servicio al crear la reserva
+  attendanceCode          String?                  // 6 dígitos generados al confirmar la reserva
+  attendanceCodeUsedAt    DateTime?                // Cuándo el artista lo ingresó exitosamente
   disputeResolvedAt     DateTime?
   disputeResolvedBy     String?   // ID del admin que resolvió
 

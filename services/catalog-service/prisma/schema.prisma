@@ -131,6 +131,7 @@ model Service {
   depositAmount       Int?     // Monto fijo del depósito en centavos
   depositPercentage   Int?     // O porcentaje del precio
   requiresConsultation Boolean @default(false)
+  requiresProductDelivery Boolean @default(false) // Fotógrafos, videógrafos: asistencia y entrega son eventos separados
   
   // Políticas
   cancellationPolicy  String?  @db.Text

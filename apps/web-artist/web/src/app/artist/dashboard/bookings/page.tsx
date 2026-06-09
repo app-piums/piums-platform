@@ -66,6 +66,9 @@ export default function ArtistBookingsPage() {
     PENDING: null, CONFIRMED: null, COMPLETED: null, CANCELLED: null, REJECTED: null,
   });
   const [confirmModal, setConfirmModal] = useState<{ type: 'complete' | 'accept'; bookingId: string } | null>(null);
+  const [attendanceCode, setAttendanceCode] = useState('');
+  const [verifyingAttendance, setVerifyingAttendance] = useState(false);
+  const [productDeliveryUrl, setProductDeliveryUrl] = useState('');
 
   const loadBookings = useCallback(async () => {
     try {
@@ -166,8 +169,10 @@ export default function ArtistBookingsPage() {
   const handleCompleteConfirmed = async (bookingId: string) => {
     try {
       setProcessingBookingId(bookingId);
-      await sdk.completeBooking(bookingId);
+      const url = productDeliveryUrl.trim() || undefined;
+      await sdk.completeBooking(bookingId, url);
       setSelectedBooking(null);
+      setProductDeliveryUrl('');
       await loadBookings();
       void loadStatusCounts();
       toast.success('Reserva marcada como completada');
@@ -176,6 +181,23 @@ export default function ArtistBookingsPage() {
       toast.error(getErrorMessage(err) || 'Error al completar la reserva');
     } finally {
       setProcessingBookingId(null);
+    }
+  };
+
+  const handleVerifyAttendance = async (bookingId: string) => {
+    if (attendanceCode.length !== 6) { toast.warning('Ingresa el código de 6 dígitos'); return; }
+    try {
+      setVerifyingAttendance(true);
+      await sdk.verifyAttendanceCode(bookingId, attendanceCode);
+      setSelectedBooking(null);
+      setAttendanceCode('');
+      await loadBookings();
+      void loadStatusCounts();
+      toast.success('Asistencia confirmada. El pago será procesado.');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || 'Código incorrecto. Pídele el código al cliente.');
+    } finally {
+      setVerifyingAttendance(false);
     }
   };
 
@@ -888,6 +910,35 @@ export default function ArtistBookingsPage() {
 
                 {selectedBooking.status === 'CONFIRMED' && (
                   <div className="space-y-2">
+                    {/* Código de asistencia — confirma presencia y dispara el pago (o solo asistencia para foto/video) */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+                      <p className="text-xs font-semibold text-blue-700">Confirmar asistencia con código</p>
+                      <p className="text-xs text-blue-600">
+                        {(selectedBooking as any).requiresProductDelivery
+                          ? 'Ingresa el código del cliente para confirmar tu llegada. El pago se liberará cuando entregues el producto.'
+                          : 'Ingresa el código del cliente para completar la reserva y cobrar al instante.'}
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="000000"
+                          value={attendanceCode}
+                          onChange={e => setAttendanceCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="flex-1 px-3 py-2.5 bg-white border border-blue-200 rounded-lg text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <button
+                          onClick={() => void handleVerifyAttendance(selectedBooking.id)}
+                          disabled={verifyingAttendance || attendanceCode.length !== 6}
+                          className="px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                        >
+                          {verifyingAttendance
+                            ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />
+                            : 'Confirmar'}
+                        </button>
+                      </div>
+                    </div>
                     <button
                       onClick={() => void handleComplete(selectedBooking.id)}
                       disabled={processingBookingId === selectedBooking.id}
@@ -913,6 +964,38 @@ export default function ArtistBookingsPage() {
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H7a2 2 0 01-2-2zm0 0h2" /></svg>
                       Reportar queja
+                    </button>
+                  </div>
+                )}
+
+                {/* IN_PROGRESS con entrega de producto: el artista ya confirmó asistencia, ahora entrega */}
+                {selectedBooking.status === 'IN_PROGRESS' && (selectedBooking as any).requiresProductDelivery && (
+                  <div className="space-y-2">
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 space-y-2">
+                      <p className="text-xs font-semibold text-green-700">Entregar producto</p>
+                      <p className="text-xs text-green-600">
+                        Asistencia confirmada. Cuando el producto esté listo, marca la entrega.
+                        El cliente tendrá 48 horas para confirmar; después se libera el pago automáticamente.
+                      </p>
+                      <input
+                        type="url"
+                        placeholder="Enlace al producto (Google Drive, WeTransfer, etc.) — opcional"
+                        value={productDeliveryUrl}
+                        onChange={e => setProductDeliveryUrl(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <button
+                      onClick={() => void handleComplete(selectedBooking.id)}
+                      disabled={processingBookingId === selectedBooking.id}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {processingBookingId === selectedBooking.id ? (
+                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                      )}
+                      Marcar producto entregado
                     </button>
                   </div>
                 )}

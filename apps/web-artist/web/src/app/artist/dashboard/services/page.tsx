@@ -20,6 +20,7 @@ interface ServiceForm {
   whatIsIncluded: string[];
   minGuests: string;
   maxGuests: string;
+  requiresProductDelivery: boolean;
 }
 
 const PRICING_LABELS: Record<PricingType, string> = {
@@ -85,6 +86,7 @@ export default function ArtistServicesPage() {
     whatIsIncluded: [],
     minGuests: '',
     maxGuests: '',
+    requiresProductDelivery: false,
   };
   const [form, setForm] = useState<ServiceForm>(emptyForm);
 
@@ -149,6 +151,7 @@ export default function ArtistServicesPage() {
       whatIsIncluded: service.whatIsIncluded || [],
       minGuests: service.minGuests != null ? String(service.minGuests) : '',
       maxGuests: service.maxGuests != null ? String(service.maxGuests) : '',
+      requiresProductDelivery: service.requiresProductDelivery ?? false,
     });
     setFormError(null);
     setWhatIsIncludedInput('');
@@ -188,6 +191,7 @@ export default function ArtistServicesPage() {
           whatIsIncluded: form.whatIsIncluded,
           minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
           maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
+          requiresProductDelivery: form.requiresProductDelivery,
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
@@ -204,6 +208,7 @@ export default function ArtistServicesPage() {
           whatIsIncluded: form.whatIsIncluded,
           minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
           maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
+          requiresProductDelivery: form.requiresProductDelivery,
         });
         setServices((prev) => [created, ...prev]);
       }
@@ -698,6 +703,24 @@ export default function ArtistServicesPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Product delivery toggle */}
+              <div
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${form.requiresProductDelivery ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}
+                onClick={() => setForm({ ...form, requiresProductDelivery: !form.requiresProductDelivery })}
+              >
+                <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${form.requiresProductDelivery ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
+                  {form.requiresProductDelivery && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Este servicio incluye entrega de producto</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Para fotografia, video u otros servicios donde entregas un archivo editado. El pago se libera despues de que entregues el producto, no solo por asistir al evento.</p>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">

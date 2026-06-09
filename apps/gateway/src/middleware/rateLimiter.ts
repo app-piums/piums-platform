@@ -11,9 +11,10 @@ export const globalRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Socket.IO polling makes many HTTP requests per connection — exclude from global limiter.
-  // WebSocket upgrades never reach this limiter anyway, but polling handshakes do.
-  skip: (req) => req.path.startsWith('/socket.io'),
+  // Health probes and Socket.IO polling must never be rate-limited.
+  // Health: kubelet hits /api/health/ping every 10-20s — a 429 causes K8s to restart the pod.
+  // Socket.IO: polling makes many HTTP requests per connection; WS upgrades bypass this limiter.
+  skip: (req) => req.path.startsWith('/socket.io') || req.path.startsWith('/api/health'),
   handler: (req, res) => {
     logger.warn(`Rate limit exceeded for IP: ${req.ip}`, "RATE_LIMITER", {
       ip: req.ip,
