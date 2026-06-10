@@ -59,10 +59,18 @@ ownership en catalog/booking (no aceptan `artistId` del body), idempotencia de
 webhooks Stripe/Tilopay y recálculo server-side del monto de pago: **confirmados
 en código**.
 
-### Pendiente (infra, manual)
-`infra/k8s/hardening/` contiene NetworkPolicy, RBAC y securityContext listos para
-revisar y activar (ver su README). Tags `:latest`, rate-limit de ingress e INF-M2
-(cifrado etcd, gestionado por DOKS) documentados ahí.
+### Endurecimiento K8s — cableado para la migración DOKS (actualización 2026-06-10)
+`securityContext` no-root (UID 1000, seccomp RuntimeDefault) + `serviceAccountName:
+piums-app` + `automountServiceAccountToken:false` **cableados en el overlay de
+producción** (aplican en el `kubectl apply -k` del corte a DOKS; el docker-compose
+actual no cambia). `infra/k8s/hardening/` es ahora una base kustomize con el RBAC.
+CI valida los manifests (`backend-ci.yml` → `validate-k8s-manifests`,
+`kustomize build | kubeconform -strict`; los 4 overlays pasan, 0 inválidos).
+Bug preexistente corregido de paso: los overlays production/staging usaban
+`configMapGenerator behavior:merge` contra un ConfigMap-resource → **no renderizaban**;
+ahora sí. **NetworkPolicy** queda opt-in (validar en staging durante el corte).
+Tags `:latest`, rate-limit de ingress, endurecimiento por-contenedor
+(`readOnlyRootFilesystem`) e INF-M2 (etcd, gestionado por DOKS) documentados en el README.
 
 ---
 
@@ -77,11 +85,18 @@ revisar y activar (ver su README). Tags `:latest`, rate-limit de ingress e INF-M
 | `isMinifyEnabled=false` en release (sin ofuscación) | Artista | Alto | `true` (R8 validado) |
 | Regla ProGuard con paquete equivocado | Cliente | Medio | Corregido a `com.piums.cliente` |
 
-**Pendiente del usuario (Android):** el JWT viaja por deep link de scheme
-propio `piums://auth/callback?jwt=...` sin verificación de `state` — otra app que
-registre el scheme puede interceptarlo. Fix recomendado: Android App Links con
-verificación de dominio (`assetlinks.json` servido por el backend) o canje de un
-código de un solo uso por el JWT. Requiere cambios coordinados backend + apps.
+**Deep link OAuth — RESUELTO (actualización 2026-06-10):** se verificó que el login
+social web móvil (Facebook/TikTok) estaba **roto** (Android llamaba a
+`/api/auth/oauth/{provider}`, ruta inexistente → 404) y que el handler
+`piums://auth/callback?jwt=` era un sumidero latente de session-fixation. Por decisión
+de producto se **eliminó el path inseguro** de Cliente Android e iOS (handler de deep
+link, intent-filter, `OAuthWebLoginHelper`/`OAuthCallbackManager`/`OAuthWebLogin.swift`,
+métodos `loginWithOAuth`/`loginWithFacebook`/`loginWithTikTok` y botones). Quedan
+**Google/Apple nativos** (Firebase, sin deep link). Builds verificados: Cliente Android
+`compileReleaseKotlin` OK, Cliente iOS `xcodebuild` BUILD SUCCEEDED. El login social
+**web** (Next.js + rutas `/auth/facebook|tiktok`) no se tocó.
+Nota: el flujo iOS usaba `ASWebAuthenticationSession` (HTTPS, no custom scheme) y era
+más seguro que el de Android; se removió por consistencia y es reversible.
 
 ### iOS — corregido en código (los repos NO tienen git: hacer `git init`)
 | Hallazgo | App | Severidad | Fix |
@@ -93,10 +108,14 @@ código de un solo uso por el JWT. Requiere cambios coordinados backend + apps.
 pinning real (ambas, public-key pinning en Artista), logs de APNs/FCM ya bajo
 `#if DEBUG`, campos de password con `textContentType`.
 
-**Pendiente del usuario (iOS):** mismo riesgo de deep link que Android si el JWT
-llega por el scheme `piums` (migrar a Universal Links); OAuth `state` en Cliente
-falla-abierto si el backend no reenvía `state` — endurecer a fallar-cerrado;
-inicializar repos git.
+**Pendiente del usuario (iOS):** el deep link inseguro ya se eliminó (ver §3 arriba).
+Queda: inicializar repos git para versionar las apps iOS (hoy no tienen `.git`).
+
+### Bug relacionado (fuera del alcance de estos pendientes)
+auth-service usa `express-session` con **MemoryStore** (`index.ts:37`): el `state`/PKCE
+de TikTok **web** no sobrevive entre las 3 réplicas de producción → el login TikTok web
+es racy en prod. Migrar a store Redis (ya existe `REDIS_URL`). No se tocó porque el login
+social móvil se removió; afecta solo la web.
 
 ---
 
