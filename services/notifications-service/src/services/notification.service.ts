@@ -44,10 +44,39 @@ export class NotificationService {
   // Send Notifications
   // ============================================================================
 
+  /**
+   * Resuelve el token FCM del usuario desde auth-service cuando el caller no lo
+   * provee. auth.users.fcmToken es el almacén canónico (lo escribe
+   * PATCH /auth/fcm-token). Sin esto, las notificaciones PUSH se crean con
+   * fcmToken=null y sendViaPush falla con "FCM token not provided".
+   */
+  private async resolveFcmToken(userId: string): Promise<string | null> {
+    const authUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
+    const secret = process.env.INTERNAL_SERVICE_SECRET || '';
+    try {
+      const res = await fetch(`${authUrl}/auth/internal/fcm-token/${userId}`, {
+        headers: { 'x-internal-secret': secret },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { fcmToken?: string | null };
+      return data.fcmToken ?? null;
+    } catch (err: any) {
+      logger.warn('No se pudo resolver fcmToken desde auth-service', 'NOTIFICATION_SERVICE', { userId, error: err.message });
+      return null;
+    }
+  }
+
   async sendNotification(data: SendNotificationInput) {
     try {
       // Get user preferences
       const preferences = await this.getUserPreferences(data.userId);
+
+      // Para PUSH, si el caller no pasó el token, resolverlo desde auth-service
+      if (data.channel === NotificationChannel.PUSH && !data.fcmToken) {
+        const resolved = await this.resolveFcmToken(data.userId);
+        if (resolved) data.fcmToken = resolved;
+      }
 
       // Check if user has this channel enabled
       if (!this.isChannelEnabled(data.channel, preferences)) {
