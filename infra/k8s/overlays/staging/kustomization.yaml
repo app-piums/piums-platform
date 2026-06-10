@@ -82,12 +82,18 @@ patches:
     target:
       kind: Deployment
       name: chat-service
-
-configMapGenerator:
-  - name: piums-config
-    behavior: merge
-    literals:
-      - NODE_ENV=staging
+  # NODE_ENV=staging sobre el ConfigMap plano de la base (no se puede usar
+  # configMapGenerator behavior:merge contra un ConfigMap definido como resource).
+  - target:
+      kind: ConfigMap
+      name: piums-config
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: piums-config
+      data:
+        NODE_ENV: staging
 
 images:
   - name: ghcr.io/app-piums/piums-platform/gateway

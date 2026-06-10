@@ -1,19 +1,22 @@
-# Patch estratégico: aplica securityContext no-root a TODOS los Deployments.
-# Usar con kustomize:
-#   patches:
-#     - path: hardening/securitycontext-patch.yaml
-#       target: { kind: Deployment }
+# Patch estratégico a nivel de POD para TODOS los Deployments.
+# Se aplica vía kustomize con target { kind: Deployment } (sin name).
 #
-# Requiere imágenes que corran como UID 1000 (node:alpine USER node — ya es el
-# caso en todos los servicios y el gateway). Si algún proceso necesita escribir
-# en el filesystem, montar un emptyDir en esa ruta en vez de bajar readOnlyRootFilesystem.
+# Seguro: todas las imágenes corren USER node (UID 1000 en node:alpine);
+# moderation-service se corrigió en su Dockerfile durante la auditoría.
+#
+# El endurecimiento por-CONTENEDOR (allowPrivilegeEscalation:false,
+# capabilities.drop:[ALL], readOnlyRootFilesystem:true) NO se incluye aquí
+# porque readOnlyRootFilesystem requiere validar las escrituras de cada
+# servicio (/tmp, prisma) — añadirlo por-servicio tras probar en staging.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: PLACEHOLDER  # kustomize lo sobreescribe por target
+  name: hardening-securitycontext  # ignorado: el target por kind aplica a todos
 spec:
   template:
     spec:
+      serviceAccountName: piums-app
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -21,10 +24,3 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
-      containers:
-        - name: "*"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false  # subir a true tras verificar /tmp y prisma
-            capabilities:
-              drop: ["ALL"]

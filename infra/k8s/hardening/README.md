@@ -1,32 +1,36 @@
-# Endurecimiento de Kubernetes (revisar antes de activar)
+# Endurecimiento de Kubernetes
 
-Estos manifests cierran hallazgos de la auditoría de seguridad (junio 2026) que
-**NO** se aplican automáticamente porque un error de configuración puede tumbar
-producción. Revisa, prueba en staging y luego añádelos a
-`infra/k8s/base/kustomization.yaml` (o a un overlay).
+Manifests que cierran hallazgos de la auditoría de seguridad (junio 2026).
 
-## Contenido
+## Estado
 
-| Archivo | Hallazgo | Riesgo al activar |
+| Archivo | Hallazgo | Estado |
 |---|---|---|
-| `securitycontext-patch.yaml` | Pods corren como root (sin `securityContext`) | Bajo. Todas las imágenes ya usan `USER node` (UID 1000); `moderation-service` se corrigió en su Dockerfile. Verifica que ningún proceso escriba fuera de `/tmp`. |
-| `rbac.yaml` | Pods usan la ServiceAccount `default` con acceso amplio al API server | Bajo, pero requiere añadir `serviceAccountName` a los deployments. |
-| `networkpolicy.yaml` | Sin segmentación de red (cualquier pod habla con cualquier pod) | **Alto**. Es default-deny. Si las etiquetas/puertos no calzan exactamente con tus servicios, se corta el tráfico interno. Probar en staging. |
+| `securitycontext-patch.yaml` | Pods corren como root (sin `securityContext`) | **CABLEADO** en el overlay de producción (patch inline con `target: {kind: Deployment}`). Pod-level no-root (UID 1000); todas las imágenes ya usan `USER node`. |
+| `rbac.yaml` | Pods usan la ServiceAccount `default` con acceso amplio al API server | **CABLEADO**: `overlays/production` lo incluye vía `resources: - ../../hardening` y aplica `serviceAccountName: piums-app` + `automountServiceAccountToken: false` a todos los Deployments. |
+| `networkpolicy.yaml` | Sin segmentación de red (cualquier pod habla con cualquier pod) | **OPT-IN, no cableado**. Es default-deny; aplicar y validar en staging durante el corte a DOKS. |
 
-## Cómo activar (tras revisar)
+Esta carpeta es una base kustomize (`kustomization.yaml` incluye solo `rbac.yaml`).
+El render se valida en CI (`backend-ci.yml` → job `validate-k8s-manifests`,
+`kustomize build | kubeconform -strict`).
 
-1. Aplica `securitycontext-patch.yaml` como patch estratégico en kustomize:
-   ```yaml
-   # en kustomization.yaml
-   patches:
-     - path: hardening/securitycontext-patch.yaml
-       target:
-         kind: Deployment
-   ```
-2. `rbac.yaml`: añade `serviceAccountName: piums-app` al `spec.template.spec` de
-   cada deployment (o vía patch).
-3. `networkpolicy.yaml`: aplícalo **último** y observa logs. Requiere un CNI que
-   soporte NetworkPolicy (DOKS/Cilium lo soporta).
+## Pendiente por-contenedor (tras validar en staging)
+
+El patch cableado es solo a nivel de **pod**. Falta endurecer por-contenedor:
+`allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]` y
+`readOnlyRootFilesystem: true`. Este último requiere validar las escrituras de cada
+servicio (`/tmp`, `prisma`) antes de activarlo — hacerlo por-servicio.
+
+## NetworkPolicy — activar durante el corte a DOKS
+
+1. Confirmar el namespace real del ingress controller (el manifest asume
+   `ingress-nginx`; ajustar el `namespaceSelector` si difiere).
+2. Postgres/Redis son **managed** en DOKS → el egress hacia ellos NO debe
+   bloquearse (la regla `allow-dns-egress` ya deja egress general; no añadir un
+   default-deny-egress sin reglas explícitas a las DB managed).
+3. Aplicar `kubectl apply -f networkpolicy.yaml` en staging primero y verificar que
+   el tráfico inter-servicio sigue funcionando (`allow-intra-namespace`).
+   Requiere un CNI con soporte de NetworkPolicy (DOKS/Cilium lo tiene).
 
 ## Pendiente manual (no es manifest)
 

@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base de endurecimiento referenciable desde un overlay.
+# Solo incluye RBAC (ServiceAccount + Role/RoleBinding mínimos).
+# La NetworkPolicy queda fuera a propósito: es opt-in y requiere validación
+# en staging (ver README.md). securitycontext-patch.yaml es un patch, no un
+# resource — se aplica desde el overlay con target { kind: Deployment }.
+resources:
+  - rbac.yaml
