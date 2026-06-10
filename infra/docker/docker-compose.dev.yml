@@ -111,9 +111,9 @@ services:
       CLIENT_APP_URL: https://client.piums.io
       ARTIST_APP_URL: https://artist.piums.io
       NOTIFICATIONS_SERVICE_URL: http://notifications-service:4007
-      FIREBASE_API_KEY: REDACTED_FIREBASE_API_KEY
-      TIKTOK_CLIENT_KEY: REDACTED_TIKTOK_CLIENT_KEY
-      TIKTOK_CLIENT_SECRET: REDACTED_TIKTOK_CLIENT_SECRET
+      FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
+      TIKTOK_CLIENT_KEY: ${TIKTOK_CLIENT_KEY:-}
+      TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET:-}
       TIKTOK_CALLBACK_URL: https://backend.piums.io/api/auth/tiktok/callback
       GOOGLE_CALLBACK_URL: https://backend.piums.io/api/auth/google/callback
       FACEBOOK_CALLBACK_URL: https://backend.piums.io/api/auth/facebook/callback
@@ -140,9 +140,9 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums
       AUTH_SERVICE_URL: http://auth-service:4001
-      CLOUDINARY_CLOUD_NAME: dumqooqjv
-      CLOUDINARY_API_KEY: REDACTED_CLOUDINARY_API_KEY
-      CLOUDINARY_API_SECRET: REDACTED_CLOUDINARY_API_SECRET
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       MODERATION_SERVICE_URL: http://moderation-service:4011
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://192.168.50.131:3000,http://192.168.50.131:3001,http://192.168.50.131:3002,http://192.168.50.131:3003,https://client.piums.io,https://artist.piums.io,https://admin.piums.io,https://backend.piums.io
     depends_on:
@@ -215,9 +215,9 @@ services:
       JWT_SECRET: dev_jwt_secret_CHANGE_IN_PRODUCTION
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_changeme}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_changeme}
-      TILOPAY_API_KEY: 2642-8042-9400-8913-7001
-      TILOPAY_API_SECRET: 9oR8Gb
-      TILOPAY_API_USER: GHSjvq
+      TILOPAY_API_KEY: ${TILOPAY_API_KEY:-}
+      TILOPAY_API_SECRET: ${TILOPAY_API_SECRET:-}
+      TILOPAY_API_USER: ${TILOPAY_API_USER:-}
       TILOPAY_API_URL: https://app.tilopay.com/api/v1
       CLIENT_APP_URL: https://client.piums.io
       INTERNAL_SERVICE_SECRET: dev_internal_secret_piums

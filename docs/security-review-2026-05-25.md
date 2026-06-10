@@ -30,9 +30,9 @@
 El archivo está trackeado en git y contiene credenciales de producción activas:
 
 - `RESEND_API_KEY: RESEND_KEY_REDACTED`
-- `TIKTOK_CLIENT_SECRET: REDACTED_TIKTOK_CLIENT_SECRET`
-- `CLOUDINARY_API_SECRET: REDACTED_CLOUDINARY_API_SECRET`
-- `TILOPAY_API_KEY: 2642-8042-9400-8913-7001` / `TILOPAY_API_SECRET: 9oR8Gb`
+- `TIKTOK_CLIENT_SECRET: REDACTED`
+- `CLOUDINARY_API_SECRET: REDACTED`
+- `TILOPAY_API_KEY: REDACTED` / `TILOPAY_API_SECRET: REDACTED`
 
 Cualquier persona con acceso al repositorio tiene acceso completo a estos servicios.
 
@@ -55,7 +55,7 @@ El archivo contenía Tilopay, Firebase y TikTok secrets. Un `git clone` + `git l
 **Archivos:** `apps/web-client/web/Dockerfile:15`, `apps/web-artist/web/Dockerfile:15`
 
 ```dockerfile
-ARG NEXT_PUBLIC_FIREBASE_API_KEY=REDACTED_FIREBASE_API_KEY
+ARG NEXT_PUBLIC_FIREBASE_API_KEY=AIza...REDACTED
 ```
 
 Los build ARG con default quedan en los metadatos de la imagen (`docker history --no-trunc`). El valor también pasa a `ENV`, por lo que está en la capa final. Además queda en el historial de git.

@@ -800,8 +800,8 @@ Flujo OAuth 2.0 PKCE a través del **TikTok Login Kit v2**. No usa Passport.js (
 
 **Variables de entorno (ya configuradas en docker-compose.dev.yml):**
 ```env
-TIKTOK_CLIENT_KEY=REDACTED_TIKTOK_CLIENT_KEY
-TIKTOK_CLIENT_SECRET=REDACTED_TIKTOK_CLIENT_SECRET
+TIKTOK_CLIENT_KEY=REDACTED
+TIKTOK_CLIENT_SECRET=REDACTED
 TIKTOK_CALLBACK_URL=http://localhost:4001/auth/tiktok/callback
 ```
 

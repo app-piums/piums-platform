@@ -583,9 +583,9 @@ El payout al artista se gestiona manualmente por admin fuera de Tilopay.
 
 ```env
 # Tilopay
-TILOPAY_API_USER=GHSjvq
-TILOPAY_API_PASS=9oR8Gb
-TILOPAY_API_KEY=2642-8042-9400-8913-7001
+TILOPAY_API_USER=REDACTED
+TILOPAY_API_PASS=REDACTED
+TILOPAY_API_KEY=REDACTED
 TILOPAY_BASE_URL=https://app.tilopay.com
 TILOPAY_CALLBACK_URL=https://api.piums.io/payments/callback/tilopay
 TILOPAY_COUNTRIES=GT,CR,PA,HN,SV,NI,DO,CO

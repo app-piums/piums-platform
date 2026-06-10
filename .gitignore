@@ -48,3 +48,8 @@ next-env.d.ts
 
 # Avoid nested git repos
 piums-platform/
+
+# Seguridad: nunca commitear credenciales ni temporales
+credenciales-demo.md
+.fuse_hidden*
+_tmp_*
