@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/contexts/ThemeContext';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LocationPermissionPrompt } from '@/components/LocationPermissionPrompt';
 import { sdk } from '@piums/sdk';
+import { sortByPriceTier } from '@/lib/priceTier';
 
 const CATEGORIES = [
   { value: '',           label: 'Todas las categorías' },
@@ -255,11 +256,17 @@ function ArtistsPageContent() {
         if (!verified) return false;
       }
       if (minRating > 0 && ((a as any).rating ?? 0) < minRating) return false;
-      const price = artistPriceUSD(a as any);
-      if (minPrice && price !== null && price < parseFloat(minPrice)) return false;
-      if (maxPrice && price !== null && price > parseFloat(maxPrice)) return false;
+      // El rango de precio ya no excluye: ordena por cercanía al presupuesto (abajo)
       return true;
     });
+    if (sortBy === 'relevance' && (minPrice || maxPrice)) {
+      result = sortByPriceTier(
+        result,
+        a => artistPriceUSD(a as any),
+        minPrice ? parseFloat(minPrice) : undefined,
+        maxPrice ? parseFloat(maxPrice) : undefined
+      );
+    }
     if (sortBy !== 'relevance') {
       result = [...result].sort((a, b) => {
         if (sortBy === 'rating') return ((b as any).rating ?? 0) - ((a as any).rating ?? 0);

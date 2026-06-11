@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk } from '@piums/sdk';
 import type { Artist } from '@piums/sdk';
 import { Sparkles } from 'lucide-react';
+import { sortByPriceTier } from '@/lib/priceTier';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Categories
@@ -759,10 +760,7 @@ function BuscarArtistasContent() {
       if (showNewOnly && !isNewArtist(a as any)) return false;
       if (minRating > 0 && (a.rating ?? 0) < minRating) return false;
 
-      const artistPrice = (a as any).mainServicePrice ?? a.precioDesde ?? null;
-      if (minPrice && artistPrice !== null && artistPrice < parseFloat(minPrice)) return false;
-      if (maxPrice && artistPrice !== null && artistPrice > parseFloat(maxPrice)) return false;
-
+      // El rango de precio ya no excluye: ordena por cercanía al presupuesto (abajo)
       if (citySearchFilter) {
         const artistCity = ((a as any).city || a.ciudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const fCity = citySearchFilter.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -784,6 +782,15 @@ function BuscarArtistasContent() {
       }
       return true;
     });
+
+    if (sortBy === 'relevance' && (minPrice || maxPrice)) {
+      filtered = sortByPriceTier(
+        filtered,
+        a => (a as any).mainServicePrice ?? a.precioDesde ?? null,
+        minPrice ? parseFloat(minPrice) : undefined,
+        maxPrice ? parseFloat(maxPrice) : undefined
+      );
+    }
 
     if (sortBy !== 'relevance') {
       filtered = [...filtered].sort((a, b) => {

@@ -6,6 +6,7 @@ import { bookingClient } from '../clients/booking.client';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { expandQuery } from '../utils/synonyms';
+import { effectivePrice, priceTierRank, priceTierCompare } from '../utils/priceTier';
 import type {
   SearchArtistsInput,
   SearchServicesInput,
@@ -60,8 +61,7 @@ export class SearchService {
       ...(state && { state: { contains: state, mode: 'insensitive' } }),
       ...(country && {country}),
       ...(minRating && { averageRating: { gte: minRating } }),
-      ...(minPrice && { hourlyRateMin: { gte: minPrice } }),
-      ...(maxPrice && { hourlyRateMax: { lte: maxPrice } }),
+      // minPrice/maxPrice ya no filtran: son señal de ordenamiento (ver priceTier)
       ...(verifiedFilter !== undefined && { isVerified: verifiedFilter }),
       ...(isAvailable !== undefined && { isAvailable }),
       // category is merged into allSpecialties above; minGuests has no ArtistIndex-level capacity field
@@ -163,16 +163,40 @@ export class SearchService {
         ];
     }
 
+    // Con rango de precio activo y sin sort explícito, ordenar por cercanía al
+    // presupuesto (tier sort) en memoria: dentro del rango primero (más cercano
+    // al máximo), luego fuera del rango por distancia, sin precio al final.
+    const useTierSort =
+      (minPrice != null || maxPrice != null) &&
+      (!sortBy || sortBy === 'relevance');
+
     try {
-      const [artists, total] = await Promise.all([
-        prisma.artistIndex.findMany({
+      let artists: any[];
+      let total: number;
+
+      if (useTierSort) {
+        const all = await prisma.artistIndex.findMany({
           where,
-          orderBy,
-          skip,
-          take: limit
-        }),
-        prisma.artistIndex.count({ where })
-      ]);
+          orderBy: [{ averageRating: 'desc' }, { totalReviews: 'desc' }],
+          take: 2000
+        });
+        total = all.length;
+        artists = all
+          .map((a: any) => ({ a, rank: priceTierRank(effectivePrice(a), minPrice, maxPrice) }))
+          .sort((x: any, y: any) => priceTierCompare(x.rank, y.rank))
+          .slice(skip, skip + limit!)
+          .map((x: any) => x.a);
+      } else {
+        [artists, total] = await Promise.all([
+          prisma.artistIndex.findMany({
+            where,
+            orderBy,
+            skip,
+            take: limit
+          }),
+          prisma.artistIndex.count({ where })
+        ]);
+      }
 
       // Log search query for analytics
       await this.logSearchQuery({
@@ -814,8 +838,7 @@ export class SearchService {
       OR: whereConditions,
       ...(city && { city: { contains: city, mode: 'insensitive' } }),
       ...(country && { country }),
-      ...(minPrice != null && { price: { gte: minPrice } }),
-      ...(maxPrice != null && { price: { lte: maxPrice } }),
+      // minPrice/maxPrice ya no filtran: son señal de ordenamiento (ver priceTier)
       ...(minGuests != null && { capacity: { gte: minGuests } }),
     };
 
@@ -953,9 +976,33 @@ export class SearchService {
           })
         : [];
 
-      // Build SmartResult array, sorted by score
+      // Build SmartResult array, sorted by score. Con rango de precio activo,
+      // ordenar primero por cercanía al presupuesto (tier) y usar el score como
+      // desempate dentro de cada tier.
+      const priceRangeActive = minPrice != null || maxPrice != null;
+      const artistById = new Map<string, any>(
+        artists.map((a: any) => [a.id as string, a])
+      );
+      const smartEffectivePrice = (
+        artistId: string,
+        service: { price: number } | null
+      ): number | null => {
+        if (service?.price != null) return service.price;
+        const a = artistById.get(artistId);
+        return a ? effectivePrice(a) : null;
+      };
+
       const sorted = Array.from(artistBestMatch.entries())
-        .sort((a, b) => b[1].score - a[1].score)
+        .sort((a, b) => {
+          if (priceRangeActive) {
+            const cmp = priceTierCompare(
+              priceTierRank(smartEffectivePrice(a[0], a[1].service), minPrice, maxPrice),
+              priceTierRank(smartEffectivePrice(b[0], b[1].service), minPrice, maxPrice)
+            );
+            if (cmp !== 0) return cmp;
+          }
+          return b[1].score - a[1].score;
+        })
         .slice((page - 1) * limit, page * limit);
 
       const results = sorted.map(([artistId, { service, score, isExactMatch }]) => {

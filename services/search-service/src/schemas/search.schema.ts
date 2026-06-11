@@ -10,6 +10,8 @@ export const searchArtistsSchema = z.object({
   country: z.string().optional(),
   specialties: z.array(z.string()).optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
+  // minPrice/maxPrice no excluyen resultados: ordenan por cercanía al
+  // presupuesto cuando sortBy es relevance (ver utils/priceTier.ts)
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   minGuests: z.coerce.number().min(1).optional(),
@@ -80,6 +82,8 @@ export const smartSearchSchema = z.object({
   limit: z.coerce.number().min(1).max(50).optional().default(12),
   city: z.string().optional(),
   country: z.string().optional(),
+  // minPrice/maxPrice no excluyen resultados: ordenan por cercanía al
+  // presupuesto (ver utils/priceTier.ts)
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   minGuests: z.coerce.number().min(1).optional(),
