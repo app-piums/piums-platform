@@ -22,11 +22,21 @@ pnpm-debug.log*
 # Environment variables
 .env
 .env*.local
+.env.staging
+.env.production
+.env.development
+
+# Backup files (pueden contener credenciales)
+*.bak
+*.backup
+
+# Firebase service account JSONs
+*firebase-adminsdk*.json
+*serviceaccount*.json
 
 # Kubernetes secrets (never commit real credentials)
-infra/k8s/overlays/*/dev-secrets.yaml
-infra/k8s/overlays/*/secrets.yaml
-infra/k8s/overlays/*/prod-secrets.yaml
+infra/k8s/overlays/**/*secret*.yaml
+infra/k8s/overlays/**/*secrets*.yaml
 
 # OS
 .DS_Store

@@ -6,7 +6,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'REDACTED_FIREBASE_API_KEY',
+  apiKey: 'AIzaSyA5AhYFPMaykoF8TQXidqQo1DZ6eb1Zl6E',
   authDomain: 'piums-artista.firebaseapp.com',
   projectId: 'piums-artista',
   storageBucket: 'piums-artista.firebasestorage.app',
