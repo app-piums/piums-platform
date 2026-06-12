@@ -423,6 +423,8 @@ services:
       dockerfile: apps/web-client/web/Dockerfile
       args:
         GATEWAY_INTERNAL_URL: http://host.docker.internal:80
+        # Key real en infra/docker/.env (gitignorado) — el default del Dockerfile es un placeholder
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
         NEXT_PUBLIC_FIREBASE_VAPID_KEY: BC9q3ezyHhjl0G7a7AJU8Az_CH4-tQc4-ENArfGrO5gEer-nSF7RjJYmmCR213XvPnlC9R6gqGnLf3VmkfVjJjU
     container_name: piums-web-client
     ports:
@@ -453,6 +455,8 @@ services:
       dockerfile: apps/web-artist/web/Dockerfile
       args:
         GATEWAY_INTERNAL_URL: http://host.docker.internal:80
+        # Key real en infra/docker/.env (gitignorado) — el default del Dockerfile es un placeholder
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
         NEXT_PUBLIC_FIREBASE_VAPID_KEY: BC9q3ezyHhjl0G7a7AJU8Az_CH4-tQc4-ENArfGrO5gEer-nSF7RjJYmmCR213XvPnlC9R6gqGnLf3VmkfVjJjU
     container_name: piums-web-artist
     ports:
