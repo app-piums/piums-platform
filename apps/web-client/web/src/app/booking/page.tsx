@@ -240,6 +240,7 @@ function BookingContent() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>(undefined);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [dressCode, setDressCode] = useState('');
   const [eventType, setEventType] = useState<string>('');
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [numDays, setNumDays] = useState(1);
@@ -892,6 +893,7 @@ function BookingContent() {
         clientLng: clientCoords?.lng,
         eventType: eventType || undefined,
         clientNotes: notes || undefined,
+        dressCode: dressCode.trim() || undefined,
         selectedAddons: selectedAddons.length ? selectedAddons : undefined,
         eventId: selectedEventId || undefined,
         ...(couponCode ? { couponCode } : {}),
@@ -1479,6 +1481,24 @@ function BookingContent() {
                         </p>
                       </div>
 
+                      {/* Código de vestimenta */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Código de vestimenta (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={100}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35] transition-colors text-gray-900"
+                          placeholder="Formal, casual, temática años 80..."
+                          value={dressCode}
+                          onChange={(e) => setDressCode(e.target.value)}
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Indica cómo debe vestirse el artista para tu evento
+                        </p>
+                      </div>
+
                       {/* Evento */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1658,6 +1678,14 @@ function BookingContent() {
                               <dt className="text-sm text-gray-600">Notas:</dt>
                               <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">
                                 {notes}
+                              </dd>
+                            </div>
+                          )}
+                          {dressCode.trim() && (
+                            <div className="flex justify-between">
+                              <dt className="text-sm text-gray-600">Código de vestimenta:</dt>
+                              <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">
+                                {dressCode}
                               </dd>
                             </div>
                           )}

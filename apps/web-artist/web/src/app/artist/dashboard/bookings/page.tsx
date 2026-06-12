@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { sdk, Booking } from '@piums/sdk';
 import CollaborationPanel from '@/components/bookings/CollaborationPanel';
 import { getErrorMessage, isUnauthorizedError } from '@/lib/errors';
-import { Check, X, Cake, Gem, GraduationCap, Crown, Building2, Music, PartyPopper, Baby, Church, Wine, HelpCircle, CalendarDays } from 'lucide-react';
+import { Check, X, Cake, Gem, GraduationCap, Crown, Building2, Music, PartyPopper, Baby, Church, Wine, HelpCircle, CalendarDays, Shirt } from 'lucide-react';
 
 const EVENT_TYPE_ICONS: Record<string, React.ReactElement> = {
   CUMPLEANOS:  <Cake       size={16} />,
@@ -506,6 +506,16 @@ export default function ArtistBookingsPage() {
                             <p className="text-xs text-amber-800 leading-relaxed">{booking.clientNotes}</p>
                           </div>
                         )}
+
+                        {/* Dress code */}
+                        {booking.dressCode && (
+                          <div className="flex items-start gap-2.5 bg-indigo-50 rounded-lg px-3 py-2.5">
+                            <Shirt className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                            <p className="text-xs text-indigo-800 leading-relaxed">
+                              <span className="font-medium">Vestimenta:</span> {booking.dressCode}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Actions — full width on mobile */}
@@ -840,6 +850,16 @@ export default function ArtistBookingsPage() {
                     <div>
                       <p className="text-xs text-amber-700 font-medium mb-0.5">Notas del cliente</p>
                       <p className="text-xs text-amber-800 leading-relaxed">{selectedBooking.clientNotes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBooking.dressCode && (
+                  <div className="flex items-start gap-3 bg-indigo-50 rounded-xl px-3 py-2.5">
+                    <Shirt className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-indigo-700 font-medium mb-0.5">Código de vestimenta</p>
+                      <p className="text-xs text-indigo-800 leading-relaxed">{selectedBooking.dressCode}</p>
                     </div>
                   </div>
                 )}

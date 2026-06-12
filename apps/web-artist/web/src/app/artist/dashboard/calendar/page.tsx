@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import { useRouter } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
+import { MonthYearPicker } from '@/components/artist/MonthYearPicker';
 import { sdk, BlockedSlot, Booking } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { Check, Clock } from 'lucide-react';
@@ -196,7 +197,6 @@ export default function ArtistCalendarPage() {
     }
   };
 
-  const monthName = currentMonth.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
   const days = getDaysInMonth(currentMonth);
   const firstDow = getFirstDayOfWeek(currentMonth);
 
@@ -256,10 +256,16 @@ export default function ArtistCalendarPage() {
                 <span className="hidden sm:inline">← Anterior</span>
                 <span className="sm:hidden">←</span>
               </button>
-              <h2 className="text-base sm:text-xl font-bold text-gray-900 capitalize flex items-center gap-2">
-                {monthName}
+              <div className="flex items-center gap-2">
+                <MonthYearPicker
+                  month={currentMonth.getMonth()}
+                  year={currentMonth.getFullYear()}
+                  onSelect={(m, y) => setCurrentMonth(new Date(y, m, 1))}
+                  align="center"
+                  className="text-base sm:text-xl font-bold text-gray-900 capitalize"
+                />
                 {loading && <span className="text-xs text-gray-400 font-normal">(cargando...)</span>}
-              </h2>
+              </div>
               <button
                 onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
                 className="p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"

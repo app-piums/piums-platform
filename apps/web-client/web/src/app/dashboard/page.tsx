@@ -8,6 +8,7 @@ import { Loading } from '@/components/Loading';
 import ClientSidebar from '@/components/ClientSidebar';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import { NotificationBell } from '@/components/NotificationBell';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { sdk, Artist, Booking } from '@piums/sdk';
 import { formatArtistCategory } from '@/lib/artistCategory';
@@ -37,7 +38,6 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
   const toDateStr = (y: number, m: number, d: number) =>
     `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const dayNames = ['L','M','M','J','V','S','D'];
 
   const firstDay = new Date(year, month, 1).getDay();
@@ -84,7 +84,11 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-gray-800">{monthNames[month]} {year}</h2>
+        <MonthYearPicker
+          month={month}
+          year={year}
+          onSelect={(m, y) => { setMonth(m); setYear(y); }}
+        />
         <div className="flex gap-1">
           <button onClick={prev} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
             <ChevronLeft className="h-4 w-4" />
