@@ -443,8 +443,8 @@ services:
       NEXT_PUBLIC_ADMIN_URL: https://admin.piums.io
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_CHAT_SERVICE_URL: https://backend.piums.io
-    depends_on:
-      - gateway
+    # Sin depends_on: las webs hablan con el backend de K8s (host.docker.internal:80),
+    # no con el gateway de Compose — evita resucitar el stack viejo con up -d
     networks:
       - piums-network
     restart: unless-stopped
@@ -478,8 +478,8 @@ services:
       NEXT_PUBLIC_ADMIN_URL: https://admin.piums.io
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_CHAT_SERVICE_URL: https://backend.piums.io
-    depends_on:
-      - gateway
+    # Sin depends_on: las webs hablan con el backend de K8s (host.docker.internal:80),
+    # no con el gateway de Compose — evita resucitar el stack viejo con up -d
     networks:
       - piums-network
     restart: unless-stopped
@@ -489,19 +489,20 @@ services:
       context: ../../
       dockerfile: apps/web-admin/web/Dockerfile
       args:
-        GATEWAY_INTERNAL_URL: http://gateway:3000
+        # Backend real en K8s (igual que web-client/web-artist), no el gateway de Compose
+        GATEWAY_INTERNAL_URL: http://host.docker.internal:80
     container_name: piums-web-admin
     ports:
       - "3002:3003"
     environment:
       NODE_ENV: development
-      GATEWAY_INTERNAL_URL: http://gateway:3000
-      GATEWAY_URL: http://gateway:3000/api
+      GATEWAY_INTERNAL_URL: http://host.docker.internal:80
+      GATEWAY_URL: http://host.docker.internal:80/api
       NEXT_PUBLIC_APP_URL: https://admin.piums.io
       NEXT_PUBLIC_API_URL: https://backend.piums.io/api
       NEXT_PUBLIC_CHAT_SERVICE_URL: https://backend.piums.io
-    depends_on:
-      - gateway
+    # Sin depends_on: las webs hablan con el backend de K8s (host.docker.internal:80),
+    # no con el gateway de Compose — evita resucitar el stack viejo con up -d
     networks:
       - piums-network
     restart: unless-stopped
