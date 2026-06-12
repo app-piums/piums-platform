@@ -156,7 +156,7 @@ export const removeFavorite = async (
     if (!authId) throw new AppError(401, "No autenticado");
 
     const user = await usersService.getUserByAuthId(authId);
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     const existing = await prisma.favorite.findFirst({
       where: { id, userId: user.id, deletedAt: null },

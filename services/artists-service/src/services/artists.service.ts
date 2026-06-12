@@ -19,11 +19,16 @@ const normalizeArtistPayload = (data: any) => {
     ["ciudad", "city"],
     ["pais", "country"],
     ["experienceYears", "yearsExperience"],
+    // Apps móviles (LocationService iOS) mandan "location" con la ciudad geocodificada
+    ["location", "city"],
   ];
 
   for (const [legacyKey, prismaKey] of legacyMappings) {
     if (Object.prototype.hasOwnProperty.call(normalized, legacyKey)) {
-      normalized[prismaKey] = normalized[legacyKey];
+      // No pisar el campo canónico si ya viene en el payload
+      if (!Object.prototype.hasOwnProperty.call(normalized, prismaKey)) {
+        normalized[prismaKey] = normalized[legacyKey];
+      }
       delete normalized[legacyKey];
     }
   }

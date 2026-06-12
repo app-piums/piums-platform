@@ -249,7 +249,32 @@ export class ProfileService {
   async updateCoverPhoto(userId: string, coverPhotoUrl: string) {
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) {
-      throw new AppError(404, "Perfil no encontrado");
+      // Usuarios antiguos pueden no tener fila en profiles: crearla al vuelo
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { nombre: true },
+      });
+      const base =
+        (user?.nombre ?? "usuario")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9_-]+/g, "-")
+          .replace(/^-+|-+$/g, "") || "usuario";
+
+      const created = await prisma.profile.create({
+        data: {
+          userId,
+          displayName: user?.nombre ?? "Usuario",
+          slug: `${base}-${userId.slice(0, 8)}`,
+          coverPhoto: coverPhotoUrl,
+        },
+      });
+      logger.info("Perfil creado automáticamente al subir portada", "PROFILE_SERVICE", {
+        profileId: created.id,
+        userId,
+      });
+      return created;
     }
 
     return prisma.profile.update({

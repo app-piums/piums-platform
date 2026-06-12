@@ -174,6 +174,26 @@ export const setupRoutes = (app: Express) => {
     })
   );
 
+  // Resto de rutas multipart de users-service (avatar, portada, portafolio):
+  // mismo bypass que documents/upload — el proxy genérico con fixRequestBody
+  // trunca el multipart (busboy: "Unexpected end of form")
+  for (const multipartPath of [
+    "/api/users/me/avatar",
+    "/api/users/me/profile/cover",
+    "/api/users/me/profile/portfolio-upload",
+  ]) {
+    app.use(
+      multipartPath,
+      uploadRateLimiter,
+      authMiddleware,
+      createProxyMiddleware({
+        target: process.env.USERS_SERVICE_URL || "http://localhost:4002",
+        changeOrigin: true,
+        pathRewrite: { "^/": multipartPath },
+      })
+    );
+  }
+
   // ============================================================================
   // Users Service (PROTEGIDO)
   // ============================================================================
