@@ -8,6 +8,7 @@ import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
+import { LocationSearchField } from '@/components/artist/LocationSearchField';
 import { toast } from '@/lib/toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Globe, Star, Trophy, Lightbulb, CreditCard, CheckCircle } from 'lucide-react';
@@ -191,6 +192,14 @@ export default function ArtistSettingsPage() {
       });
     }
   }, [authUser]);
+
+  // Si el perfil de artista no tiene ciudad, usar la de la cuenta (auth) como
+  // valor inicial; al guardar queda persistida en el perfil de artista.
+  useEffect(() => {
+    if (!isLoading && authUser?.ciudad) {
+      setFormData((prev) => (prev.ciudad ? prev : { ...prev, ciudad: authUser.ciudad as string }));
+    }
+  }, [authUser, isLoading]);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -975,20 +984,28 @@ export default function ArtistSettingsPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Referencia o descripción
+                        Referencia o ubicación
                       </label>
-                      <input
-                        type="text"
+                      <LocationSearchField
                         value={formData.baseLocationLabel}
-                        onChange={(e) => {
-                          setFormData({ ...formData, baseLocationLabel: e.target.value });
+                        coords={null}
+                        onAddressChange={(address) => {
+                          setFormData({ ...formData, baseLocationLabel: address });
+                          if (locationError) setLocationError(null);
+                        }}
+                        onSelect={(r) => {
+                          setFormData({
+                            ...formData,
+                            baseLocationLabel: r.address,
+                            baseLocationLat: r.lat,
+                            baseLocationLng: r.lng,
+                          });
                           if (locationError) setLocationError(null);
                         }}
                         placeholder="Zona 10, Ciudad de Guatemala"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Puedes escribir la colonia, zona o referencia que mejor describa tu punto base.
+                        Busca y elige un lugar de la lista; las coordenadas se llenan solas. También puedes ajustar el pin en el mapa.
                       </p>
                     </div>
 
