@@ -63,6 +63,22 @@ export async function GET(request: NextRequest) {
 
     const data = await verifyRes.json();
 
+    // /auth/verify excluye los campos KYC (documentos) por diseño; hay que
+    // pedirlos a /auth/me, si no la verificación de identidad aparece siempre
+    // como pendiente aunque el usuario ya la haya completado.
+    let kyc: Record<string, unknown> = {};
+    try {
+      const meRes = await fetch(`${AUTH_SERVICE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        kyc = meData.user ?? {};
+      }
+    } catch {
+      // Si falla, continuar con los datos de verify (sin KYC)
+    }
+
     const response = NextResponse.json({
       user: {
         id: data.userId || data.id,
@@ -70,13 +86,13 @@ export async function GET(request: NextRequest) {
         email: data.email,
         role: userRole || data.role,
         avatar: data.avatar,
-        ciudad: data.ciudad ?? null,
-        birthDate: data.birthDate ?? null,
-        documentType: data.documentType ?? null,
-        documentNumber: data.documentNumber ?? null,
-        documentFrontUrl: data.documentFrontUrl ?? null,
-        documentBackUrl: data.documentBackUrl ?? null,
-        documentSelfieUrl: data.documentSelfieUrl ?? null,
+        ciudad: data.ciudad ?? kyc.ciudad ?? null,
+        birthDate: data.birthDate ?? kyc.birthDate ?? null,
+        documentType: kyc.documentType ?? null,
+        documentNumber: kyc.documentNumber ?? null,
+        documentFrontUrl: kyc.documentFrontUrl ?? null,
+        documentBackUrl: kyc.documentBackUrl ?? null,
+        documentSelfieUrl: kyc.documentSelfieUrl ?? null,
       },
     });
 
