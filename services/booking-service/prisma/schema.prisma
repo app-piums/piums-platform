@@ -162,6 +162,7 @@ model Booking {
 
   // Notas
   clientNotes     String?      @db.Text
+  dressCode       String?      @db.VarChar(100) // Código de vestimenta solicitado por el cliente
   artistNotes     String?      @db.Text
   internalNotes   String?      @db.Text // Notas para admin/staff
   

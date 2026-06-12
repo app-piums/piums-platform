@@ -59,6 +59,7 @@ export const createBookingSchema = z.object({
 
   eventType: EventTypeEnum.optional(),
   clientNotes: z.string().max(1000).optional(),
+  dressCode: z.string().max(100).optional(),
 
   eventId: z.string().uuid().optional(),
   couponCode: z.string().optional(),
@@ -73,6 +74,7 @@ export const updateBookingSchema = z.object({
   locationLng: z.number().min(-180).max(180).optional(),
   selectedAddons: z.array(z.string().uuid()).optional(),
   clientNotes: z.string().max(1000).optional(),
+  dressCode: z.string().max(100).optional(),
   artistNotes: z.string().max(1000).optional(),
   reviewId: z.string().optional(),
 });

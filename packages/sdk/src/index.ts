@@ -222,6 +222,7 @@ export interface Booking {
   eventId?: string;
   selectedAddons?: string[];
   clientNotes?: string;
+  dressCode?: string;
   artistNotes?: string;
   cancellationReason?: string;
   cancelReason?: string;
@@ -255,6 +256,7 @@ export interface CreateBookingPayload {
   clientLng?: number;
   selectedAddons?: string[];
   clientNotes?: string;
+  dressCode?: string;
   eventId?: string;
 }
 

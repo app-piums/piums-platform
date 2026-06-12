@@ -26,6 +26,7 @@ export interface Booking {
   durationMinutes?: number;
   address?: string;
   notes?: string;
+  dressCode?: string;
   totalAmount: number;
   depositAmount?: number;
   currency: string;
@@ -60,6 +61,7 @@ export interface CreateBookingRequest {
   durationMinutes?: number;
   address?: string;
   notes?: string;
+  dressCode?: string;
 }
 
 export interface CheckAvailabilityRequest {

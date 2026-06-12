@@ -76,6 +76,26 @@ export class BookingController {
         }
       }
 
+      // Moderar dressCode antes de crear la reserva
+      if (validatedData.dressCode) {
+        const modResult = await moderationClient.check({
+          userId: clientId,
+          contentType: 'BOOKING_NOTE',
+          content: validatedData.dressCode,
+          service: 'booking-service',
+        });
+        if (
+          modResult.action === 'REJECT' ||
+          modResult.action === 'STRIKE' ||
+          modResult.action === 'MANUAL_REVIEW'
+        ) {
+          throw new AppError(400, modResult.rejectMessage);
+        }
+        if (modResult.action === 'CENSOR') {
+          validatedData.dressCode = modResult.censored ?? validatedData.dressCode;
+        }
+      }
+
       const { booking } = await bookingService.createBooking({
         ...validatedData,
         clientId,

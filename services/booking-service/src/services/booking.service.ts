@@ -58,6 +58,7 @@ export class BookingService {
     selectedAddons?: string[];
     eventType?: string;
     clientNotes?: string;
+    dressCode?: string;
     eventId?: string;
     couponCode?: string;
   }) {
@@ -264,6 +265,7 @@ export class BookingService {
         selectedAddons: data.selectedAddons || [],
         eventType: data.eventType as any || null,
         clientNotes: data.clientNotes,
+        dressCode: data.dressCode,
         paymentStatus: depositRequired ? "PENDING" : "ANTICIPO_PAID",
         eventId: data.eventId || null,
         couponCode: data.couponCode || null,
@@ -609,6 +611,7 @@ export class BookingService {
       locationLng?: number;
       selectedAddons?: string[];
       clientNotes?: string;
+      dressCode?: string;
       artistNotes?: string;
       reviewId?: string;
     }
@@ -662,6 +665,7 @@ export class BookingService {
         locationLng: data.locationLng,
         selectedAddons: data.selectedAddons,
         clientNotes: data.clientNotes,
+        dressCode: data.dressCode,
         artistNotes: data.artistNotes,
         reviewId: data.reviewId,
       },
