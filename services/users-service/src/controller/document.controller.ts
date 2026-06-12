@@ -31,13 +31,15 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
     }
 
     const folder = (req.query.folder as string) || 'misc';
-    const validFolders = ['front', 'back', 'selfie', 'avatar'];
+    const validFolders = ['front', 'back', 'selfie', 'avatar', 'portfolio'];
     if (!validFolders.includes(folder)) {
       throw new AppError(400, `Carpeta inválida. Usa: ${validFolders.join(', ')}`);
     }
 
     const url = folder === 'avatar'
       ? await cloudinaryProvider.uploadAvatarTemp(req.file.buffer)
+      : folder === 'portfolio'
+      ? await cloudinaryProvider.uploadPortfolio(req.file.buffer, `portfolio_${Date.now()}_${Math.random().toString(36).slice(2)}`)
       : await cloudinaryProvider.uploadDocument(req.file.buffer, folder);
 
     logger.info('Document uploaded', 'DOCUMENT_CONTROLLER', { folder, size: req.file.size });
