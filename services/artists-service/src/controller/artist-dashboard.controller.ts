@@ -3,6 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import { ArtistsService } from "../services/artists.service";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { validateSafeHttpsUrl, validateCloudinaryUrl } from "../utils/url-validator";
 import { bookingServiceClient } from "../clients/booking.client";
 import { paymentsServiceClient } from "../clients/payments.client";
 import { usersClient } from "../clients/users.client";
@@ -77,6 +78,17 @@ export const updateMyProfile = async (
     const safeBody = Object.fromEntries(
       Object.entries(req.body).filter(([k]) => ALLOWED_FIELDS.includes(k))
     );
+
+    // Validación anti-SSRF: solo URLs seguras en campos de imagen y redes sociales
+    if (safeBody.avatar)     validateCloudinaryUrl(String(safeBody.avatar), 'avatar');
+    if (safeBody.coverPhoto) validateCloudinaryUrl(String(safeBody.coverPhoto), 'coverPhoto');
+    if (safeBody.website)    validateSafeHttpsUrl(String(safeBody.website), 'website');
+    for (const field of ['instagram', 'facebook', 'youtube', 'tiktok']) {
+      const val = safeBody[field];
+      if (val && typeof val === 'string' && val.includes('://')) {
+        validateSafeHttpsUrl(val, field);
+      }
+    }
 
     const updatedArtist = await artistsService.updateArtist(artist.id, safeBody);
 
