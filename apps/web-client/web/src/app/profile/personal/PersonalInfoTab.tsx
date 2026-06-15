@@ -161,6 +161,7 @@ export default function PersonalInfoTab(props: PersonalInfoTabProps) {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          nombre: formData.nombre,
           ciudad: formData.direccion,
           telefono: formData.telefono,
         }),

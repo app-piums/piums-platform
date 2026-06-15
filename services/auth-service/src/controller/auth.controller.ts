@@ -753,7 +753,7 @@ export const getMe = async (req: Request, res: Response) => {
 export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = (req as any).user;
-    const { ciudad, birthDate, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = req.body;
+    const { ciudad, birthDate, nombre, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = req.body;
 
     // Snapshot before update — used to detect first-time document submission
     const before = await prisma.user.findUnique({
@@ -770,6 +770,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const hadDocsBefore = !!(before?.documentType && before?.documentFrontUrl && before?.documentSelfieUrl);
 
     const updateData: Record<string, unknown> = {};
+    if (nombre !== undefined) updateData.nombre = nombre;
     if (ciudad !== undefined) updateData.ciudad = ciudad;
     if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
     if (documentType !== undefined) updateData.documentType = documentType;

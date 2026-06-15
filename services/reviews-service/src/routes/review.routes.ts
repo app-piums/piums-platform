@@ -1,6 +1,6 @@
 import { Router, RequestHandler } from "express";
 import { reviewController } from "../controller/review.controller";
-import { authenticateToken, requireAdmin, requireActiveSession } from "../middleware/auth.middleware";
+import { authenticateToken, requireAdmin, requireActiveSession, optionalAuth } from "../middleware/auth.middleware";
 import {
   createReviewLimiter,
   responseReviewLimiter,
@@ -11,6 +11,7 @@ import {
 const router: Router = Router();
 const asHandler = (fn: Function): RequestHandler => fn as unknown as RequestHandler;
 const auth = authenticateToken as RequestHandler;
+const optAuth = optionalAuth as RequestHandler;
 const sessionActive = requireActiveSession as unknown as RequestHandler;
 const adminOnly = requireAdmin as RequestHandler;
 
@@ -31,6 +32,7 @@ router.get(
 
 router.get(
   "/reviews",
+  optAuth,
   asHandler(reviewController.getReviews.bind(reviewController))
 );
 

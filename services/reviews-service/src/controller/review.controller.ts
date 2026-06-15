@@ -43,9 +43,39 @@ export class ReviewController {
 
   async getReviews(req: Request, res: Response, next: NextFunction) {
     try {
+      const caller = (req as AuthRequest).user;
+      const isAdmin = caller?.role === 'admin';
       const filters = filterReviewsSchema.parse(req.query);
 
+      // No-admins solo pueden ver reseñas APPROVED
+      if (!isAdmin && filters.status && filters.status !== 'APPROVED') {
+        return next(new AppError(403, 'No tienes permiso para filtrar por este estado'));
+      }
+      if (!isAdmin) {
+        filters.status = filters.status ?? 'APPROVED';
+      }
+
+      // Filtro por clientId: requiere auth y que sea el propio usuario
+      if (filters.clientId) {
+        if (!caller) return next(new AppError(401, 'Se requiere autenticación'));
+        if (filters.clientId !== caller.id) {
+          return next(new AppError(403, 'Solo puedes ver tus propias reseñas'));
+        }
+      }
+
+      // Sin filtros y sin ser admin: default a propias reseñas del llamante
+      if (!filters.artistId && !filters.clientId && !isAdmin) {
+        if (!caller) return next(new AppError(401, 'Se requiere autenticación'));
+        filters.clientId = caller.id;
+      }
+
       const result = await reviewService.getReviews(filters);
+
+      // Sanitizar: quitar clientId y bookingId en consultas públicas por artistId
+      if (!isAdmin && filters.artistId && !filters.clientId) {
+        result.reviews = result.reviews.map(({ clientId: _c, bookingId: _b, ...safe }: any) => safe);
+      }
+
       res.json(result);
     } catch (error) {
       next(error);
