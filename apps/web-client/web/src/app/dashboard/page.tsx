@@ -171,6 +171,23 @@ function MiniCalendar({ bookings }: { bookings: Booking[] }) {
   );
 }
 
+const INTEREST_TO_CATEGORY: Record<string, string> = {
+  'live-music':       'MUSICO',
+  'dj':               'MUSICO',
+  'photography':      'FOTOGRAFO',
+  'video':            'VIDEOGRAFO',
+  'music-production': 'MUSICO',
+  'dance':            'ANIMADOR',
+  'magic':            'ANIMADOR',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  MUSICO:     'Músicos para ti',
+  FOTOGRAFO:  'Fotógrafos para ti',
+  VIDEOGRAFO: 'Videógrafos para ti',
+  ANIMADOR:   'Animadores para ti',
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -178,6 +195,7 @@ export default function DashboardPage() {
   const [recommendedArtists, setRecommendedArtists] = useState<Artist[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [personalizedSections, setPersonalizedSections] = useState<{ cat: string; label: string; artists: Artist[] }[]>([]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push('/login');
@@ -196,6 +214,29 @@ export default function DashboardPage() {
       }
       if (bookingsRes.status === 'fulfilled') {
         setBookings(bookingsRes.value.bookings ?? []);
+      }
+
+      // Load personalized sections based on onboarding interests
+      try {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('piums_interests') : null;
+        if (saved) {
+          const interests: { categories: string[] } = JSON.parse(saved);
+          const categories = [...new Set(
+            (interests.categories ?? []).map(c => INTEREST_TO_CATEGORY[c]).filter(Boolean)
+          )];
+          if (categories.length > 0) {
+            const results = await Promise.allSettled(
+              categories.map(cat => sdk.getArtists({ category: cat, limit: 8 } as any).then(r => ({ cat, artists: r.artists ?? [] })))
+            );
+            const sections = results
+              .filter((r): r is PromiseFulfilledResult<{ cat: string; artists: Artist[] }> => r.status === 'fulfilled')
+              .map(r => ({ ...r.value, label: CATEGORY_LABELS[r.value.cat] ?? r.value.cat }))
+              .filter(s => s.artists.length > 0);
+            setPersonalizedSections(sections);
+          }
+        }
+      } catch {
+        // Non-critical — personalized sections simply don't show
       }
     } catch (err) {
       console.error('Error cargando dashboard:', err);
@@ -466,6 +507,73 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {/* Personalized sections based on onboarding interests */}
+          {personalizedSections.map(({ cat, label, artists }) => (
+            <div key={cat} className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900">{label}</h2>
+                <Link href="/artists" className="text-sm text-[#FF6B35] font-medium hover:underline">Ver todos →</Link>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:gap-4">
+                {artists.slice(0, 4).map((artist) => {
+                  const gradient = getSpecialtyGradient((artist as any).specialties);
+                  const initials = (artist.nombre ?? artist.artistName ?? '?')
+                    .split(' ').slice(0, 2).map((w: string) => w[0] ?? '').join('').toUpperCase();
+                  const rating = (artist as any).averageRating ?? artist.rating;
+                  const city = (artist as any).city ?? (artist as any).ciudad;
+                  const specialty = (artist as any).specialties?.[0] ?? formatArtistCategory(artist.category ?? (artist as any).categoria, (artist as any).specialties);
+                  const price = (artist as any).mainServicePrice ?? artist.precioDesde;
+                  const serviceName = (artist as any).mainServiceName;
+                  const avatarUrl = (artist as any).avatar ?? (artist as any).avatarUrl ?? (artist as any).profilePhoto;
+                  const coverUrl = (artist as any).coverPhoto ?? (artist as any).coverUrl;
+                  return (
+                    <Link
+                      key={artist.id}
+                      href={`/artists/${artist.id}`}
+                      className="relative bg-white rounded-2xl overflow-visible shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all shrink-0 w-44 lg:w-auto"
+                    >
+                      <div className={`h-28 rounded-t-2xl bg-gradient-to-br ${gradient} relative overflow-hidden`}>
+                        {coverUrl ? (
+                          <img src={coverUrl} alt={artist.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="absolute inset-0 opacity-20"
+                            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                        )}
+                      </div>
+                      <div className={`absolute left-3 bg-gradient-to-br ${gradient} rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center`}
+                        style={{ width: 40, height: 40, top: 112 - 20 }}>
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt={initials} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white text-sm font-bold">{initials}</span>
+                        )}
+                      </div>
+                      <div className="px-3 pb-3 pt-6">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{artist.nombre ?? artist.artistName}</p>
+                        {specialty && <p className="text-xs text-gray-400 truncate">{specialty}</p>}
+                        {city && <p className="text-[10px] text-gray-400 truncate">{city}</p>}
+                        {price && price > 0 && (
+                          <div className="mt-1.5 flex items-center justify-between bg-orange-50 rounded-lg px-2 py-1">
+                            <span className="text-[10px] text-gray-500 truncate">{serviceName ?? 'Desde'}</span>
+                            <span className="text-xs font-bold text-[#FF6B35] ml-1 shrink-0">${(price / 100).toFixed(0)}</span>
+                          </div>
+                        )}
+                        {rating && rating > 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <svg className="h-3 w-3 text-amber-400 fill-amber-400" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            <span className="text-xs font-semibold text-gray-800">{Number(rating).toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
