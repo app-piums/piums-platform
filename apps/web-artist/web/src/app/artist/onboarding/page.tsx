@@ -203,7 +203,6 @@ export default function ArtistOnboardingPage() {
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [shortBio, setShortBio] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [spotifyUrl, setSpotifyUrl] = useState('');
@@ -480,7 +479,6 @@ export default function ArtistOnboardingPage() {
           bio: shortBio || undefined,
           instagram: instagramHandle || undefined,
           website: portfolioUrl || undefined,
-          linkedin: linkedinUrl || undefined,
           spotify: spotifyUrl || undefined,
           youtube: youtubeUrl || undefined,
           extraLinks: extraLinks.length > 0 ? extraLinks : undefined,
