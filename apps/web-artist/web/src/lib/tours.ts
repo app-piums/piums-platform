@@ -105,7 +105,7 @@ export const artistTours: Tour[] = [
       },
       {
         icon: React.createElement("svg", {xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"})),
-        title: 'Ausencias y Viajes',
+        title: 'Nómadas',
         content: 'Si viajarás o no estarás disponible por varios días, regístralo aquí. El sistema bloquea automáticamente esas fechas para que ningún cliente pueda reservarte.',
         selector: '#artist-nav-ausencias',
         side: 'right',
@@ -358,7 +358,7 @@ export const artistTours: Tour[] = [
     steps: [
       {
         icon: React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:1.5,stroke:"currentColor",width:20,height:20},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"})),
-        title: 'Ausencias y Viajes',
+        title: 'Nómadas',
         content: 'Registra períodos largos de indisponibilidad: vacaciones, giras o compromisos prolongados. El sistema bloqueará automáticamente ese rango de fechas.',
         side: 'bottom',
         showControls: true,
