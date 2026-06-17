@@ -1233,38 +1233,10 @@ export default function ArtistSettingsPage() {
                   </div>
 
                   <div className="border-t border-gray-100 pt-5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <input
-                        id="requires-deposit"
-                        type="checkbox"
-                        checked={coverageData.requiresDeposit}
-                        onChange={(e) => setCoverageData({ ...coverageData, requiresDeposit: e.target.checked })}
-                        className="w-4 h-4 accent-purple-600"
-                      />
-                      <label htmlFor="requires-deposit" className="text-sm font-medium text-gray-700">
-                        Requiere anticipo para confirmar reserva
-                      </label>
+                    <div className="rounded-lg bg-orange-50 border border-orange-200 p-3 text-sm text-orange-800">
+                      <strong>Anticipo por reserva</strong><br />
+                      <span className="text-xs">Configura el anticipo requerido en cada servicio individual desde el panel de <strong>Servicios</strong>. Ahí controlas si aplica y el porcentaje exacto por servicio.</span>
                     </div>
-
-                    {coverageData.requiresDeposit && (
-                      <div className="ml-7">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Porcentaje de anticipo
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="range"
-                            min={10}
-                            max={100}
-                            step={5}
-                            value={coverageData.depositPercentage}
-                            onChange={(e) => setCoverageData({ ...coverageData, depositPercentage: parseInt(e.target.value) })}
-                            className="flex-1 accent-purple-600"
-                          />
-                          <span className="w-12 text-center font-semibold text-purple-700">{coverageData.depositPercentage}%</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
 

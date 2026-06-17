@@ -45,7 +45,7 @@ export default function ArtistDashboardPage() {
         setArtistProfile(profile);
         if (profile?.id) {
           try {
-            const services = await sdk.getArtistServices(profile.id);
+            const services = await sdk.getMyServices();
             setArtistServices(services || []);
           } catch (err) {
             console.error('Error loading artist services:', err);

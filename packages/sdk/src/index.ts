@@ -157,6 +157,9 @@ export interface CreateServicePayload {
   minGuests?: number;
   maxGuests?: number;
   requiresProductDelivery?: boolean;
+  requiresDeposit?: boolean;
+  depositPercentage?: number;
+  depositAmount?: number;
 }
 
 export interface UpdateServicePayload {
@@ -176,6 +179,9 @@ export interface UpdateServicePayload {
   minGuests?: number;
   maxGuests?: number;
   requiresProductDelivery?: boolean;
+  requiresDeposit?: boolean;
+  depositPercentage?: number;
+  depositAmount?: number;
 }
 
 export interface ServiceCategory {
@@ -1045,10 +1051,31 @@ class PiumsSDK {
     }
   }
 
-  async getArtistServices(_artistId: string): Promise<Service[]> {
+  async getArtistServices(artistId: string): Promise<Service[]> {
     try {
-      // Use /mine endpoint so the artist sees ALL their services (active + paused/draft),
-      // not the public search endpoint which only returns status=ACTIVE.
+      // Public endpoint — returns only ACTIVE + available services for any artist.
+      // Used by web-client to browse an artist's catalog without authentication.
+      const response = await fetch(
+        `${this.baseUrl}/catalog/services?artistId=${encodeURIComponent(artistId)}&limit=100`,
+        { credentials: 'include' },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.services || result.data || (Array.isArray(result) ? result : []);
+    } catch (error) {
+      console.error('Error fetching artist services:', error);
+      return [];
+    }
+  }
+
+  async getMyServices(): Promise<Service[]> {
+    try {
+      // Authenticated endpoint — returns ALL services for the logged-in artist
+      // (including inactive/draft). Used exclusively by the artist dashboard.
       const response = await fetch(
         `${this.baseUrl}/catalog/services/mine`,
         this.withAuth({ credentials: 'include' }),
@@ -1061,7 +1088,7 @@ class PiumsSDK {
       const result = await response.json();
       return result.services || result.data || (Array.isArray(result) ? result : []);
     } catch (error) {
-      console.error('Error fetching artist services:', error);
+      console.error('Error fetching my services:', error);
       return [];
     }
   }

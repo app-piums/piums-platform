@@ -1764,31 +1764,12 @@ export default function ArtistOnboardingPage() {
                 )}
               </div>
 
-              {/* Deposit toggle */}
-              <div className="border border-gray-100 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Requerir anticipo</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Solicita un porcentaje del total al reservar</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRequiresDeposit(v => !v)}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${requiresDeposit ? 'bg-orange-500' : 'bg-gray-200'}`}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${requiresDeposit ? 'translate-x-5' : ''}`} />
-                  </button>
-                </div>
-                {requiresDeposit && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-700">
-                      Porcentaje de anticipo: <span className="text-orange-600 font-bold">50%</span>
-                    </p>
-                    <p className="text-[11px] text-gray-500 mt-1">
-                      El anticipo está fijado al 50% del total para todos los artistas.
-                    </p>
-                  </div>
-                )}
+              {/* Deposit info */}
+              <div className="border border-orange-100 rounded-xl p-4 bg-orange-50">
+                <p className="text-sm font-semibold text-orange-800">Anticipo por reserva</p>
+                <p className="text-xs text-orange-700 mt-1">
+                  Una vez que crees tus servicios, podrás configurar si cada uno requiere anticipo y el porcentaje desde el panel de servicios.
+                </p>
               </div>
             </div>
 

@@ -290,8 +290,11 @@ export class PaymentMethodService {
         throw new AppError(402, `Pago rechazado por Tilopay (código ${result.responseCode})`);
       }
 
-      // Mark booking as paid
-      await bookingClient.markPayment(bookingId, amount, 'TILOPAY', result.orderNumber, 'FULL_PAYMENT');
+      // Mark booking as paid — distinguish deposit vs full/remaining payment
+      const depositPaymentType = booking.anticipoRequired && booking.anticipoAmount && amount === booking.anticipoAmount
+        ? 'DEPOSIT'
+        : (booking.totalPrice - (booking.paidAmount ?? 0) <= amount ? 'FULL_PAYMENT' : 'REMAINING');
+      await bookingClient.markPayment(bookingId, amount, 'TILOPAY', result.orderNumber, depositPaymentType);
 
       logger.info("One-click Tilopay charge succeeded", "PAYMENT_METHOD_SERVICE", {
         userId, bookingId, methodId, orderNumber: result.orderNumber,
@@ -315,7 +318,11 @@ export class PaymentMethodService {
       throw new AppError(402, `Pago Stripe no completado: ${intent.status}`);
     }
 
-    await bookingClient.markPayment(bookingId, amount, 'STRIPE', intent.id, 'FULL_PAYMENT');
+    // Determine payment type based on booking state
+    const stripePaymentType = booking.anticipoRequired && booking.anticipoAmount && amount === booking.anticipoAmount
+      ? 'DEPOSIT'
+      : (booking.totalPrice - (booking.paidAmount ?? 0) <= amount ? 'FULL_PAYMENT' : 'REMAINING');
+    await bookingClient.markPayment(bookingId, amount, 'STRIPE', intent.id, stripePaymentType);
 
     logger.info("One-click Stripe charge succeeded", "PAYMENT_METHOD_SERVICE", {
       userId, bookingId, methodId, intentId: intent.id,

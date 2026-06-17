@@ -21,6 +21,8 @@ interface ServiceForm {
   minGuests: string;
   maxGuests: string;
   requiresProductDelivery: boolean;
+  requiresDeposit: boolean;
+  depositPercentage: number;
 }
 
 const PRICING_LABELS: Record<PricingType, string> = {
@@ -87,6 +89,8 @@ export default function ArtistServicesPage() {
     minGuests: '',
     maxGuests: '',
     requiresProductDelivery: false,
+    requiresDeposit: true,
+    depositPercentage: 50,
   };
   const [form, setForm] = useState<ServiceForm>(emptyForm);
 
@@ -102,7 +106,7 @@ export default function ArtistServicesPage() {
       setArtistId(artistProfile.id);
       setCategories(cats);
 
-      const artistServices = await sdk.getArtistServices(artistProfile.id);
+      const artistServices = await sdk.getMyServices();
       setServices(artistServices);
     } catch (err: unknown) {
       const message = getErrorMessage(err);
@@ -152,6 +156,8 @@ export default function ArtistServicesPage() {
       minGuests: service.minGuests != null ? String(service.minGuests) : '',
       maxGuests: service.maxGuests != null ? String(service.maxGuests) : '',
       requiresProductDelivery: service.requiresProductDelivery ?? false,
+      requiresDeposit: service.requiresDeposit ?? true,
+      depositPercentage: service.depositPercentage ?? 50,
     });
     setFormError(null);
     setWhatIsIncludedInput('');
@@ -192,6 +198,8 @@ export default function ArtistServicesPage() {
           minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
           maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
           requiresProductDelivery: form.requiresProductDelivery,
+          requiresDeposit: form.requiresDeposit,
+          depositPercentage: form.requiresDeposit ? form.depositPercentage : undefined,
         });
         setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
@@ -209,6 +217,8 @@ export default function ArtistServicesPage() {
           minGuests: form.minGuests ? parseInt(form.minGuests, 10) : undefined,
           maxGuests: form.maxGuests ? parseInt(form.maxGuests, 10) : undefined,
           requiresProductDelivery: form.requiresProductDelivery,
+          requiresDeposit: form.requiresDeposit,
+          depositPercentage: form.requiresDeposit ? form.depositPercentage : undefined,
         });
         setServices((prev) => [created, ...prev]);
       }
@@ -721,6 +731,45 @@ export default function ArtistServicesPage() {
                   <p className="text-sm font-medium text-gray-800">Este servicio incluye entrega de producto</p>
                   <p className="text-xs text-gray-500 mt-0.5">Para fotografia, video u otros servicios donde entregas un archivo editado. El pago se libera despues de que entregues el producto, no solo por asistir al evento.</p>
                 </div>
+              </div>
+
+              {/* Deposit / anticipo toggle */}
+              <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+                <div
+                  className="flex items-start gap-3 cursor-pointer"
+                  onClick={() => setForm({ ...form, requiresDeposit: !form.requiresDeposit })}
+                >
+                  <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${form.requiresDeposit ? 'bg-orange-500 border-orange-500' : 'border-gray-400 bg-white'}`}>
+                    {form.requiresDeposit && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">Requiere anticipo para confirmar reserva</p>
+                    <p className="text-xs text-gray-500 mt-0.5">El cliente paga un porcentaje del total al reservar. El resto se cobra antes del evento.</p>
+                  </div>
+                </div>
+                {form.requiresDeposit && (
+                  <div className="ml-8">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Porcentaje de anticipo: <span className="text-orange-600 font-bold">{form.depositPercentage}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      step={5}
+                      value={form.depositPercentage}
+                      onChange={(e) => setForm({ ...form, depositPercentage: parseInt(e.target.value) })}
+                      className="w-full accent-orange-500"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                      <span>10%</span><span>50%</span><span>100%</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
