@@ -44,6 +44,9 @@ export async function POST(request: NextRequest) {
       coverageRadius: 'coverageRadius' in body ? body.coverageRadius : 30,
       requiresDeposit: body.requiresDeposit ?? false,
       depositPercentage: body.depositPercentage ?? undefined,
+      baseLocationLabel: body.baseLocationLabel || undefined,
+      baseLocationLat: body.baseLocationLat ?? undefined,
+      baseLocationLng: body.baseLocationLng ?? undefined,
     };
 
     let res = await fetch(`${ARTISTS_SERVICE_URL}/artists`, {
@@ -75,6 +78,9 @@ export async function POST(request: NextRequest) {
         if (body.hourlyRateMax != null) updatePayload.hourlyRateMax = body.hourlyRateMax;
         if ('coverageRadius' in body) updatePayload.coverageRadius = body.coverageRadius;
         if (body.equipment?.length) updatePayload.equipment = body.equipment;
+        if (body.baseLocationLabel) updatePayload.baseLocationLabel = body.baseLocationLabel;
+        if (body.baseLocationLat != null) updatePayload.baseLocationLat = body.baseLocationLat;
+        if (body.baseLocationLng != null) updatePayload.baseLocationLng = body.baseLocationLng;
         res = await fetch(`${ARTISTS_SERVICE_URL}/artists/${artistId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

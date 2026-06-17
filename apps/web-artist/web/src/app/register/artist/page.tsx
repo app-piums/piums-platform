@@ -14,7 +14,6 @@ import { signInWithPopup } from "firebase/auth";
 
 
 interface FieldError {
-  avatarUrl?: string;
   nombre?: string;
   email?: string;
   password?: string;
@@ -43,10 +42,6 @@ export default function RegisterArtistPage() {
   const { login } = useAuth();
   const [step, setStep] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState("");
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -164,18 +159,17 @@ export default function RegisterArtistPage() {
   const canProceedToStep2 = () =>
     !["nombre", "email", "password", "confirmPassword"].some((f) =>
       validateField(f, f === "nombre" ? nombre : f === "email" ? email : f === "password" ? password : confirmPassword)
-    ) && !validateField("avatarUrl", avatarUrl);
+    );
 
   const handleNextToStep2 = () => {
     const step1Errors: FieldError = {
-      avatarUrl: validateField("avatarUrl", avatarUrl),
       nombre: validateField("nombre", nombre),
       email: validateField("email", email),
       password: validateField("password", password),
       confirmPassword: validateField("confirmPassword", confirmPassword),
     };
     setErrors(step1Errors);
-    setTouched({ avatarUrl: true, nombre: true, email: true, password: true, confirmPassword: true });
+    setTouched({ nombre: true, email: true, password: true, confirmPassword: true });
     if (Object.values(step1Errors).some(Boolean)) { setGeneralError("Por favor completa todos los campos correctamente"); return; }
     setGeneralError("");
     setStep(2);
@@ -273,7 +267,7 @@ export default function RegisterArtistPage() {
           nombre, email, password,
           pais: selectedCountry?.code,
           telefono: selectedCountry ? `${selectedCountry.dialCode}${telefono}` : telefono,
-          ciudad, birthDate, avatarUrl, documentType, documentNumber,
+          ciudad, birthDate, documentType, documentNumber,
           documentFrontUrl, documentBackUrl: documentBackUrl || undefined, documentSelfieUrl,
         }),
         credentials: "include",
@@ -423,55 +417,6 @@ export default function RegisterArtistPage() {
               {/* ── STEP 1 ── */}
               {step === 1 && (
                 <>
-                  {/* Avatar upload */}
-                  <div className="flex flex-col items-center gap-3">
-                    <label className={`${labelBase} self-start`}>Foto de perfil <span className="text-[#FF6B35]">*</span></label>
-                    <label className="cursor-pointer group relative">
-                      <div className={`h-24 w-24 rounded-full overflow-hidden border-2 transition-colors flex items-center justify-center bg-white/10 ${
-                        touched.avatarUrl && errors.avatarUrl ? "border-red-400/60" : "border-white/20 group-hover:border-[#FF6B35]/60"
-                      }`}>
-                        {avatarPreview ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover" />
-                        ) : uploadingAvatar ? (
-                          <svg className="h-6 w-6 animate-spin text-white/40" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        ) : (
-                          <svg className="h-8 w-8 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        )}
-                      </div>
-                      {avatarPreview ? (
-                        <button type="button"
-                          onClick={(e) => { e.preventDefault(); setAvatarPreview(""); setAvatarUrl(""); }}
-                          className="absolute -top-1 -right-1 rounded-full bg-red-500/80 p-0.5 text-white hover:bg-red-500">
-                          <X size={12} />
-                        </button>
-                      ) : (
-                        <div className="absolute bottom-0 right-0 rounded-full bg-[#FF6B35] p-1.5">
-                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                      )}
-                      <input type="file" accept="image/*" className="sr-only" disabled={uploadingAvatar}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          setTouched((prev) => ({ ...prev, avatarUrl: true }));
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          await uploadFile(file, "avatar" as any, setUploadingAvatar, setAvatarUrl, setAvatarPreview);
-                        }}
-                      />
-                    </label>
-                    <p className="text-xs text-white/30">JPG, PNG o WebP · máx. 5MB</p>
-                    {touched.avatarUrl && errors.avatarUrl && <p className="text-xs text-red-400">{errors.avatarUrl}</p>}
-                  </div>
-
                   <div>
                     <label htmlFor="nombre" className={labelBase}>Nombre completo</label>
                     <input id="nombre" name="nombre" type="text" autoComplete="name"

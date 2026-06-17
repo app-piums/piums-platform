@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { toast } from '@/lib/toast';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { Globe, Music, Camera, Video, Sparkles, Check, Smartphone } from 'lucide-react';
+import { LocationSearchField } from '@/components/artist/LocationSearchField';
+import { LocationPickerMap } from '@/components/LocationPickerMap';
 
 // Disciplinas creativas disponibles
 const creativeDisciplines = [
@@ -202,6 +204,8 @@ export default function ArtistOnboardingPage() {
   // Step 4: Portfolio & Profile
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [shortBio, setShortBio] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
@@ -223,6 +227,12 @@ export default function ArtistOnboardingPage() {
   const [coverageRadius, setCoverageRadius] = useState<number | null>(30);
   const [requiresDeposit, setRequiresDeposit] = useState(true);
   const depositPercentage = 50;
+
+  // Base location (step 7)
+  const [baseLocationLabel, setBaseLocationLabel] = useState('');
+  const [baseLocationLat, setBaseLocationLat] = useState<number | null>(null);
+  const [baseLocationLng, setBaseLocationLng] = useState<number | null>(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
   // Step 8: Disponibilidad Semanal
   const [weeklyAvailability, setWeeklyAvailability] = useState([
@@ -272,6 +282,18 @@ export default function ArtistOnboardingPage() {
   useEffect(() => {
     const provider = sessionStorage.getItem('auth_provider');
     setIsOAuthUser(['google', 'facebook', 'tiktok'].includes(provider ?? ''));
+
+    // Pre-fill base location from the coords captured by the register location modal
+    try {
+      const stored = sessionStorage.getItem('piums_artist_location');
+      if (stored) {
+        const { lat, lng } = JSON.parse(stored);
+        if (typeof lat === 'number' && typeof lng === 'number') {
+          setBaseLocationLat(lat);
+          setBaseLocationLng(lng);
+        }
+      }
+    } catch { /* ignore */ }
 
     // If the cookie explicitly says onboarding is not done (set by login route),
     // the user just logged in and is starting onboarding — don't redirect.
@@ -337,17 +359,63 @@ export default function ArtistOnboardingPage() {
     );
   };
 
-  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setProfilePhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setProfilePhotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setProfilePhotoFile(file);
+    setProfilePhotoPreview(URL.createObjectURL(file));
+    setProfilePhotoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const res = await fetch('/api/users/avatar', { method: 'POST', body: fd, credentials: 'include' });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (data?.avatar) setProfilePhotoUrl(data.avatar);
+      toast.success('Foto de perfil guardada');
+    } catch {
+      toast.error('Error al subir la foto, inténtalo de nuevo');
+      setProfilePhotoPreview(null);
+      setProfilePhotoFile(null);
+    } finally {
+      setProfilePhotoUploading(false);
     }
   };
 
   const handleAddExtraLink = () => setExtraLinks([...extraLinks, '']);
+
+  const handleDetectLocation = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Tu navegador no permite detectar la ubicación automáticamente.');
+      return;
+    }
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setBaseLocationLat(latitude);
+        setBaseLocationLng(longitude);
+        setBaseLocationLabel((prev) => prev || `Coordenadas ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        setDetectingLocation(false);
+        toast.success('Ubicación detectada');
+      },
+      (error: GeolocationPositionError) => {
+        toast.error(
+          error.code === error.PERMISSION_DENIED
+            ? 'Necesitamos permiso para detectar tu ubicación.'
+            : 'No pudimos obtener tu ubicación. Inténtalo de nuevo.'
+        );
+        setDetectingLocation(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  const handleMapSelect = (lat: number, lng: number) => {
+    setBaseLocationLat(lat);
+    setBaseLocationLng(lng);
+    setBaseLocationLabel((prev) => prev || `Coordenadas ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+  };
 
   const handleDocFileChange = (field: 'front' | 'back' | 'selfie') => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -488,6 +556,9 @@ export default function ArtistOnboardingPage() {
           coverageRadius,
           requiresDeposit,
           depositPercentage: requiresDeposit ? depositPercentage : undefined,
+          baseLocationLabel: baseLocationLabel.trim() || undefined,
+          baseLocationLat: baseLocationLat ?? undefined,
+          baseLocationLng: baseLocationLng ?? undefined,
         }),
       });
 
@@ -581,8 +652,8 @@ export default function ArtistOnboardingPage() {
         }).catch(() => {});
       }
 
-      // Upload avatar if selected
-      if (profilePhotoFile) {
+      // Upload avatar if not already uploaded in step 5
+      if (profilePhotoFile && !profilePhotoUrl) {
         const fd = new FormData();
         fd.append('avatar', profilePhotoFile);
         await fetch('/api/users/avatar', { method: 'POST', body: fd, credentials: 'include' }).catch(() => {});
@@ -1173,7 +1244,13 @@ export default function ArtistOnboardingPage() {
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden relative">
                       {profilePhotoPreview ? (
-                        <Image src={profilePhotoPreview} alt="Profile" fill className="object-cover" sizes="96px" unoptimized />
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" />
+                      ) : profilePhotoUploading ? (
+                        <svg className="w-8 h-8 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
                       ) : (
                         <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
@@ -1220,14 +1297,6 @@ export default function ArtistOnboardingPage() {
               {/* Social & Portfolio Links */}
               <div className="space-y-4">
                 <label className="block text-sm font-semibold text-gray-900">Redes Sociales y Portafolio</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                    </svg>
-                  </div>
-                  <input type="text" placeholder="URL de LinkedIn" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500 outline-none" />
-                </div>
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
                     <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
@@ -1602,6 +1671,57 @@ export default function ArtistOnboardingPage() {
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* Base location */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-1">Tu ubicación base</label>
+                <p className="text-xs text-gray-500 mb-3">Define desde dónde sales a tus eventos. La usamos para calcular automáticamente el costo de traslado para tus clientes.</p>
+                <LocationSearchField
+                  value={baseLocationLabel}
+                  coords={baseLocationLat != null && baseLocationLng != null ? { lat: baseLocationLat, lng: baseLocationLng } : null}
+                  onAddressChange={(address) => setBaseLocationLabel(address)}
+                  onSelect={(r) => {
+                    setBaseLocationLabel(r.address);
+                    setBaseLocationLat(r.lat);
+                    setBaseLocationLng(r.lng);
+                  }}
+                  placeholder="Zona 10, Ciudad de Guatemala"
+                />
+                <p className="text-xs text-gray-500 mt-1">Busca y elige un lugar de la lista; las coordenadas se llenan solas. También puedes ajustar el pin en el mapa.</p>
+
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  disabled={detectingLocation}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 border-orange-200 bg-white text-orange-700 hover:border-orange-400 transition-all disabled:opacity-60"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                  {detectingLocation ? 'Detectando…' : 'Usar mi ubicación actual'}
+                </button>
+
+                <div className="mt-4 space-y-2">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Selecciona en el mapa</p>
+                  <LocationPickerMap
+                    latitude={baseLocationLat}
+                    longitude={baseLocationLng}
+                    onSelect={handleMapSelect}
+                  />
+                  <p className="text-xs text-gray-500">Arrastra el mapa y haz clic para colocar el pin exactamente donde te ubicas.</p>
+                </div>
+
+                {baseLocationLat != null && baseLocationLng != null ? (
+                  <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mt-3">
+                    Guardaremos estas coordenadas para calcular automáticamente los costos de traslado.
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">
+                    Puedes configurar tu ubicación ahora o más tarde desde tu perfil. Sin coordenadas no podremos calcular el costo de traslado.
+                  </p>
                 )}
               </div>
 

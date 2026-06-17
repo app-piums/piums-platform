@@ -154,7 +154,7 @@ export default function AusenciasPage() {
               onClick={() => setShowForm(true)}
               className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
-              + Nueva ausencia
+              + Nueva aventura
             </button>
           )}
         </div>
@@ -179,7 +179,7 @@ export default function AusenciasPage() {
         {/* Create form */}
         {showForm && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">Nueva ausencia</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-4">Nueva aventura</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block">
