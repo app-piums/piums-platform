@@ -11,7 +11,6 @@ import { MapPin, Loader2, X } from 'lucide-react';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
-const USER_AGENT = 'PiumsArtista/1.0 (soporte@piums.io)';
 
 export interface LocationResult {
   address: string;
@@ -20,8 +19,8 @@ export interface LocationResult {
 }
 
 async function searchAddresses(query: string): Promise<LocationResult[]> {
-  const url = `${NOMINATIM}/search?q=${encodeURIComponent(query)}&format=json&countrycodes=gt&limit=6&addressdetails=0`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'es', 'User-Agent': USER_AGENT } });
+  const url = `${NOMINATIM}/search?q=${encodeURIComponent(query)}&format=json&countrycodes=gt&limit=6&addressdetails=0&accept-language=es`;
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) return [];
   const data: Array<{ display_name: string; lat: string; lon: string }> = await res.json();
   return data.map((r) => ({
@@ -33,8 +32,8 @@ async function searchAddresses(query: string): Promise<LocationResult[]> {
 
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
-    const url = `${NOMINATIM}/reverse?format=json&lat=${lat}&lon=${lng}`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'es', 'User-Agent': USER_AGENT } });
+    const url = `${NOMINATIM}/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) return null;
     const data: { display_name: string } = await res.json();
     return data.display_name.split(',').slice(0, 3).join(',').trim();
@@ -130,7 +129,7 @@ export function LocationSearchField({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+          className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 placeholder:text-gray-500 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
           {loading ? (
@@ -154,13 +153,13 @@ export function LocationSearchField({
       )}
 
       {open && suggestions.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <ul className="absolute z-[100] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
           {suggestions.map((s, i) => (
             <li key={i}>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); handleSelect(s); }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-orange-50 flex items-start gap-2"
+                className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-orange-50 flex items-start gap-2"
               >
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                 <span className="text-gray-700">{s.address}</span>
