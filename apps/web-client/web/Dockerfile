@@ -44,6 +44,9 @@ WORKDIR /app/apps/web-client/web/.next/standalone
 RUN cp -r ../static ./apps/web-client/web/.next/static
 RUN cp -r ../../public ./apps/web-client/web/public
 
+# Garantizar que el usuario node pueda leer todos los archivos estáticos
+RUN chmod -R 755 ./apps/web-client/web/public && chmod -R 755 ./apps/web-client/web/.next/static
+
 # Exponer puerto (web-client usa 3000)
 EXPOSE 3000
 ENV PORT=3000

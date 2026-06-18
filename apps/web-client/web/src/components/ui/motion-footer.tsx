@@ -95,7 +95,7 @@ export function PiumsCinematicFooter({
           src="/FOOTER.png"
           alt=""
           fill
-          style={{ objectFit: "cover", objectPosition: "center bottom", opacity: 0.35 }}
+          style={{ objectFit: "cover", objectPosition: "center bottom", opacity: 0.45, mixBlendMode: "screen" }}
           unoptimized
         />
       </motion.div>
