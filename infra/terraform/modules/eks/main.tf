@@ -31,6 +31,41 @@ resource "aws_security_group" "eks_cluster" {
   }
 }
 
+# Restrictive SG for the nginx ingress NLB — only 80/443 allowed from the internet.
+# Attach to the nginx ingress controller Service via service-patch.yaml.
+resource "aws_security_group" "nginx_lb" {
+  name        = "piums-nginx-lb-sg-${var.environment}"
+  description = "nginx ingress NLB — HTTP and HTTPS only"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
+    description      = "HTTPS"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "piums-nginx-lb-sg-${var.environment}" }
+}
+
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+data:
+  # HSTS — applied globally to all ingresses served by this controller
+  hsts: "true"
+  hsts-max-age: "31536000"
+  hsts-include-subdomains: "true"
+  hsts-preload: "true"
+  # Slowloris protection — limits how long a client can hold a connection open
+  client-header-timeout: "10"
+  client-body-timeout: "10"
+  keep-alive: "10"
+  keep-alive-requests: "100"

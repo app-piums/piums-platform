@@ -14,6 +14,11 @@ metadata:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection "upgrade";
+    nginx.ingress.kubernetes.io/server-snippet: |
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    # Slowloris: limit concurrent connections per client IP
+    nginx.ingress.kubernetes.io/limit-connections: "25"
+    nginx.ingress.kubernetes.io/limit-rps: "30"
     # Sticky sessions — ensures WebSocket clients reconnect to the same pod
     # (secondary to Redis adapter, adds resilience for connection handshakes)
     nginx.ingress.kubernetes.io/affinity: "cookie"
