@@ -398,6 +398,39 @@ export class PaymentsClient {
   }
 
   /**
+   * Cobrar el anticipo con la tarjeta guardada del cliente al confirmar el artista.
+   * Llamado desde confirmBooking cuando paymentStatus === 'PENDING' y anticipoRequired.
+   */
+  async chargeDepositWithSavedCard(bookingId: string): Promise<boolean> {
+    try {
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+      const response = await fetch(
+        `${this.baseUrl}/api/payments/internal/charge-deposit/${bookingId}`,
+        {
+          signal: AbortSignal.timeout(30_000),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': internalSecret || '',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        logger.error('Error cobrando anticipo con tarjeta guardada', 'PAYMENTS_CLIENT', { bookingId, error: (error as any)?.message });
+        return false;
+      }
+
+      const result = await response.json() as any;
+      return result.success === true;
+    } catch (error) {
+      logger.error('Error de conexion al cobrar anticipo', 'PAYMENTS_CLIENT', { bookingId, error: typeof error === 'string' ? error : (error as any)?.message });
+      return false;
+    }
+  }
+
+  /**
    * Cobrar el saldo restante de una reserva con la tarjeta guardada del cliente.
    * Llamado por el cron job 72h antes del evento.
    * Retorna true si se cobró exitosamente o si ya estaba pagado.

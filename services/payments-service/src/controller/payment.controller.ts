@@ -255,6 +255,16 @@ export class PaymentController {
     }
   }
 
+  async chargeDepositWithSavedCard(req: Request, res: Response, next: NextFunction) {
+    try {
+      const bookingId = req.params.bookingId as string;
+      const result = await paymentService.chargeDepositWithSavedCard(bookingId);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async captureBookingPayment(req: Request, res: Response, next: NextFunction) {
     try {
       const bookingId = req.params.bookingId as string;

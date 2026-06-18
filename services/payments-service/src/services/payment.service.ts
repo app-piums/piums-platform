@@ -990,6 +990,59 @@ export class PaymentService {
     return { success: true };
   }
 
+  /**
+   * Cobrar el anticipo de una reserva usando el método de pago guardado del cliente.
+   * Llamado cuando el artista confirma una reserva que quedó en PENDING (cliente con tarjeta guardada).
+   */
+  async chargeDepositWithSavedCard(bookingId: string): Promise<{ success: boolean; reason?: string }> {
+    const booking = await bookingClient.getBooking(bookingId);
+    if (!booking) {
+      logger.error("chargeDepositWithSavedCard: booking no encontrado", "PAYMENT_SERVICE", { bookingId });
+      return { success: false, reason: 'booking_not_found' };
+    }
+
+    const amountToCharge = booking.anticipoRequired && (booking as any).anticipoAmount > 0
+      ? (booking as any).anticipoAmount
+      : booking.totalPrice;
+
+    if ((booking.paidAmount ?? 0) >= amountToCharge) {
+      logger.info("chargeDepositWithSavedCard: anticipo ya pagado", "PAYMENT_SERVICE", { bookingId });
+      return { success: true };
+    }
+
+    const defaultMethod = await paymentMethodService.getDefaultPaymentMethod(booking.clientId);
+    if (!defaultMethod) {
+      logger.warn("chargeDepositWithSavedCard: sin método de pago guardado", "PAYMENT_SERVICE", { bookingId, clientId: booking.clientId });
+      return { success: false, reason: 'no_saved_method' };
+    }
+
+    logger.info("Iniciando cobro de anticipo post-confirmación con tarjeta guardada", "PAYMENT_SERVICE", {
+      bookingId, clientId: booking.clientId, amountToCharge, methodId: defaultMethod.id,
+    });
+
+    await paymentMethodService.chargeWithSavedCard(
+      booking.clientId,
+      defaultMethod.id,
+      bookingId,
+      amountToCharge,
+      booking.currency || 'USD',
+    );
+
+    notificationsClient.sendNotification({
+      userId: booking.clientId,
+      type: "PAYMENT_RECEIVED",
+      channel: "IN_APP",
+      title: "Anticipo Cobrado",
+      message: `Tu anticipo de $${(amountToCharge / 100).toFixed(2)} fue cobrado exitosamente.`,
+      data: { bookingId, amount: amountToCharge },
+      priority: "high",
+      category: "payment",
+    }).catch(() => {});
+
+    logger.info("Cobro de anticipo post-confirmación exitoso", "PAYMENT_SERVICE", { bookingId, amountToCharge });
+    return { success: true };
+  }
+
   private mapStripeRefundStatus(stripeStatus: string): RefundStatus {
     const statusMap: Record<string, RefundStatus> = {
       pending: "PENDING",

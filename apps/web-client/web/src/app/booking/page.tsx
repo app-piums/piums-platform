@@ -823,7 +823,7 @@ function BookingContent() {
     );
   };
 
-  const [submitStage, setSubmitStage] = useState<'idle' | 'creating' | 'checkout' | 'waiting' | 'saved-card'>('idle');
+  const [submitStage, setSubmitStage] = useState<'idle' | 'creating' | 'checkout' | 'waiting'>('idle');
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
   const [showCancelPaymentConfirm, setShowCancelPaymentConfirm] = useState(false);
@@ -908,29 +908,13 @@ function BookingContent() {
         ? (booking as any).anticipoAmount
         : booking.totalPrice;
 
-      // One-click checkout with saved card
+      // Tarjeta guardada: redirigir a confirmación sin cobrar — el cobro ocurre cuando el artista confirme
       if (useSavedCard && savedCard) {
-        setSubmitStage('saved-card');
-        try {
-          await sdk.chargeWithSavedCard(
-            savedCard.id,
-            booking.id,
-            amountForIntent,
-            (booking as any).currency || 'USD',
-          );
-          setShowConfirmModal(false);
-          setSubmitStage('idle');
-          setSubmitting(false);
-          router.push(`/booking/confirmation/${booking.id}?responseCode=00`);
-          return;
-        } catch (savedCardError: any) {
-          // If saved card fails, fall through to normal checkout
-          toast.error(savedCardError.message || 'Error al cobrar la tarjeta guardada. Elige otro método de pago.');
-          setUseSavedCard(false);
-          setSubmitStage('idle');
-          setSubmitting(false);
-          return;
-        }
+        setShowConfirmModal(false);
+        setSubmitStage('idle');
+        setSubmitting(false);
+        router.push(`/booking/confirmation/${booking.id}`);
+        return;
       }
 
       setSubmitStage('checkout');
@@ -1947,8 +1931,7 @@ function BookingContent() {
         confirmLabel={
           submitStage === 'creating' ? "Creando reserva..." :
           submitStage === 'checkout' ? "Iniciando pago..." :
-          submitStage === 'saved-card' ? "Procesando pago..." :
-          useSavedCard && savedCard ? `Pagar con ${savedCard.cardBrand || 'tarjeta'} ****${savedCard.cardLast4 || ''}` :
+          useSavedCard && savedCard ? `Reservar con ${savedCard.cardBrand || 'tarjeta'} ****${savedCard.cardLast4 || ''}` :
           "Sí, confirmar"
         }
         cancelLabel={submitStage === 'waiting' ? "Cancelar pago" : "Cancelar"}

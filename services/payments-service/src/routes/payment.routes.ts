@@ -136,4 +136,11 @@ router.post(
   paymentController.voidBookingPayment.bind(paymentController)
 );
 
+// Cobrar anticipo con tarjeta guardada al confirmar (cliente sin pre-auth)
+router.post(
+  "/internal/charge-deposit/:bookingId",
+  internalAuth,
+  paymentController.chargeDepositWithSavedCard.bind(paymentController)
+);
+
 export default router;

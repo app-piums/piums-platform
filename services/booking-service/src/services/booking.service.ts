@@ -731,6 +731,19 @@ export class BookingService {
         // Las 48h aún no han pasado → el cron runScheduledCaptures() capturará cuando llegue la hora
         logger.info("Captura diferida: artista confirmó pero las 48h aún no vencen", "BOOKING_SERVICE", { bookingId: id, captureAt });
       }
+    } else if (
+      booking.paymentStatus === 'PENDING' &&
+      booking.anticipoRequired &&
+      (booking as any).anticipoAmount > 0
+    ) {
+      // Cliente tenía tarjeta guardada — cobrar anticipo ahora que el artista confirmó
+      paymentsClient.chargeDepositWithSavedCard(id).catch(err =>
+        logger.error(
+          "RECONCILIATION_NEEDED: fallo al cobrar anticipo post-confirmación con tarjeta guardada",
+          "BOOKING_SERVICE",
+          { bookingId: id, error: err.message }
+        )
+      );
     }
 
     // Bloquear el slot de disponibilidad del artista
