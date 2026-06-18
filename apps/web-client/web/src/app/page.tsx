@@ -1,13 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { RevealObserver } from "@/components/RevealObserver";
 import { HeroPiums } from "@/components/ui/shape-landing-hero";
-
-const PiumsCinematicFooter = dynamic(
-  () => import("@/components/ui/motion-footer").then((m) => ({ default: m.PiumsCinematicFooter })),
-  { ssr: true }
-);
+import { PiumsCinematicFooter } from "@/components/ui/motion-footer";
 import {
   Camera, Music, Mic2, Monitor, Video, Sparkles,
   ShieldCheck, DollarSign, Clock, ArrowRight, Check, TrendingUp, MapPin,
