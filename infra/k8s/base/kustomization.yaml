@@ -10,6 +10,7 @@ resources:
   - deployments.yaml
   - services.yaml
   - ingress.yaml
+  - ingress-internal.yaml
   - hpa.yaml
 
 commonLabels:
