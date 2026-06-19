@@ -66,15 +66,17 @@ function UsersContent() {
   const [provider, setProvider] = useState("");
   const [category, setCategory] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [confirmBlock, setConfirmBlock] = useState<AdminUserRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AdminUserRow | null>(null);
 
   const handleExport = async () => {
     setIsExporting(true);
+    setExportError(null);
     try {
       await usersApi.exportCSV({ role, provider, search, category });
     } catch (err) {
-      console.error("Error exportando CSV:", err);
+      setExportError((err as Error).message || "Error al exportar el CSV");
     } finally {
       setIsExporting(false);
     }
@@ -183,6 +185,17 @@ function UsersContent() {
           {isExporting ? "Exportando…" : "Exportar CSV"}
         </button>
       </div>
+
+      {exportError && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+          <span>{exportError}</span>
+          <button onClick={() => setExportError(null)} className="shrink-0 text-red-400 hover:text-red-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Mobile cards */}
       <div className="sm:hidden">

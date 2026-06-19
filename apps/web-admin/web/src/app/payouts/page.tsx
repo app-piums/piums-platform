@@ -111,9 +111,8 @@ function PayoutsContent() {
   const payouts: AdminPayout[] = data?.payouts ?? (data?.data as AdminPayout[] | undefined) ?? [];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex">
-      <main className="flex-1 lg:ml-64 p-6 pt-20 lg:pt-8">
-        <div className="max-w-6xl mx-auto">
+    <div className="p-6 pt-20 lg:pt-8">
+      <div className="max-w-6xl mx-auto">
 
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Pagos a Artistas</h1>
@@ -218,7 +217,6 @@ function PayoutsContent() {
             </div>
           )}
         </div>
-      </main>
 
       {completing && (
         <CompleteModal

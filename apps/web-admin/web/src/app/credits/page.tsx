@@ -134,9 +134,8 @@ function CreditsContent() {
   const totalActive = statusFilter === "ACTIVE" ? credits.reduce((s, c) => s + c.amount, 0) : 0;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex">
-      <main className="flex-1 lg:ml-64 p-6 pt-20 lg:pt-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+    <div className="p-6 pt-20 lg:pt-8">
+      <div className="max-w-6xl mx-auto space-y-6">
 
           {/* Header */}
           <div>
@@ -299,7 +298,6 @@ function CreditsContent() {
             </div>
           )}
         </div>
-      </main>
 
       {cancelling && (
         <CancelModal

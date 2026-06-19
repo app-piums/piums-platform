@@ -126,6 +126,10 @@ function ArtistDetailDrawer({
   const [creatingCommission, setCreatingCommission] = useState(false);
   const [commissionError, setCommissionError] = useState<string | null>(null);
 
+  // Shadow ban modal state
+  const [shadowBanModalOpen, setShadowBanModalOpen] = useState(false);
+  const [shadowBanReason, setShadowBanReason] = useState("");
+
   const shadowBanMutation = useMutation({
     mutationFn: ({ banned, reason }: { banned: boolean; reason?: string }) =>
       artistsApi.shadowBan(data!.authId ?? data!.id, banned, reason),
@@ -770,10 +774,7 @@ function ArtistDetailDrawer({
                   </button>
                   {!data.shadowBannedAt ? (
                     <button
-                      onClick={() => {
-                        const reason = prompt("Motivo del shadow ban (opcional):") ?? "";
-                        shadowBanMutation.mutate({ banned: true, reason: reason || undefined });
-                      }}
+                      onClick={() => { setShadowBanReason(""); setShadowBanModalOpen(true); }}
                       disabled={shadowBanMutation.isPending}
                       className="rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 disabled:opacity-50"
                     >
@@ -838,6 +839,57 @@ function ArtistDetailDrawer({
         )}
       </div>
       </div>
+
+      {shadowBanModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900 space-y-4">
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Shadow ban</h3>
+            <p className="text-sm text-zinc-500">
+              El artista no podrá ser encontrado en búsquedas ni recibir reservas, pero su cuenta permanece activa.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-400 mb-1.5">
+                Motivo (opcional)
+              </label>
+              <textarea
+                value={shadowBanReason}
+                onChange={(e) => setShadowBanReason(e.target.value)}
+                rows={3}
+                placeholder="Ej: Comportamiento sospechoso, incumplimiento de términos…"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 resize-none focus:border-[#FF6A00] focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              />
+            </div>
+            {shadowBanMutation.isError && (
+              <p className="text-xs text-red-500">
+                {(shadowBanMutation.error as Error).message}
+              </p>
+            )}
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShadowBanModalOpen(false)}
+                disabled={shadowBanMutation.isPending}
+                className="flex-1 rounded-xl border border-zinc-200 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  shadowBanMutation.mutate(
+                    { banned: true, reason: shadowBanReason.trim() || undefined },
+                    { onSuccess: () => setShadowBanModalOpen(false) }
+                  );
+                }}
+                disabled={shadowBanMutation.isPending}
+                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {shadowBanMutation.isPending ? (
+                  <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Aplicando…</>
+                ) : "Confirmar ban"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

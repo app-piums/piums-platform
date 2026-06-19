@@ -558,9 +558,9 @@ function CouponsContent() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-coupons'] }); setDeleteConfirm(null); },
   });
 
-  const coupons: AdminCoupon[] = (data as any)?.coupons ?? [];
-  const total: number = (data as any)?.total ?? 0;
-  const totalPages: number = (data as any)?.totalPages ?? 1;
+  const coupons: AdminCoupon[] = data?.coupons ?? [];
+  const total: number = data?.total ?? 0;
+  const totalPages: number = data?.totalPages ?? 1;
 
   return (
     <div className="p-4 sm:p-8">
