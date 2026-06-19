@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { triggerArtistReindex } from "../utils/searchReindex";
 import { ModerationClient } from "../clients/moderation.client";
-
-const prisma = new PrismaClient();
 const moderationClient = new ModerationClient();
 
 // Algunos clientes siguen enviando campos legacy en español.

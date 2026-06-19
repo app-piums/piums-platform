@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import Filter from 'bad-words';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
@@ -8,8 +8,6 @@ import { resolveUserInfo } from '../utils/user-resolver';
 import { ModerationClient } from '../clients/moderation.client';
 
 export const chatEmitter = new EventEmitter();
-
-const prisma = new PrismaClient();
 const filter = new Filter();
 // Extend bad-words filter with Spanish single-word entries (fallback local)
 filter.addWords(...SPANISH_PROFANITY_LIST.filter(w => !w.includes(' ')));

@@ -1,30 +1,13 @@
 import { Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { ArtistsService } from "../services/artists.service";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { triggerArtistReindex as triggerReindex } from "../utils/searchReindex";
 import { z } from "zod";
 
-const prisma = new PrismaClient();
 const artistsService = new ArtistsService();
-
-const SEARCH_SERVICE_URL =
-  process.env.SEARCH_SERVICE_URL || "http://search-service:4009";
-
-/** Fire-and-forget re-index so search results stay fresh */
-function triggerReindex(artistId: string) {
-  fetch(`${SEARCH_SERVICE_URL}/api/search/index/artist`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId }),
-  }).catch((err) =>
-    logger.error(
-      `Re-index failed for artist ${artistId}: ${err.message}`,
-      "GEO"
-    )
-  );
-}
 
 const updateGeoCountrySchema = z.object({
   country: z

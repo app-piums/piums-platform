@@ -79,6 +79,7 @@ model ArtistIndex {
   @@index([isActive])
   @@index([isAvailable])
   @@index([activeAbsenceType])
+  @@index([isActive, isVerified, averageRating(sort: Desc)])
 }
 
 // Service Search Index - Denormalized data for fast search
@@ -178,7 +179,7 @@ model SearchQuery {
   createdAt     DateTime @default(now())
   
   @@index([query])
-  @@index([queryType])
+  @@index([queryType, createdAt(sort: Desc)])
   @@index([userId])
   @@index([createdAt])
 }

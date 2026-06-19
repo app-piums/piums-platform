@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { BookingStatus, PaymentStatus, RescheduleStatus } from "../types/prisma-enums";
 import crypto from "crypto";
 import { AppError } from "../middleware/errorHandler";
@@ -14,8 +14,6 @@ import { notifyBookingCreated, notifyBookingConfirmed, notifyNoShowReported, not
 import { createAvailabilityReservation, removeAvailabilityReservation } from "./availability.service";
 import { googleCalendarClient } from "../clients/google-calendar.client";
 import { createReplacementPrompt } from "./replacement.service";
-
-const prisma = new PrismaClient();
 
 const CITY_COORDS: Record<string, [number, number]> = {
   'Guatemala':           [14.6349, -90.5069],

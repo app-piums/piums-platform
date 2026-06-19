@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { checkReservationConflict } from './availability.service';
 import { searchClient } from '../clients/search.client';
 import { notificationsClient } from '../clients/notifications.client';
 import { catalogClient } from '../clients/catalog.client';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 const HOURS_72 = 72 * 60 * 60 * 1000;
 const HOURS_4 = 4 * 60 * 60 * 1000;

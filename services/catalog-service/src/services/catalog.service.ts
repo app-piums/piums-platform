@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { PricingType, ServiceStatus } from "../types/prisma-enums";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
-
-const prisma = new PrismaClient();
 
 export class CatalogService {
   // ==================== CATEGORÍAS ====================

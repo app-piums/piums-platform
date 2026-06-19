@@ -76,7 +76,7 @@ model Message {
   updatedAt      DateTime  @updatedAt
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
+  @@index([conversationId, createdAt(sort: Desc)])
   @@index([senderId])
   @@index([status])
   @@map("messages")

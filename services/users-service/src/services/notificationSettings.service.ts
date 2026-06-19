@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from "../lib/prisma";
 
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 interface NotificationPreferences {
   emailNotifications?: boolean;

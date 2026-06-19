@@ -1,9 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
-
-const prisma = new PrismaClient();
 const router: Router = Router();
 
 // Verify service belongs to the given artistId

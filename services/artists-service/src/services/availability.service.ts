@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 
 // NOTE: DayOfWeek no es exportado por el stub local de @prisma/client (cliente
 // sin generar) y `prisma generate` no está disponible offline. Este tipo
@@ -6,8 +6,6 @@ import { PrismaClient } from '@prisma/client';
 type DayOfWeek = 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES' | 'SABADO' | 'DOMINGO';
 import axios from 'axios';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4005';
 

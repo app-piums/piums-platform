@@ -52,3 +52,20 @@ resource "aws_db_instance" "main" {
 
   tags = { Name = "piums-postgres-${var.environment}" }
 }
+
+resource "aws_db_instance" "read_replica" {
+  count = var.environment == "production" ? 1 : 0
+
+  identifier          = "piums-postgres-${var.environment}-ro"
+  replicate_source_db = aws_db_instance.main.identifier
+  instance_class      = var.db_instance_class
+  storage_encrypted   = true
+
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  performance_insights_enabled = true
+  skip_final_snapshot          = true
+  deletion_protection          = true
+
+  tags = { Name = "piums-postgres-${var.environment}-ro" }
+}

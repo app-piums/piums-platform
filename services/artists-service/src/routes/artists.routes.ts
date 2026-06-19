@@ -17,10 +17,8 @@ import {
 } from "../controller/artists.controller";
 import { authenticateToken, authorizeArtistOwner, requireActiveSession } from "../middleware/auth.middleware";
 import { createArtistLimiter, updateLimiter, searchLimiter } from "../middleware/rateLimiter";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { triggerArtistReindex, triggerArtistUnindex } from "../utils/searchReindex";
-
-const prisma = new PrismaClient();
 const router: import("express").Router = Router();
 
 // ─── Internal service-to-service routes (internal network only) ─────────────

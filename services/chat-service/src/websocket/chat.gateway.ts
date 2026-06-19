@@ -46,7 +46,7 @@ export class ChatGateway {
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
         lazyConnect: true,
-        retryStrategy: () => null, // no reintentar — el adaptador in-memory es suficiente si Redis no está disponible
+        retryStrategy: (times: number) => Math.min(times * 200, 5000),
       };
       const pubClient = new Redis(redisOptions);
       const subClient = pubClient.duplicate();
@@ -166,11 +166,8 @@ export class ChatGateway {
 
           const recipientId = this.getOtherParticipant(conversation, userId);
 
-          // Enviar al destinatario si está conectado
-          const recipientSocketId = this.userSockets.get(recipientId);
-          if (recipientSocketId) {
-            this.io.to(`user:${recipientId}`).emit('message:received', { message });
-          }
+          // Emitir al room del destinatario — el Redis adapter lo enruta cross-pod
+          this.io.to(`user:${recipientId}`).emit('message:received', { message });
 
           logger.info('Message sent via WebSocket', 'CHAT_GATEWAY', { messageId: message.id });
         } catch (error: any) {
@@ -184,11 +181,8 @@ export class ChatGateway {
         try {
           const message = await chatService.markAsRead(data.messageId, userId);
 
-          // Notificar al emisor del mensaje que fue leído
-          const senderSocketId = this.userSockets.get(message.senderId);
-          if (senderSocketId) {
-            this.io.to(`user:${message.senderId}`).emit('message:read', { messageId: message.id });
-          }
+          // Notificar al emisor — el Redis adapter lo enruta cross-pod
+          this.io.to(`user:${message.senderId}`).emit('message:read', { messageId: message.id });
 
           logger.info('Message marked as read via WebSocket', 'CHAT_GATEWAY', { messageId: message.id });
         } catch (error: any) {

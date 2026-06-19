@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AppError } from "./errorHandler";
 import { logger } from "../utils/logger";
 
@@ -9,7 +9,6 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
   process.exit(1);
 }
 const JWT_SECRET = process.env.JWT_SECRET || (() => { if (process.env.NODE_ENV === 'production') { throw new Error('JWT_SECRET es obligatorio en produccion'); } return 'dev-only-secret-not-for-production'; })();
-const prisma = new PrismaClient();
 
 export interface AuthRequest extends Request {
   user?: {

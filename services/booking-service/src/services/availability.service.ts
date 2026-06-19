@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Guatemala is UTC-6 with no DST. Convert a UTC Date to its GT local date string (YYYY-MM-DD).
 const GT_OFFSET_MS = -6 * 60 * 60 * 1000;

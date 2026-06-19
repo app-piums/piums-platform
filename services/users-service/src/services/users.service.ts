@@ -1,12 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from "../lib/prisma";
 
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
 const INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET || '';
-
-const prisma = new PrismaClient();
 
 export class UsersService {
   private slugify(text: string) {

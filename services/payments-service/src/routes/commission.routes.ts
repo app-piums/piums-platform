@@ -1,10 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { authenticateToken } from "../middleware/auth.middleware";
 
-const prisma = new PrismaClient();
 const router: Router = Router();
 
 /**

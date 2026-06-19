@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from "../lib/prisma";
 
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
@@ -9,8 +9,6 @@ const moderationClient = new ModerationClient();
 // Using string literals for enums — Prisma client will be regenerated on deploy
 type ProfileType = "USER" | "ARTIST" | "BOTH";
 type ProfileVisibility = "PUBLIC" | "PRIVATE" | "HIDDEN";
-
-const prisma = new PrismaClient();
 
 export interface CreateProfileData {
   userId: string;

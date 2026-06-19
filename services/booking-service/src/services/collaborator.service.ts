@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { chatClient } from '../clients/chat.client';
 import { notificationsClient } from '../clients/notifications.client';
 import { artistsClient } from '../clients/artists.client';
-
-const prisma = new PrismaClient();
 
 export class CollaboratorService {
   // ==================== INVITE ====================

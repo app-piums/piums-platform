@@ -1,11 +1,10 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { tilopayProvider } from "../providers/tilopay.provider";
 import { bookingClient } from "../clients/booking.client";
 import { notificationsClient } from "../clients/notifications.client";
 import { logger } from "../utils/logger";
 
-const prisma = new PrismaClient();
 const router: Router = Router();
 
 /**

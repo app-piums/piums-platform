@@ -1,10 +1,8 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { searchController } from '../controller/search.controller';
 import { searchLimiter, autocompleteLimiter, indexLimiter } from '../middleware/rateLimiter';
 import { optionalAuth, requireAuth } from '../middleware/auth.middleware';
-
-const prisma = new PrismaClient();
 
 const router: Router = Router();
 

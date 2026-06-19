@@ -12,7 +12,7 @@ import categoryRoutes from "./routes/category.routes";
 import locationRoutes from "./routes/location.routes";
 import dayOfferRoutes from "./routes/day-offer.routes";
 import postingRoutes from "./routes/posting.routes";
-import { PrismaClient } from "@prisma/client";
+import prisma from "./lib/prisma";
 
 // Cargar variables de entorno
 dotenv.config();
@@ -83,11 +83,10 @@ app.use(errorHandler);
 // ==================== SERVIDOR ====================
 
 // Auto-expire OPEN postings older than 30 days
-const prismaForCron = new PrismaClient();
 const runPostingExpiration = async () => {
   try {
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const { count } = await prismaForCron.artistPosting.updateMany({
+    const { count } = await prisma.artistPosting.updateMany({
       where: { status: 'OPEN', createdAt: { lt: cutoff } },
       data: { status: 'CLOSED', closedAt: new Date() },
     });

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { artistsClient, type ArtistData } from '../clients/artists.client';
 import { catalogClient, type ServiceData } from '../clients/catalog.client';
 import { reviewsClient } from '../clients/reviews.client';
@@ -13,7 +13,18 @@ import type {
   AutocompleteInput
 } from '../schemas/search.schema';
 
-const prisma = new PrismaClient();
+// Builds a safe tsquery string from an array of terms.
+// Each term is split on spaces, sanitized, and added with :* (prefix match).
+// Terms are joined with | (OR), so any word match is enough.
+function buildPrefixTsQuery(terms: string[]): string {
+  const parts = terms
+    .flatMap(t => t.toLowerCase().split(/\s+/))
+    .map(w => w.replace(/[^\wáéíóúüñ]/g, '').trim())
+    .filter(w => w.length > 1)
+    .map(w => `${w}:*`);
+  const unique = [...new Set(parts)];
+  return unique.join(' | ');
+}
 
 export class SearchService {
   // ============================================================================
@@ -93,43 +104,30 @@ export class SearchService {
       where.activeAbsenceType = null;
     }
 
-    // Add text search if query provided — uses unaccent for accent-insensitive
-    // matching (e.g. "sofia" ↔ "Sofía", "fotografo" ↔ "fotógrafo").
+    // Full-text search using tsvector + GIN index (accent-insensitive via spanish_unaccent config).
+    // Falls back to ILIKE only if tsvector fails (e.g. migration not yet applied).
     if (query) {
       const expandedQuery = expandQuery(query);
-      const likePatterns = expandedQuery.map(t => `%${t.toLowerCase()}%`);
-      try {
-        const matchedIds = await prisma.$queryRaw<Array<{ id: string }>>`
-          WITH patterns AS (
-            SELECT unaccent(p) AS p FROM unnest(${likePatterns}::text[]) AS p
-          )
-          SELECT DISTINCT id
-          FROM "ArtistIndex"
-          WHERE "isActive" = true
-            AND (
-              unaccent(lower(name)) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              OR unaccent(lower(coalesce(bio, ''))) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              OR EXISTS (
-                SELECT 1 FROM unnest(specialties) AS s
-                WHERE unaccent(lower(s)) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              )
-              OR EXISTS (
-                SELECT 1 FROM unnest("serviceTitles") AS st
-                WHERE unaccent(lower(st)) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              )
-            )
-        `;
-        andConditions.push({ id: { in: matchedIds.map((r: { id: string }) => r.id) } });
-      } catch (err: any) {
-        logger.warn(`Unaccent search failed, falling back to ILIKE: ${err.message}`);
-        const fieldConditions: any[] = [];
-        for (const term of expandedQuery) {
-          fieldConditions.push({ name: { contains: term, mode: 'insensitive' } });
-          fieldConditions.push({ bio: { contains: term, mode: 'insensitive' } });
-          fieldConditions.push({ specialties: { hasSome: [term] } });
-          fieldConditions.push({ serviceTitles: { hasSome: [term] } });
+      const tsqueryStr = buildPrefixTsQuery(expandedQuery);
+      if (tsqueryStr) {
+        try {
+          const matchedIds = await prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM "ArtistIndex"
+            WHERE "isActive" = true
+              AND "searchVector" @@ to_tsquery('spanish_unaccent', ${tsqueryStr})
+          `;
+          andConditions.push({ id: { in: matchedIds.map((r: { id: string }) => r.id) } });
+        } catch (err: any) {
+          logger.warn(`tsvector artist search failed, falling back to ILIKE: ${err.message}`);
+          const fieldConditions: any[] = [];
+          for (const term of expandedQuery) {
+            fieldConditions.push({ name: { contains: term, mode: 'insensitive' } });
+            fieldConditions.push({ bio: { contains: term, mode: 'insensitive' } });
+            fieldConditions.push({ specialties: { hasSome: [term] } });
+            fieldConditions.push({ serviceTitles: { hasSome: [term] } });
+          }
+          andConditions.push({ OR: fieldConditions });
         }
-        andConditions.push({ OR: fieldConditions });
       }
     }
 
@@ -264,15 +262,27 @@ export class SearchService {
       })
     };
 
-    // Add text search if query provided
+    // Full-text search via tsvector. Falls back to ILIKE if migration not yet applied.
     if (query) {
-      where.OR = [
-        { title: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
-        { artistName: { contains: query, mode: 'insensitive' } },
-        { tags: { hasSome: [query] } },
-        { category: { contains: query, mode: 'insensitive' } }
-      ];
+      const tsqueryStr = buildPrefixTsQuery([query]);
+      if (tsqueryStr) {
+        try {
+          const textMatchIds = await prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM "ServiceIndex"
+            WHERE "searchVector" @@ to_tsquery('spanish_unaccent', ${tsqueryStr})
+          `;
+          where.id = { in: textMatchIds.map((r: { id: string }) => r.id) };
+        } catch (err: any) {
+          logger.warn(`tsvector service search failed, falling back to ILIKE: ${err.message}`);
+          where.OR = [
+            { title: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+            { artistName: { contains: query, mode: 'insensitive' } },
+            { tags: { hasSome: [query] } },
+            { category: { contains: query, mode: 'insensitive' } }
+          ];
+        }
+      }
     }
 
     // Build orderBy clause
@@ -348,56 +358,69 @@ export class SearchService {
     };
 
     try {
+      const tsqueryStr = buildPrefixTsQuery([query]);
+
       if (type === 'artists' || type === 'all') {
-        results.artists = await prisma.artistIndex.findMany({
-          where: {
-            isActive: true,
-            NOT: { specialties: { equals: ['OTRO'] } },
-            OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { specialties: { hasSome: [query] } }
-            ]
-          },
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            averageRating: true,
-            totalReviews: true
-          },
-          take: type === 'all' ? Math.floor(limit! / 2) : limit,
-          orderBy: [
-            { averageRating: 'desc' },
-            { totalReviews: 'desc' }
-          ]
-        });
+        const artistLimit = type === 'all' ? Math.floor(limit! / 2) : limit!;
+        try {
+          if (tsqueryStr) {
+            results.artists = await prisma.$queryRaw<any[]>`
+              SELECT id, name, city, "averageRating", "totalReviews"
+              FROM "ArtistIndex"
+              WHERE "isActive" = true
+                AND "searchVector" @@ to_tsquery('spanish_unaccent', ${tsqueryStr})
+              ORDER BY ts_rank_cd("searchVector", to_tsquery('spanish_unaccent', ${tsqueryStr})) DESC,
+                       "averageRating" DESC
+              LIMIT ${artistLimit}
+            `;
+          }
+        } catch (err: any) {
+          logger.warn(`tsvector autocomplete artists failed, falling back to ILIKE: ${err.message}`);
+          results.artists = await prisma.artistIndex.findMany({
+            where: {
+              isActive: true,
+              OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { specialties: { hasSome: [query] } }
+              ]
+            },
+            select: { id: true, name: true, city: true, averageRating: true, totalReviews: true },
+            take: artistLimit,
+            orderBy: [{ averageRating: 'desc' }, { totalReviews: 'desc' }]
+          });
+        }
       }
 
       if (type === 'services' || type === 'all') {
-        results.services = await prisma.serviceIndex.findMany({
-          where: {
-            isActive: true,
-            OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-              { category: { contains: query, mode: 'insensitive' } },
-              { tags: { hasSome: [query] } }
-            ]
-          },
-          select: {
-            id: true,
-            title: true,
-            artistName: true,
-            category: true,
-            price: true,
-            city: true,
-            artistRating: true
-          },
-          take: type === 'all' ? Math.floor(limit! / 2) : limit,
-          orderBy: [
-            { artistRating: 'desc' },
-            { totalBookings: 'desc' }
-          ]
-        });
+        const serviceLimit = type === 'all' ? Math.floor(limit! / 2) : limit!;
+        try {
+          if (tsqueryStr) {
+            results.services = await prisma.$queryRaw<any[]>`
+              SELECT id, title, "artistName", category, price, city, "artistRating"
+              FROM "ServiceIndex"
+              WHERE "isActive" = true
+                AND "searchVector" @@ to_tsquery('spanish_unaccent', ${tsqueryStr})
+              ORDER BY ts_rank_cd("searchVector", to_tsquery('spanish_unaccent', ${tsqueryStr})) DESC,
+                       "artistRating" DESC
+              LIMIT ${serviceLimit}
+            `;
+          }
+        } catch (err: any) {
+          logger.warn(`tsvector autocomplete services failed, falling back to ILIKE: ${err.message}`);
+          results.services = await prisma.serviceIndex.findMany({
+            where: {
+              isActive: true,
+              OR: [
+                { title: { contains: query, mode: 'insensitive' } },
+                { category: { contains: query, mode: 'insensitive' } },
+                { tags: { hasSome: [query] } }
+              ]
+            },
+            select: { id: true, title: true, artistName: true, category: true, price: true, city: true, artistRating: true },
+            take: serviceLimit,
+            orderBy: [{ artistRating: 'desc' }, { totalBookings: 'desc' }]
+          });
+        }
       }
 
       // Log autocomplete query
@@ -824,21 +847,14 @@ export class SearchService {
     const expandedTerms = expandQuery(query);
     logger.info(`smartSearch: "${query}" → [${expandedTerms.slice(0, 6).join(', ')}...]`);
 
-    // Search in ServiceIndex: find services matching any expanded term
-    const whereConditions: any[] = expandedTerms.flatMap(term => [
-      { title: { contains: term, mode: 'insensitive' } },
-      { description: { contains: term, mode: 'insensitive' } },
-      { category: { contains: term, mode: 'insensitive' } },
-      { tags: { hasSome: [term] } },
-    ]);
+    const tsSmart = buildPrefixTsQuery(expandedTerms);
 
+    // Build service filter: tsvector for text match + structural filters via ORM
     const serviceWhereClause: any = {
       isActive: true,
       isAvailable: true,
-      OR: whereConditions,
       ...(city && { city: { contains: city, mode: 'insensitive' } }),
       ...(country && { country }),
-      // minPrice/maxPrice ya no filtran: son señal de ordenamiento (ver priceTier)
       ...(minGuests != null && { capacity: { gte: minGuests } }),
     };
 
@@ -854,43 +870,39 @@ export class SearchService {
     };
 
     try {
-      // Use raw SQL with unaccent for accent-insensitive artist matching.
-      // We compute term LIKE patterns on the DB side.
-      const likePatterns = expandedTerms.map(t => `%${t.toLowerCase()}%`);
+      // Fetch service IDs via tsvector, then load full records with structural filters
+      const serviceIdRows = tsSmart
+        ? await prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM "ServiceIndex"
+            WHERE "isActive" = true AND "isAvailable" = true
+              AND "searchVector" @@ to_tsquery('spanish_unaccent', ${tsSmart})
+            ORDER BY ts_rank_cd("searchVector", to_tsquery('spanish_unaccent', ${tsSmart})) DESC
+            LIMIT ${limit * 10}
+          `.catch((err: any) => {
+            logger.warn(`tsvector smartSearch services failed: ${err.message}`);
+            return [] as Array<{ id: string }>;
+          })
+        : [];
 
       const [services, directArtistRows] = await Promise.all([
-        prisma.serviceIndex.findMany({
-          where: serviceWhereClause,
-          orderBy: [
-            { artistRating: 'desc' },
-            { totalBookings: 'desc' },
-          ],
-          take: limit * 5,
-        }),
-        prisma.$queryRaw<Array<{ id: string }>>`
-          WITH patterns AS (
-            SELECT unaccent(p) AS p FROM unnest(${likePatterns}::text[]) AS p
-          )
-          SELECT DISTINCT id
-          FROM "ArtistIndex"
-          WHERE "isActive" = true
-            AND (
-              unaccent(lower(name)) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              OR unaccent(lower(coalesce(bio, ''))) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              OR EXISTS (
-                SELECT 1 FROM unnest(specialties) AS s
-                WHERE unaccent(lower(s)) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              )
-              OR EXISTS (
-                SELECT 1 FROM unnest("serviceTitles") AS st
-                WHERE unaccent(lower(st)) LIKE ANY(ARRAY(SELECT p FROM patterns))
-              )
-            )
-          LIMIT ${limit * 5}
-        `.catch((err: any) => {
-          logger.error(`Raw artist search failed: ${err.message}`);
-          return [] as Array<{ id: string }>;
-        }),
+        serviceIdRows.length > 0
+          ? prisma.serviceIndex.findMany({
+              where: { ...serviceWhereClause, id: { in: serviceIdRows.map(r => r.id) } },
+              orderBy: [{ artistRating: 'desc' }, { totalBookings: 'desc' }],
+              take: limit * 5,
+            })
+          : Promise.resolve([] as any[]),
+        tsSmart
+          ? prisma.$queryRaw<Array<{ id: string }>>`
+              SELECT id FROM "ArtistIndex"
+              WHERE "isActive" = true
+                AND "searchVector" @@ to_tsquery('spanish_unaccent', ${tsSmart})
+              LIMIT ${limit * 5}
+            `.catch((err: any) => {
+              logger.error(`tsvector smartSearch artists failed: ${err.message}`);
+              return [] as Array<{ id: string }>;
+            })
+          : Promise.resolve([] as Array<{ id: string }>),
       ]);
 
       const directArtistIds = directArtistRows.map((r: { id: string }) => r.id);

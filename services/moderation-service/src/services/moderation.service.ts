@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { ModerationAction, Severity, ContentType } from "../types/prisma-enums";
 import { normalizeText, normalizeWord, escapeRegex } from "../utils/normalizer";
 import {
@@ -10,8 +10,6 @@ import {
 } from "./cache.service";
 import { logger } from "../utils/logger";
 import { AppError } from "../middleware/errorHandler";
-
-const prisma = new PrismaClient();
 
 // ── Tipos públicos ────────────────────────────────────────────────────────────
 

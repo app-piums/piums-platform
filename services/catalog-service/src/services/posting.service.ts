@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { notificationsClient } from '../clients/notifications.client';
@@ -8,8 +8,6 @@ import { chatClient } from '../clients/chat.client';
 const MAX_ACTIVE_APPLICATIONS = 10;
 const POSTING_EXPIRY_DAYS = 30;
 const MAX_MATCH_NOTIFICATIONS = 50;
-
-const prisma = new PrismaClient();
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;

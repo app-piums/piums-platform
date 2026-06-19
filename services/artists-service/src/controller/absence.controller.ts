@@ -8,23 +8,10 @@ import {
 } from "../services/availability.service";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { triggerArtistReindex as triggerReindex } from "../utils/searchReindex";
 import { z } from "zod";
 
 const artistsService = new ArtistsService();
-
-const SEARCH_SERVICE_URL =
-  process.env.SEARCH_SERVICE_URL || "http://search-service:4009";
-
-/** Fire-and-forget re-index so search results stay fresh */
-function triggerReindex(artistId: string) {
-  fetch(`${SEARCH_SERVICE_URL}/api/search/index/artist`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId }),
-  }).catch((err) =>
-    logger.error(`Re-index failed for artist ${artistId}: ${err.message}`, "ABSENCE")
-  );
-}
 
 const createAbsenceSchema = z.object({
   startAt: z.string().datetime("Fecha de inicio inválida"),

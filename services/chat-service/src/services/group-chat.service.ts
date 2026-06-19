@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { chatEmitter } from './chat.service';
-
-const prisma = new PrismaClient();
 
 export class GroupChatService {
   // ==================== GROUP CONVERSATIONS ====================

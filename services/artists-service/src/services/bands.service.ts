@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { notificationsClient } from "../clients/notifications.client";
-
-const prisma = new PrismaClient();
 
 function generateSlug(name: string): string {
   return name

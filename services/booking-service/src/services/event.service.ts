@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { EventStatus, BookingStatus } from '../types/prisma-enums';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 // ==================== HELPERS ====================
 

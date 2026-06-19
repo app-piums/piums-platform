@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { cloudinaryProvider } from "../providers/cloudinary.provider";
 import { logger } from "../utils/logger";
-
-const prisma = new PrismaClient();
 
 const RETENTION_DAYS = 90;
 

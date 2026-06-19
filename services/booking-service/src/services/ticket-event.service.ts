@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { generateTicketEventCode, generateTicketPurchaseCode } from './ticket-code.service';
 import { paymentsClient } from '../clients/payments.client';
 import { usersClient } from '../clients/users.client';
-
-const prisma = new PrismaClient();
 
 export const ticketEventService = {
   async createEvent(artistId: string, payload: {

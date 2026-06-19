@@ -1,12 +1,13 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { PrismaClient } from "@prisma/client";
+import prisma from "./lib/prisma";
 import { logger } from "./utils/logger";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { paymentService } from "./services/payment.service";
 import { notificationsClient } from "./clients/notifications.client";
+import { withCronLock } from "./utils/distributedLock";
 
 // Routes
 import healthRoutes from "./routes/health.routes";
@@ -74,29 +75,23 @@ app.use("/callbacks", callbackRoutes);
 app.use(errorHandler);
 
 // Add provider column to payment_methods if it doesn't exist (schema migration guard)
-const _prismaInit = new PrismaClient();
-_prismaInit.$executeRaw`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'STRIPE'`
+prisma.$executeRaw`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'STRIPE'`
   .then(() => logger.info("payment_methods.provider column ensured", "STARTUP"))
-  .catch((err: any) => logger.warn("Could not ensure payment_methods.provider column", "STARTUP", { error: err.message }))
-  .finally(() => _prismaInit.$disconnect());
+  .catch((err: any) => logger.warn("Could not ensure payment_methods.provider column", "STARTUP", { error: err.message }));
 
 // Migration guards for coupons tables
-const _prismaCoupons = new PrismaClient();
-_prismaCoupons.$executeRaw`CREATE TABLE IF NOT EXISTS coupons (id VARCHAR(36) PRIMARY KEY, code VARCHAR(50) UNIQUE NOT NULL, name VARCHAR(255) NOT NULL, description TEXT, "discountType" VARCHAR(20) NOT NULL, "discountValue" INTEGER NOT NULL, currency VARCHAR(10) DEFAULT 'USD', "maxUses" INTEGER, "maxUsesPerUser" INTEGER DEFAULT 1, "currentUses" INTEGER DEFAULT 0, "targetType" VARCHAR(20) DEFAULT 'GLOBAL', "targetId" VARCHAR(36), "minimumAmount" INTEGER, status VARCHAR(20) DEFAULT 'ACTIVE', "startsAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP, "expiresAt" TIMESTAMP(3), "createdByAdminId" VARCHAR(36) NOT NULL, "deletedAt" TIMESTAMP(3), "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP)`
+prisma.$executeRaw`CREATE TABLE IF NOT EXISTS coupons (id VARCHAR(36) PRIMARY KEY, code VARCHAR(50) UNIQUE NOT NULL, name VARCHAR(255) NOT NULL, description TEXT, "discountType" VARCHAR(20) NOT NULL, "discountValue" INTEGER NOT NULL, currency VARCHAR(10) DEFAULT 'USD', "maxUses" INTEGER, "maxUsesPerUser" INTEGER DEFAULT 1, "currentUses" INTEGER DEFAULT 0, "targetType" VARCHAR(20) DEFAULT 'GLOBAL', "targetId" VARCHAR(36), "minimumAmount" INTEGER, status VARCHAR(20) DEFAULT 'ACTIVE', "startsAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP, "expiresAt" TIMESTAMP(3), "createdByAdminId" VARCHAR(36) NOT NULL, "deletedAt" TIMESTAMP(3), "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP)`
   .then(() => logger.info("coupons table ensured", "STARTUP"))
   .catch((err: any) => logger.warn("coupons table migration", "STARTUP", { error: err.message }))
-  .then(() => _prismaCoupons.$executeRaw`CREATE TABLE IF NOT EXISTS coupon_uses (id VARCHAR(36) PRIMARY KEY, "couponId" VARCHAR(36) NOT NULL REFERENCES coupons(id), "userId" VARCHAR(36) NOT NULL, "bookingId" VARCHAR(36) NOT NULL, "discountApplied" INTEGER NOT NULL, "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP, UNIQUE("couponId", "userId", "bookingId"))`)
+  .then(() => prisma.$executeRaw`CREATE TABLE IF NOT EXISTS coupon_uses (id VARCHAR(36) PRIMARY KEY, "couponId" VARCHAR(36) NOT NULL REFERENCES coupons(id), "userId" VARCHAR(36) NOT NULL, "bookingId" VARCHAR(36) NOT NULL, "discountApplied" INTEGER NOT NULL, "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP, UNIQUE("couponId", "userId", "bookingId"))`)
   .then(() => logger.info("coupon_uses table ensured", "STARTUP"))
-  .catch((err: any) => logger.warn("coupon_uses table migration", "STARTUP", { error: err.message }))
-  .finally(() => _prismaCoupons.$disconnect());
+  .catch((err: any) => logger.warn("coupon_uses table migration", "STARTUP", { error: err.message }));
 
 // Migration guards for new coupon columns
-const _prismaCouponCols = new PrismaClient();
-_prismaCouponCols.$executeRaw`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS "maxDiscountAmount" INTEGER`
-  .then(() => _prismaCouponCols.$executeRaw`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS "validationCount" INTEGER DEFAULT 0`)
+prisma.$executeRaw`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS "maxDiscountAmount" INTEGER`
+  .then(() => prisma.$executeRaw`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS "validationCount" INTEGER DEFAULT 0`)
   .then(() => logger.info("coupon new columns ensured", "STARTUP"))
-  .catch((err: any) => logger.warn("coupon columns migration", "STARTUP", { error: err.message }))
-  .finally(() => _prismaCouponCols.$disconnect());
+  .catch((err: any) => logger.warn("coupon columns migration", "STARTUP", { error: err.message }));
 
 // Start server
 const server = app.listen(PORT, () => {
@@ -114,15 +109,13 @@ const server = app.listen(PORT, () => {
 });
 
 // Cron diario: notificar cupones que expiran en ~7 días
-const _prismaCron = new PrismaClient();
-
-setInterval(async () => {
+setInterval(() => withCronLock('coupon-expiry-notify', 23 * 3600, async () => {
   try {
     const now = new Date();
     const in6days = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
     const in8days = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000);
 
-    const expiringSoon = await (_prismaCron as any).coupon.findMany({
+    const expiringSoon = await (prisma as any).coupon.findMany({
       where: {
         status: 'ACTIVE',
         deletedAt: null,
@@ -153,17 +146,17 @@ setInterval(async () => {
   } catch (err: any) {
     logger.error("Error en cron de cupones", "COUPON_CRON", { error: err.message });
   }
-}, 24 * 60 * 60 * 1000);
+}), 24 * 60 * 60 * 1000);
 
 // Cron diario: expirar créditos vencidos (se ejecuta cada 24h)
-setInterval(async () => {
+setInterval(() => withCronLock('credit-expiry', 23 * 3600, async () => {
   try {
     const count = await paymentService.expireCredits();
     if (count > 0) logger.info(`Cron: expired ${count} credits`, "CREDIT_CRON");
   } catch (err: any) {
     logger.error("Error en cron de expiración de créditos", "CREDIT_CRON", { error: err.message });
   }
-}, 24 * 60 * 60 * 1000);
+}), 24 * 60 * 60 * 1000);
 
 // Graceful shutdown
 process.on("SIGTERM", () => {

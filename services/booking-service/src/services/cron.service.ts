@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { logger } from "../utils/logger";
 import { withCronLock } from "../utils/distributedLock";
 import { bookingService } from "./booking.service";
@@ -7,8 +7,6 @@ import { notificationsClient } from "../clients/notifications.client";
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
 import { catalogClient } from "../clients/catalog.client";
-
-const prisma = new PrismaClient();
 
 // ==================== NO-SHOW 24H ====================
 // Cada hora: ejecuta acciones automáticas de no-show si el artista

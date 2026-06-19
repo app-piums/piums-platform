@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 
 // NOTE: NotificationChannel/NotificationStatus are not re-exported by the local
 // (ungenerated) @prisma/client stub and `prisma generate` is unavailable offline.
@@ -36,8 +36,6 @@ import {
   UpdatePreferencesInput,
   SearchNotificationsInput,
 } from '../schemas/notification.schema';
-
-const prisma = new PrismaClient();
 
 export class NotificationService {
   // ============================================================================

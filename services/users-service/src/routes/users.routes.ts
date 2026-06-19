@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { cloudinaryProvider } from "../providers/cloudinary.provider";
 import {
   createUser,
@@ -22,7 +22,6 @@ import { updateLimiter, deleteLimiter } from "../middleware/rateLimiter";
 import { upload, handleMulterError, verifyMagicBytes } from "../middleware/upload.middleware";
 
 const router: Router = Router();
-const prisma = new PrismaClient();
 
 // Rutas públicas/internas
 router.post("/", createUser); // Solo para uso interno

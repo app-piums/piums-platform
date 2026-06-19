@@ -1,11 +1,10 @@
-import { PrismaClient, ReviewStatus, ReportReason } from "@prisma/client";
+import { ReviewStatus, ReportReason } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { bookingClient } from "../clients/booking.client";
 import { notificationsClient } from "../clients/notifications.client";
 import { ModerationClient } from "../clients/moderation.client";
-
-const prisma = new PrismaClient();
+import prisma from "../lib/prisma";
 const moderationClient = new ModerationClient();
 
 export class ReviewService {

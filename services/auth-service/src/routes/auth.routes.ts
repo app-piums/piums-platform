@@ -1,8 +1,6 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-import { 
+import prisma from "../lib/prisma";
+import {
   register,
   registerArtist,
   registerClient,

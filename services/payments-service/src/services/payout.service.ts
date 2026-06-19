@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { PayoutStatus, PayoutType } from "../types/prisma-enums";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { bookingClient } from "../clients/booking.client";
-
-const prisma = new PrismaClient();
 
 const _rawFee = process.env.PLATFORM_FEE_PERCENTAGE;
 if (!_rawFee) {

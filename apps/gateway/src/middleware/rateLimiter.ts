@@ -1,10 +1,34 @@
 import rateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import { Redis } from "ioredis";
 import { logger } from "../utils/logger";
+
+// Shared Redis client for distributed rate limiting (optional — falls back to memory store)
+let redisClient: Redis | null = null;
+if (process.env.REDIS_HOST) {
+  redisClient = new Redis({
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT || "6379"),
+    password: process.env.REDIS_PASSWORD || undefined,
+    lazyConnect: true,
+    retryStrategy: (times) => Math.min(times * 200, 5000),
+  });
+  redisClient.on("error", (err: Error) => logger.error("Rate-limit Redis error", "RATE_LIMITER", { error: err.message }));
+  redisClient.connect().catch((err: Error) => logger.warn("Rate-limit Redis connect failed, using memory store", "RATE_LIMITER", { error: err.message }));
+}
+
+function makeStore(prefix: string) {
+  if (redisClient) {
+    return new RedisStore({ sendCommand: (...args: string[]) => redisClient!.call(...args) as any, prefix });
+  }
+  return undefined;
+}
 
 // Rate limiter global para todo el gateway
 export const globalRateLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"), // 15 minutos
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "2000"), // 2000 requests por ventana
+  store: makeStore("rl:global:"),
   message: {
     error: "Too Many Requests",
     message: "You have exceeded the request limit. Please try again later.",
@@ -34,6 +58,7 @@ export const globalRateLimiter = rateLimit({
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5,
+  store: makeStore("rl:auth:"),
   skipSuccessfulRequests: true,
   keyGenerator: (req) => `auth:${req.ip}`,
   message: {
@@ -50,6 +75,7 @@ export const authRateLimiter = rateLimit({
 export const oauthRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
+  store: makeStore("rl:oauth:"),
   skipSuccessfulRequests: true,
   keyGenerator: (req) => `oauth:${req.ip}`,
   message: {
@@ -65,6 +91,7 @@ export const oauthRateLimiter = rateLimit({
 export const refreshRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutos
   max: 20,
+  store: makeStore("rl:refresh:"),
   skipSuccessfulRequests: true,
   keyGenerator: (req) => `refresh:${req.ip}`,
   message: {
@@ -79,6 +106,7 @@ export const refreshRateLimiter = rateLimit({
 export const uploadRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 30,
+  store: makeStore("rl:upload:"),
   keyGenerator: (req) => `upload:${req.ip}`,
   message: {
     error: "Too Many Requests",

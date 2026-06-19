@@ -5,13 +5,12 @@ import { bookingClient } from "../clients/booking.client";
 import { PaymentMethodService } from "../services/paymentMethod.service";
 import { logger } from "../utils/logger";
 import { webhookLimiter } from "../middleware/rateLimiter";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { PaymentType } from "../types/prisma-enums";
 
 const paymentMethodService = new PaymentMethodService();
 
 const router: Router = Router();
-const prisma = new PrismaClient();
 
 /**
  * Webhook de Stripe

@@ -3,9 +3,11 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
+import { RedisStore } from "connect-redis";
+import { Redis } from "ioredis";
 import type { RequestHandler } from "express";
 import passport from "passport";
-import { PrismaClient } from "@prisma/client";
+import prisma from "./lib/prisma";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
 import oauthRoutes from "./routes/oauth.routes";
@@ -16,8 +18,6 @@ import { logger } from "./utils/logger";
 import { configureGoogleStrategy } from "./strategies/google.strategy";
 import { configureFacebookStrategy } from "./strategies/facebook.strategy";
 import { googleCalendarService } from "./services/google-calendar.service";
-
-const prismaInternal = new PrismaClient();
 
 const app = express();
 app.set("trust proxy", 1); // IP real del cliente via X-Forwarded-For del ingress
@@ -34,11 +34,26 @@ if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
   logger.error('FATAL: SESSION_SECRET no definido en produccion', 'SERVER');
   process.exit(1);
 }
+
+// Redis session store — required for multi-replica auth-service (OAuth callbacks land on any pod)
+let sessionStore: RedisStore | undefined;
+if (process.env.REDIS_HOST) {
+  const sessionRedis = new Redis({
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined,
+    retryStrategy: (times) => Math.min(times * 200, 5000),
+  });
+  sessionRedis.on('error', (err: Error) => logger.error('Session Redis error', 'AUTH', { error: err.message }));
+  sessionStore = new RedisStore({ client: sessionRedis, prefix: 'sess:' });
+}
+
 app.use(session({
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'piums-session-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 10 * 60 * 1000 },
 }) as any);
 app.use(passport.initialize() as any);
 app.use(passport.session() as any);
@@ -65,7 +80,7 @@ app.put("/internal/users/:authId/avatar", async (req, res, next) => {
     if (!avatarUrl && avatarUrl !== null) {
       return res.status(400).json({ error: 'avatarUrl required' });
     }
-    await prismaInternal.user.update({
+    await prisma.user.update({
       where: { id: authId },
       data: { avatar: avatarUrl ?? null },
     });
@@ -85,7 +100,7 @@ app.get("/internal/users/:authId/identity-status", async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const { authId } = req.params;
-    const user = await prismaInternal.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: authId },
       select: {
         documentType: true,
@@ -114,7 +129,7 @@ app.get("/internal/users/:authId/document-urls", async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const { authId } = req.params;
-    const user = await prismaInternal.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: authId },
       select: { documentFrontUrl: true, documentBackUrl: true, documentSelfieUrl: true },
     });
@@ -137,7 +152,7 @@ app.get("/internal/users/:authId/info", async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const { authId } = req.params;
-    const user = await prismaInternal.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: authId },
       select: { id: true, email: true, nombre: true },
     });

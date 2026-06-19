@@ -1,12 +1,11 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { paymentService } from "../services/payment.service";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 
 const router: Router = Router();
-const prisma = new PrismaClient();
 
 /**
  * GET /api/credits/my

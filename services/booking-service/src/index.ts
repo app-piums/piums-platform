@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { PrismaClient } from "@prisma/client";
+import prisma from "./lib/prisma";
 import { logger } from "./utils/logger";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
@@ -84,24 +84,22 @@ app.use(errorHandler);
 // ==================== SERVIDOR ====================
 
 // Migration guards — ensure new columns/tables exist at startup
-const _prisma = new PrismaClient();
-_prisma.$executeRaw`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "couponCode" VARCHAR(50)`
-  .then(() => _prisma.$executeRaw`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "couponDiscountAmount" INTEGER NOT NULL DEFAULT 0`)
+prisma.$executeRaw`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "couponCode" VARCHAR(50)`
+  .then(() => prisma.$executeRaw`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "couponDiscountAmount" INTEGER NOT NULL DEFAULT 0`)
   .then(() => logger.info("Coupon columns on bookings ensured", "STARTUP"))
   .catch((e: any) => logger.warn("Coupon columns migration", "STARTUP", { error: e.message }))
-  .then(() => _prisma.$executeRaw`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "travelPrice" INTEGER NOT NULL DEFAULT 0`)
+  .then(() => prisma.$executeRaw`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "travelPrice" INTEGER NOT NULL DEFAULT 0`)
   .then(() => logger.info("travelPrice column on bookings ensured", "STARTUP"))
   .catch((e: any) => logger.warn("travelPrice column migration", "STARTUP", { error: e.message }))
-  .then(() => _prisma.$executeRaw`CREATE TABLE IF NOT EXISTS booking_funnel_events (id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text, "sessionId" VARCHAR(100) NOT NULL, "userId" VARCHAR(36), step VARCHAR(30) NOT NULL, action VARCHAR(20) NOT NULL, "bookingId" VARCHAR(36), "artistId" VARCHAR(36), "serviceId" VARCHAR(36), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`)
+  .then(() => prisma.$executeRaw`CREATE TABLE IF NOT EXISTS booking_funnel_events (id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text, "sessionId" VARCHAR(100) NOT NULL, "userId" VARCHAR(36), step VARCHAR(30) NOT NULL, action VARCHAR(20) NOT NULL, "bookingId" VARCHAR(36), "artistId" VARCHAR(36), "serviceId" VARCHAR(36), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`)
   .then(() => logger.info("booking_funnel_events table ensured", "STARTUP"))
   .catch((e: any) => logger.warn("booking_funnel_events migration", "STARTUP", { error: e.message }))
-  .then(() => _prisma.$executeRaw`CREATE TABLE IF NOT EXISTS replacement_searches (id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text, "bookingId" TEXT NOT NULL UNIQUE, "clientId" TEXT NOT NULL, category TEXT, city TEXT, "budgetCents" INTEGER NOT NULL, "scheduledDate" TIMESTAMP(3) NOT NULL, "durationMinutes" INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'AWAITING_CLIENT', "matchedServiceIds" TEXT[] DEFAULT ARRAY[]::TEXT[], "matchedArtistIds" TEXT[] DEFAULT ARRAY[]::TEXT[], "clientOptedInAt" TIMESTAMP(3), "clientNotifiedAt" TIMESTAMP(3), "artistsNotifiedAt" TIMESTAMP(3), "expiresAt" TIMESTAMP(3) NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`)
-  .then(() => _prisma.$executeRaw`CREATE INDEX IF NOT EXISTS replacement_searches_bookingId ON replacement_searches ("bookingId")`)
-  .then(() => _prisma.$executeRaw`CREATE INDEX IF NOT EXISTS replacement_searches_clientId ON replacement_searches ("clientId")`)
-  .then(() => _prisma.$executeRaw`CREATE INDEX IF NOT EXISTS replacement_searches_status_expiresAt ON replacement_searches (status, "expiresAt")`)
+  .then(() => prisma.$executeRaw`CREATE TABLE IF NOT EXISTS replacement_searches (id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text, "bookingId" TEXT NOT NULL UNIQUE, "clientId" TEXT NOT NULL, category TEXT, city TEXT, "budgetCents" INTEGER NOT NULL, "scheduledDate" TIMESTAMP(3) NOT NULL, "durationMinutes" INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'AWAITING_CLIENT', "matchedServiceIds" TEXT[] DEFAULT ARRAY[]::TEXT[], "matchedArtistIds" TEXT[] DEFAULT ARRAY[]::TEXT[], "clientOptedInAt" TIMESTAMP(3), "clientNotifiedAt" TIMESTAMP(3), "artistsNotifiedAt" TIMESTAMP(3), "expiresAt" TIMESTAMP(3) NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`)
+  .then(() => prisma.$executeRaw`CREATE INDEX IF NOT EXISTS replacement_searches_bookingId ON replacement_searches ("bookingId")`)
+  .then(() => prisma.$executeRaw`CREATE INDEX IF NOT EXISTS replacement_searches_clientId ON replacement_searches ("clientId")`)
+  .then(() => prisma.$executeRaw`CREATE INDEX IF NOT EXISTS replacement_searches_status_expiresAt ON replacement_searches (status, "expiresAt")`)
   .then(() => logger.info("replacement_searches table ensured", "STARTUP"))
-  .catch((e: any) => logger.warn("replacement_searches migration", "STARTUP", { error: e.message }))
-  .finally(() => _prisma.$disconnect());
+  .catch((e: any) => logger.warn("replacement_searches migration", "STARTUP", { error: e.message }));
 
 app.listen(PORT, () => {
   logger.info(`🚀 Booking Service running on port ${PORT}`, "SERVER", {

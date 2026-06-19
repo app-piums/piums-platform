@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { PricingModel } from '../types/prisma-enums';
-
-const prisma = new PrismaClient();
 
 /**
  * Estructura de un item del desglose de precio

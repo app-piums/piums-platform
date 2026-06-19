@@ -1,11 +1,10 @@
 import { Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { UsersService } from "../services/users.service";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 
-const prisma = new PrismaClient();
 const usersService = new UsersService();
 
 type FavoriteEntityType = "ARTIST" | "SERVICE" | "PACKAGE";

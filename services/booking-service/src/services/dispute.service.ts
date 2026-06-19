@@ -1,12 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { DisputeType, DisputeStatus, DisputeResolution } from "../types/prisma-enums";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { paymentsClient } from "../clients/payments.client";
 import { artistsClient } from "../clients/artists.client";
 import { bookingService } from "./booking.service";
-
-const prisma = new PrismaClient();
 
 export class DisputeService {
   // ==================== CREATE DISPUTE ====================

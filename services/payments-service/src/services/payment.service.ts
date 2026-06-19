@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { PaymentStatus, PaymentType, PaymentIntentStatus, RefundStatus, CreditStatus } from "../types/prisma-enums";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
@@ -8,8 +8,6 @@ import { notificationsClient } from "../clients/notifications.client";
 import { PaymentMethodService } from "./paymentMethod.service";
 
 const paymentMethodService = new PaymentMethodService();
-
-const prisma = new PrismaClient();
 
 export class PaymentService {
   // ==================== PAYMENT INTENTS ====================

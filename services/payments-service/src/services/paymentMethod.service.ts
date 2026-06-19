@@ -1,12 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { stripeProvider } from "../providers/stripe.provider";
 import { tilopayProvider } from "../providers/tilopay.provider";
 import { bookingClient } from "../clients/booking.client";
 import { encryptToken, decryptToken } from "../utils/token-encrypt";
-
-const prisma = new PrismaClient();
 
 export class PaymentMethodService {
   /**
