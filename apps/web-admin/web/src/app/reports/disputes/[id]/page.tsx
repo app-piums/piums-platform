@@ -177,6 +177,7 @@ function DisputeDetailContent() {
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [resolvePending, setResolvePending] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -237,11 +238,12 @@ function DisputeDetailContent() {
 
   const handleStatusChange = async (newStatus: string) => {
     setStatusChanging(true);
+    setStatusError(null);
     try {
       const updated = await disputesApi.updateStatus(id, newStatus);
       setDispute(updated.dispute ?? { ...dispute, status: newStatus });
-    } catch {
-      // ignore — UI shows stale status
+    } catch (e: any) {
+      setStatusError(e?.message ?? "Error al cambiar estado");
     } finally {
       setStatusChanging(false);
     }
@@ -283,7 +285,8 @@ function DisputeDetailContent() {
 
         {/* Action buttons — only when loaded and active */}
         {dispute && isActive && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex items-center gap-2">
             <select
               value=""
               disabled={statusChanging}
@@ -301,6 +304,10 @@ function DisputeDetailContent() {
             >
               Resolver
             </button>
+            </div>
+            {statusError && (
+              <p className="text-xs text-red-500">{statusError}</p>
+            )}
           </div>
         )}
       </header>

@@ -559,6 +559,8 @@ export class BookingController {
       const query = {
         search: req.query.search as string,
         status: req.query.status as any,
+        dateFrom: req.query.dateFrom as string | undefined,
+        dateTo: req.query.dateTo as string | undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
       };

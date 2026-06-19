@@ -235,6 +235,11 @@ export default function LoginPage() {
                 </span>
               ) : "Iniciar sesión"}
             </button>
+            <div className="text-center pt-1">
+              <a href="/forgot-password" className="text-xs text-zinc-400 hover:text-[#FF6A00] transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </form>
         </div>
       </div>

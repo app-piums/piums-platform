@@ -438,9 +438,7 @@ export default function ServiceDetailPage() {
       setError(null);
 
       try {
-        console.log(`DEBUG: Fetching service with ID: ${routeServiceId}`);
         const data = await sdk.getService(routeServiceId);
-        console.log('DEBUG: getService response:', data);
 
         if (!isMounted) return;
 

@@ -150,10 +150,21 @@ export default function BookingConfirmationPage() {
     );
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!bookingId) return;
-    // PDF generation not yet implemented — endpoint pending
-    toast.info('La descarga de PDF estará disponible próximamente.');
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/pdf`);
+      if (!res.ok) throw new Error('Error al generar el PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reserva-${bookingId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('No se pudo descargar el PDF. Intenta de nuevo.');
+    }
   };
 
   const handleAddToCalendar = (type: 'google' | 'apple') => {

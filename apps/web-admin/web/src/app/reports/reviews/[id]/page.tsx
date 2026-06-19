@@ -362,10 +362,11 @@ function ReportDetailContent() {
           {/* Resolved banner */}
           {isResolved && (
             <div className="shrink-0 px-5 pb-3">
-              <div className="max-w-3xl mx-auto flex items-center gap-2.5 rounded-xl px-4 py-3 border
-                ${report.status === 'RESOLVED'
+              <div className={`max-w-3xl mx-auto flex items-center gap-2.5 rounded-xl px-4 py-3 border ${
+                report.status === 'RESOLVED'
                   ? 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-900'
-                  : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}">
+                  : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'
+              }`}>
                 <svg className="w-4 h-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>

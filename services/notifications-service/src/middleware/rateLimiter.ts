@@ -34,3 +34,12 @@ export const preferencesRateLimiter: RequestHandler = asRequestHandler(rateLimit
   max: 20,
   message: 'Too many preference updates, please try again later.',
 }));
+
+// Contact form rate limiter — 5 submissions per hour per IP
+export const contactRateLimiter: RequestHandler = asRequestHandler(rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: 'Too many contact requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+}));

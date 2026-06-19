@@ -113,18 +113,7 @@ function BookingsContent() {
       bookingsApi.list({ page, limit: 20, estado, search: debouncedSearch, dateFrom, dateTo }),
   });
 
-  // Filtrado cliente-side adicional por código PIU (por si el backend no lo soporta aún)
-  const bookings = (data?.bookings ?? []).filter((b) => {
-    if (!debouncedSearch) return true;
-    const q = debouncedSearch.toLowerCase();
-    return (
-      (b.code ?? "").toLowerCase().includes(q) ||
-      b.id.toLowerCase().includes(q) ||
-      b.clienteNombre.toLowerCase().includes(q) ||
-      b.artistaNombre.toLowerCase().includes(q)
-    );
-  });
-
+  const bookings = data?.bookings ?? [];
   const isEmpty = !isLoading && bookings.length === 0;
 
   return (
@@ -332,7 +321,7 @@ function BookingsContent() {
       </div>
 
       {/* ── Pagination ───────────────────────────────────── */}
-      {data && data.totalPages > 1 && !debouncedSearch && (
+      {data && data.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm text-zinc-500">
           <span>
             {data.total} reservas — página {data.page} de {data.totalPages}

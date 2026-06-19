@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { notificationController } from '../controller/notification.controller';
 import { authenticate, authenticateOrInternal } from '../middleware/auth.middleware';
 import { pushProvider } from '../providers/push.provider';
+import { emailProvider } from '../providers/email.provider';
 import {
   sendRateLimiter,
   batchSendRateLimiter,
   preferencesRateLimiter,
+  contactRateLimiter,
 } from '../middleware/rateLimiter';
 import {
   sendDeliveryConfirmedArtistEmail,
@@ -377,6 +379,45 @@ router.post('/band/invitation', internalOnly, async (req, res) => {
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
+});
+
+// ============================================================================
+// Contact form — público, rate limited (5/hora por IP)
+// POST /api/notifications/contact  { name, email, subject, message }
+// ============================================================================
+router.post('/contact', contactRateLimiter, async (req, res) => {
+  const { name, email, subject, message } = req.body ?? {};
+
+  if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
+    return res.status(400).json({ error: 'Todos los campos son requeridos' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Correo inválido' });
+  }
+
+  if (message.length > 2000 || subject.length > 200 || name.length > 100) {
+    return res.status(400).json({ error: 'Contenido demasiado largo' });
+  }
+
+  const result = await emailProvider.sendEmail({
+    to: 'soporte@piums.io',
+    subject: `[Contacto] ${subject.trim()}`,
+    replyTo: email.trim(),
+    html: `<p><strong>Nombre:</strong> ${name.trim()}</p>
+<p><strong>Correo:</strong> ${email.trim()}</p>
+<p><strong>Asunto:</strong> ${subject.trim()}</p>
+<hr />
+<p>${message.trim().replace(/\n/g, '<br />')}</p>`,
+    text: `Nombre: ${name.trim()}\nCorreo: ${email.trim()}\nAsunto: ${subject.trim()}\n\n${message.trim()}`,
+  });
+
+  if (!result.success) {
+    return res.status(500).json({ error: 'No se pudo enviar el mensaje. Intenta más tarde.' });
+  }
+
+  return res.json({ ok: true });
 });
 
 router.post('/internal/push', async (req, res) => {

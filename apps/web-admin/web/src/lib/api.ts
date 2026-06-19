@@ -71,6 +71,18 @@ export const authApi = {
 
   logout: () =>
     request("/auth/logout", { method: "POST" }),
+
+  forgotPassword: (email: string) =>
+    request<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    }),
 };
 
 // ─── Dashboard stats ─────────────────────────────────────────────────────────
@@ -478,7 +490,7 @@ export const reportsApi = {
         .filter(([, v]) => v !== undefined && v !== "")
         .map(([k, v]) => [k, String(v)])
     ).toString();
-    return request<PaginatedReports>(`/reviews/admin/reports/pending${qs ? `?${qs}` : ""}`);
+    return request<PaginatedReports>(`/reviews/admin/reports${qs ? `?${qs}` : ""}`);
   },
 
   resolve: (id: string, action: "resolved" | "dismissed", notes?: string) =>
@@ -488,7 +500,7 @@ export const reportsApi = {
     }),
 
   getMessages: (id: string) =>
-    request<{ messages: { id: string; message: string; senderType: string; createdAt: string }[] }>(
+    request<{ messages: { id: string; message: string; senderType: string; createdAt: string }[]; report?: AdminReportRow }>(
       `/reviews/admin/reports/${id}/messages`
     ),
 
