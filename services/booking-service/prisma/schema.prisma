@@ -238,12 +238,17 @@ model Booking {
   // Solicitudes de cambio de fecha
   rescheduleRequests RescheduleRequest[]
 
+  // Sonidista addon — reserva paralela vinculada
+  linkedBookingId String?
+  bookingRole     String?      // "PRIMARY" | "SONIDISTA_ADDON"
+
   // Soft delete para auditorías
   deletedAt       DateTime?
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  @@index([linkedBookingId])
   @@index([clientId])
   @@index([artistId])
   @@index([serviceId])

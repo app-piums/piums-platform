@@ -11,7 +11,7 @@ import { generateBookingCode } from "./booking-code.service";
 import { usersClient } from "../clients/users.client";
 import { artistsClient } from "../clients/artists.client";
 import { notifyBookingCreated, notifyBookingConfirmed, notifyNoShowReported, notifyNoShowResolved } from "../utils/notifications";
-import { createAvailabilityReservation, removeAvailabilityReservation } from "./availability.service";
+import { createAvailabilityReservation, removeAvailabilityReservation, checkReservationConflict } from "./availability.service";
 import { googleCalendarClient } from "../clients/google-calendar.client";
 import { createReplacementPrompt } from "./replacement.service";
 
@@ -59,6 +59,7 @@ export class BookingService {
     dressCode?: string;
     eventId?: string;
     couponCode?: string;
+    sonidistaServiceId?: string;
   }) {
     const scheduledDate = new Date(data.scheduledDate);
 
@@ -468,8 +469,77 @@ export class BookingService {
         .catch(err => logger.error("Error creando conversación de chat", "BOOKING_SERVICE", { error: err.message }));
     }
 
+    // ── Sonidista addon ─────────────────────────────────────────────────────
+    let sonidistaBooking: any = null;
+    if (data.sonidistaServiceId) {
+      try {
+        const sonidistaService = await catalogClient.getService(data.sonidistaServiceId);
+        if (sonidistaService && sonidistaService.artistId) {
+          const endAt = new Date(scheduledDate.getTime() + data.durationMinutes * 60_000);
+          const { hasReservation } = await checkReservationConflict(
+            sonidistaService.artistId, scheduledDate, endAt
+          );
+          if (!hasReservation) {
+            const sonidistaCode = await generateBookingCode();
+            const [createdSonidistaBooking] = await prisma.$transaction([
+              prisma.booking.create({
+                data: {
+                  code: sonidistaCode,
+                  clientId: data.clientId,
+                  artistId: sonidistaService.artistId,
+                  serviceId: data.sonidistaServiceId,
+                  scheduledDate,
+                  durationMinutes: data.durationMinutes,
+                  location: data.location,
+                  locationLat: data.locationLat,
+                  locationLng: data.locationLng,
+                  eventType: data.eventType as any,
+                  clientNotes: `Reserva vinculada a ${booking.code}`,
+                  basePrice: sonidistaService.basePrice ?? 0,
+                  totalPrice: sonidistaService.basePrice ?? 0,
+                  currency: sonidistaService.currency ?? 'GTQ',
+                  status: BookingStatus.PENDING,
+                  paymentStatus: PaymentStatus.PENDING,
+                  linkedBookingId: booking.id,
+                  bookingRole: 'SONIDISTA_ADDON',
+                },
+              }),
+              prisma.booking.update({
+                where: { id: booking.id },
+                data: { linkedBookingId: undefined, bookingRole: 'PRIMARY' },
+              }),
+            ]);
+            await prisma.booking.update({
+              where: { id: booking.id },
+              data: { linkedBookingId: createdSonidistaBooking.id, bookingRole: 'PRIMARY' },
+            });
+            sonidistaBooking = createdSonidistaBooking;
+            notifyBookingCreated(createdSonidistaBooking as any, sonidistaService.artistId, data.clientId)
+              .catch((err: any) => logger.warn('Error notificando sonidista', 'BOOKING_SERVICE', { error: err.message }));
+            notificationsClient.sendNotification({
+              userId: data.clientId,
+              type: 'BOOKING_UPDATE',
+              channel: 'IN_APP',
+              title: 'Solicitud enviada al sonidista',
+              message: `${sonidistaService.artistName ?? 'El sonidista'} recibió tu solicitud. Te avisaremos cuando confirme.`,
+              data: { bookingId: createdSonidistaBooking.id },
+            }).catch(() => {});
+          } else {
+            logger.warn('Sonidista no disponible para la fecha solicitada', 'BOOKING_SERVICE', {
+              sonidistaArtistId: sonidistaService.artistId,
+            });
+          }
+        }
+      } catch (err: any) {
+        logger.error('Error creando reserva de sonidista', 'BOOKING_SERVICE', { error: err.message });
+        // No propagar — la reserva principal ya se creó
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     return {
       booking,
+      sonidistaBooking,
       paymentIntent: paymentIntent ? {
         id: paymentIntent.id,
         clientSecret: paymentIntent.clientSecret,

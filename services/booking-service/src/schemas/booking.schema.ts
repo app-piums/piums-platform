@@ -63,6 +63,7 @@ export const createBookingSchema = z.object({
 
   eventId: z.string().uuid().optional(),
   couponCode: z.string().optional(),
+  sonidistaServiceId: z.string().uuid().optional(),
 });
 
 // Schema para actualizar reserva

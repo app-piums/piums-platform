@@ -246,6 +246,9 @@ export interface Booking {
   couponCode?: string;
   couponDiscountAmount?: number;
   dayOfferDiscountAmount?: number;
+  linkedBookingId?: string;
+  bookingRole?: 'PRIMARY' | 'SONIDISTA_ADDON';
+  sonidistaBooking?: Booking | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -265,6 +268,7 @@ export interface CreateBookingPayload {
   clientNotes?: string;
   dressCode?: string;
   eventId?: string;
+  sonidistaServiceId?: string;
 }
 
 export interface PriceItem {

@@ -294,6 +294,7 @@ function BookingContent() {
   const [sonidistaMatches, setSonidistaMatches] = useState<SonidistaMatch[]>([]);
   const [sonidistaLoading, setSonidistaLoading] = useState(false);
   const [sonidistaDismissed, setSonidistaDismissed] = useState(false);
+  const [selectedSonidista, setSelectedSonidista] = useState<SonidistaMatch | null>(null);
 
   useEffect(() => {
     if (location) localStorage.setItem('piums_booking_location_address', location);
@@ -917,6 +918,7 @@ function BookingContent() {
         selectedAddons: selectedAddons.length ? selectedAddons : undefined,
         eventId: selectedEventId || undefined,
         ...(couponCode ? { couponCode } : {}),
+        ...(selectedSonidista ? { sonidistaServiceId: selectedSonidista.serviceId } : {}),
       } as any;
 
       sdk.trackFunnelEvent({ sessionId, step: 'review', action: 'complete', userId: user?.id, artistId: (payload as any).artistId, serviceId: (payload as any).serviceId });
@@ -1731,7 +1733,10 @@ function BookingContent() {
                           loading={sonidistaLoading}
                           date={selectedDate!}
                           durationMinutes={effectiveDurationMinutes}
-                          onDismiss={() => setSonidistaDismissed(true)}
+                          onDismiss={() => { setSonidistaDismissed(true); setSelectedSonidista(null); }}
+                          selectedSonidista={selectedSonidista}
+                          onSelect={setSelectedSonidista}
+                          onDeselect={() => setSelectedSonidista(null)}
                         />
                       )}
 

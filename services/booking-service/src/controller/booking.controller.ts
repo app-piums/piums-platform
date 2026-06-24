@@ -97,13 +97,13 @@ export class BookingController {
         }
       }
 
-      const { booking } = await bookingService.createBooking({
+      const { booking, sonidistaBooking } = await bookingService.createBooking({
         ...validatedData,
         clientId,
         scheduledDate: new Date(validatedData.scheduledDate),
       });
 
-      res.status(201).json(booking);
+      res.status(201).json({ ...booking, sonidistaBooking: sonidistaBooking ?? null });
     } catch (error) {
       next(error);
     }
