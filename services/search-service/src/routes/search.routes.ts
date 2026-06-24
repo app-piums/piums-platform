@@ -30,6 +30,9 @@ router.delete('/index/artist/:id', requireAuth, async (req, res, next) => {
   }
 });
 
+// Sonidistas — endpoint interno para booking-service (requiere x-internal-secret via optionalAuth)
+router.get('/sonidistas', searchLimiter, searchController.findSonidistas);
+
 // Analytics endpoints
 router.get('/popular', searchController.getPopularSearches);
 

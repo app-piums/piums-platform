@@ -85,6 +85,7 @@ export interface ArtistProfile extends Artist {
   hourlyRateMax?: number;      // precio máximo por hora en centavos
   requiresDeposit?: boolean;
   depositPercentage?: number;
+  hasSoundSystem?: boolean;
   allowSameDayBooking?: boolean;
   shadowBannedAt?: string;
   portfolio?: PortfolioItem[];
@@ -542,6 +543,18 @@ export interface SavedPaymentMethod {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// ==================== SONIDISTA TYPES ====================
+
+export interface SonidistaMatch {
+  serviceId: string;
+  artistId: string;
+  artistName: string;
+  artistRating: number;
+  price: number; // GTQ float
+  city: string | null;
+  avatar: string | null;
 }
 
 // ==================== CREDIT TYPES ====================
@@ -3685,6 +3698,28 @@ class PiumsSDK {
     const res = await fetch(`${this.baseUrl}/bookings/${bookingId}/replacement/decline`, this.withAuth({ method: 'POST' }));
     if (!res.ok) { const e: any = await res.json().catch(() => ({})); throw new Error(e.message || 'Error'); }
     return res.json();
+  }
+
+  async findSonidistasForBooking(params: {
+    city: string;
+    date: Date;
+    durationMinutes: number;
+    excludeArtistId?: string;
+  }): Promise<SonidistaMatch[]> {
+    try {
+      const qs = new URLSearchParams({
+        city: params.city,
+        date: params.date.toISOString(),
+        durationMinutes: String(params.durationMinutes),
+        ...(params.excludeArtistId ? { excludeArtistId: params.excludeArtistId } : {}),
+      });
+      const res = await fetch(`${this.baseUrl}/bookings/sonidista-check?${qs}`, this.withAuth({}));
+      if (!res.ok) return [];
+      const data: any = await res.json();
+      return data?.matches ?? [];
+    } catch {
+      return [];
+    }
   }
 }
 

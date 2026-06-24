@@ -364,6 +364,7 @@ function ArtistDetailDrawer({
                   { label: "Email", value: data.email },
                   { label: "Categoría", value: data.categoria },
                   { label: "Ciudad", value: data.ciudad ?? "—" },
+                  { label: "Equipo de sonido", value: (data as any).hasSoundSystem === false ? "No tiene PA propio" : "Tiene PA propio" },
                   { label: "Estado de cuenta", value: data.isActive ? "Activa" : "Bloqueada" },
                   {
                     label: "Miembro desde",

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { bookingService } from "../services/booking.service";
+import { getSonidistasForBooking } from "../services/sonidista.service";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { AppError } from "../middleware/errorHandler";
 import { generateBookingPDF } from "../utils/pdf";
@@ -802,6 +803,31 @@ export class BookingController {
     try {
       const result = await bookingService.declineReplacement(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, req.user!.id);
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getSonidistaCheck(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const city = typeof req.query.city === 'string' ? req.query.city.slice(0, 100) : '';
+      const dateStr = typeof req.query.date === 'string' ? req.query.date : '';
+      const durationMinutes = Math.max(1, Math.min(1440, Number(req.query.durationMinutes) || 60));
+      const excludeArtistId = typeof req.query.excludeArtistId === 'string' ? req.query.excludeArtistId : undefined;
+
+      if (!city || !dateStr) {
+        res.status(400).json({ message: 'city y date son requeridos' });
+        return;
+      }
+
+      const scheduledDate = new Date(dateStr);
+      if (isNaN(scheduledDate.getTime())) {
+        res.status(400).json({ message: 'date inválida' });
+        return;
+      }
+
+      const matches = await getSonidistasForBooking({ city, scheduledDate, durationMinutes, excludeArtistId });
+      res.json({ matches });
     } catch (error) {
       next(error);
     }

@@ -24,7 +24,18 @@ router.post(
   bookingController.createBooking.bind(bookingController)
 );
 
-// ==================== ESTADÍSTICAS (deben ir ANTES de /bookings/:id) ====================
+// ==================== RUTAS FIJAS (deben ir ANTES de /bookings/:id) ====================
+
+/**
+ * GET /api/bookings/sonidista-check
+ * Busca sonidistas disponibles para la fecha, ciudad y duración indicadas.
+ * Llamado por web-client en el paso de Review del booking funnel.
+ */
+router.get(
+  "/bookings/sonidista-check",
+  authenticateToken,
+  bookingController.getSonidistaCheck.bind(bookingController)
+);
 
 router.get(
   "/bookings/stats",

@@ -1058,6 +1058,62 @@ export class SearchService {
       throw new AppError('Error en búsqueda inteligente', 500);
     }
   }
+  // ============================================================================
+  // SONIDISTA SEARCH — encuentra artistas con especialidad "Sonidista"
+  // ============================================================================
+
+  async findSonidistas(params: { city?: string; limit?: number }) {
+    const { city, limit = 10 } = params;
+
+    const artists = await prisma.artistIndex.findMany({
+      where: {
+        isActive: true,
+        isAvailable: true,
+        specialties: { hasSome: ['Sonidista'] },
+        ...(city && { city: { contains: city, mode: 'insensitive' } }),
+      },
+      orderBy: { averageRating: 'desc' },
+      take: limit * 3, // margen para cruzar con ServiceIndex
+    });
+
+    if (artists.length === 0) return [];
+
+    const artistIds = artists.map(a => a.id);
+    const mainServices = await prisma.serviceIndex.findMany({
+      where: {
+        artistId: { in: artistIds },
+        isActive: true,
+        OR: [{ isMainService: true }, { artistId: { in: artistIds } }],
+      },
+      orderBy: { isMainService: 'desc' },
+    });
+
+    // Por artista toma el primer servicio (main service o el primero disponible)
+    const serviceByArtist = new Map<string, typeof mainServices[0]>();
+    for (const svc of mainServices) {
+      if (!serviceByArtist.has(svc.artistId)) {
+        serviceByArtist.set(svc.artistId, svc);
+      }
+    }
+
+    const candidates = artists
+      .filter(a => serviceByArtist.has(a.id))
+      .map(a => {
+        const svc = serviceByArtist.get(a.id)!;
+        return {
+          serviceId: svc.id,
+          artistId: a.id,
+          artistName: a.name,
+          artistRating: a.averageRating,
+          price: svc.price,
+          city: a.city ?? null,
+          avatar: a.avatar ?? null,
+        };
+      })
+      .slice(0, limit);
+
+    return candidates;
+  }
 }
 
 export const searchService = new SearchService();

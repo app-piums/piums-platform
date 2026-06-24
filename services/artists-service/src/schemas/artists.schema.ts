@@ -63,6 +63,7 @@ export const createArtistSchema = z.object({
   
   // Equipo propio del artista
   equipment: z.array(z.string()).optional(),
+  hasSoundSystem: z.boolean().optional(),
 
   // Redes sociales
   website: z.string().url("URL inválida").optional(),
@@ -104,6 +105,7 @@ export const updateArtistSchema = z.object({
   depositPercentage: z.number().int().min(0).max(100).optional(),
   
   equipment: z.array(z.string()).optional(),
+  hasSoundSystem: z.boolean().optional(),
 
   telefono: z.string().optional(),
   website: z.string().url().optional(),

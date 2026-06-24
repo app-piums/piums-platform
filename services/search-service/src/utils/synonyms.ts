@@ -32,6 +32,7 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   banda:        ['banda', 'grupo musical', 'conjunto musical', 'orquesta', 'musica', 'música', 'concierto', 'en vivo'],
   sonido:       ['sonido', 'audio', 'sistema de sonido', 'equipo de sonido', 'DJ', 'dj'],
   audio:        ['audio', 'sonido', 'sistema de sonido', 'equipo de sonido'],
+  sonidista:    ['sonidista', 'técnico de sonido', 'técnico de audio', 'ingeniero de sonido', 'equipo de sonido', 'PA', 'sistema de sonido', 'audio en vivo'],
   'musica en vivo': ['música en vivo', 'banda en vivo', 'show musical', 'concierto', 'musica'],
   concierto:    ['concierto', 'show musical', 'música en vivo', 'presentación musical', 'musica'],
   violín:       ['violín', 'violin', 'violinista', 'cuerdas', 'cuarteto de cuerdas', 'musica', 'música'],

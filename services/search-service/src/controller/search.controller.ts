@@ -135,6 +135,18 @@ export const searchController = {
     }
   },
 
+  // Buscar sonidistas disponibles (usado por booking-service durante checkout)
+  async findSonidistas(req: Request, res: Response, next: NextFunction) {
+    try {
+      const city = typeof req.query.city === 'string' ? req.query.city.slice(0, 100) : undefined;
+      const limit = Math.min(Number(req.query.limit) || 10, 20);
+      const candidates = await searchService.findSonidistas({ city, limit });
+      res.json({ sonidistas: candidates });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // Register a dynamic synonym from artist onboarding
   async addSynonym(req: Request, res: Response, next: NextFunction) {
     try {

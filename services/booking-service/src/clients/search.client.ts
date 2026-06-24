@@ -16,6 +16,10 @@ export interface ReplacementCandidate {
   city: string | null;
 }
 
+export interface SonidistaCandidate extends ReplacementCandidate {
+  avatar: string | null;
+}
+
 class SearchClient {
   async findReplacementServices(params: {
     category: string;
@@ -61,6 +65,45 @@ class SearchClient {
         }));
     } catch (error: any) {
       logger.error('Error conectando con search-service', 'SEARCH_CLIENT', { error: error.message });
+      return [];
+    }
+  }
+  async findSonidistasForBooking(params: {
+    city: string;
+    limit?: number;
+  }): Promise<SonidistaCandidate[]> {
+    try {
+      const qs = new URLSearchParams({
+        city: params.city,
+        limit: String(params.limit ?? 10),
+      });
+
+      const response = await fetch(`${SEARCH_SERVICE_URL}/api/search/sonidistas?${qs}`, {
+        signal: AbortSignal.timeout(8_000),
+        headers: { 'x-internal-secret': INTERNAL_SERVICE_SECRET },
+      });
+
+      if (!response.ok) {
+        logger.warn('search-service devolvió error al buscar sonidistas', 'SEARCH_CLIENT', {
+          status: response.status,
+        });
+        return [];
+      }
+
+      const data = await response.json() as any;
+      const list: any[] = data?.sonidistas ?? [];
+
+      return list.map((s: any) => ({
+        serviceId: s.serviceId,
+        artistId: s.artistId,
+        artistName: s.artistName ?? '',
+        artistRating: s.artistRating ?? 0,
+        price: s.price ?? 0,
+        city: s.city ?? null,
+        avatar: s.avatar ?? null,
+      }));
+    } catch (error: any) {
+      logger.error('Error conectando con search-service (sonidistas)', 'SEARCH_CLIENT', { error: error.message });
       return [];
     }
   }

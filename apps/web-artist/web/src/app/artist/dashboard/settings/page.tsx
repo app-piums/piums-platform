@@ -148,6 +148,7 @@ export default function ArtistSettingsPage() {
     requiresDeposit: false,
     depositPercentage: 30,
   });
+  const [hasSoundSystem, setHasSoundSystem] = useState(true);
   const [isSavingCoverage, setIsSavingCoverage] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -239,6 +240,7 @@ export default function ArtistSettingsPage() {
         tiktok: artistProfile.tiktok || '',
         website: artistProfile.website || '',
       });
+      setHasSoundSystem(artistProfile.hasSoundSystem !== false);
       setCoverageData({
         coverageRadius: artistProfile.coverageRadius ?? null,
         hourlyRateMin: artistProfile.hourlyRateMin ?? 0,
@@ -296,7 +298,7 @@ export default function ArtistSettingsPage() {
   const handleSaveCoverage = async () => {
     try {
       setIsSavingCoverage(true);
-      await sdk.updateArtistProfile(coverageData);
+      await sdk.updateArtistProfile({ ...coverageData, hasSoundSystem });
       toast.success('Configuración de cobertura actualizada');
     } catch (err: unknown) {
       toast.error(getErrorMessage(err) || 'Error al guardar');
@@ -1237,6 +1239,26 @@ export default function ArtistSettingsPage() {
                       <strong>Anticipo por reserva</strong><br />
                       <span className="text-xs">Configura el anticipo requerido en cada servicio individual desde el panel de <strong>Servicios</strong>. Ahí controlas si aplica y el porcentaje exacto por servicio.</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Equipo de sonido */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">Equipo de sonido</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">Cuento con equipo de sonido propio (PA)</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Si no lo tienes, los clientes recibiran sugerencias de sonidistas al reservarte</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHasSoundSystem(prev => !prev)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${hasSoundSystem ? 'bg-purple-600' : 'bg-gray-200'}`}
+                      role="switch"
+                      aria-checked={hasSoundSystem}
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${hasSoundSystem ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
                   </div>
                 </div>
 

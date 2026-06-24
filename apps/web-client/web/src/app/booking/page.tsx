@@ -10,10 +10,11 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import { CalendarPicker } from '@/components/booking/CalendarPicker';
 import { PricingBreakdown } from '@/components/booking/PricingBreakdown';
+import SonidistaOfferCard from '@/components/booking/SonidistaOfferCard';
 import { ConfirmModal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { sdk } from '@piums/sdk';
-import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload, CouponValidation, ServiceDayOffer } from '@piums/sdk';
+import type { ArtistProfile, Service, TimeSlot, PriceQuote, CalculateServicePricePayload, CouponValidation, ServiceDayOffer, SonidistaMatch } from '@piums/sdk';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { LocationSearchField, reverseGeocode } from '@/components/LocationSearchField';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -289,6 +290,11 @@ function BookingContent() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // Sonidista offer state
+  const [sonidistaMatches, setSonidistaMatches] = useState<SonidistaMatch[]>([]);
+  const [sonidistaLoading, setSonidistaLoading] = useState(false);
+  const [sonidistaDismissed, setSonidistaDismissed] = useState(false);
+
   useEffect(() => {
     if (location) localStorage.setItem('piums_booking_location_address', location);
     else localStorage.removeItem('piums_booking_location_address');
@@ -435,6 +441,20 @@ function BookingContent() {
       router.push(`/login?redirect=${encodeURIComponent(bookingRedirectTarget)}`);
     }
   }, [authLoading, isAuthenticated, router, bookingRedirectTarget]);
+
+  // Carga sonidistas disponibles cuando el cliente llega al paso Review
+  // y el artista declaró que no tiene equipo de sonido
+  useEffect(() => {
+    if (step !== 'review' || artist?.hasSoundSystem !== false || !selectedDate || !artist.city) return;
+    setSonidistaLoading(true);
+    sdk.findSonidistasForBooking({
+      city: artist.city,
+      date: selectedDate,
+      durationMinutes: effectiveDurationMinutes,
+      excludeArtistId: resolvedArtistId ?? undefined,
+    }).then(setSonidistaMatches).finally(() => setSonidistaLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const loadBookingData = useCallback(async () => {
     try {
@@ -1703,6 +1723,17 @@ function BookingContent() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Oferta de Sonidista */}
+                      {artist?.hasSoundSystem === false && !sonidistaDismissed && (
+                        <SonidistaOfferCard
+                          matches={sonidistaMatches}
+                          loading={sonidistaLoading}
+                          date={selectedDate!}
+                          durationMinutes={effectiveDurationMinutes}
+                          onDismiss={() => setSonidistaDismissed(true)}
+                        />
+                      )}
 
                       {/* Cupón de descuento */}
                       <div className="border-t border-gray-200 pt-4">

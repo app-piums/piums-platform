@@ -419,6 +419,14 @@ export default function ArtistProfilePage() {
             <p className="text-lg text-gray-600 mb-2">{formatArtistCategory(artist.category, artist.specialties)}</p>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
+              {artist.hasSoundSystem === false && (
+                <div className="flex items-center text-amber-600">
+                  <svg className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M12 6a7.975 7.975 0 015.657 2.343m0 0A7.975 7.975 0 0120 12m-8-6v12m-3-7.5a3 3 0 110 3" />
+                  </svg>
+                  <span className="text-xs">Sin equipo de sonido propio</span>
+                </div>
+              )}
               {artist.cityId && (
                 <div className="flex items-center">
                   <svg className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

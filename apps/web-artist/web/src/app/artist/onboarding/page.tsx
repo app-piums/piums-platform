@@ -200,6 +200,7 @@ export default function ArtistOnboardingPage() {
   // Step 3: Equipment
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [customEquipment, setCustomEquipment] = useState('');
+  const [hasSoundSystem, setHasSoundSystem] = useState(true);
 
   // Step 4: Portfolio & Profile
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
@@ -544,6 +545,7 @@ export default function ArtistOnboardingPage() {
           category,
           specialties,
           equipment: allEquipment,
+          hasSoundSystem,
           bio: shortBio || undefined,
           instagram: instagramHandle || undefined,
           website: portfolioUrl || undefined,
@@ -1185,6 +1187,23 @@ export default function ArtistOnboardingPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Toggle: equipo de sonido propio */}
+            <div className="mt-6 flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Cuento con equipo de sonido propio (PA)</p>
+                <p className="text-xs text-gray-500 mt-0.5">Sistema de amplificación para presentaciones en vivo</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHasSoundSystem(prev => !prev)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${hasSoundSystem ? 'bg-orange-500' : 'bg-gray-200'}`}
+                role="switch"
+                aria-checked={hasSoundSystem}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${hasSoundSystem ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
             </div>
 
             {/* Custom equipment free-text */}
