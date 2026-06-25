@@ -685,7 +685,7 @@ export class PaymentService {
     metadata?: Record<string, string>;
     captureMode?: 'manual' | 'automatic';
   }) {
-    const currency = data.currency || process.env.DEFAULT_CURRENCY || "USD";
+    const currency = process.env.DEFAULT_CURRENCY || "USD";
 
     // Validate booking belongs to user and compute authoritative amount server-side
     const booking = await bookingClient.getBooking(data.bookingId);
