@@ -495,7 +495,6 @@ export class BookingService {
                   locationLng: data.locationLng,
                   eventType: data.eventType as any,
                   clientNotes: `Reserva vinculada a ${booking.code}`,
-                  basePrice: sonidistaService.basePrice ?? 0,
                   totalPrice: sonidistaService.basePrice ?? 0,
                   servicePrice: sonidistaService.basePrice ?? 0,
                   currency: 'USD',
@@ -515,8 +514,28 @@ export class BookingService {
               data: { linkedBookingId: createdSonidistaBooking.id, bookingRole: 'PRIMARY' },
             });
             sonidistaBooking = createdSonidistaBooking;
-            notifyBookingCreated(createdSonidistaBooking as any, sonidistaService.artistId, data.clientId)
-              .catch((err: any) => logger.warn('Error notificando sonidista', 'BOOKING_SERVICE', { error: err.message }));
+            notifyBookingCreated({
+              bookingId: createdSonidistaBooking.id,
+              bookingCode: createdSonidistaBooking.code || createdSonidistaBooking.id.slice(0, 8).toUpperCase(),
+              clientId: data.clientId,
+              clientName: '',
+              clientEmail: '',
+              clientNotes: createdSonidistaBooking.clientNotes || '',
+              artistId: sonidistaService.artistId,
+              artistName: sonidistaService.artistName ?? 'Sonidista',
+              artistEmail: '',
+              artistCategory: '',
+              artistImage: '',
+              serviceName: sonidistaService.name ?? 'Sonido',
+              scheduledDate: createdSonidistaBooking.scheduledDate.toISOString(),
+              durationMinutes: createdSonidistaBooking.durationMinutes,
+              location: createdSonidistaBooking.location || '',
+              servicePrice: createdSonidistaBooking.totalPrice,
+              totalPrice: createdSonidistaBooking.totalPrice,
+              currency: 'USD',
+              anticipoRequired: false,
+              anticipoAmount: 0,
+            }).catch((err: any) => logger.warn('Error notificando sonidista', 'BOOKING_SERVICE', { error: err.message }));
             notificationsClient.sendNotification({
               userId: data.clientId,
               type: 'BOOKING_UPDATE',
@@ -945,7 +964,7 @@ export class BookingService {
           const confirmedInEvent = await prisma.booking.findMany({
             where: {
               eventId: booking.eventId!,
-              status: { in: ['CONFIRMED', 'ANTICIPO_PAID', 'IN_PROGRESS', 'FULLY_PAID'] },
+              status: { in: ['CONFIRMED', 'PAYMENT_COMPLETED', 'IN_PROGRESS', 'COMPLETED'] as any },
             },
             select: { artistId: true },
           });
