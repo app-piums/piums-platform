@@ -39,7 +39,7 @@ class PushProvider {
       const messageId = await admin.messaging().send({
         token: options.fcmToken,
         notification: { title: options.title, body: options.body },
-        data: options.data ?? {},
+        data: Object.fromEntries(Object.entries(options.data ?? {}).map(([k, v]) => [k, String(v)])),
         apns: {
           payload: { aps: { sound: 'default', badge: 1, contentAvailable: true } },
         },
