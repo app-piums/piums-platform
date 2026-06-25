@@ -436,7 +436,7 @@ export class BookingService {
           const pushMsg = `${clientName} reservó "${serviceName}" para el ${bookingDate}. Confírmala en tu app.`;
           notificationsClient.sendNotification({
             userId: booking.artistId,
-            type: 'NEW_BOOKING',
+            type: 'BOOKING_CREATED',
             channel: 'IN_APP',
             title: 'Nueva solicitud de reserva',
             message: pushMsg,
@@ -446,7 +446,7 @@ export class BookingService {
           }).catch(() => {});
           notificationsClient.sendNotification({
             userId: booking.artistId,
-            type: 'NEW_BOOKING',
+            type: 'BOOKING_CREATED',
             channel: 'PUSH',
             title: 'Nueva solicitud de reserva',
             message: pushMsg,
@@ -538,7 +538,7 @@ export class BookingService {
             }).catch((err: any) => logger.warn('Error notificando sonidista', 'BOOKING_SERVICE', { error: err.message }));
             notificationsClient.sendNotification({
               userId: data.clientId,
-              type: 'BOOKING_UPDATE',
+              type: 'SYSTEM_NOTIFICATION',
               channel: 'IN_APP',
               title: 'Solicitud enviada al sonidista',
               message: `${sonidistaService.artistName ?? 'El sonidista'} recibió tu solicitud. Te avisaremos cuando confirme.`,
@@ -682,8 +682,29 @@ export class BookingService {
       prisma.booking.count({ where }),
     ]);
 
+    // Enriquecer con nombre/imagen de artista y nombre de servicio para que el
+    // listado no muestre placeholders. El modelo Booking solo guarda los IDs.
+    // N+1 acotado al tamaño de página, deduplicado por IDs únicos y paralelizado.
+    const artistIds = [...new Set(bookings.map((b) => b.artistId).filter(Boolean))];
+    const serviceIds = [...new Set(bookings.map((b) => b.serviceId).filter(Boolean))];
+
+    const [artists, services] = await Promise.all([
+      Promise.all(artistIds.map((id) => artistsClient.getArtist(id).catch(() => null))),
+      Promise.all(serviceIds.map((id) => catalogClient.getService(id).catch(() => null))),
+    ]);
+
+    const artistMap = new Map(artistIds.map((id, i) => [id, artists[i]]));
+    const serviceMap = new Map(serviceIds.map((id, i) => [id, services[i]]));
+
+    const enriched = bookings.map((b) => ({
+      ...b,
+      artistName: (artistMap.get(b.artistId) as any)?.artistName ?? null,
+      artistImage: (artistMap.get(b.artistId) as any)?.avatar ?? null,
+      serviceName: (serviceMap.get(b.serviceId) as any)?.name ?? null,
+    }));
+
     return {
-      bookings,
+      bookings: enriched,
       pagination: {
         page,
         limit,
@@ -2027,7 +2048,7 @@ export class BookingService {
           const pushMsg = `${clientName} reservó "${serviceName}" para el ${bookingDate}. Confírmala en tu app.`;
           notificationsClient.sendNotification({
             userId: updated.artistId,
-            type: 'NEW_BOOKING',
+            type: 'BOOKING_CREATED',
             channel: 'IN_APP',
             title: 'Nueva solicitud de reserva',
             message: pushMsg,
@@ -2037,7 +2058,7 @@ export class BookingService {
           }).catch(() => {});
           notificationsClient.sendNotification({
             userId: updated.artistId,
-            type: 'NEW_BOOKING',
+            type: 'BOOKING_CREATED',
             channel: 'PUSH',
             title: 'Nueva solicitud de reserva',
             message: pushMsg,
