@@ -239,7 +239,7 @@ export class BookingService {
     const initialStatus = config.autoConfirm ? "CONFIRMED" : "PENDING";
 
     // Crear la reserva con código y quote snapshot
-    const booking = await prisma.booking.create({
+    let booking = await prisma.booking.create({
       data: {
         code, // Código único generado
         clientId: data.clientId,
@@ -509,7 +509,7 @@ export class BookingService {
                 data: { linkedBookingId: undefined, bookingRole: 'PRIMARY' },
               }),
             ]);
-            await prisma.booking.update({
+            booking = await prisma.booking.update({
               where: { id: booking.id },
               data: { linkedBookingId: createdSonidistaBooking.id, bookingRole: 'PRIMARY' },
             });
