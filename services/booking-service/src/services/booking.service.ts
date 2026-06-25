@@ -849,7 +849,7 @@ export class BookingService {
       const sonidistaMsg = 'Completa el pago del sonidista para asegurar su lugar en tu evento.';
       notificationsClient.sendNotification({
         userId: booking.clientId,
-        type: 'SONIDISTA_PAYMENT_REQUIRED',
+        type: 'PAYMENT_MANUAL_REQUIRED',
         channel: 'IN_APP',
         title: '¡Tu sonidista aceptó!',
         message: sonidistaMsg,
@@ -859,7 +859,7 @@ export class BookingService {
       }).catch(() => {});
       notificationsClient.sendNotification({
         userId: booking.clientId,
-        type: 'SONIDISTA_PAYMENT_REQUIRED',
+        type: 'PAYMENT_MANUAL_REQUIRED',
         channel: 'PUSH',
         title: '¡Tu sonidista aceptó!',
         message: sonidistaMsg,
