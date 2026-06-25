@@ -556,7 +556,7 @@ export interface SonidistaMatch {
   artistId: string;
   artistName: string;
   artistRating: number;
-  price: number; // GTQ float
+  price: number; // cents (USD)
   city: string | null;
   avatar: string | null;
 }
