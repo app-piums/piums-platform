@@ -582,6 +582,14 @@ export class BookingService {
       });
     }
 
+    // Si es una reserva principal, incluir el booking del sonidista vinculado
+    if ((booking as any).bookingRole === 'PRIMARY' && (booking as any).linkedBookingId) {
+      const sonidistaBooking = await prisma.booking.findUnique({
+        where: { id: (booking as any).linkedBookingId },
+      });
+      return { ...booking, sonidistaBooking: sonidistaBooking ?? null } as any;
+    }
+
     return booking;
   }
 
@@ -784,6 +792,43 @@ export class BookingService {
       bookingId: id,
       artistId,
     });
+
+    // Sonidista que acepta: bloquear slot y notificar al cliente para que pague, sin cobro automático.
+    if ((booking as any).bookingRole === 'SONIDISTA_ADDON') {
+      const endAt = new Date(booking.scheduledDate);
+      endAt.setMinutes(endAt.getMinutes() + booking.durationMinutes);
+      createAvailabilityReservation({
+        artistId: booking.artistId,
+        bookingId: id,
+        startAt: booking.scheduledDate,
+        endAt,
+      }).catch(err => logger.error("Error creando availability reservation", "BOOKING_SERVICE", { error: err.message }));
+
+      const primaryBookingId = (booking as any).linkedBookingId;
+      const sonidistaMsg = 'Completa el pago del sonidista para asegurar su lugar en tu evento.';
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: 'SONIDISTA_PAYMENT_REQUIRED',
+        channel: 'IN_APP',
+        title: '¡Tu sonidista aceptó!',
+        message: sonidistaMsg,
+        data: { bookingId: primaryBookingId ?? id, sonidistaBookingId: id, amount: Number(booking.totalPrice) },
+        priority: 'high',
+        category: 'booking',
+      }).catch(() => {});
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: 'SONIDISTA_PAYMENT_REQUIRED',
+        channel: 'PUSH',
+        title: '¡Tu sonidista aceptó!',
+        message: sonidistaMsg,
+        data: { bookingId: primaryBookingId ?? id, sonidistaBookingId: id, amount: Number(booking.totalPrice) },
+        priority: 'high',
+        category: 'booking',
+      }).catch(() => {});
+
+      return updated;
+    }
 
     // Doble condición para el cobro: artista confirmó + 48h desde la creación vencidas.
     // El captureScheduledAt fue fijado en markCardAuthorized() = createdAt + 48h.
@@ -1000,21 +1045,35 @@ export class BookingService {
       );
     }
 
-    // Enviar notificación al cliente de rechazo
-    notificationsClient.sendNotification({
-      userId: booking.clientId,
-      type: 'BOOKING_REJECTED',
-      channel: 'IN_APP',
-      title: 'Reserva Rechazada',
-      message: `Tu reserva ha sido rechazada: ${reason}`,
-      data: {
-        bookingId: id,
-        scheduledDate: booking.scheduledDate.toISOString(),
-        reason,
-      },
-      priority: 'high',
-      category: 'booking',
-    }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+    // Notificación diferenciada para rechazo de sonidista
+    if ((booking as any).bookingRole === 'SONIDISTA_ADDON') {
+      const primaryBookingId = (booking as any).linkedBookingId;
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: 'SONIDISTA_REJECTED',
+        channel: 'IN_APP',
+        title: 'Sonidista no disponible',
+        message: 'El sonidista seleccionado no pudo aceptar tu solicitud. Puedes elegir otro desde tu reserva.',
+        data: { bookingId: primaryBookingId ?? id },
+        priority: 'normal',
+        category: 'booking',
+      }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+    } else {
+      notificationsClient.sendNotification({
+        userId: booking.clientId,
+        type: 'BOOKING_REJECTED',
+        channel: 'IN_APP',
+        title: 'Reserva Rechazada',
+        message: `Tu reserva ha sido rechazada: ${reason}`,
+        data: {
+          bookingId: id,
+          scheduledDate: booking.scheduledDate.toISOString(),
+          reason,
+        },
+        priority: 'high',
+        category: 'booking',
+      }).catch(err => logger.error('Error enviando notificación', 'BOOKING_SERVICE', { error: err.message }));
+    }
 
     return updated;
   }

@@ -32,6 +32,8 @@ export const NotificationTypeEnum = z.enum([
   'MESSAGE_RECEIVED',
   'SYSTEM_NOTIFICATION',
   'MARKETING',
+  'SONIDISTA_PAYMENT_REQUIRED',
+  'SONIDISTA_REJECTED',
 ]);
 
 export const NotificationChannelEnum = z.enum(['EMAIL', 'SMS', 'PUSH', 'IN_APP']);

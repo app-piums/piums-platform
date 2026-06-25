@@ -72,6 +72,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
   const [noShowSubmitting, setNoShowSubmitting] = useState(false);
   const [noShowDone, setNoShowDone] = useState(false);
   const [payingRemaining, setPayingRemaining] = useState(false);
+  const [payingSonidista, setPayingSonidista] = useState(false);
   const [collaborators, setCollaborators] = useState<BookingCollaborator[]>([]);
   const [replacementSearch, setReplacementSearch] = useState<{
     id: string; status: string; matchedServiceIds: string[]; matchedArtistIds: string[];
@@ -178,6 +179,28 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
     NO_SHOW_ELIGIBLE.includes(booking.status?.toUpperCase() || '') &&
     !noShowDone &&
     booking.status?.toUpperCase() !== 'NO_SHOW';
+
+  const handleSonidistaCheckout = async () => {
+    const sonidistaBooking = (booking as any).sonidistaBooking;
+    if (!sonidistaBooking) return;
+    setPayingSonidista(true);
+    try {
+      const intent = await sdk.initCheckout(
+        sonidistaBooking.id,
+        Number(sonidistaBooking.totalPrice),
+        booking!.currency ?? 'USD',
+        artist?.country,
+        'Sonidista',
+      );
+      if (intent.redirectUrl) {
+        window.location.href = intent.redirectUrl;
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al iniciar el pago del sonidista');
+    } finally {
+      setPayingSonidista(false);
+    }
+  };
 
   const handlePayRemaining = async () => {
     if (!booking) return;
@@ -652,6 +675,50 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                          {payingRemaining ? 'Iniciando pago…' : `Pagar saldo restante (${fmt(remaining)})`}
                        </button>
                      );
+                   })()}
+                   {(() => {
+                     const sb = (booking as any).sonidistaBooking;
+                     if (!sb) return null;
+                     const sbStatus = sb.status?.toUpperCase();
+                     const sbPayment = sb.paymentStatus?.toUpperCase();
+                     if (sbStatus === 'CONFIRMED' && sbPayment === 'PENDING') {
+                       const fmt = (cents: number) =>
+                         new Intl.NumberFormat('en-US', { style: 'currency', currency: booking.currency ?? 'USD' }).format(cents / 100);
+                       return (
+                         <button
+                           onClick={handleSonidistaCheckout}
+                           disabled={payingSonidista}
+                           className="w-full py-2.5 bg-[#FF6B35] text-white font-semibold rounded-xl text-sm hover:bg-[#e55f00] transition disabled:opacity-60 flex items-center justify-center gap-2"
+                         >
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                           </svg>
+                           {payingSonidista ? 'Iniciando pago…' : `Pagar sonidista (${fmt(Number(sb.totalPrice))})`}
+                         </button>
+                       );
+                     }
+                     if (sbStatus === 'CONFIRMED' && sbPayment === 'CARD_AUTHORIZED') {
+                       return (
+                         <div className="w-full py-2.5 bg-green-50 border border-green-200 text-green-700 font-semibold rounded-xl text-sm text-center">
+                           Sonidista — pago reservado
+                         </div>
+                       );
+                     }
+                     if (sbStatus === 'PENDING') {
+                       return (
+                         <div className="w-full py-2 bg-yellow-50 border border-yellow-200 text-yellow-700 font-medium rounded-xl text-sm text-center">
+                           Sonidista — solicitud enviada, esperando respuesta
+                         </div>
+                       );
+                     }
+                     if (sbStatus === 'REJECTED') {
+                       return (
+                         <div className="w-full py-2 bg-red-50 border border-red-200 text-red-600 font-medium rounded-xl text-sm text-center">
+                           Sonidista no disponible para esta fecha
+                         </div>
+                       );
+                     }
+                     return null;
                    })()}
                    {canReportNoShow && (
                      <button

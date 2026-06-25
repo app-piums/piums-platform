@@ -538,6 +538,23 @@ END:VCALENDAR`;
               </CardContent>
             </Card>
 
+            {/* Sonidista: link back to primary booking */}
+            {(booking as any).bookingRole === 'SONIDISTA_ADDON' && (booking as any).linkedBookingId && (
+              <Card>
+                <CardTitle>Tu reserva principal</CardTitle>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {(booking as any).paymentStatus === 'CARD_AUTHORIZED'
+                      ? 'El pago del sonidista fue reservado. Se capturará automáticamente antes del evento.'
+                      : 'Vuelve a tu reserva principal para completar el pago del sonidista.'}
+                  </p>
+                  <Button onClick={() => router.push(`/bookings/${(booking as any).linkedBookingId}`)} fullWidth>
+                    Ver reserva principal
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Next Steps */}
             <Card>
               <CardTitle>Próximos Pasos</CardTitle>
