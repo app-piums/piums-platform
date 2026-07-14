@@ -19,7 +19,13 @@ if (process.env.REDIS_HOST) {
 
 function makeStore(prefix: string) {
   if (redisClient) {
-    return new RedisStore({ sendCommand: (...args: string[]) => redisClient!.call(...args) as any, prefix });
+    return new RedisStore({
+      // ioredis `.call` typing requires a fixed first arg; cast to a rest-parameter
+      // signature so spreading the string[] is valid (fixes TS2556).
+      sendCommand: (...args: string[]) =>
+        (redisClient!.call as (...a: string[]) => Promise<unknown>)(...args) as any,
+      prefix,
+    });
   }
   return undefined;
 }
