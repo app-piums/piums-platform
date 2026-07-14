@@ -1,5 +1,6 @@
-import { Router, Request, Response, NextFunction } from "express";
-import { authenticateToken } from "../middleware/auth.middleware";
+import { Router, Request, Response, NextFunction, RequestHandler } from "express";
+import { authenticateToken, requireActiveSession } from "../middleware/auth.middleware";
+import { uploadVideo, handleVideoMulterError } from "../middleware/upload.middleware";
 import {
   getMyProfile,
   updateMyProfile,
@@ -11,6 +12,8 @@ import {
   getMyStats,
   getMyAvailability,
   setMyAvailability,
+  uploadStoryVideo,
+  deleteStoryVideo,
 } from "../controller/artist-dashboard.controller";
 import {
   getAbsences,
@@ -31,6 +34,18 @@ router.use(authenticateToken);
 // Perfil del artista
 router.get("/me", getMyProfile);
 router.put("/me", updateMyProfile);
+
+// Video presentación ("historia") — un único clip de 30s, subir/reemplazar/eliminar
+router.post(
+  "/me/story-video",
+  requireActiveSession,
+  // Cast necesario: @types/multer se resuelve contra @types/express v4 mientras
+  // este servicio usa v5. Sin efecto en runtime.
+  uploadVideo.single("video") as unknown as RequestHandler,
+  handleVideoMulterError,
+  uploadStoryVideo
+);
+router.delete("/me/story-video", requireActiveSession, deleteStoryVideo);
 
 // Reservas
 router.get("/me/bookings", getMyBookings);

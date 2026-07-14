@@ -165,6 +165,9 @@ export default function ArtistSettingsPage() {
   const [portfolioItems, setPortfolioItems] = useState<any[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [portfolioUploading, setPortfolioUploading] = useState(false);
+  const [storyVideoUrl, setStoryVideoUrl] = useState<string | null>(null);
+  const [storyPosterUrl, setStoryPosterUrl] = useState<string | null>(null);
+  const [storyUploading, setStoryUploading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [youtubeTitle, setYoutubeTitle] = useState('');
   const [youtubeAdding, setYoutubeAdding] = useState(false);
@@ -545,9 +548,22 @@ export default function ArtistSettingsPage() {
     finally { setPortfolioLoading(false); }
   }, []);
 
+  const loadStory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/story-video', { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setStoryVideoUrl(data.storyVideo ?? null);
+      setStoryPosterUrl(data.storyVideoPosterUrl ?? null);
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
-    if (currentTab === 'portfolio') void loadPortfolio();
-  }, [currentTab, loadPortfolio]);
+    if (currentTab === 'portfolio') {
+      void loadPortfolio();
+      void loadStory();
+    }
+  }, [currentTab, loadPortfolio, loadStory]);
 
   const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -615,6 +631,39 @@ export default function ArtistSettingsPage() {
       toast.error(err instanceof Error ? err.message : 'Error al añadir video');
     } finally {
       setYoutubeAdding(false);
+    }
+  };
+
+  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite volver a elegir el mismo archivo
+    if (!file) return;
+    setStoryUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('video', file);
+      const res = await fetch('/api/story-video', { method: 'POST', body: fd, credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || data?.message || 'Error al subir el video');
+      setStoryVideoUrl(data?.artist?.storyVideo ?? null);
+      setStoryPosterUrl(data?.artist?.storyVideoPosterUrl ?? null);
+      toast.success('Video presentación actualizado');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al subir el video');
+    } finally {
+      setStoryUploading(false);
+    }
+  };
+
+  const handleStoryDelete = async () => {
+    try {
+      const res = await fetch('/api/story-video', { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error();
+      setStoryVideoUrl(null);
+      setStoryPosterUrl(null);
+      toast.success('Video presentación eliminado');
+    } catch {
+      toast.error('Error al eliminar');
     }
   };
 
@@ -1475,6 +1524,66 @@ export default function ArtistSettingsPage() {
 
             {currentTab === 'portfolio' && (
               <div className="space-y-6">
+                {/* Video presentación ("historia") */}
+                <div className="border border-gray-200 rounded-2xl p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800">Video presentación</h3>
+                    <p className="text-xs text-gray-500">Un video corto (máx 30s) que aparece como historia en tu perfil. Grábalo o súbelo desde tu galería.</p>
+                  </div>
+
+                  {storyVideoUrl ? (
+                    <div className="flex items-start gap-4">
+                      <video
+                        src={storyVideoUrl}
+                        poster={storyPosterUrl ? cImg(storyPosterUrl) : undefined}
+                        controls
+                        playsInline
+                        className="w-28 h-48 rounded-xl object-cover bg-black flex-shrink-0"
+                      />
+                      <div className="flex flex-col gap-2">
+                        <label className={`px-4 py-2 text-white text-sm font-semibold rounded-xl cursor-pointer text-center ${storyUploading ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#e55a24]'}`}>
+                          {storyUploading ? 'Subiendo...' : 'Reemplazar'}
+                          <input type="file" accept="video/*" className="hidden" onChange={handleStoryUpload} disabled={storyUploading} />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleStoryDelete}
+                          disabled={storyUploading}
+                          className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 disabled:opacity-40"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-4">
+                      {/* Globo "Cuéntales quién eres" + botón (+) para grabar/subir */}
+                      <div className="bg-gray-800 text-white text-sm font-semibold rounded-2xl px-4 py-2 text-center">
+                        Cuéntales quién eres
+                      </div>
+                      <label className="relative block w-24 h-24 cursor-pointer">
+                        <span className="absolute inset-0 rounded-full p-[3px] bg-gradient-to-tr from-[#FF6B35] via-[#FF8F5E] to-[#FFC24B]">
+                          <span className="flex items-center justify-center w-full h-full rounded-full bg-gray-100 overflow-hidden">
+                            {storyUploading ? (
+                              <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-[#FF6B35]" />
+                            ) : (
+                              <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </span>
+                        </span>
+                        <span className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-[#FF6B35] text-white flex items-center justify-center shadow-md border-2 border-white">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </span>
+                        <input type="file" accept="video/*" className="hidden" onChange={handleStoryUpload} disabled={storyUploading} />
+                      </label>
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Portafolio</h2>
                   <p className="text-sm text-gray-500">Sube fotos de tu trabajo para que los clientes puedan ver tu estilo.</p>

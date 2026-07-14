@@ -96,6 +96,13 @@ export interface ArtistProfile extends Artist {
   youtube?: string;
   tiktok?: string;
   website?: string;
+  // Video presentación ("historia") — un único clip persistente de 30s.
+  // storyVideo != null ⇒ hay historia (regla única para todos los clientes).
+  storyVideo?: string | null;
+  storyVideoPosterUrl?: string | null;
+  storyVideoDurationMs?: number | null;
+  storyVideoUpdatedAt?: string | null;
+  storyVideoPublicId?: string | null; // presente, pero los clientes no deben depender de él
 }
 
 export interface ServiceAddon {
@@ -2441,6 +2448,42 @@ class PiumsSDK {
       console.error('Error updating artist profile:', error);
       throw error;
     }
+  }
+
+  /**
+   * Sube (o reemplaza) el video presentación ("historia") de 30s del artista.
+   * NO fija Content-Type — el runtime pone el boundary del multipart automáticamente.
+   * @param video Blob/File del video (mp4, mov o webm, máx 30s / 100 MB)
+   */
+  async uploadStoryVideo(video: Blob | File): Promise<ArtistProfile> {
+    const form = new FormData();
+    form.append('video', video);
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/story-video`,
+      this.withAuth({ method: 'POST', body: form, credentials: 'include' })
+    );
+    if (!response.ok) {
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).error || (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
+    }
+    return (await response.json()).artist;
+  }
+
+  /**
+   * Elimina el video presentación ("historia") del artista.
+   */
+  async deleteStoryVideo(): Promise<ArtistProfile> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/story-video`,
+      this.withAuth({ method: 'DELETE', credentials: 'include' })
+    );
+    if (!response.ok) {
+      let errMsg = `HTTP error! status: ${response.status}`;
+      try { const e = await response.json(); errMsg = (e as any).error || (e as any).message || errMsg; } catch { /* not JSON */ }
+      throw new Error(errMsg);
+    }
+    return (await response.json()).artist;
   }
 
   /**

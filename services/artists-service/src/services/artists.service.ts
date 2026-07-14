@@ -158,6 +158,33 @@ export class ArtistsService {
   }
 
   /**
+   * Escribir los campos del video presentación ("historia").
+   * Escritor dedicado — NO pasa por updateArtist (que corre moderación de
+   * bio/nombre y validación de pricing irrelevantes aquí).
+   */
+  async setStoryVideo(
+    id: string,
+    data: {
+      storyVideo: string | null;
+      storyVideoPosterUrl: string | null;
+      storyVideoPublicId: string | null;
+      storyVideoDurationMs: number | null;
+      storyVideoUpdatedAt: Date | null;
+    },
+  ) {
+    return prisma.artist.update({
+      where: { id },
+      data: { ...data, updatedAt: new Date() },
+      include: {
+        portfolio: true,
+        certifications: true,
+        availabilityRules: true,
+        blackouts: true,
+      },
+    });
+  }
+
+  /**
    * Actualizar perfil de artista
    */
   async updateArtist(id: string, data: any) {

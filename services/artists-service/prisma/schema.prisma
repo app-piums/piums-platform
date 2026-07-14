@@ -144,6 +144,13 @@ model Artist {
   avatar    String?
   coverPhoto String?
   bio       String?
+
+  // Video presentación ("historia") — un único clip persistente de 30s
+  storyVideo           String?   // secure_url del mp4 canónico (normalizado por eager)
+  storyVideoPosterUrl  String?   // Poster JPG derivado (primer frame)
+  storyVideoPublicId   String?   // public_id de Cloudinary — necesario para borrar de forma fiable
+  storyVideoDurationMs Int?      // Duración en ms (siempre <= 30000 tras normalizar)
+  storyVideoUpdatedAt  DateTime? // Última subida/reemplazo (cache-bust + estilo de anillo "nuevo")
   
   // Categoría y especialidades
   category      ArtistCategory // Mantener por compatibilidad

@@ -225,6 +225,22 @@ export const setupRoutes = (app: Express) => {
     })
   );
 
+  // Multipart bypass para el upload del video presentación del artista.
+  // fixRequestBody trunca el multipart (busboy: "Unexpected end of form"),
+  // por eso este proxy dedicado NO lo usa. DEBE ir antes del proxy general /api/artists.
+  // También cubre el DELETE del mismo path (sin body, inofensivo).
+  app.use(
+    "/api/artists/dashboard/me/story-video",
+    uploadRateLimiter,
+    authMiddleware,
+    createProxyMiddleware({
+      target: process.env.ARTISTS_SERVICE_URL || "http://localhost:4003",
+      changeOrigin: true,
+      pathRewrite: { "^/": "/artists/dashboard/me/story-video" },
+      // SIN fixRequestBody — el multipart debe pasar sin tocar
+    })
+  );
+
   app.use(
     "/api/artists",
     createProxyMiddleware({

@@ -8,6 +8,8 @@ import { bookingServiceClient } from "../clients/booking.client";
 import { paymentsServiceClient } from "../clients/payments.client";
 import { usersClient } from "../clients/users.client";
 import { availabilitySchema } from "../schemas/artists.schema";
+import { cloudinaryProvider } from "../providers/cloudinary.provider";
+import { assertVideoMagicBytes } from "../middleware/upload.middleware";
 
 const artistsService = new ArtistsService();
 
@@ -429,6 +431,86 @@ export const setMyAvailability = async (
     });
 
     res.json({ availability, message: "Disponibilidad configurada" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/artists/dashboard/me/story-video
+ * Sube (o reemplaza) el video presentación de 30s del artista autenticado.
+ * Recibe multipart/form-data con el campo `video`.
+ */
+export const uploadStoryVideo = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, "No autenticado");
+
+    const file = (req as AuthRequest & { file?: Express.Multer.File }).file;
+    if (!file) throw new AppError(400, "No se recibió ningún video.");
+
+    // Magic bytes — el mimetype declarado por el cliente es falsificable
+    assertVideoMagicBytes(file.buffer);
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+
+    const uploaded = await cloudinaryProvider.uploadStoryVideo(file.buffer, artist.id);
+
+    // Rechazo duro de >30s (1s de tolerancia por redondeo de codificación).
+    // Limpia el asset recién subido antes de rechazar.
+    if (uploaded.durationMs > 31_000) {
+      await cloudinaryProvider.deleteStoryVideo(uploaded.publicId);
+      throw new AppError(400, "El video no puede superar los 30 segundos.");
+    }
+
+    const updated = await artistsService.setStoryVideo(artist.id, {
+      storyVideo: uploaded.secureUrl,
+      storyVideoPosterUrl: uploaded.posterUrl,
+      storyVideoPublicId: uploaded.publicId,
+      storyVideoDurationMs: Math.min(uploaded.durationMs, 30_000),
+      storyVideoUpdatedAt: new Date(),
+    });
+
+    logger.info("Video presentación actualizado", "ARTIST_DASHBOARD", { artistId: artist.id });
+    res.json({ artist: updated, message: "Video presentación actualizado." });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/artists/dashboard/me/story-video
+ * Elimina el video presentación del artista autenticado.
+ */
+export const deleteStoryVideo = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, "No autenticado");
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+
+    if (artist.storyVideoPublicId) {
+      await cloudinaryProvider.deleteStoryVideo(artist.storyVideoPublicId);
+    }
+
+    const updated = await artistsService.setStoryVideo(artist.id, {
+      storyVideo: null,
+      storyVideoPosterUrl: null,
+      storyVideoPublicId: null,
+      storyVideoDurationMs: null,
+      storyVideoUpdatedAt: null,
+    });
+
+    logger.info("Video presentación eliminado", "ARTIST_DASHBOARD", { artistId: artist.id });
+    res.json({ artist: updated, message: "Video presentación eliminado." });
   } catch (error) {
     next(error);
   }

@@ -6,6 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Lightbox } from '@/components/Lightbox';
 import { Loading } from '@/components/Loading';
 import { Avatar } from '@/components/ui/Avatar';
+import { StoryRing } from '@/components/StoryRing';
+import { StoryViewer } from '@/components/StoryViewer';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
@@ -86,6 +88,7 @@ export default function ArtistProfilePage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [videoModal, setVideoModal] = useState<string | null>(null);
+  const [storyOpen, setStoryOpen] = useState(false);
   const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null);
   const startingPrice = useMemo(() => {
     if (services.length > 0) {
@@ -331,6 +334,14 @@ export default function ArtistProfilePage() {
       )}
 
       {/* Video modal */}
+      {storyOpen && artist?.storyVideo && (
+        <StoryViewer
+          videoUrl={artist.storyVideo}
+          posterUrl={artist.storyVideoPosterUrl}
+          onClose={() => setStoryOpen(false)}
+        />
+      )}
+
       {videoModal && (
         <VideoModal url={videoModal} onClose={() => setVideoModal(null)} />
       )}
@@ -395,12 +406,14 @@ export default function ArtistProfilePage() {
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row md:items-start md:space-x-6 mb-8 px-4 lg:px-0">
           <div className="flex-shrink-0 -mt-16 mb-4 md:mb-0">
-            <Avatar
-              src={artist.avatar}
-              fallback={artist.nombre}
-              size="xl"
-              className="h-32 w-32 border-4 border-white shadow-lg"
-            />
+            <StoryRing hasStory={!!artist.storyVideo} onOpen={() => setStoryOpen(true)}>
+              <Avatar
+                src={artist.avatar}
+                fallback={artist.nombre}
+                size="xl"
+                className="h-32 w-32 border-4 border-white shadow-lg"
+              />
+            </StoryRing>
           </div>
 
           <div className="flex-1">
