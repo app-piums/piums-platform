@@ -744,6 +744,10 @@ export const getMe = async (req: Request, res: Response) => {
       documentFrontUrl: true,
       documentBackUrl: true,
       documentSelfieUrl: true,
+      // Intereses del onboarding — necesarios para que los clientes rehidraten
+      // la personalización tras reinstalar o cambiar de dispositivo.
+      onboardingCategories: true,
+      onboardingTags: true,
     },
   });
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -753,7 +757,8 @@ export const getMe = async (req: Request, res: Response) => {
 export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = (req as any).user;
-    const { ciudad, birthDate, nombre, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = req.body;
+    const { ciudad, birthDate, nombre, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl,
+            onboardingCategories, onboardingTags } = req.body;
 
     // Snapshot before update — used to detect first-time document submission
     const before = await prisma.user.findUnique({
@@ -779,6 +784,26 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     if (documentBackUrl !== undefined) updateData.documentBackUrl = documentBackUrl ?? null;
     if (documentSelfieUrl !== undefined) updateData.documentSelfieUrl = documentSelfieUrl;
 
+    // Intereses del onboarding (iOS y web los mandan desde siempre; antes se
+    // ignoraban aquí). Validación a mano: array corto de strings cortos, y tags
+    // como objeto plano { categoria: [tags] }. Payload inválido se ignora en vez
+    // de fallar: es un dato de personalización, no debe romper el guardado del
+    // perfil (este PATCH también lo usa la verificación de identidad).
+    if (Array.isArray(onboardingCategories)) {
+      const cats = onboardingCategories
+        .filter((c: unknown): c is string => typeof c === "string" && c.length > 0 && c.length <= 60)
+        .slice(0, 20);
+      updateData.onboardingCategories = cats;
+    }
+    if (onboardingTags !== undefined && typeof onboardingTags === "object" && !Array.isArray(onboardingTags)) {
+      const tags: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(onboardingTags ?? {}).slice(0, 20)) {
+        if (typeof k !== "string" || k.length > 60 || !Array.isArray(v)) continue;
+        tags[k] = v.filter((t): t is string => typeof t === "string" && t.length <= 60).slice(0, 20);
+      }
+      updateData.onboardingTags = tags;
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: updateData,
@@ -794,6 +819,8 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         documentFrontUrl: true,
         documentBackUrl: true,
         documentSelfieUrl: true,
+        onboardingCategories: true,
+        onboardingTags: true,
       },
     });
 

@@ -129,6 +129,10 @@ router.patch("/internal/:id/rating", async (req, res, next) => {
       where: { id },
       data: { rating, reviewCount, updatedAt: new Date() },
     });
+    // Sin esto, el rating nuevo no llega a ArtistIndex hasta que un evento no
+    // relacionado (editar perfil, reiniciar search) reindexe: el orden por rating
+    // y el feed de recomendados se quedaban con el valor viejo.
+    triggerArtistReindex(id);
     res.json({ ok: true });
   } catch (error) {
     next(error);

@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import { PricingType, ServiceStatus } from "../types/prisma-enums";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { triggerArtistReindex } from "../utils/searchReindex";
 
 export class CatalogService {
   // ==================== CATEGORÍAS ====================
@@ -375,6 +376,10 @@ export class CatalogService {
       artistId: data.artistId,
     });
 
+    // servicesCount > 0 es filtro duro de busqueda: sin esto, el primer servicio
+    // de un artista no lo hacia visible hasta un reindex no relacionado.
+    triggerArtistReindex(data.artistId);
+
     return service;
   }
 
@@ -430,6 +435,8 @@ export class CatalogService {
       artistId,
     });
 
+    triggerArtistReindex(artistId);
+
     return service;
   }
 
@@ -457,6 +464,9 @@ export class CatalogService {
       serviceId: id,
       artistId,
     });
+
+    // Borrar el ultimo servicio debe sacar al artista de busquedas (servicesCount=0)
+    triggerArtistReindex(artistId);
   }
 
   /**
@@ -491,6 +501,8 @@ export class CatalogService {
       oldStatus: service.status,
       newStatus,
     });
+
+    triggerArtistReindex(artistId);
 
     return updated;
   }

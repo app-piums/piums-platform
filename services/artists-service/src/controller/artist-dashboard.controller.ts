@@ -1,4 +1,5 @@
 import { Response, NextFunction } from "express";
+import { z } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { ArtistsService } from "../services/artists.service";
 import { AppError } from "../middleware/errorHandler";
@@ -53,6 +54,58 @@ export const getMyProfile = async (
   }
 };
 
+// Redondeo defensivo para columnas Int de Prisma: iOS serializa Double (1500.0)
+// y un decimal real (1500.5) reventaría el update.
+const intFromNumber = (min: number, max: number) =>
+  z.number().min(min).max(max).transform(Math.round);
+
+const dashboardUpdateSchema = z.object({
+  // Identidad y textos
+  nombre: z.string().min(1).max(120).optional(),
+  bio: z.string().max(2000).optional(),
+  telefono: z.string().max(30).nullable().optional(),
+
+  // Ubicación. "ciudad" y "location" son alias legacy que normalizeArtistPayload
+  // mapea a "city" (iOS manda "location" desde el geocoding del login).
+  city: z.string().min(2).max(120).optional(),
+  ciudad: z.string().min(2).max(120).optional(),
+  location: z.string().min(2).max(120).optional(),
+  cityId: z.string().max(64).nullable().optional(),
+  baseLocationLabel: z.string().max(200).nullable().optional(),
+  baseLocationLat: z.number().min(-90).max(90).nullable().optional(),
+  baseLocationLng: z.number().min(-180).max(180).nullable().optional(),
+  // null = cobertura nacional (semántica del modelo), por eso nullable
+  coverageRadius: intFromNumber(1, 1000).nullable().optional(),
+
+  // Disciplina
+  category: z.enum(['MUSICO', 'FOTOGRAFO', 'VIDEOGRAFO', 'ANIMADOR', 'CREADOR_CONTENIDO', 'OTRO']).optional(),
+  specialties: z.array(z.string().max(60)).max(20).optional(),
+  yearsExperience: intFromNumber(0, 80).optional(),
+  experienceYears: intFromNumber(0, 80).optional(), // legacy → yearsExperience
+
+  // Equipo
+  equipment: z.array(z.string().max(80)).max(30).optional(),
+  hasSoundSystem: z.boolean().optional(),
+
+  // Precio (centavos, columnas Int)
+  hourlyRateMin: intFromNumber(0, 100_000_000).nullable().optional(),
+  hourlyRateMax: intFromNumber(0, 100_000_000).nullable().optional(),
+
+  // Políticas de reserva
+  requiresDeposit: z.boolean().optional(),
+  depositPercentage: intFromNumber(0, 100).nullable().optional(),
+  allowSameDayBooking: z.boolean().optional(),
+
+  // Media y redes (las URLs pasan además por la validación anti-SSRF de abajo)
+  avatar: z.string().max(500).optional(),
+  coverPhoto: z.string().max(500).optional(),
+  instagram: z.string().max(300).nullable().optional(),
+  facebook: z.string().max(300).nullable().optional(),
+  youtube: z.string().max(300).nullable().optional(),
+  tiktok: z.string().max(300).nullable().optional(),
+  website: z.string().max(300).nullable().optional(),
+});
+
 /**
  * PUT /api/artists/me - Actualizar mi perfil
  */
@@ -69,17 +122,27 @@ export const updateMyProfile = async (
 
     const artist = await artistsService.getArtistByAuthId(authId);
 
-    // Allowlist: only permit safe fields to prevent mass-assignment
-    const ALLOWED_FIELDS = [
-      'bio', 'displayName', 'nombre', 'telefono', 'location', 'cityId',
-      'category', 'specialties', 'ciudad', 'city',
-      'socialLinks', 'imageUrl', 'basePrice', 'experienceYears', 'yearsExperience',
-      'availability', 'languages', 'tags', 'portfolioItems', 'avatar', 'coverPhoto',
-      'instagram', 'facebook', 'youtube', 'tiktok', 'website',
-      'baseLocationLat', 'baseLocationLng', 'baseLocationLabel',
-    ];
-    const safeBody = Object.fromEntries(
-      Object.entries(req.body).filter(([k]) => ALLOWED_FIELDS.includes(k))
+    // Validación tipada en lugar del allowlist plano de antes. El motivo:
+    // updateArtist hace spread directo a prisma.update, así que cualquier campo
+    // permitido pero desconocido para el modelo, o con el tipo equivocado, era un
+    // 500 de Prisma. Con el schema: clave desconocida → se descarta (tolerante con
+    // clientes viejos), tipo inválido → 400 con el campo señalado, nunca 500.
+    //
+    // Nota: el allowlist anterior incluía campos que no existen en el modelo
+    // (basePrice, availability, languages, tags, portfolioItems, imageUrl,
+    // socialLinks, displayName) — ninguna app los envía a esta ruta (verificado);
+    // se eliminan. Y omitía campos que las DOS apps móviles SÍ envían
+    // (coverageRadius, hourlyRateMin/Max, equipment, hasSoundSystem,
+    // requiresDeposit, depositPercentage), que se descartaban en silencio: el
+    // artista guardaba su radio de cobertura y el servidor lo tiraba.
+    const parsed = dashboardUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new AppError(400, `Campo inválido: ${issue.path.join('.')} — ${issue.message}`);
+    }
+    // Quitar los undefined para no pisar columnas con valores vacíos
+    const safeBody: Record<string, unknown> = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
     );
 
     // Validación anti-SSRF: solo URLs seguras en campos de imagen y redes sociales

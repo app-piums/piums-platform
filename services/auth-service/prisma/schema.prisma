@@ -49,6 +49,14 @@ model User {
 
   // Push notifications
   fcmToken            String?             // Firebase Cloud Messaging token del dispositivo móvil
+
+  // Intereses del onboarding del cliente. Vocabulario canónico: los slugs de
+  // iOS/web ("live-music", "photography"...); Android traduce etiqueta<->slug.
+  // Los clientes los enviaban desde siempre y el servidor los descartaba: estas
+  // columnas cierran el ciclo para que sobrevivan reinstalaciones y cambios de
+  // dispositivo. Aditivas con default => db push las crea sin backfill.
+  onboardingCategories String[]           @default([])
+  onboardingTags       Json?              // { "<categoria>": ["tag1", ...] }
   // Revisión de admin
   rejectionReason     String?             // Razón de rechazo de verificación
   adminNotes          String?             // Notas internas del admin

@@ -611,7 +611,9 @@ export const getBookingDetail = async (req: Request, res: Response, next: NextFu
 
     const users = await prisma.user.findMany({
       where: { id: { in: Array.from(userIds) } },
-      select: { id: true, name: true, email: true, nombre: true, phone: true },
+      // El modelo no tiene 'phone' (el telefono del usuario vive en users-service);
+      // seleccionarlo hacia reventar Prisma en runtime y este endpoint daba 500.
+      select: { id: true, name: true, email: true, nombre: true },
     });
     const userMap = users.reduce((acc: any, u: any) => { acc[u.id] = u; return acc; }, {});
 
@@ -629,7 +631,7 @@ export const getBookingDetail = async (req: Request, res: Response, next: NextFu
       ...booking,
       clienteNombre: client?.name || client?.nombre || client?.email?.split('@')[0] || 'Desconocido',
       clienteEmail: client?.email || '—',
-      clientePhone: client?.phone || null,
+      clientePhone: null, // el telefono no vive en auth; pedirlo a users-service si algun dia hace falta
       artistaNombre: artist?.name || artist?.nombre || artist?.email?.split('@')[0] || 'Desconocido',
       artistaEmail: artist?.email || '—',
       estadoLabel: STATUS_ES[booking.status] || booking.status,
@@ -752,7 +754,7 @@ export const getReports = async (req: Request, res: Response, next: NextFunction
     );
 
     // Obtener nombres de los que reportan
-    const reporterIds = Array.from(new Set(result.reports.map((r: any) => r.reportedBy)));
+    const reporterIds: string[] = Array.from(new Set<string>(result.reports.map((r: any) => String(r.reportedBy))));
     const reporters = await prisma.user.findMany({
       where: { id: { in: reporterIds } },
       select: { id: true, name: true, email: true }

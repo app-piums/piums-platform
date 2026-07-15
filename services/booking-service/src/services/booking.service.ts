@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { triggerArtistReindexForBooking } from "../utils/searchReindex";
 import { BookingStatus, PaymentStatus, RescheduleStatus } from "../types/prisma-enums";
 import crypto from "crypto";
 import { AppError } from "../middleware/errorHandler";
@@ -106,7 +107,63 @@ export class BookingService {
 
     // Obtener detalles del artista para coordenadas base
     const artist = await artistsClient.getArtist(data.artistId);
-    
+
+    // ── Gate real contra la agenda declarada del artista ──────────────────────
+    // Antes los blackouts solo ocultaban al artista en búsqueda y las
+    // availabilityRules solo alimentaban sugerencias: se podía reservar a un
+    // artista de vacaciones o fuera de su horario declarado. Falla ABIERTO: si
+    // artists-service no respondió (artist == null), no se bloquea la reserva.
+    if (artist) {
+      // Blackouts (vacaciones / trabajando fuera): sin distinguir tipo — ambos
+      // significan "no está en su base". El caso del artista que trabaja fuera y
+      // acepta reservas en el país destino se resuelve borrando el blackout.
+      const blackouts: Array<{ startAt: string; endAt: string }> =
+        (artist as any).blackouts ?? [];
+      const overlapping = blackouts.find(
+        (b) => new Date(b.startAt) < endTime && new Date(b.endAt) > scheduledDate
+      );
+      if (overlapping) {
+        throw new AppError(
+          409,
+          "El artista no está disponible en esas fechas (ausencia registrada en su agenda)"
+        );
+      }
+
+      // Horario semanal declarado: solo se exige si el artista LO configuró
+      // (sin reglas, comportamiento de siempre — no se impone el fallback 9-18).
+      // Misma convención naive de día/hora que getAvailableSlots (DAY_MAP +
+      // getHours), para que cualquier slot sugerido pase este gate.
+      const rules: Array<{ dayOfWeek: string; startTime: string; endTime: string; isActive?: boolean }> =
+        ((artist as any).availabilityRules ?? []).filter((r: any) => r.isActive !== false);
+      const ruleEndMin =
+        scheduledDate.getHours() * 60 + scheduledDate.getMinutes() + data.durationMinutes;
+      // Reservas que cruzan medianoche o multi-día no mapean a una ventana
+      // diaria; se dejan pasar (las cubren blackouts y solapamiento de reservas).
+      if (rules.length > 0 && ruleEndMin <= 24 * 60) {
+        const RULE_DAY_MAP: Record<number, string> = {
+          0: "DOMINGO", 1: "LUNES", 2: "MARTES", 3: "MIERCOLES",
+          4: "JUEVES", 5: "VIERNES", 6: "SABADO",
+        };
+        const dayName = RULE_DAY_MAP[scheduledDate.getDay()];
+        const toMin = (hhmm: string) =>
+          parseInt(hhmm.split(":")[0], 10) * 60 + parseInt(hhmm.split(":")[1] ?? "0", 10);
+        const startMin = scheduledDate.getHours() * 60 + scheduledDate.getMinutes();
+        const fits = rules.some(
+          (r) =>
+            r.dayOfWeek === dayName &&
+            startMin >= toMin(r.startTime) &&
+            ruleEndMin <= toMin(r.endTime)
+        );
+        if (!fits) {
+          throw new AppError(
+            409,
+            "El horario está fuera de la disponibilidad declarada por el artista"
+          );
+        }
+      }
+    }
+
+
     // Resolver ubicación del cliente SOLO si el usuario no proporcionó ninguna ubicación explícitamente
     // Esto mantiene consistencia: una vez seleccionada, no se sobrescribe automáticamente
     const hasExplicitLocation = data.location || data.locationLat || data.locationLng;
@@ -2162,6 +2219,7 @@ export class BookingService {
     );
 
     logger.info('Código de asistencia verificado — reserva completada y pago en proceso', 'BOOKING_SERVICE', { bookingId, artistId });
+    triggerArtistReindexForBooking(bookingId); // totalBookings alimenta el ranking
 
     // Pago en background (patrón fire-and-forget idéntico al resto del servicio)
     ;(async () => {

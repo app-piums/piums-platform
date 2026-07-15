@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { triggerArtistReindexForBooking } from "../utils/searchReindex";
 import { DisputeType, DisputeStatus, DisputeResolution } from "../types/prisma-enums";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
@@ -282,6 +283,8 @@ export class DisputeService {
       }),
     ]);
 
+    triggerArtistReindexForBooking(dispute.bookingId);
+
     // Crear mensaje de resolución
     await prisma.disputeMessage.create({
       data: {
@@ -453,6 +456,8 @@ export class DisputeService {
         data: { status: "COMPLETED" },
       }),
     ]);
+
+    triggerArtistReindexForBooking(dispute.bookingId);
 
     // Crear mensaje de cierre
     await prisma.disputeMessage.create({
