@@ -93,6 +93,12 @@ export async function GET(request: NextRequest) {
         documentFrontUrl: kyc.documentFrontUrl ?? null,
         documentBackUrl: kyc.documentBackUrl ?? null,
         documentSelfieUrl: kyc.documentSelfieUrl ?? null,
+        // Intereses del onboarding: la pagina de onboarding los usa para
+        // auto-completarse cuando la cuenta ya los tiene (otro navegador,
+        // reinstalacion). Sin esto se repetia el patron "el backend los
+        // devuelve y el BFF los tira".
+        onboardingCategories: kyc.onboardingCategories ?? [],
+        onboardingTags: kyc.onboardingTags ?? {},
       },
     });
 

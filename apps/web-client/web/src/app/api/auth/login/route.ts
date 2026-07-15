@@ -67,15 +67,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Email login = usuario existente (el registro siempre va directo a /onboarding).
-    // Setear onboarding como completado server-side para que el proxy no redirija.
-    nextResponse.cookies.set("onboarding_completed", "true", {
-      httpOnly: false, // debe ser legible por JS del cliente también
-      secure: process.env.HTTPS_ENABLED === 'true',
-      sameSite: "strict" as const,
-      maxAge: 31536000, // 1 año
-      path: "/",
-    });
+    // Antes esto forzaba onboarding_completed=true asumiendo "email login =
+    // usuario existente = ya hizo onboarding". Falso: los usuarios de email
+    // JAMAS veian el onboarding de intereses. Ahora la cookie no se toca aqui:
+    // el proxy manda a /onboarding a quien no la tenga, y esa pagina se
+    // auto-completa en silencio si la cuenta ya tiene intereses en el backend.
 
     return nextResponse;
   } catch (error) {

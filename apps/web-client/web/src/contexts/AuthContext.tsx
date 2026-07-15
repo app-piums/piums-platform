@@ -59,7 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const doLogout = useCallback(async () => {
     clearTimers();
     try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
-    if (typeof window !== 'undefined') window.localStorage.removeItem('token');
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('token');
+      // Datos de la CUENTA, no del navegador: el siguiente usuario no debe
+      // heredar los gustos del anterior. Se rehidratan del backend al volver.
+      window.localStorage.removeItem('piums_interests');
+    }
     sdk.setAuthToken(null);
     setUser(null);
     setSessionWarning(false);

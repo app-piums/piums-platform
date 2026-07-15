@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 
 /* ─── Document types ─────────────────────────────────────────────────────── */
@@ -63,6 +63,36 @@ export default function ClientOnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Record<string, Set<string>>>({});
+
+  // Auto-completar en silencio si la cuenta YA tiene intereses en el backend
+  // (reinstalacion, otro navegador, o usuario de email que nunca vio esta
+  // pagina porque el login forzaba la cookie). Se rehidrata localStorage, se
+  // marca la cookie y se salta directo al dashboard.
+  useEffect(() => {
+    (async () => {
+      try {
+        if (localStorage.getItem('piums_interests')) {
+          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+          window.location.href = '/dashboard';
+          return;
+        }
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const cats: string[] = data?.user?.onboardingCategories ?? [];
+        if (cats.length > 0) {
+          localStorage.setItem('piums_interests', JSON.stringify({
+            categories: cats,
+            tags: data?.user?.onboardingTags ?? {},
+          }));
+          document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
+          window.location.href = '/dashboard';
+        }
+      } catch {
+        // Sin red o sin sesion: se muestra el onboarding normal
+      }
+    })();
+  }, []);
 
   /* ── helpers ── */
   const toggleCategory = (id: string) => {

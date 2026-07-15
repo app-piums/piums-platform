@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
   response.cookies.delete('user_role');
   response.cookies.delete('refreshToken');
   response.cookies.delete('token');
+  // El flag de onboarding es de la CUENTA, no del navegador: sin esto el
+  // siguiente usuario del equipo heredaba el estado del anterior.
+  response.cookies.delete('onboarding_completed');
 
   return response;
 }
