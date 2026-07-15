@@ -63,3 +63,8 @@ piums-platform/
 credenciales-demo.md
 .fuse_hidden*
 _tmp_*
+
+# Dumps de la base: pesan y traen datos de usuarios reales.
+# Los dumps ya versionados siguen trackeados (.gitignore no destrackea lo que ya
+# esta en el indice); esto solo evita subir nuevos sin querer con `git add .`.
+backups/*.sql
