@@ -13,7 +13,10 @@ const COOKIE_OPTIONS = {
 
 export async function GET(request: NextRequest) {
   try {
-    let token = request.cookies.get("auth_token")?.value;
+    // Las apps moviles usan este mismo dominio y mandan Bearer, no cookies.
+    // Sin este fallback, el movil recibia 401 aqui aunque su token fuera valido.
+    let token = request.cookies.get("auth_token")?.value
+      ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
     const userRole = request.cookies.get("user_role")?.value;
 
     if (!token) {

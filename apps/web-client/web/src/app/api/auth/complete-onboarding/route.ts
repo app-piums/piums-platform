@@ -5,7 +5,9 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://localhost:4001"
 
 export async function PATCH(request: NextRequest) {
   try {
-    const token = request.cookies.get("auth_token")?.value;
+    // Fallback a Bearer: las apps moviles llegan por este dominio sin cookies.
+    const token = request.cookies.get("auth_token")?.value
+      ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
     if (!token) {
       return NextResponse.json({ message: "No autenticado" }, { status: 401 });
