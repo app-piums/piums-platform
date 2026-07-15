@@ -32,6 +32,14 @@ export interface ArtistData {
   geoCountry?: string | null; // Real-time GPS country code
   avatar?: string | null;
   coverPhoto?: string | null;
+  // Geo base del artista. Ya viajaba en la respuesta (getArtistById hace findUnique
+  // sin select y devuelve el registro completo); solo faltaba declararlo aquí.
+  // coverageRadius null = cobertura nacional.
+  baseLocationLat?: number | null;
+  baseLocationLng?: number | null;
+  lat?: number | null;
+  lng?: number | null;
+  coverageRadius?: number | null;
 }
 
 export const artistsClient = {

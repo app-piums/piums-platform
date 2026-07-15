@@ -8,6 +8,9 @@ const router: Router = Router();
 
 // Public search endpoints
 router.get('/artists', optionalAuth, searchLimiter, searchController.searchArtists);
+// optionalAuth aunque v1 no use el userId: es el gancho para personalizar por
+// favoritos/historial (v2) sin cambiar el contrato ni los clientes.
+router.get('/recommended', optionalAuth, searchLimiter, searchController.recommendedArtists);
 router.get('/smart', searchLimiter, searchController.smartSearch);
 router.get('/services', optionalAuth, searchLimiter, searchController.searchServices);
 router.get('/autocomplete', optionalAuth, autocompleteLimiter, searchController.autocomplete);

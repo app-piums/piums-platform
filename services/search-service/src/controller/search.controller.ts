@@ -10,6 +10,7 @@ import {
   indexServiceSchema,
   bulkIndexSchema,
   smartSearchSchema,
+  recommendedArtistsSchema,
 } from '../schemas/search.schema';
 
 export const searchController = {
@@ -18,6 +19,17 @@ export const searchController = {
     try {
       const filters = searchArtistsSchema.parse(req.query);
       const result = await searchService.searchArtists(filters);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Recommended artists feed (home)
+  async recommendedArtists(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = recommendedArtistsSchema.parse(req.query);
+      const result = await searchService.recommendedArtists(filters);
       res.json(result);
     } catch (error) {
       next(error);

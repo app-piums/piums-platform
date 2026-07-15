@@ -61,6 +61,15 @@ model ArtistIndex {
   avatar      String?
   coverPhoto  String?
 
+  // Geo base (synced from artists-service) — alimenta el ranking de /search/recommended.
+  // Nullable a propósito: null = ubicación desconocida, y el scoring le da el valor
+  // neutro en vez de penalizar, así que el feed no se degrada si el sync no ha corrido.
+  // coverageRadius null = cobertura nacional.
+  // Sin @@index: el scoring es en memoria, nunca se filtra ni ordena por geo en SQL.
+  baseLocationLat  Float?
+  baseLocationLng  Float?
+  coverageRadius   Int?
+
   // Absence tracking (synced from artists-service blackouts)
   activeAbsenceType   String?   // 'VACATION' | 'WORKING_ABROAD' | null
   activeAbsenceUntil  DateTime? // When the current absence ends

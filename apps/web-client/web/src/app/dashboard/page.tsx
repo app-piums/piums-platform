@@ -204,8 +204,23 @@ export default function DashboardPage() {
   const loadData = useCallback(async () => {
     try {
       setLoadingData(true);
+      // Categorías de interés para que el feed recomiende de verdad. Se resuelven
+      // aquí porque el servidor no conoce los slugs del onboarding. Sin GPS a
+      // propósito: pedir la ubicación al abrir el dashboard es intrusivo, y el
+      // servidor neutraliza el término de cercanía cuando no llega.
+      const recommendCategories = (() => {
+        try {
+          const saved = typeof window !== 'undefined' ? localStorage.getItem('piums_interests') : null;
+          if (!saved) return [];
+          const parsed: { categories?: string[] } = JSON.parse(saved);
+          return [...new Set((parsed.categories ?? []).map(c => INTEREST_TO_CATEGORY[c]).filter(Boolean))];
+        } catch {
+          return [];
+        }
+      })();
+
       const [artistsRes, bookingsRes] = await Promise.allSettled([
-        sdk.getArtists({ limit: 8 } as any),
+        sdk.getRecommendedArtists({ limit: 8, categories: recommendCategories }),
         sdk.listBookings({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
       ]);
 

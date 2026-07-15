@@ -24,6 +24,35 @@ export const searchArtistsSchema = z.object({
 
 export type SearchArtistsInput = z.infer<typeof searchArtistsSchema>;
 
+// Recommended Artists Schema
+//
+// Todos los params son opcionales a propósito: cada señal ausente se neutraliza
+// en el scoring en vez de penalizar, así que sin ninguno el feed sigue siendo
+// válido (ordena por calidad, igual que hoy).
+//
+// `categories` viene como CSV de ArtistCategory ya resueltas por el cliente
+// ("MUSICO,FOTOGRAFO"). No se aceptan intereses crudos del onboarding porque
+// cada app guarda un vocabulario distinto (iOS slugs, Android etiquetas en
+// español, web slugs); aceptar el enum deja un solo vocabulario en el servidor.
+export const recommendedArtistsSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+  categories: z
+    .string()
+    .optional()
+    .transform((s) =>
+      (s ?? '')
+        .split(',')
+        .map((c) => c.trim().toUpperCase())
+        .filter(Boolean)
+    ),
+  country: z.string().optional(),
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(50).optional().default(20),
+});
+
+export type RecommendedArtistsInput = z.infer<typeof recommendedArtistsSchema>;
+
 // Search Services Schema
 export const searchServicesSchema = z.object({
   query: z.string().optional(),

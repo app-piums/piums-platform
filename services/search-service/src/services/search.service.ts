@@ -7,11 +7,18 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { expandQuery } from '../utils/synonyms';
 import { effectivePrice, priceTierRank, priceTierCompare } from '../utils/priceTier';
+import { scoreArtist, compareScored, type ScorableArtist } from '../utils/recommendScore';
 import type {
   SearchArtistsInput,
   SearchServicesInput,
-  AutocompleteInput
+  AutocompleteInput,
+  RecommendedArtistsInput
 } from '../schemas/search.schema';
+
+// Tope de candidatos a puntuar en memoria para el feed de recomendados. Es un
+// backstop, no un límite de producto: con el orderBy por rating, si algún día
+// trunca, trunca por la cola de peor calidad. Se avisa por log si se alcanza.
+const RECOMMEND_CANDIDATE_CAP = 2000;
 
 // Builds a safe tsquery string from an array of terms.
 // Each term is split on spaces, sanitized, and added with :* (prefix match).
@@ -216,6 +223,87 @@ export class SearchService {
     } catch (error: any) {
       logger.error('Error searching artists', error);
       throw new AppError('Error al buscar artistas', 500);
+    }
+  }
+
+  // ============================================================================
+  // RECOMMENDED
+  // ============================================================================
+
+  /**
+   * Feed de "Recomendados para ti": ordena por cercanía + intereses + calidad.
+   *
+   * Los filtros duros son los mismos que searchArtists (isActive —que ya cubre el
+   * shadow ban—, servicesCount > 0, isVerified y las reglas de ausencia), para que
+   * un artista nunca aparezca aquí y no en la búsqueda. La distancia NO filtra:
+   * casi todo el catálogo declara cobertura nacional y un filtro geo duro vaciaría
+   * el feed. Ver utils/recommendScore.ts para el porqué de cada peso.
+   */
+  async recommendedArtists(filters: RecommendedArtistsInput) {
+    try {
+      const { lat, lng, categories, country, page, limit } = filters;
+
+      const where: any = {
+        isActive: true,
+        servicesCount: { gt: 0 },
+        isVerified: true,
+        ...(country && { country }),
+      };
+
+      // Mismas reglas de ausencia que searchArtists: VACATION se oculta siempre y
+      // WORKING_ABROAD solo se ve en su país destino.
+      const andConditions: any[] = [];
+      if (country) {
+        andConditions.push({
+          OR: [
+            { activeAbsenceType: null },
+            { activeAbsenceType: 'WORKING_ABROAD', activeAbsenceDest: country },
+          ],
+        });
+        where.AND = andConditions;
+      } else {
+        where.activeAbsenceType = null;
+      }
+
+      // Se traen los candidatos y se pagina DESPUÉS de puntuar. El orden importa:
+      // paginar en SQL y reordenar en memoria (como hace artists.service.ts:333-372)
+      // devuelve páginas incompletas y un `total` que solo cuenta la página actual.
+      const candidates = await prisma.artistIndex.findMany({
+        where,
+        orderBy: [{ averageRating: 'desc' }, { totalReviews: 'desc' }],
+        take: RECOMMEND_CANDIDATE_CAP,
+      });
+
+      if (candidates.length === RECOMMEND_CANDIDATE_CAP) {
+        logger.warn(
+          `recommendedArtists: se alcanzó el tope de ${RECOMMEND_CANDIDATE_CAP} candidatos; ` +
+            'los peor calificados quedan fuera del ranking'
+        );
+      }
+
+      const scored = candidates
+        .map((a: any) => scoreArtist(a as ScorableArtist, { lat, lng, categories }))
+        .sort(compareScored);
+
+      const total = scored.length;
+      const skip = (page - 1) * limit;
+
+      // _score y _distanceKm son aditivos: Swift Codable y Gson ignoran claves
+      // desconocidas, así que no rompen a los clientes y hacen el ranking
+      // auditable con un curl en vez de con logs.
+      const artists = scored.slice(skip, skip + limit).map((s) => ({
+        ...s.artist,
+        _score: Number(s.score.toFixed(4)),
+        _distanceKm: s.distanceKm == null ? null : Number(s.distanceKm.toFixed(1)),
+      }));
+
+      return {
+        artists,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      };
+    } catch (error: any) {
+      logger.error('Error building recommended feed', error);
+      throw new AppError('Error al obtener recomendaciones', 500);
     }
   }
 
@@ -501,6 +589,11 @@ export class SearchService {
         })(),
         avatar: artist.avatar ?? null,
         coverPhoto: artist.coverPhoto ?? null,
+        // Geo base para el ranking de /search/recommended. El fallback a lat/lng cubre
+        // a los artistas que fijaron ubicación por el campo viejo y nunca por el nuevo.
+        baseLocationLat: (artist.baseLocationLat ?? artist.lat) ?? null,
+        baseLocationLng: (artist.baseLocationLng ?? artist.lng) ?? null,
+        coverageRadius: artist.coverageRadius ?? null,
         lastSyncedAt: new Date(),
         // Absence tracking: manual blackout takes priority; fall back to GPS-detected country
         ...((() => {

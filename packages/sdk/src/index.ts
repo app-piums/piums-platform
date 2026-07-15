@@ -1026,7 +1026,58 @@ class PiumsSDK {
       };
     }
   }
-  
+
+  /**
+   * Feed de "Recomendados para ti": el servidor ordena por cercanía + intereses +
+   * calidad, en vez de devolver los primeros N por rating.
+   *
+   * `categories` son ArtistCategory ya resueltas ("MUSICO"): el servidor no conoce
+   * los intereses del onboarding porque cada cliente guarda un vocabulario distinto.
+   * lat/lng son opcionales — la web no pide GPS, así que normalmente van vacíos y el
+   * servidor neutraliza el término de cercanía.
+   *
+   * Si el endpoint no existe (backend viejo) cae a getArtists(), que es el feed de
+   * siempre. La forma de la respuesta es idéntica en ambos casos.
+   */
+  async getRecommendedArtists(
+    params?: { limit?: number; page?: number; categories?: string[]; lat?: number; lng?: number }
+  ): Promise<SearchResults> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.categories?.length) queryParams.append('categories', params.categories.join(','));
+      if (params?.lat != null && params?.lng != null) {
+        queryParams.append('lat', params.lat.toString());
+        queryParams.append('lng', params.lng.toString());
+      }
+
+      const response = await fetch(`${this.baseUrl}/search/recommended?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const artists = (data.artists ?? []).map((a: any) => ({
+        ...a,
+        nombre: a.nombre ?? a.name,
+        rating: a.rating ?? a.averageRating,
+        reviewsCount: a.reviewsCount ?? a.totalReviews,
+        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        cityId: a.cityId ?? a.city,
+      }));
+      return {
+        artists,
+        total: data.pagination?.total ?? artists.length,
+        page: data.pagination?.page ?? 1,
+        totalPages: data.pagination?.totalPages ?? 1,
+      };
+    } catch (error) {
+      console.warn('Recommended feed unavailable, falling back to getArtists:', error);
+      return this.getArtists({ limit: params?.limit, page: params?.page } as GetArtistsParams);
+    }
+  }
+
   async smartSearch(params: SmartSearchParams): Promise<SmartSearchResults> {
     try {
       const queryParams = new URLSearchParams();
