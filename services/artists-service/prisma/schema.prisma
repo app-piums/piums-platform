@@ -250,18 +250,30 @@ model PortfolioItem {
   type        String   // "image", "video", "audio"
   url         String   // URL del archivo
   thumbnailUrl String? // Thumbnail para videos
-  
+
   category    String?  // Categoría del trabajo (ej: "Tatuaje Realista", "Retrato", etc)
   tags        String[] // Tags para búsqueda
-  
+
   order       Int      @default(0) // Orden de visualización
   isFeatured  Boolean  @default(false)
-  
+
+  // Video subido (máx 45s / 1080p). Solo se escriben desde el endpoint dedicado
+  // POST /artists/dashboard/me/portfolio-video — NUNCA desde la ruta JSON, que
+  // spread-ea el body a prisma.create (un publicId forjado borraría otro asset).
+  // Regla de los clientes: type='video' && videoSource='cloudinary' ⇒ MP4 propio;
+  // cualquier otro type='video' ⇒ enlace de YouTube (cubre el NULL legacy).
+  publicId    String?  // public_id de Cloudinary; solo para videoSource='cloudinary'
+  videoSource String?  // "youtube" | "cloudinary"
+  durationMs  Int?
+  width       Int?
+  height      Int?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([artistId])
   @@index([type])
+  @@index([artistId, type])
   @@map("portfolio_items")
 }
 

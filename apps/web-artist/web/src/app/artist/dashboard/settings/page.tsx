@@ -65,6 +65,13 @@ type ArtistFormData = {
   secondaryCategory: string;
 };
 
+// Tope de videos SUBIDOS al portafolio. Los enlaces de YouTube no cuentan.
+// Debe coincidir con MAX_PORTFOLIO_VIDEOS de artists-service (el servidor manda).
+const MAX_PORTFOLIO_VIDEOS = 3;
+// En línea con multer (100 MB) y con client_max_body_size de la ruta en nginx.
+const MAX_PORTFOLIO_VIDEO_MB = 100;
+const MAX_PORTFOLIO_VIDEO_BYTES = MAX_PORTFOLIO_VIDEO_MB * 1024 * 1024;
+
 function extractYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
@@ -165,6 +172,11 @@ export default function ArtistSettingsPage() {
   const [portfolioItems, setPortfolioItems] = useState<any[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [portfolioUploading, setPortfolioUploading] = useState(false);
+  const [portfolioVideoUploading, setPortfolioVideoUploading] = useState(false);
+  // Solo los videos SUBIDOS cuentan contra el tope; los de YouTube no.
+  const uploadedVideoCount = portfolioItems.filter(
+    (i: any) => i.type === 'video' && i.videoSource === 'cloudinary'
+  ).length;
   const [storyVideoUrl, setStoryVideoUrl] = useState<string | null>(null);
   const [storyPosterUrl, setStoryPosterUrl] = useState<string | null>(null);
   const [storyUploading, setStoryUploading] = useState(false);
@@ -599,6 +611,40 @@ export default function ArtistSettingsPage() {
       toast.success('Elemento eliminado');
     } catch {
       toast.error('Error al eliminar');
+    }
+  };
+
+  // El navegador no puede transcodificar: aquí solo se valida y se sube tal cual.
+  // Las apps móviles sí comprimen antes de subir, por eso el mensaje sugiere usarlas.
+  const handlePortfolioVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite volver a elegir el mismo archivo
+    if (!file) return;
+
+    if (file.size > MAX_PORTFOLIO_VIDEO_BYTES) {
+      const mb = Math.round(file.size / 1024 / 1024);
+      toast.error(
+        `El video pesa ${mb} MB y el límite es ${MAX_PORTFOLIO_VIDEO_MB} MB. ` +
+        `Súbelo desde la app móvil, que lo comprime automáticamente.`
+      );
+      return;
+    }
+
+    setPortfolioVideoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('video', file);
+      fd.append('title', file.name.replace(/\.[^/.]+$/, ''));
+      const res = await fetch('/api/portafolio/video', { method: 'POST', body: fd, credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      // El servidor manda el motivo real (45s, tope de 3, formato): mostrarlo tal cual.
+      if (!res.ok) throw new Error(data?.error || data?.message || 'Error al subir el video');
+      toast.success('Video añadido al portafolio');
+      await loadPortfolio();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al subir el video');
+    } finally {
+      setPortfolioVideoUploading(false);
     }
   };
 
@@ -1611,6 +1657,42 @@ export default function ArtistSettingsPage() {
                   />
                 </label>
 
+                {/* Subir video propio */}
+                <div className="border border-gray-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 text-[#FF6B35] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>
+                    </svg>
+                    <h3 className="text-sm font-semibold text-gray-800">Subir video propio</h3>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Máximo {MAX_PORTFOLIO_VIDEOS} videos de hasta 45 segundos. MP4, MOV o WebM.
+                    {uploadedVideoCount > 0 && ` Llevas ${uploadedVideoCount} de ${MAX_PORTFOLIO_VIDEOS}.`}
+                  </p>
+                  <label
+                    className={`block px-4 py-2 text-white text-sm font-semibold rounded-xl text-center transition-colors ${
+                      portfolioVideoUploading || uploadedVideoCount >= MAX_PORTFOLIO_VIDEOS
+                        ? 'bg-gray-300 cursor-not-allowed'
+                        : 'bg-[#FF6B35] hover:bg-[#e55a24] cursor-pointer'
+                    }`}
+                  >
+                    {portfolioVideoUploading
+                      ? 'Subiendo...'
+                      : uploadedVideoCount >= MAX_PORTFOLIO_VIDEOS
+                        ? `Límite de ${MAX_PORTFOLIO_VIDEOS} videos alcanzado`
+                        : 'Elegir video'}
+                    <input
+                      type="file"
+                      // Acotado al filtro real del servidor: un `video/*` amplio
+                      // dejaría elegir formatos que el backend rechaza.
+                      accept="video/mp4,video/quicktime,video/webm"
+                      className="hidden"
+                      onChange={handlePortfolioVideoUpload}
+                      disabled={portfolioVideoUploading || uploadedVideoCount >= MAX_PORTFOLIO_VIDEOS}
+                    />
+                  </label>
+                </div>
+
                 {/* YouTube section */}
                 <div className="border border-gray-200 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
@@ -1674,7 +1756,15 @@ export default function ArtistSettingsPage() {
                     {portfolioItems.map((item: any) => (
                       <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
                         <img
-                          src={item.type === 'video' ? (item.thumbnailUrl ?? item.url) : (item.url ?? item.imageUrl)}
+                          src={
+                            item.type === 'video'
+                              // El poster de un video subido vive en Cloudinary → proxy.
+                              // Una miniatura de img.youtube.com se sirve directa.
+                              ? (item.videoSource === 'cloudinary'
+                                  ? cImg(item.thumbnailUrl ?? '')
+                                  : (item.thumbnailUrl ?? item.url))
+                              : cImg(item.url ?? item.imageUrl ?? '')
+                          }
                           alt={item.title ?? 'Portfolio'}
                           className="w-full h-full object-cover"
                         />

@@ -24,9 +24,14 @@ function extractYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
-function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
-  const videoId = extractYouTubeId(url);
-  if (!videoId) return null;
+/** Un video del portafolio: MP4 propio subido a Cloudinary, o enlace de YouTube. */
+type PortfolioVideo = { url: string; posterUrl?: string; isUploaded: boolean };
+
+function VideoModal({ video, onClose }: { video: PortfolioVideo; onClose: () => void }) {
+  const videoId = video.isUploaded ? null : extractYouTubeId(video.url);
+  // Un enlace de YouTube irreconocible no tiene nada que mostrar. Un MP4 subido
+  // siempre se puede reproducir, así que nunca cae en este return.
+  if (!video.isUploaded && !videoId) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
@@ -43,14 +48,25 @@ function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
         >
           ✕
         </button>
-        <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-          <iframe
-            className="absolute inset-0 w-full h-full rounded-xl"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+        {video.isUploaded ? (
+          <video
+            src={video.url}
+            poster={video.posterUrl ? cImg(video.posterUrl) : undefined}
+            controls
+            autoPlay
+            playsInline
+            className="w-full max-h-[80vh] rounded-xl bg-black"
           />
-        </div>
+        ) : (
+          <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+            <iframe
+              className="absolute inset-0 w-full h-full rounded-xl"
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -87,7 +103,7 @@ export default function ArtistProfilePage() {
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'portfolio' | 'reviews'>('services');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [videoModal, setVideoModal] = useState<string | null>(null);
+  const [videoModal, setVideoModal] = useState<PortfolioVideo | null>(null);
   const [storyOpen, setStoryOpen] = useState(false);
   const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null);
   const startingPrice = useMemo(() => {
@@ -343,7 +359,7 @@ export default function ArtistProfilePage() {
       )}
 
       {videoModal && (
-        <VideoModal url={videoModal} onClose={() => setVideoModal(null)} />
+        <VideoModal video={videoModal} onClose={() => setVideoModal(null)} />
       )}
 
       <div className="flex-1 min-w-0 overflow-y-auto p-4 pt-20 lg:p-0 lg:pt-0">
@@ -638,6 +654,9 @@ export default function ArtistProfilePage() {
                   let imgIdx = 0;
                   return artist.portfolio.map((item) => {
                     const isVideo = item.type === 'video';
+                    // Video subido vs enlace de YouTube. Un poster de Cloudinary
+                    // se proxea; una miniatura de img.youtube.com no.
+                    const isUploaded = isVideo && item.videoSource === 'cloudinary';
                     const currentImgIdx = isVideo ? -1 : imgIdx++;
                     const thumb = isVideo
                       ? (item.thumbnailUrl ?? '')
@@ -647,12 +666,18 @@ export default function ArtistProfilePage() {
                         key={item.id}
                         padding="none"
                         className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                        onClick={() => isVideo ? setVideoModal(item.url ?? '') : openLightbox(currentImgIdx)}
+                        onClick={() => isVideo
+                          ? setVideoModal({
+                              url: item.url ?? '',
+                              posterUrl: item.thumbnailUrl ?? undefined,
+                              isUploaded,
+                            })
+                          : openLightbox(currentImgIdx)}
                       >
                         <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
                           {thumb ? (
                             <img
-                              src={isVideo ? thumb : cImg(thumb)}
+                              src={isVideo && !isUploaded ? thumb : cImg(thumb)}
                               alt={item.title}
                               className="w-full h-full object-cover"
                             />

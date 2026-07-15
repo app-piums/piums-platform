@@ -41,8 +41,19 @@ export interface PortfolioItem {
   artistId: string;
   title: string;
   description?: string;
-  imageUrl: string;
+  type?: string; // "image" | "video" | "audio"
+  url?: string;
+  /** @deprecated El servidor devuelve `url`. Se mantiene por compatibilidad. */
+  imageUrl?: string;
+  thumbnailUrl?: string;
   category?: string;
+  // Video subido. Regla única para todos los clientes:
+  //   type === 'video' && videoSource === 'cloudinary' ⇒ MP4 propio (reproductor nativo)
+  //   type === 'video' && videoSource !== 'cloudinary' ⇒ enlace de YouTube (cubre NULL legacy)
+  videoSource?: 'youtube' | 'cloudinary' | null;
+  durationMs?: number | null;
+  width?: number | null;
+  height?: number | null;
   order: number;
   createdAt: string;
 }
@@ -50,7 +61,9 @@ export interface PortfolioItem {
 export interface CreatePortfolioItemRequest {
   title: string;
   description?: string;
-  imageUrl: string;
+  type?: string;
+  url?: string;
+  thumbnailUrl?: string;
   category?: string;
   order?: number;
 }

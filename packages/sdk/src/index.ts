@@ -48,6 +48,14 @@ export interface PortfolioItem {
   imageUrl?: string;
   thumbnailUrl?: string;
   category?: string;
+  // Video subido. Regla única para todos los clientes:
+  //   type === 'video' && videoSource === 'cloudinary' ⇒ MP4 propio (reproductor nativo)
+  //   type === 'video' && videoSource !== 'cloudinary' ⇒ enlace de YouTube (cubre NULL legacy)
+  videoSource?: 'youtube' | 'cloudinary' | null;
+  durationMs?: number | null;
+  width?: number | null;
+  height?: number | null;
+  publicId?: string | null; // presente, pero los clientes no deben depender de él
   order: number;
   createdAt: string;
 }
@@ -2451,6 +2459,17 @@ class PiumsSDK {
   }
 
   /**
+   * Lanza con el mensaje del servidor si la respuesta no es OK.
+   * Un 413 del reverse-proxy llega como HTML, no JSON — de ahí el catch.
+   */
+  private async throwIfNotOk(response: Response): Promise<void> {
+    if (response.ok) return;
+    let errMsg = `HTTP error! status: ${response.status}`;
+    try { const e = await response.json(); errMsg = (e as any).error || (e as any).message || errMsg; } catch { /* not JSON */ }
+    throw new Error(errMsg);
+  }
+
+  /**
    * Sube (o reemplaza) el video presentación ("historia") de 30s del artista.
    * NO fija Content-Type — el runtime pone el boundary del multipart automáticamente.
    * @param video Blob/File del video (mp4, mov o webm, máx 30s / 100 MB)
@@ -2462,11 +2481,7 @@ class PiumsSDK {
       `${this.baseUrl}/artists/dashboard/me/story-video`,
       this.withAuth({ method: 'POST', body: form, credentials: 'include' })
     );
-    if (!response.ok) {
-      let errMsg = `HTTP error! status: ${response.status}`;
-      try { const e = await response.json(); errMsg = (e as any).error || (e as any).message || errMsg; } catch { /* not JSON */ }
-      throw new Error(errMsg);
-    }
+    await this.throwIfNotOk(response);
     return (await response.json()).artist;
   }
 
@@ -2478,12 +2493,38 @@ class PiumsSDK {
       `${this.baseUrl}/artists/dashboard/me/story-video`,
       this.withAuth({ method: 'DELETE', credentials: 'include' })
     );
-    if (!response.ok) {
-      let errMsg = `HTTP error! status: ${response.status}`;
-      try { const e = await response.json(); errMsg = (e as any).error || (e as any).message || errMsg; } catch { /* not JSON */ }
-      throw new Error(errMsg);
-    }
+    await this.throwIfNotOk(response);
     return (await response.json()).artist;
+  }
+
+  /**
+   * Sube un video al portafolio del artista (máx 45s / 1080p, hasta 3 videos).
+   * NO fija Content-Type — el runtime pone el boundary del multipart automáticamente.
+   * El servidor devuelve el item ya creado: no hace falta un POST extra.
+   * @param video Blob/File del video (mp4, mov o webm, máx 100 MB)
+   */
+  async uploadPortfolioVideo(video: Blob | File, title?: string): Promise<PortfolioItem> {
+    const form = new FormData();
+    form.append('video', video);
+    if (title) form.append('title', title);
+    const response = await fetch(
+      `${this.baseUrl}/artists/dashboard/me/portfolio-video`,
+      this.withAuth({ method: 'POST', body: form, credentials: 'include' })
+    );
+    await this.throwIfNotOk(response);
+    return (await response.json()).item;
+  }
+
+  /**
+   * Elimina un item del portafolio. Si es un video subido, el servidor también
+   * borra el asset de Cloudinary.
+   */
+  async deletePortfolioItem(artistId: string, itemId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/artists/${artistId}/portfolio/${itemId}`,
+      this.withAuth({ method: 'DELETE', credentials: 'include' })
+    );
+    await this.throwIfNotOk(response);
   }
 
   /**

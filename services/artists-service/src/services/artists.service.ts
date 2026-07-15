@@ -3,7 +3,11 @@ import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { triggerArtistReindex } from "../utils/searchReindex";
 import { ModerationClient } from "../clients/moderation.client";
+import { cloudinaryProvider } from "../providers/cloudinary.provider";
 const moderationClient = new ModerationClient();
+
+/** Tope de videos SUBIDOS por portafolio. Los enlaces de YouTube no cuentan. */
+export const MAX_PORTFOLIO_VIDEOS = 3;
 
 // Algunos clientes siguen enviando campos legacy en español.
 // Normalizamos esos payloads para que Prisma reciba los nombres correctos.
@@ -393,6 +397,11 @@ export class ArtistsService {
         data: {
           ...data,
           artistId,
+          // Esta ruta JSON solo puede crear enlaces de YouTube: los videos subidos
+          // van por addPortfolioVideoItem. Estampar la fuente en el servidor hace
+          // que un cliente no pueda forjar 'cloudinary' + publicId ajeno.
+          videoSource: data?.type === "video" ? "youtube" : null,
+          publicId: null,
         },
       });
 
@@ -415,6 +424,20 @@ export class ArtistsService {
 
       if (!existing) {
         throw new AppError(404, "Item de portfolio no encontrado");
+      }
+
+      // En un video subido, url/thumbnailUrl/type describen el asset de Cloudinary
+      // apuntado por publicId. Dejar repuntarlos desincronizaría la fila del asset
+      // (y el borrado destruiría un archivo que ya no es el que se ve).
+      if (existing.videoSource === "cloudinary") {
+        for (const field of ["url", "thumbnailUrl", "type"] as const) {
+          if (data?.[field] !== undefined && data[field] !== existing[field]) {
+            throw new AppError(
+              400,
+              "No se puede cambiar el archivo de un video subido. Elimínalo y sube otro.",
+            );
+          }
+        }
       }
 
       const item = await prisma.portfolioItem.update({
@@ -442,9 +465,18 @@ export class ArtistsService {
         throw new AppError(404, "Item de portfolio no encontrado");
       }
 
+      // La fila primero: si el destroy fallara después, queda un asset huérfano
+      // (invisible, coste de storage). Al revés, un fallo del delete dejaría una
+      // fila visible apuntando a un archivo ya destruido → tile roto en el perfil.
       await prisma.portfolioItem.delete({
         where: { id: itemId },
       });
+
+      // Solo los videos subidos tienen asset propio en Cloudinary. El guard por
+      // videoSource evita mandar filas legacy de YouTube (sin publicId) a destroy.
+      if (existing.videoSource === "cloudinary" && existing.publicId) {
+        await cloudinaryProvider.deleteVideoAsset(existing.publicId);
+      }
 
       logger.info("Item eliminado del portfolio", "ARTISTS_SERVICE", { itemId });
       return { message: "Item eliminado del portfolio" };
@@ -452,6 +484,58 @@ export class ArtistsService {
       logger.error("Error eliminando item del portfolio", "ARTISTS_SERVICE", { error });
       throw error;
     }
+  }
+
+  /** Cuenta solo los videos SUBIDOS; los enlaces de YouTube no tienen tope. */
+  async countPortfolioVideos(artistId: string) {
+    return prisma.portfolioItem.count({
+      where: { artistId, type: "video", videoSource: "cloudinary" },
+    });
+  }
+
+  /**
+   * Escribir un video subido al portafolio.
+   * Writer dedicado — NO pasa por addPortfolioItem (cuyo schema zod solo acepta
+   * una url y estampa videoSource='youtube'). publicId/videoSource jamás vienen
+   * del cliente: los produce el upload a Cloudinary.
+   */
+  async addPortfolioVideoItem(
+    artistId: string,
+    data: {
+      title: string;
+      url: string;
+      thumbnailUrl: string;
+      publicId: string;
+      durationMs: number;
+      width: number;
+      height: number;
+    },
+  ) {
+    const artist = await prisma.artist.findUnique({ where: { id: artistId } });
+    if (!artist || artist.deletedAt) {
+      throw new AppError(404, "Artista no encontrado");
+    }
+
+    // order se autoasigna al final: la ruta JSON nunca lo manda y todas las filas
+    // existentes quedaron en 0 (getArtistById ordena por order asc).
+    const last = await prisma.portfolioItem.findFirst({
+      where: { artistId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+
+    const item = await prisma.portfolioItem.create({
+      data: {
+        ...data,
+        artistId,
+        type: "video",
+        videoSource: "cloudinary",
+        order: (last?.order ?? 0) + 1,
+      },
+    });
+
+    logger.info("Video agregado al portfolio", "ARTISTS_SERVICE", { artistId, itemId: item.id });
+    return item;
   }
 
   /**

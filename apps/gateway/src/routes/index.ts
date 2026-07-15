@@ -225,21 +225,27 @@ export const setupRoutes = (app: Express) => {
     })
   );
 
-  // Multipart bypass para el upload del video presentación del artista.
+  // Multipart bypass para los uploads de video del artista (presentación y portafolio).
   // fixRequestBody trunca el multipart (busboy: "Unexpected end of form"),
-  // por eso este proxy dedicado NO lo usa. DEBE ir antes del proxy general /api/artists.
-  // También cubre el DELETE del mismo path (sin body, inofensivo).
-  app.use(
+  // por eso estos proxies dedicados NO lo usan. DEBEN ir antes del proxy general
+  // /api/artists. También cubren el DELETE del mismo path (sin body, inofensivo).
+  for (const multipartPath of [
     "/api/artists/dashboard/me/story-video",
-    uploadRateLimiter,
-    authMiddleware,
-    createProxyMiddleware({
-      target: process.env.ARTISTS_SERVICE_URL || "http://localhost:4003",
-      changeOrigin: true,
-      pathRewrite: { "^/": "/artists/dashboard/me/story-video" },
-      // SIN fixRequestBody — el multipart debe pasar sin tocar
-    })
-  );
+    "/api/artists/dashboard/me/portfolio-video",
+  ]) {
+    app.use(
+      multipartPath,
+      uploadRateLimiter,
+      authMiddleware,
+      createProxyMiddleware({
+        target: process.env.ARTISTS_SERVICE_URL || "http://localhost:4003",
+        changeOrigin: true,
+        // artists-service monta en /artists, no en /api/artists
+        pathRewrite: { "^/": multipartPath.replace("/api", "") },
+        // SIN fixRequestBody — el multipart debe pasar sin tocar
+      })
+    );
+  }
 
   app.use(
     "/api/artists",

@@ -14,6 +14,7 @@ import {
   setMyAvailability,
   uploadStoryVideo,
   deleteStoryVideo,
+  uploadPortfolioVideo,
 } from "../controller/artist-dashboard.controller";
 import {
   getAbsences,
@@ -46,6 +47,16 @@ router.post(
   uploadStoryVideo
 );
 router.delete("/me/story-video", requireActiveSession, deleteStoryVideo);
+
+// Video de portafolio — hasta 3 clips de 45s. El borrado va por la ruta existente
+// DELETE /artists/:id/portfolio/:itemId, que ahora limpia el asset de Cloudinary.
+router.post(
+  "/me/portfolio-video",
+  requireActiveSession,
+  uploadVideo.single("video") as unknown as RequestHandler,
+  handleVideoMulterError,
+  uploadPortfolioVideo
+);
 
 // Reservas
 router.get("/me/bookings", getMyBookings);

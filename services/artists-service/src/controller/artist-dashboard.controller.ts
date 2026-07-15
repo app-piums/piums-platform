@@ -10,6 +10,7 @@ import { usersClient } from "../clients/users.client";
 import { availabilitySchema } from "../schemas/artists.schema";
 import { cloudinaryProvider } from "../providers/cloudinary.provider";
 import { assertVideoMagicBytes } from "../middleware/upload.middleware";
+import { MAX_PORTFOLIO_VIDEOS } from "../services/artists.service";
 
 const artistsService = new ArtistsService();
 
@@ -477,6 +478,67 @@ export const uploadStoryVideo = async (
 
     logger.info("Video presentación actualizado", "ARTIST_DASHBOARD", { artistId: artist.id });
     res.json({ artist: updated, message: "Video presentación actualizado." });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/artists/dashboard/me/portfolio-video
+ * Sube un video (máx 45s, máx 1080p) al portafolio del artista autenticado.
+ * Recibe multipart/form-data con el campo `video` y un `title` opcional.
+ */
+export const uploadPortfolioVideo = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) throw new AppError(401, "No autenticado");
+
+    const file = (req as AuthRequest & { file?: Express.Multer.File }).file;
+    if (!file) throw new AppError(400, "No se recibió ningún video.");
+
+    // Magic bytes — el mimetype declarado por el cliente es falsificable
+    assertVideoMagicBytes(file.buffer);
+
+    const artist = await artistsService.getArtistByAuthId(authId);
+
+    // Antes de subir: rechazar el 4º video sin pagar el transcode de Cloudinary.
+    const existing = await artistsService.countPortfolioVideos(artist.id);
+    if (existing >= MAX_PORTFOLIO_VIDEOS) {
+      throw new AppError(
+        409,
+        `Solo puedes tener ${MAX_PORTFOLIO_VIDEOS} videos en tu portafolio. Elimina uno para subir otro.`
+      );
+    }
+
+    const uploaded = await cloudinaryProvider.uploadPortfolioVideo(file.buffer, artist.id);
+
+    // Rechazo duro de >45s (1s de tolerancia por redondeo de codificación).
+    // La duración solo se conoce tras la subida → limpiar el asset antes de rechazar.
+    if (uploaded.durationMs > 46_000) {
+      await cloudinaryProvider.deleteVideoAsset(uploaded.publicId);
+      throw new AppError(400, "El video no puede superar los 45 segundos.");
+    }
+
+    const rawTitle = typeof req.body?.title === "string" ? req.body.title.trim() : "";
+    const item = await artistsService.addPortfolioVideoItem(artist.id, {
+      title: rawTitle || "Video de portafolio", // title es NOT NULL en el schema
+      url: uploaded.secureUrl,
+      thumbnailUrl: uploaded.posterUrl,
+      publicId: uploaded.publicId,
+      durationMs: Math.min(uploaded.durationMs, 45_000),
+      width: uploaded.width,
+      height: uploaded.height,
+    });
+
+    logger.info("Video de portafolio subido", "ARTIST_DASHBOARD", {
+      artistId: artist.id,
+      itemId: item.id,
+    });
+    res.status(201).json({ item, message: "Video agregado al portafolio." });
   } catch (error) {
     next(error);
   }
