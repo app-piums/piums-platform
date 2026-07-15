@@ -95,7 +95,10 @@ export const updateArtistSchema = z.object({
   baseLocationLat: z.number().min(-90).max(90).optional(),
   baseLocationLng: z.number().min(-180).max(180).optional(),
   coverageRadius: z.number().int().min(1).max(500).nullable().optional(), // null = cobertura nacional
-  
+  // Booking lo consulta para la regla de 60 km desde siempre, pero no existía
+  // NINGÚN camino de escritura: quedaba fijo en true para todos.
+  allowSameDayBooking: z.boolean().optional(),
+
   hourlyRateMin: z.number().int().min(0).optional(),
   hourlyRateMax: z.number().int().min(0).optional(),
   currency: z.string().length(3).optional(),

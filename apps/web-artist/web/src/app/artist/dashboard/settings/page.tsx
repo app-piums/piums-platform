@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import { cImg } from '@/lib/cloudinaryImg';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
 import { getErrorMessage, isUnauthorizedError, isArtistNotFoundError } from '@/lib/errors';
@@ -79,10 +79,13 @@ function extractYouTubeId(url: string): string | null {
 
 export default function ArtistSettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: authUser, updateUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+  // El checklist del dashboard enlaza con ?tab=...; antes el parametro se
+  // ignoraba y todos los links caian en "personal".
+  const [activeTab, setActiveTab] = useState<string | null>(searchParams.get('tab'));
   const currentTab = activeTab ?? 'personal';
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -148,12 +151,14 @@ export default function ArtistSettingsPage() {
     hourlyRateMax: number;
     requiresDeposit: boolean;
     depositPercentage: number;
+    allowSameDayBooking: boolean;
   }>({
     coverageRadius: 10,
     hourlyRateMin: 0,
     hourlyRateMax: 0,
     requiresDeposit: false,
     depositPercentage: 30,
+    allowSameDayBooking: true,
   });
   const [hasSoundSystem, setHasSoundSystem] = useState(true);
   const [isSavingCoverage, setIsSavingCoverage] = useState(false);
@@ -262,6 +267,7 @@ export default function ArtistSettingsPage() {
         hourlyRateMax: artistProfile.hourlyRateMax ?? 0,
         requiresDeposit: artistProfile.requiresDeposit ?? false,
         depositPercentage: artistProfile.depositPercentage ?? 30,
+        allowSameDayBooking: artistProfile.allowSameDayBooking !== false,
       });
     } catch (err: unknown) {
       const message = getErrorMessage(err);
@@ -1287,6 +1293,26 @@ export default function ArtistSettingsPage() {
                       Nacional
                     </button>
                   </div>
+                </div>
+
+                {/* Reservas el mismo día (regla de 60 km) */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={coverageData.allowSameDayBooking}
+                      onChange={(e) => setCoverageData({ ...coverageData, allowSameDayBooking: e.target.checked })}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span>
+                      <span className="block font-semibold text-gray-900">Aceptar reservas el mismo día</span>
+                      <span className="block text-sm text-gray-500 mt-0.5">
+                        Si el evento está a 60 km o menos de tu ubicación base, los clientes podrán
+                        reservarte con solo 3 horas de anticipación. Desactívalo si prefieres que toda
+                        reserva respete tu anticipación mínima normal.
+                      </span>
+                    </span>
+                  </label>
                 </div>
 
                 {/* Pricing section */}

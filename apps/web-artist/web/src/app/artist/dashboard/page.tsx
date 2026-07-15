@@ -351,6 +351,12 @@ export default function ArtistDashboardPage() {
               <h3 className="text-lg font-bold mb-4">Fortaleza del Perfil</h3>
               {(() => {
                 const checks = [
+                  // Los tres primeros no son cosmetica: sin verificar o sin servicio
+                  // el artista NO aparece en busquedas, y sin ubicacion base no
+                  // entra al ranking por cercania ni se calculan viaticos.
+                  { label: 'Identidad verificada (sin esto no apareces en búsquedas)', done: artistProfile?.verificationStatus === 'VERIFIED', href: '/artist/dashboard/settings?tab=verificar' },
+                  { label: 'Ubicación base configurada (activa cercanía y viáticos)', done: !!(artistProfile?.baseLocationLat && artistProfile?.baseLocationLng), href: '/artist/dashboard/settings?tab=coverage' },
+                  { label: 'Disciplina elegida (sin ella no sales en los filtros)', done: !!(artistProfile?.category && artistProfile.category !== 'OTRO'), href: '/artist/dashboard/settings?tab=profile' },
                   { label: 'Foto de perfil agregada', done: !!(artistProfile?.avatar), href: '/artist/dashboard/settings?tab=personal' },
                   { label: 'Descripción de perfil', done: !!(artistProfile?.bio && artistProfile.bio.length > 10), href: '/artist/dashboard/settings?tab=personal' },
                   { label: 'Servicios publicados', done: artistServices.length > 0, href: '/artist/dashboard/services' },

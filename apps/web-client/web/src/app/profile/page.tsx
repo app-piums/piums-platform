@@ -16,13 +16,14 @@ import DeleteAccountTab from './delete/DeleteAccountTab';
 import LegalTab from './legal/page';
 import VerifyClientTab from './verify/page';
 
-type TabId = 'personal' | 'security' | 'notifications' | 'payments' | 'delete' | 'legal' | 'verificar';
+type TabId = 'personal' | 'security' | 'notifications' | 'payments' | 'delete' | 'legal' | 'verificar' | 'gustos';
 
 const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode; danger?: boolean; badge?: boolean }> = [
   { id: 'personal',      label: 'Információn personal', icon: <UserIcon className="h-4 w-4" /> },
   { id: 'verificar',     label: 'Verificar cuenta',   icon: <ShieldIcon className="h-4 w-4" /> },
   { id: 'security',      label: 'Seguridad',            icon: <LockIcon className="h-4 w-4" /> },
   { id: 'notifications', label: 'Notificaciones',       icon: <BellIcon className="h-4 w-4" /> },
+  { id: 'gustos',        label: 'Mis gustos',           icon: <HeartIcon className="h-4 w-4" /> },
   { id: 'payments',      label: 'Métodos de pago',      icon: <CardIcon className="h-4 w-4" /> },
   { id: 'delete',        label: 'Eliminar cuenta',      icon: <TrashIcon className="h-4 w-4" />, danger: true },
   { id: 'legal',         label: 'Legal',                icon: <ScaleIcon className="h-4 w-4" /> },
@@ -36,6 +37,7 @@ const DEFAULT_DIRTY_STATE: Record<TabId, boolean> = {
   delete: false,
   legal: false,
   verificar: false,
+  gustos: false,
 };
 
 export default function ProfilePage() {
@@ -190,6 +192,21 @@ export default function ProfilePage() {
                 <NotificationsTab onDirtyChange={(dirty) => handleDirtyChange('notifications', dirty)} />
               )}
               {currentTab === 'payments'      && <PaymentsTab />}
+              {currentTab === 'gustos'        && (
+                <div className="max-w-lg">
+                  <h2 className="text-lg font-bold text-gray-900 mb-2">Mis gustos</h2>
+                  <p className="text-sm text-gray-500 mb-5">
+                    Las categorías que elijas personalizan los artistas recomendados en tu
+                    inicio. Puedes cambiarlas cuando quieras.
+                  </p>
+                  <a
+                    href="/onboarding?edit=1"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B35] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#e55a2a] transition-colors"
+                  >
+                    Editar mis gustos
+                  </a>
+                </div>
+              )}
               {currentTab === 'delete'        && <DeleteAccountTab />}
               {currentTab === 'legal'         && <LegalTab />}
             </div>
@@ -201,6 +218,15 @@ export default function ProfilePage() {
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
+function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>
+  );
+}
+
 function UserIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
 }

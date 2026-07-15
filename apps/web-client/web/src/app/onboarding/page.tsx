@@ -71,6 +71,20 @@ export default function ClientOnboardingPage() {
   useEffect(() => {
     (async () => {
       try {
+        // Modo edicion (?edit=1): no auto-completar; precargar lo guardado para
+        // que el usuario ajuste sus gustos (la fila "Mis gustos" del perfil).
+        if (new URLSearchParams(window.location.search).get('edit') === '1') {
+          const saved = localStorage.getItem('piums_interests');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setSelectedCategories(new Set(parsed.categories ?? []));
+            setSelectedTags(Object.fromEntries(
+              Object.entries(parsed.tags ?? {}).map(([k, v]) => [k, new Set(v as string[])])
+            ));
+            setStep(2);
+          }
+          return;
+        }
         if (localStorage.getItem('piums_interests')) {
           document.cookie = 'onboarding_completed=true; path=/; max-age=31536000; SameSite=strict';
           window.location.href = '/dashboard';
