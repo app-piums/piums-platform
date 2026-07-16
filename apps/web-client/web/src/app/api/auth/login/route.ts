@@ -34,9 +34,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔒 Guardar tokens en httpOnly cookies (seguro contra XSS)
-    // También devolvemos el token en el body para que el SDK pueda usarlo directamente
+    // También devolvemos el token en el body para que el SDK pueda usarlo directamente.
+    // refreshToken va en el body ADEMÁS de la cookie: las apps móviles (iOS/Android)
+    // hacen login por esta misma ruta y guardan tokens en Keychain/Keystore — sin él,
+    // no pueden refrescar y la sesión muere a los 15 minutos con pérdidas silenciosas.
     const nextResponse = NextResponse.json(
-      { success: true, user: data.user, token: data.token, message: "Sesión iniciada" },
+      {
+        success: true,
+        user: data.user,
+        token: data.token,
+        refreshToken: data.refreshToken,
+        message: "Sesión iniciada",
+      },
       { status: 200 }
     );
 
