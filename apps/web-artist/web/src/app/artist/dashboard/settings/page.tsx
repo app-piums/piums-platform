@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import { cImg } from '@/lib/cloudinaryImg';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -77,7 +77,7 @@ function extractYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
-export default function ArtistSettingsPage() {
+function ArtistSettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: authUser, updateUser } = useAuth();
@@ -2144,4 +2144,14 @@ function ArtistLinkIcon({ className }: { className?: string }) {
 }
 function ArtistPhotoIcon({ className }: { className?: string }) {
   return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+}
+
+// useSearchParams() (para los links ?tab= del checklist) exige un boundary de
+// Suspense al prerenderizar; sin esto `next build` falla en esta página.
+export default function ArtistSettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ArtistSettingsPageInner />
+    </Suspense>
+  );
 }
