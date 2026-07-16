@@ -44,12 +44,15 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
-  // Si ya completó onboarding e intenta ir a /onboarding, al dashboard
+  // Si ya completó onboarding e intenta ir a /onboarding, al dashboard.
+  // Excepción: ?edit=1 es el modo edición ("Mis gustos" del perfil) — la página
+  // lo maneja, pero sin esta excepción el redirect se lo come antes de llegar.
   if (
     token &&
     userRole === 'cliente' &&
     onboardingCompleted === 'true' &&
-    isOnboardingRoute
+    isOnboardingRoute &&
+    request.nextUrl.searchParams.get('edit') !== '1'
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
