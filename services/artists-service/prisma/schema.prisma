@@ -274,6 +274,10 @@ model PortfolioItem {
   @@index([artistId])
   @@index([type])
   @@index([artistId, type])
+  // El deploy aplica el schema con db push (las migraciones SQL no corren, ver
+  // Dockerfile): este unique llega a la base en el siguiente rollout. Los
+  // duplicados existentes se limpiaron el 2026-07-17.
+  @@unique([artistId, url])
   @@map("portfolio_items")
 }
 

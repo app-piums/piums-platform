@@ -393,6 +393,19 @@ export class ArtistsService {
         throw new AppError(404, "Artista no encontrado");
       }
 
+      // Idempotencia por URL: un seed corrido dos veces y el doble-tap del
+      // cliente creaban el mismo asset duplicado (y crasheaban iOS). Misma URL
+      // para el mismo artista = mismo item; devolver el existente.
+      const existing = await prisma.portfolioItem.findFirst({
+        where: { artistId, url: data.url },
+      });
+      if (existing) {
+        logger.info("Item de portfolio duplicado, se devuelve el existente", "ARTISTS_SERVICE", {
+          artistId, itemId: existing.id,
+        });
+        return existing;
+      }
+
       const item = await prisma.portfolioItem.create({
         data: {
           ...data,
