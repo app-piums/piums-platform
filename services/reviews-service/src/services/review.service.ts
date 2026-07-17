@@ -708,6 +708,7 @@ export class ReviewService {
           lastCalculatedAt: new Date(),
         },
       });
+      await this.syncRatingToArtistsService(artistId, 0, 0);
       return;
     }
 
@@ -766,17 +767,31 @@ export class ReviewService {
       responseRate,
     });
 
-    // Sync rating and reviewCount to artists-service
+    await this.syncRatingToArtistsService(artistId, averageRating, totalReviews);
+  }
+
+  /**
+   * Propagar rating/reviewCount al registro del artista en artists-service.
+   * fetch no lanza en 4xx/5xx: hay que mirar res.ok, si no un 403 por secret
+   * desalineado deja los agregados del artista en 0 sin dejar rastro.
+   */
+  private async syncRatingToArtistsService(artistId: string, rating: number, reviewCount: number) {
     try {
       const artistsUrl = process.env.ARTISTS_SERVICE_URL || 'http://artists-service:4003';
       const internalSecret = process.env.INTERNAL_SERVICE_SECRET || '';
-      await fetch(`${artistsUrl}/artists/internal/${artistId}/rating`, {
+      const res = await fetch(`${artistsUrl}/artists/internal/${artistId}/rating`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret },
-        body: JSON.stringify({ rating: averageRating, reviewCount: totalReviews }),
+        body: JSON.stringify({ rating, reviewCount }),
       });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        logger.error('Rating sync rejected by artists-service', 'REVIEW_SERVICE', {
+          artistId, status: res.status, body: body.slice(0, 200),
+        });
+      }
     } catch (syncErr) {
-      logger.warn('Failed to sync rating to artists-service', 'REVIEW_SERVICE', { artistId, syncErr });
+      logger.error('Failed to sync rating to artists-service', 'REVIEW_SERVICE', { artistId, syncErr });
     }
   }
 
