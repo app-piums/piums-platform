@@ -1,0 +1,117 @@
+name: Backend Deploy - DOKS (Production)
+
+# Despliegue a DigitalOcean Kubernetes (DOKS) con Postgres/Redis gestionados.
+# Requiere que las imágenes de todos los servicios existan en GHCR con el tag
+# indicado (las publica backend-ci.yml). Ver docs/DEPLOY_DIGITALOCEAN.md.
+#
+# Secrets de repo necesarios:
+#   DIGITALOCEAN_ACCESS_TOKEN   Personal Access Token de DO (read+write)
+#   DOKS_CLUSTER_NAME           Nombre del cluster (p.ej. piums-prod)
+#   GHCR_PULL_USER              Usuario GitHub con read:packages
+#   GHCR_PULL_TOKEN             PAT con scope read:packages
+#
+# Precondición (una sola vez, fuera de banda): el Secret `piums-secrets` debe
+# existir en el namespace `piums` con las conexiones a Postgres/Redis gestionados
+# (ver infra/k8s/overlays/production-do/secrets.production.example.yaml).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag de imagen a desplegar (p.ej. v1.2.3)'
+        required: true
+      run_schema:
+        description: 'Correr `prisma db push` tras el rollout (necesario en el primer deploy o tras cambios de schema)'
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/app-piums/piums-platform
+  NAMESPACE: piums
+  OVERLAY: infra/k8s/overlays/production-do
+
+jobs:
+  deploy:
+    name: Deploy to DOKS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save "${{ secrets.DOKS_CLUSTER_NAME }}" --expiry-seconds 600
+
+      - name: Preflight — el Secret piums-secrets debe existir
+        run: |
+          if ! kubectl -n "$NAMESPACE" get secret piums-secrets >/dev/null 2>&1; then
+            echo "::error::El Secret 'piums-secrets' no existe en el namespace '$NAMESPACE'."
+            echo "Créalo desde infra/k8s/overlays/production-do/secrets.production.example.yaml antes de desplegar."
+            exit 1
+          fi
+
+      - name: Ensure GHCR pull secret + wire it into the SA
+        run: |
+          kubectl -n "$NAMESPACE" create secret docker-registry ghcr \
+            --docker-server="$REGISTRY" \
+            --docker-username="${{ secrets.GHCR_PULL_USER }}" \
+            --docker-password="${{ secrets.GHCR_PULL_TOKEN }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          # piums-app es la SA que usa el overlay de producción (hardening).
+          kubectl -n "$NAMESPACE" patch serviceaccount piums-app \
+            -p '{"imagePullSecrets":[{"name":"ghcr"}]}' || true
+          kubectl -n "$NAMESPACE" patch serviceaccount default \
+            -p '{"imagePullSecrets":[{"name":"ghcr"}]}' || true
+
+      - name: Apply manifests (production-do overlay)
+        run: kubectl apply -k "$OVERLAY"
+
+      - name: Pin images to the release tag
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          SERVICES="gateway auth-service users-service artists-service catalog-service booking-service payments-service reviews-service notifications-service search-service chat-service moderation-service"
+          for svc in $SERVICES; do
+            kubectl -n "$NAMESPACE" set image "deployment/$svc" "$svc=$IMAGE_PREFIX/$svc:$TAG" --record || true
+          done
+
+      - name: Wait for rollout
+        run: |
+          SERVICES="gateway auth-service users-service artists-service catalog-service booking-service payments-service reviews-service notifications-service search-service chat-service moderation-service"
+          for svc in $SERVICES; do
+            echo "== rollout $svc =="
+            kubectl -n "$NAMESPACE" rollout status "deployment/$svc" --timeout=180s
+          done
+
+      - name: Apply DB schema (prisma db push)
+        if: ${{ github.event.inputs.run_schema == 'true' }}
+        run: |
+          # El deployment pisa el CMD, así que ningún prisma corre al arrancar:
+          # el schema se aplica a mano una vez que los pods están arriba.
+          SERVICES="auth-service users-service artists-service catalog-service booking-service payments-service reviews-service notifications-service search-service chat-service moderation-service"
+          for svc in $SERVICES; do
+            echo "== prisma db push: $svc =="
+            kubectl -n "$NAMESPACE" exec "deployment/$svc" -- npx prisma db push --skip-generate || \
+              echo "::warning::prisma db push falló en $svc — revisar manualmente"
+          done
+
+      - name: Smoke test — gateway health
+        run: |
+          kubectl -n "$NAMESPACE" run smoke-$RANDOM --rm -i --restart=Never \
+            --image=curlimages/curl:8.10.1 --command -- \
+            curl -fsS --max-time 10 http://gateway-service:3000/api/health/ping

@@ -1,0 +1,280 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# ============================================================================
+# Overlay de PRODUCCIÓN sobre DigitalOcean Kubernetes (DOKS)
+# ----------------------------------------------------------------------------
+# Reusa el overlay `production` (réplicas HA + hardening + imágenes GHCR) y le
+# agrega los patches que ese overlay NUNCA tuvo y que sí son necesarios para
+# correr de verdad (el backend siempre corrió con el overlay `local`):
+#
+#   1. DATABASE_URL POR SERVICIO  — cada microservicio tiene su propia base
+#      (piums_auth, piums_users, ...). El overlay `production` mandaba TODO a
+#      un único `piums_prod`, lo que rompe Prisma. Aquí cada uno lee su URL de
+#      una clave distinta del Secret `piums-secrets`.
+#   2. PORT explícito para payments/reviews/notifications/booking — sus defaults
+#      en código están CRUZADOS (payments cae a 4007, etc.).
+#   3. Health-probe del gateway a /api/health/ping (evita cascadas).
+#
+# Postgres y Redis son SERVICIOS GESTIONADOS de DO (no van en el cluster). Sus
+# cadenas de conexión (con TLS) viven en el Secret `piums-secrets`, que se
+# aplica FUERA DE BANDA desde los outputs de terraform (ver
+# secrets.production.example.yaml y docs/DEPLOY_DIGITALOCEAN.md). Por eso este
+# overlay BORRA el Secret placeholder de la base con `$patch: delete`: así
+# `kubectl apply -k` no pisa el secret real con los "CHANGE_ME".
+#
+# Build/validación local:  kubectl kustomize infra/k8s/overlays/production-do
+# ============================================================================
+
+namespace: piums
+
+resources:
+  - ../production
+
+commonLabels:
+  cloud: digitalocean
+
+patches:
+  # ── No incluir el Secret placeholder: el real se aplica fuera de banda ──────
+  - target:
+      kind: Secret
+      name: piums-secrets
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: piums-secrets
+
+  # ── DATABASE_URL por servicio (cada uno a su base en el Postgres gestionado) ─
+  - target:
+      kind: Deployment
+      name: auth-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: auth-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: auth-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: AUTH_DATABASE_URL
+
+  - target:
+      kind: Deployment
+      name: users-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: users-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: users-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: USERS_DATABASE_URL
+
+  - target:
+      kind: Deployment
+      name: artists-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: artists-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: artists-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: ARTISTS_DATABASE_URL
+
+  - target:
+      kind: Deployment
+      name: catalog-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: catalog-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: catalog-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: CATALOG_DATABASE_URL
+
+  - target:
+      kind: Deployment
+      name: search-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: search-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: search-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: SEARCH_DATABASE_URL
+
+  - target:
+      kind: Deployment
+      name: chat-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: chat-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: chat-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: CHAT_DATABASE_URL
+
+  # ── DATABASE_URL + PORT (los 4 con default de puerto cruzado) ───────────────
+  - target:
+      kind: Deployment
+      name: payments-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: payments-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: payments-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: PAYMENTS_DATABASE_URL
+                  - name: PORT
+                    value: "4005"
+
+  - target:
+      kind: Deployment
+      name: reviews-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: reviews-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: reviews-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: REVIEWS_DATABASE_URL
+                  - name: PORT
+                    value: "4006"
+
+  - target:
+      kind: Deployment
+      name: notifications-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: notifications-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: notifications-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: NOTIFICATIONS_DATABASE_URL
+                  - name: PORT
+                    value: "4007"
+
+  - target:
+      kind: Deployment
+      name: booking-service
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: booking-service
+      spec:
+        template:
+          spec:
+            containers:
+              - name: booking-service
+                env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: piums-secrets
+                        key: BOOKING_DATABASE_URL
+                  - name: PORT
+                    value: "4008"
+
+  # ── Gateway: health-probe a /api/health/ping (evita cascadas al reiniciar) ──
+  - target:
+      kind: Deployment
+      name: gateway
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: gateway
+      spec:
+        template:
+          spec:
+            containers:
+              - name: gateway
+                livenessProbe:
+                  httpGet:
+                    path: /api/health/ping
+                    port: 3000
+                readinessProbe:
+                  httpGet:
+                    path: /api/health/ping
+                    port: 3000

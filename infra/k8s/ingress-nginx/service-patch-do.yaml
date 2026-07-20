@@ -1,0 +1,34 @@
+# ============================================================================
+# Patch del Service del ingress-nginx-controller para DigitalOcean
+# ----------------------------------------------------------------------------
+# En DOKS, cuando el Service del controller es type=LoadBalancer, DO provisiona
+# un DigitalOcean Load Balancer automáticamente. Estas anotaciones lo controlan.
+#
+# Modelo TLS: Cloudflare termina TLS por fuera y reenvía HTTP al origen (igual
+# que hoy — ver base/ingress.yaml). Por eso el LB de DO sólo necesita HTTP en
+# 80/443; el certificado real vive en Cloudflare. Si algún día se quita
+# Cloudflare, cambiar a `do-loadbalancer-protocol: https` + cert-manager.
+#
+# Aplicar (después de instalar ingress-nginx):
+#   kubectl patch svc ingress-nginx-controller -n ingress-nginx \
+#     --type merge --patch-file infra/k8s/ingress-nginx/service-patch-do.yaml
+# ============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-name: "piums-prod-lb"
+    # HTTP en 80 y 443 (Cloudflare hace el TLS). El LB no descifra nada.
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    # PROXY protocol para conservar la IP real del cliente (rate-limit/slowloris
+    # del ingress dependen de $binary_remote_addr). Requiere habilitarlo también
+    # en el ConfigMap del controller: use-proxy-protocol: "true".
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+    # Health check contra el healthz del controller.
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/healthz"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "10254"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    # Redirigir 80→443 lo hace Cloudflare; aquí lo dejamos pasar.
+    service.beta.kubernetes.io/do-loadbalancer-size-unit: "1"

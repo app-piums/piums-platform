@@ -1,0 +1,37 @@
+# Copiar a terraform.tfvars y rellenar. NUNCA commitear terraform.tfvars.
+# Alternativa: exportar como env vars TF_VAR_do_token, etc.
+
+# ── Credenciales ──────────────────────────────────────────────────────────────
+do_token = "dop_v1_CHANGE_ME"
+
+# Sólo si create_spaces_bucket = true:
+# spaces_access_id  = "CHANGE_ME"
+# spaces_secret_key = "CHANGE_ME"
+# create_spaces_bucket = true
+
+# ── Generales ─────────────────────────────────────────────────────────────────
+environment = "production"
+region      = "nyc3"
+
+# ── DOKS ──────────────────────────────────────────────────────────────────────
+cluster_name       = "piums-prod"
+k8s_version_prefix = "1.31."
+node_size          = "s-2vcpu-4gb"
+node_min           = 3
+node_max           = 6
+
+# ── Postgres gestionado ───────────────────────────────────────────────────────
+pg_engine_version = "16"
+pg_size           = "db-s-1vcpu-2gb"
+pg_node_count     = 1
+
+# ── Redis gestionado ──────────────────────────────────────────────────────────
+# Cuentas DO nuevas: redis_engine = "valkey", redis_engine_version = "8".
+# Verificar con: doctl databases options engines
+redis_engine         = "redis"
+redis_engine_version = "7"
+redis_size           = "db-s-1vcpu-1gb"
+
+# ── Spaces (backups) ──────────────────────────────────────────────────────────
+spaces_bucket_name   = "piums-prod-backups"
+create_spaces_bucket = false

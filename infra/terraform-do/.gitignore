@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+# Nunca commitear valores reales
+terraform.tfvars
+*.auto.tfvars
+override.tf
+override.tf.json
+# El lock de providers SÍ se commitea (.terraform.lock.hcl) para pinnear versiones.
