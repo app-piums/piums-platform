@@ -14,6 +14,8 @@ function getRedis(): Redis | null {
       lazyConnect: true,
       enableOfflineQueue: false,
       retryStrategy: (times) => Math.min(times * 200, 5000),
+      // Managed Redis (DigitalOcean) exige TLS; env-gated para no afectar dev local.
+      ...(process.env.REDIS_TLS === 'true' ? { tls: { rejectUnauthorized: false } } : {}),
     });
     _redis.on('error', (err) => {
       logger.warn('Redis cron-lock error', 'DISTRIBUTED_LOCK', { error: err.message });

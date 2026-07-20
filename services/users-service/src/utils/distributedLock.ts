@@ -9,7 +9,7 @@ function getRedis(): Redis | null {
   const port = parseInt(process.env.REDIS_PORT || '6379');
   const password = process.env.REDIS_PASSWORD;
   try {
-    _redis = new Redis({ host, port, password, lazyConnect: true, enableOfflineQueue: false });
+    _redis = new Redis({ host, port, password, lazyConnect: true, enableOfflineQueue: false, ...(process.env.REDIS_TLS === 'true' ? { tls: { rejectUnauthorized: false } } : {}) });
     _redis.on('error', (err) => {
       logger.warn('Redis connection error (cron lock)', 'DISTRIBUTED_LOCK', { error: err.message });
     });

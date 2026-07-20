@@ -43,6 +43,9 @@ if (process.env.REDIS_HOST) {
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD || undefined,
     retryStrategy: (times) => Math.min(times * 200, 5000),
+    // Managed Redis (p.ej. DigitalOcean) exige TLS. Env-gated: en dev local
+    // REDIS_TLS no está seteado y la conexión sigue en texto plano.
+    ...(process.env.REDIS_TLS === 'true' ? { tls: { rejectUnauthorized: false } } : {}),
   });
   sessionRedis.on('error', (err: Error) => logger.error('Session Redis error', 'AUTH', { error: err.message }));
   sessionStore = new RedisStore({ client: sessionRedis, prefix: 'sess:' });

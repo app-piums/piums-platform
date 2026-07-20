@@ -47,6 +47,8 @@ export class ChatGateway {
         password: process.env.REDIS_PASSWORD || undefined,
         lazyConnect: true,
         retryStrategy: (times: number) => Math.min(times * 200, 5000),
+        // Managed Redis (DigitalOcean) exige TLS; env-gated para no afectar dev local.
+        ...(process.env.REDIS_TLS === 'true' ? { tls: { rejectUnauthorized: false } } : {}),
       };
       const pubClient = new Redis(redisOptions);
       const subClient = pubClient.duplicate();
