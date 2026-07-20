@@ -243,7 +243,49 @@ kubectl -n piums set image deployment/<svc> <svc>=ghcr.io/app-piums/piums-platfo
   audit de seguridad; Cloudflare 100MB vs multer 100MB (margen cero).
 - **Webs (web-client/artist/admin)**: este runbook cubre el **backend** (12
   servicios). Las webs **no** están en los manifiestos k8s — hoy corren por Docker
-  Compose apuntando al backend (`GATEWAY_INTERNAL_URL`). Para moverlas a DOKS habría
-  que añadir sus Deployments/Services (aún no existen) o publicarlas en Cloudflare
-  Pages / DO App Platform. Decidir aparte del backend.
-```
+  Compose apuntando al backend (`GATEWAY_INTERNAL_URL`). Plan para llevarlas a DOKS
+  en el Anexo A (aún no implementado).
+
+---
+
+## Anexo A — Desplegar las webs en DOKS (PLAN, no implementado)
+
+Las 3 webs son Next.js con **rutas BFF server-side** (`/api/story-video`,
+`/api/portafolio/*`, proxy de Cloudinary `/api/img`), así que necesitan un
+servidor Node (imagen `standalone`) — **no** sirven como estático en Cloudflare
+Pages. Lo coherente con el backend es correrlas en el **mismo DOKS** detrás del
+ingress. Pasos para implementarlo:
+
+1. **Imágenes** (ya las construye `ci.yml` con el fix de contexto). Ojo al
+   naming: las webs son `ghcr.io/app-piums/piums-web-{client,artist,admin}`
+   (prefijo `piums-`), distinto de los servicios backend que son
+   `ghcr.io/app-piums/piums-platform/<svc>`.
+
+2. **Manifiestos nuevos** (p.ej. `infra/k8s/base/web.yaml`, agregado al
+   `kustomization.yaml`), un Deployment + Service (ClusterIP) por web:
+
+   | App | Puerto | Service | Host |
+   |-----|--------|---------|------|
+   | web-client | 3000 | web-client-service | client.piums.io |
+   | web-artist | 3001 | web-artist-service | artist.piums.io |
+   | web-admin  | 3003 | web-admin-service  | admin.piums.io |
+
+   Env de runtime: `GATEWAY_INTERNAL_URL=http://gateway-service:3000` (SSR/BFF
+   llega al gateway por DNS interno del cluster). Los `NEXT_PUBLIC_*` van
+   horneados en build (build-args de `ci.yml`), no en runtime. Probe HTTP a `/`.
+
+3. **Ingress**: agregar los 3 hosts al `ingress.yaml` (o un ingress aparte),
+   cada host → su service. Conservar las anotaciones actuales (`proxy-body-size:
+   100m` para la subida de video, websocket, sticky). backend.piums.io sigue
+   apuntando al gateway.
+
+4. **Overlay**: incluir los nuevos manifiestos en `production-do` con sus
+   imágenes pinneadas por tag, y extender `backend-deploy-doks.yml` (o un
+   workflow web) para `set image` de las 3 webs y esperar su rollout.
+
+5. **DNS/TLS**: client/artist/admin.piums.io → misma IP del LB, proxied por
+   Cloudflare (igual que backend.piums.io). El paso 8 ya los contempla.
+
+Alternativa gestionada: **DO App Platform** (un componente por web desde la
+imagen de GHCR) si no se quiere sumarlas al cluster. Decidido: por ahora solo el
+plan; implementar cuando se priorice.
