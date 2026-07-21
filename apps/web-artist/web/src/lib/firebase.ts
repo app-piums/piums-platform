@@ -1,5 +1,5 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
@@ -11,14 +11,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Avoid re-initializing on hot reload
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+// Firebase is browser-only: during `next build` (SSR/prerender) the
+// NEXT_PUBLIC_FIREBASE_* vars may be absent and getAuth() would crash the build.
+const isBrowser = typeof window !== 'undefined';
+
+const app: FirebaseApp | null = isBrowser
+  ? (getApps()[0] ?? initializeApp(firebaseConfig))
+  : null;
+
+const auth = (app ? getAuth(app) : null) as Auth;
 const googleProvider = new GoogleAuthProvider();
 
-// Messaging is browser-only (not available during SSR)
 let messaging: Messaging | null = null;
-if (typeof window !== 'undefined') {
+if (app) {
   try {
     messaging = getMessaging(app);
   } catch {
