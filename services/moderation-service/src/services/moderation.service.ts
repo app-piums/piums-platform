@@ -276,6 +276,8 @@ export async function updateBlacklistWord(id: string, updates: Partial<CreateWor
     data: {
       ...updates,
       word: updates.word?.toLowerCase(),
+      category: updates.category as never,
+      severity: updates.severity as never,
       updatedBy: adminId,
     },
   });

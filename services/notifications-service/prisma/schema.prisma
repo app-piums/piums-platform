@@ -233,6 +233,9 @@ enum NotificationType {
 
   SYSTEM_NOTIFICATION
   MARKETING
+
+  SONIDISTA_PAYMENT_REQUIRED
+  SONIDISTA_REJECTED
 }
 
 enum NotificationChannel {
