@@ -103,27 +103,27 @@ patches:
       name: chat-service
 
 images:
-  - name: ghcr.io/app-piums/piums-platform/gateway
+  - name: ghcr.io/app-piums/piums-gateway
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/auth-service
+  - name: ghcr.io/app-piums/piums-auth-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/users-service
+  - name: ghcr.io/app-piums/piums-users-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/artists-service
+  - name: ghcr.io/app-piums/piums-artists-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/catalog-service
+  - name: ghcr.io/app-piums/piums-catalog-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/payments-service
+  - name: ghcr.io/app-piums/piums-payments-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/reviews-service
+  - name: ghcr.io/app-piums/piums-reviews-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/notifications-service
+  - name: ghcr.io/app-piums/piums-notifications-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/booking-service
+  - name: ghcr.io/app-piums/piums-booking-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/search-service
+  - name: ghcr.io/app-piums/piums-search-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/chat-service
+  - name: ghcr.io/app-piums/piums-chat-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/moderation-service
+  - name: ghcr.io/app-piums/piums-moderation-service
     newTag: latest

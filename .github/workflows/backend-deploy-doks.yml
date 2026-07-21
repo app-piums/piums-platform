@@ -29,7 +29,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/app-piums/piums-platform
+  # Debe coincidir con lo que publica backend-ci.yml: ghcr.io/app-piums/piums-<svc>
+  IMAGE_PREFIX: ghcr.io/app-piums/piums
   NAMESPACE: piums
   OVERLAY: infra/k8s/overlays/production-do
 
@@ -87,7 +88,7 @@ jobs:
           TAG="${{ steps.tag.outputs.tag }}"
           SERVICES="gateway auth-service users-service artists-service catalog-service booking-service payments-service reviews-service notifications-service search-service chat-service moderation-service"
           for svc in $SERVICES; do
-            kubectl -n "$NAMESPACE" set image "deployment/$svc" "$svc=$IMAGE_PREFIX/$svc:$TAG" --record || true
+            kubectl -n "$NAMESPACE" set image "deployment/$svc" "$svc=$IMAGE_PREFIX-$svc:$TAG" --record || true
           done
 
       - name: Wait for rollout

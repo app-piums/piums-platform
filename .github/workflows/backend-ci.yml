@@ -7,6 +7,10 @@ on:
       - dave
       - develop
       - 'feature/**'
+    # Tags de release: publica imágenes con el MISMO tag (v1.2.3) que luego
+    # pinea backend-deploy-doks.yml. Los `paths` no se evalúan en push de tags.
+    tags:
+      - 'v*'
     paths:
       - 'services/**'
       - 'packages/**'
@@ -174,6 +178,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            # Tag literal del release (v1.2.3, con la v) — es el que pinea el deploy
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
@@ -226,6 +232,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            # Tag literal del release (v1.2.3, con la v) — es el que pinea el deploy
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
@@ -312,7 +320,7 @@ jobs:
       - name: Build & validate overlays
         run: |
           set -e
-          for overlay in base overlays/local overlays/staging overlays/production; do
+          for overlay in base overlays/local overlays/staging overlays/production overlays/production-do; do
             echo "::group::kustomize build infra/k8s/$overlay"
             kustomize build "infra/k8s/$overlay" \
               | kubeconform -strict -summary -ignore-missing-schemas

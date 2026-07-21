@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: ghcr.io/app-piums/piums-platform/gateway:latest
+          image: ghcr.io/app-piums/piums-gateway:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -73,7 +73,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: ghcr.io/app-piums/piums-platform/auth-service:latest
+          image: ghcr.io/app-piums/piums-auth-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4001
@@ -123,7 +123,7 @@ spec:
     spec:
       containers:
         - name: users-service
-          image: ghcr.io/app-piums/piums-platform/users-service:latest
+          image: ghcr.io/app-piums/piums-users-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4002
@@ -173,7 +173,7 @@ spec:
     spec:
       containers:
         - name: artists-service
-          image: ghcr.io/app-piums/piums-platform/artists-service:latest
+          image: ghcr.io/app-piums/piums-artists-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4003
@@ -223,7 +223,7 @@ spec:
     spec:
       containers:
         - name: catalog-service
-          image: ghcr.io/app-piums/piums-platform/catalog-service:latest
+          image: ghcr.io/app-piums/piums-catalog-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4004
@@ -273,7 +273,7 @@ spec:
     spec:
       containers:
         - name: payments-service
-          image: ghcr.io/app-piums/piums-platform/payments-service:latest
+          image: ghcr.io/app-piums/piums-payments-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4005
@@ -323,7 +323,7 @@ spec:
     spec:
       containers:
         - name: reviews-service
-          image: ghcr.io/app-piums/piums-platform/reviews-service:latest
+          image: ghcr.io/app-piums/piums-reviews-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4006
@@ -373,7 +373,7 @@ spec:
     spec:
       containers:
         - name: notifications-service
-          image: ghcr.io/app-piums/piums-platform/notifications-service:latest
+          image: ghcr.io/app-piums/piums-notifications-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4007
@@ -423,7 +423,7 @@ spec:
     spec:
       containers:
         - name: booking-service
-          image: ghcr.io/app-piums/piums-platform/booking-service:latest
+          image: ghcr.io/app-piums/piums-booking-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4008
@@ -473,7 +473,7 @@ spec:
     spec:
       containers:
         - name: search-service
-          image: ghcr.io/app-piums/piums-platform/search-service:latest
+          image: ghcr.io/app-piums/piums-search-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4009
@@ -523,7 +523,7 @@ spec:
     spec:
       containers:
         - name: chat-service
-          image: ghcr.io/app-piums/piums-platform/chat-service:latest
+          image: ghcr.io/app-piums/piums-chat-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4010
@@ -573,7 +573,7 @@ spec:
     spec:
       containers:
         - name: moderation-service
-          image: ghcr.io/app-piums/piums-platform/moderation-service:latest
+          image: ghcr.io/app-piums/piums-moderation-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4011

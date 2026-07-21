@@ -44,7 +44,7 @@ kubectl apply -k infra/k8s/overlays/production
 
 # Solo un servicio
 kubectl set image deployment/auth-service \
-  auth-service=ghcr.io/app-piums/piums-platform/auth-service:NEW_TAG \
+  auth-service=ghcr.io/app-piums/piums-auth-service:NEW_TAG \
   -n piums
 ```
 

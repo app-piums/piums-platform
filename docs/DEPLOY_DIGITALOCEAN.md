@@ -23,7 +23,7 @@ DO Load Balancer  ──►  ingress-nginx (DOKS)
    │ 11 bases, 1 por servicio  │   │ TLS obligatorio (25061)│
    └──────────────────────────┘   └───────────────────────┘
 
-Imágenes: ghcr.io/app-piums/piums-platform/<svc>  (las publica backend-ci.yml)
+Imágenes: ghcr.io/app-piums/piums-<svc>  (las publica backend-ci.yml)
 Backups:  DO Spaces (opcional)      Media: Cloudinary (sin cambios)
 ```
 
@@ -34,6 +34,35 @@ Decisiones clave:
   `rediss://` para moderation). Ver "Notas" abajo.
 - **TLS lo termina Cloudflare** y reenvía HTTP al LB de DO (igual que hoy). No se
   usa cert-manager salvo que se quite Cloudflare.
+
+## Checklist de ejecución (resumen operador)
+
+Los pasos que requieren credenciales/costo, en orden. El detalle de cada uno
+está en su sección más abajo.
+
+1. `cd infra/terraform-do && cp terraform.tfvars.example terraform.tfvars` —
+   poner el token DO. Revisar `redis_engine`: cuentas nuevas solo ofrecen
+   `valkey`/`8` (`doctl databases options engines`).
+2. `terraform init && terraform plan -out tf.plan && terraform apply tf.plan`
+   (crea VPC + DOKS 3-6 nodos + Postgres con 11 bases + Redis). Guardar
+   `terraform output`.
+3. `doctl kubernetes cluster kubeconfig save piums-prod` (Paso 2).
+4. Crear el Secret `piums-secrets` desde la plantilla, con los outputs de
+   terraform y las credenciales reales de proveedores (Paso 3). Recordar
+   `REDIS_TLS=true` y `rediss://` para moderation.
+5. Instalar ingress-nginx + metrics-server + patch del LB (Paso 4). Anotar la
+   IP pública del LB.
+6. Configurar los secrets del repo en GitHub Actions (tabla en "CI/CD"):
+   `DIGITALOCEAN_ACCESS_TOKEN`, `DOKS_CLUSTER_NAME`, `GHCR_PULL_USER`,
+   `GHCR_PULL_TOKEN`.
+7. Publicar un release `v1.0.0` en GitHub. Eso dispara `backend-ci.yml` (que
+   publica las imágenes `ghcr.io/app-piums/piums-<svc>:v1.0.0`) y
+   `backend-deploy-doks.yml`. En el PRIMER deploy, esperar a que terminen las
+   imágenes y correr el deploy a mano (`workflow_dispatch`) con
+   `run_schema=true` para aplicar el schema.
+8. DNS en Cloudflare: `backend.piums.io` → A → IP del LB, proxied, SSL Full
+   (Paso 8).
+9. Smoke: `curl -fsS https://backend.piums.io/api/health/ping` (Paso 9).
 
 ## Prerrequisitos
 
@@ -153,7 +182,7 @@ TAG=v1.0.0
 for svc in gateway auth-service users-service artists-service catalog-service \
            booking-service payments-service reviews-service notifications-service \
            search-service chat-service moderation-service; do
-  kubectl -n piums set image deployment/$svc $svc=ghcr.io/app-piums/piums-platform/$svc:$TAG
+  kubectl -n piums set image deployment/$svc $svc=ghcr.io/app-piums/piums-$svc:$TAG
 done
 
 kubectl -n piums rollout status deployment/gateway
@@ -216,7 +245,7 @@ El Secret `piums-secrets` (paso 3) se crea a mano una vez; el CI **no** lo toca.
 ```bash
 kubectl -n piums rollout undo deployment/<svc>          # a la revisión anterior
 # o volver a fijar el tag bueno:
-kubectl -n piums set image deployment/<svc> <svc>=ghcr.io/app-piums/piums-platform/<svc>:<tag-bueno>
+kubectl -n piums set image deployment/<svc> <svc>=ghcr.io/app-piums/piums-<svc>:<tag-bueno>
 ```
 
 ---
@@ -256,10 +285,10 @@ servidor Node (imagen `standalone`) — **no** sirven como estático en Cloudfla
 Pages. Lo coherente con el backend es correrlas en el **mismo DOKS** detrás del
 ingress. Pasos para implementarlo:
 
-1. **Imágenes** (ya las construye `ci.yml` con el fix de contexto). Ojo al
-   naming: las webs son `ghcr.io/app-piums/piums-web-{client,artist,admin}`
-   (prefijo `piums-`), distinto de los servicios backend que son
-   `ghcr.io/app-piums/piums-platform/<svc>`.
+1. **Imágenes** (ya las construye `ci.yml` con el fix de contexto). Naming
+   unificado con prefijo `piums-`: las webs son
+   `ghcr.io/app-piums/piums-web-{client,artist,admin}` y los servicios backend
+   `ghcr.io/app-piums/piums-<svc>` (p.ej. `piums-auth-service`).
 
 2. **Manifiestos nuevos** (p.ej. `infra/k8s/base/web.yaml`, agregado al
    `kustomization.yaml`), un Deployment + Service (ClusterIP) por web:

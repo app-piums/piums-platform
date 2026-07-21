@@ -14,40 +14,40 @@ resources:
 # ─── Remap ghcr.io images → locally built docker compose images ─────────────
 # Docker Desktop K8s shares the same Docker daemon, so local images are available.
 images:
-  - name: ghcr.io/app-piums/piums-platform/gateway
+  - name: ghcr.io/app-piums/piums-gateway
     newName: docker-gateway
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/auth-service
+  - name: ghcr.io/app-piums/piums-auth-service
     newName: docker-auth-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/users-service
+  - name: ghcr.io/app-piums/piums-users-service
     newName: docker-users-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/artists-service
+  - name: ghcr.io/app-piums/piums-artists-service
     newName: docker-artists-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/catalog-service
+  - name: ghcr.io/app-piums/piums-catalog-service
     newName: docker-catalog-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/payments-service
+  - name: ghcr.io/app-piums/piums-payments-service
     newName: docker-payments-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/reviews-service
+  - name: ghcr.io/app-piums/piums-reviews-service
     newName: docker-reviews-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/notifications-service
+  - name: ghcr.io/app-piums/piums-notifications-service
     newName: docker-notifications-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/booking-service
+  - name: ghcr.io/app-piums/piums-booking-service
     newName: docker-booking-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/search-service
+  - name: ghcr.io/app-piums/piums-search-service
     newName: docker-search-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/chat-service
+  - name: ghcr.io/app-piums/piums-chat-service
     newName: docker-chat-service
     newTag: latest
-  - name: ghcr.io/app-piums/piums-platform/moderation-service
+  - name: ghcr.io/app-piums/piums-moderation-service
     newName: docker-moderation-service
     newTag: latest
 

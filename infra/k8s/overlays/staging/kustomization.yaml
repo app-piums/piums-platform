@@ -96,25 +96,25 @@ patches:
         NODE_ENV: staging
 
 images:
-  - name: ghcr.io/app-piums/piums-platform/gateway
+  - name: ghcr.io/app-piums/piums-gateway
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/auth-service
+  - name: ghcr.io/app-piums/piums-auth-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/users-service
+  - name: ghcr.io/app-piums/piums-users-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/artists-service
+  - name: ghcr.io/app-piums/piums-artists-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/catalog-service
+  - name: ghcr.io/app-piums/piums-catalog-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/payments-service
+  - name: ghcr.io/app-piums/piums-payments-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/reviews-service
+  - name: ghcr.io/app-piums/piums-reviews-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/notifications-service
+  - name: ghcr.io/app-piums/piums-notifications-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/booking-service
+  - name: ghcr.io/app-piums/piums-booking-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/search-service
+  - name: ghcr.io/app-piums/piums-search-service
     newTag: staging
-  - name: ghcr.io/app-piums/piums-platform/chat-service
+  - name: ghcr.io/app-piums/piums-chat-service
     newTag: staging
