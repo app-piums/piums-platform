@@ -68,10 +68,8 @@ jobs:
         run: |
           if [[ "${{ matrix.service }}" == "gateway" ]]; then
             echo "dir=apps/gateway" >> $GITHUB_OUTPUT
-            echo "lockfile=apps/gateway/pnpm-lock.yaml" >> $GITHUB_OUTPUT
           else
             echo "dir=services/${{ matrix.service }}" >> $GITHUB_OUTPUT
-            echo "lockfile=services/${{ matrix.service }}/pnpm-lock.yaml" >> $GITHUB_OUTPUT
           fi
 
       # Policy: strict on main/develop/dave and PRs, tolerant on feature/**
@@ -95,11 +93,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: ${{ steps.path.outputs.lockfile }}
+          # Workspace pnpm: un solo lockfile en la raíz del monorepo
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: ${{ steps.path.outputs.dir }}
         run: pnpm install --frozen-lockfile
+
+      # Con install de workspace el postinstall de @prisma/client no genera el
+      # cliente por servicio (igual que en el Dockerfile, se genera explícito)
+      - name: Generate Prisma Client
+        working-directory: ${{ steps.path.outputs.dir }}
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
 
       - name: Run lint
         working-directory: ${{ steps.path.outputs.dir }}
