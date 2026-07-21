@@ -247,7 +247,9 @@ jobs:
       - name: Build and push Gateway image
         uses: docker/build-push-action@v5
         with:
-          context: ./apps/gateway
+          # El Dockerfile del gateway copia package.json/pnpm-workspace.yaml de la
+          # raíz del monorepo: el contexto debe ser el root
+          context: .
           file: ./apps/gateway/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
