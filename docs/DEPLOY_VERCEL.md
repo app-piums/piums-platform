@@ -105,9 +105,22 @@ Las funciones serverless de Vercel cortan el body en ~4.5MB. Las rutas BFF multi
 cover/documents; web-client: `users/me/avatar`, `users/documents/upload`) reenvían
 el archivo al backend, que hace la subida real a Cloudinary. En Vercel esas rutas se
 rompen. Solución: el navegador sube **directo a `https://backend.piums.io/api/...`**
-(con `Authorization: Bearer`), sin pasar por el BFF. El ingress ya acepta 100MB.
-Requiere además que `ALLOWED_ORIGINS` del backend incluya los dominios de las apps
-(hoy ya están client/artist.piums.io). Ver seguimiento en el plan.
+sin pasar por el BFF. Detalles del approach (ya verificados):
+- **Token:** el cliente ya guarda el JWT en `localStorage.getItem('token')` (lo setea
+  el login desde el cuerpo de la respuesta). Se manda como `Authorization: Bearer`.
+  Fallback si no está: `GET /api/chat/token` (lee la cookie httpOnly server-side).
+  Nota: la cookie `auth_token` es httpOnly + host-only, así que NO viaja cross-origin
+  al backend — por eso se usa el header Bearer, no la cookie.
+- **Ruta:** apuntar a la ruta pública del gateway (p.ej. `/api/artists/...`), no la
+  nativa del microservicio. El ingress ya acepta `proxy-body-size: 100m`.
+- **CORS:** `ALLOWED_ORIGINS` del backend debe incluir el origen de la app (hoy ya
+  están client/artist.piums.io; los preview `*.vercel.app` no, por seguridad).
+- **Call sites:** ~22 llamadas inline `fetch('/api/...', {body: fd})` dispersas
+  (sobre todo `artist/dashboard/settings/page.tsx` y `register/artist/page.tsx`);
+  conviene centralizarlas en un helper `uploadToBackend()`.
+
+Mejor hacerlo DESPUÉS de tener las apps corriendo en `*.vercel.app` (así se prueba
+contra el límite real de 4.5MB y el CORS). Ver seguimiento en el plan.
 
 ---
 
