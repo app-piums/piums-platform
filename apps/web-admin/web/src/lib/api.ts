@@ -121,6 +121,8 @@ export interface AdminUserRow {
   createdAt: string;
   lastLoginAt?: string | null;
   pais?: string;
+  termsAcceptedAt?: string | null;
+  termsVersion?: string | null;
 }
 
 export interface PaginatedUsers {
@@ -133,6 +135,8 @@ export interface PaginatedUsers {
 export interface AdminUserDetail extends AdminUserRow {
   telefono?: string;
   avatarUrl?: string;
+  termsAcceptedAt?: string | null;
+  termsVersion?: string | null;
 }
 
 export const usersApi = {

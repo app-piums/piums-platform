@@ -217,7 +217,7 @@ export default function RegisterPage() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, email, password, ciudad: ciudad || undefined, birthDate: birthDate || undefined }),
+        body: JSON.stringify({ nombre, email, password, ciudad: ciudad || undefined, birthDate: birthDate || undefined, acceptedTerms: acceptTerms }),
         credentials: "include",
       });
       const data = await response.json();
@@ -476,9 +476,9 @@ export default function RegisterPage() {
                     />
                     <span className="text-sm text-white/60 leading-relaxed">
                       Acepto los{" "}
-                      <Link href="/terms" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Términos y Condiciones</Link>{" "}
+                      <Link href="/terminos" target="_blank" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Términos y Condiciones</Link>{" "}
                       y la{" "}
-                      <Link href="/privacy" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Política de Privacidad</Link>
+                      <Link href="/privacidad" target="_blank" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Política de Privacidad</Link>
                     </span>
                   </label>
                   {touched.terms && errors.terms && <p className={errorMsg}>{errors.terms}</p>}

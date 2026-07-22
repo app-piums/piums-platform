@@ -5,6 +5,7 @@ import {
   comparePassword
 } from "../services/auth.service";
 import { registerSchema, registerArtistSchema, registerClientSchema, loginSchema } from "../schemas/auth.schema";
+import { CURRENT_TERMS_VERSION } from "../config/terms";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { tokenService } from "../services/token.service";
@@ -33,8 +34,15 @@ async function createUserAndRespond(
     documentFrontUrl?: string;
     documentBackUrl?: string | null;
     documentSelfieUrl?: string;
+    acceptedTerms?: boolean;
   }
 ) {
+  // Rechazar solo si el cliente declara explícitamente que NO acepta (los que no
+  // envían el campo —apps móviles antiguas— se aceptan de forma implícita al registrarse).
+  if (extra?.acceptedTerms === false) {
+    throw new AppError(400, "Debes aceptar los Términos y Condiciones para registrarte");
+  }
+
   // Validar unicidad de email
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -77,6 +85,9 @@ async function createUserAndRespond(
       documentFrontUrl: extra?.documentFrontUrl,
       documentBackUrl: extra?.documentBackUrl ?? null,
       documentSelfieUrl: extra?.documentSelfieUrl,
+      // Prueba de consentimiento: se estampa en todo registro nuevo.
+      termsAcceptedAt: new Date(),
+      termsVersion: CURRENT_TERMS_VERSION,
     },
   });
 
@@ -170,8 +181,8 @@ async function createUserAndRespond(
 // ─────────────────────────────────────────────────────────────────────────
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password, role } = registerSchema.parse(req.body);
-    await createUserAndRespond(req, res, nombre, email, password, role);
+    const { nombre, email, password, role, acceptedTerms } = registerSchema.parse(req.body);
+    await createUserAndRespond(req, res, nombre, email, password, role, { acceptedTerms });
   } catch (error: any) {
     logger.error("Error en registro genérico", "AUTH_CONTROLLER", { message: error.message });
     next(error);
@@ -184,7 +195,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 // ─────────────────────────────────────────────────────────────────────────
 export const registerArtist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password, ciudad, birthDate, avatarUrl, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl } = registerArtistSchema.parse(req.body);
+    const { nombre, email, password, ciudad, birthDate, avatarUrl, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl, acceptedTerms } = registerArtistSchema.parse(req.body);
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -230,7 +241,7 @@ export const registerArtist = async (req: Request, res: Response, next: NextFunc
     }
 
     await createUserAndRespond(req, res, nombre, email, password, 'artista', {
-      ciudad, birthDate, avatarUrl, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl,
+      ciudad, birthDate, avatarUrl, documentType, documentNumber, documentFrontUrl, documentBackUrl, documentSelfieUrl, acceptedTerms,
     });
   } catch (error: any) {
     logger.error("Error en registro de artista", "AUTH_CONTROLLER", { message: error.message });
@@ -244,7 +255,7 @@ export const registerArtist = async (req: Request, res: Response, next: NextFunc
 // ─────────────────────────────────────────────────────────────────────────
 export const registerClient = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, email, password, ciudad, birthDate } = registerClientSchema.parse(req.body);
+    const { nombre, email, password, ciudad, birthDate, acceptedTerms } = registerClientSchema.parse(req.body);
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -278,7 +289,7 @@ export const registerClient = async (req: Request, res: Response, next: NextFunc
       }
     }
 
-    await createUserAndRespond(req, res, nombre, email, password, 'cliente', { ciudad, birthDate });
+    await createUserAndRespond(req, res, nombre, email, password, 'cliente', { ciudad, birthDate, acceptedTerms });
   } catch (error: any) {
     logger.error("Error en registro de cliente", "AUTH_CONTROLLER", { message: error.message });
     next(error);
@@ -1033,6 +1044,8 @@ export const firebaseLogin = async (req: Request, res: Response, next: NextFunct
           emailVerified: true,
           status: 'ACTIVE',
           passwordHash: null,
+          termsAcceptedAt: new Date(),
+          termsVersion: CURRENT_TERMS_VERSION,
         },
       });
       logger.info('New user via Firebase Google', 'AUTH_CONTROLLER', { userId: user.id });

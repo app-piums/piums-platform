@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { CURRENT_TERMS_VERSION } from '../config/terms';
 import axios from 'axios';
 import { prisma } from '../lib/prisma';
 import { logger } from '../utils/logger';
@@ -130,6 +131,8 @@ export async function findOrCreateTikTokUser(tiktokUser: TikTokUserInfo) {
         emailVerified: true,
         isVerified: false,
         role: 'user',
+        termsAcceptedAt: new Date(),
+        termsVersion: CURRENT_TERMS_VERSION,
       },
     });
     logger.info('New user created via TikTok', 'TIKTOK_OAUTH', { userId: user.id });

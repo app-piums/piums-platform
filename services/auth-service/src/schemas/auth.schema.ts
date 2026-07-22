@@ -10,6 +10,9 @@ const baseRegisterSchema = z.object({
   pais: z.string().min(2, "Selecciona un país").optional(),
   codigoPais: z.string().optional(),
   telefono: z.string().min(6, "Número de teléfono inválido").optional(),
+  // Aceptación de Términos. Opcional para no romper apps móviles que aún no lo
+  // envían; el backend rechaza solo si viene false explícito y estampa la versión.
+  acceptedTerms: z.boolean().optional(),
 });
 
 // Schema general (con selección de rol - para uso interno/admin)
@@ -21,6 +24,7 @@ export const registerSchema = z.object({
   pais: z.string().min(2, "Selecciona un país").optional(),
   codigoPais: z.string().optional(),
   telefono: z.string().min(6, "Número de teléfono inválido").optional(),
+  acceptedTerms: z.boolean().optional(),
 });
 
 // Schema específico para registro de artistas (rol fijo: artista)

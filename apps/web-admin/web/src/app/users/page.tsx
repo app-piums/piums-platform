@@ -218,6 +218,9 @@ function UsersContent() {
                   <div className="flex items-center gap-2">
                     <StatusBadge blocked={u.isBlocked} />
                     <span className="text-xs text-zinc-400">{new Date(u.createdAt).toLocaleDateString("es-MX")}</span>
+                    {u.termsAcceptedAt
+                      ? <span className="text-xs text-green-600 dark:text-green-400" title={`Aceptado el ${new Date(u.termsAcceptedAt).toLocaleString("es-MX")}`}>✓ {u.termsVersion ?? "—"}</span>
+                      : <span className="text-xs text-zinc-300 dark:text-zinc-600">sin T&amp;C</span>}
                   </div>
                   {u.role !== "admin" && (
                     <div className="flex gap-2">
@@ -275,6 +278,9 @@ function UsersContent() {
                   Último acceso
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Términos
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Acción
                 </th>
               </tr>
@@ -304,6 +310,18 @@ function UsersContent() {
                       ? new Date(u.lastLoginAt).toLocaleDateString("es-MX")
                       : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
                   </td>
+                  <td className="px-5 py-3.5 text-xs">
+                    {u.termsAcceptedAt ? (
+                      <span
+                        className="text-green-600 dark:text-green-400"
+                        title={`Aceptado el ${new Date(u.termsAcceptedAt).toLocaleString("es-MX")}`}
+                      >
+                        ✓ {u.termsVersion ?? "—"}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-300 dark:text-zinc-600">Sin registro</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5">
                     {u.role !== "admin" && (
                       <div className="flex gap-2">
@@ -330,7 +348,7 @@ function UsersContent() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-sm text-zinc-400">
+                  <td colSpan={7} className="py-12 text-center text-sm text-zinc-400">
                     No se encontraron usuarios
                   </td>
                 </tr>

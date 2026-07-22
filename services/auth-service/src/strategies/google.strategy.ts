@@ -1,4 +1,5 @@
 import passport from 'passport';
+import { CURRENT_TERMS_VERSION } from '../config/terms';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { logger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
@@ -54,7 +55,9 @@ export const configureGoogleStrategy = () => {
                 provider: 'google',
                 googleId: profile.id,
                 isVerified: true, // Email verificado por Google
-                role: 'user'
+                role: 'user',
+                termsAcceptedAt: new Date(),
+                termsVersion: CURRENT_TERMS_VERSION,
               }
             });
 

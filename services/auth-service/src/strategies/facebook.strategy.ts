@@ -1,4 +1,5 @@
 import passport from 'passport';
+import { CURRENT_TERMS_VERSION } from '../config/terms';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { logger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
@@ -55,7 +56,9 @@ export const configureFacebookStrategy = () => {
                 provider: 'facebook',
                 facebookId: profile.id,
                 isVerified: true, // Email verificado por Facebook
-                role: 'user'
+                role: 'user',
+                termsAcceptedAt: new Date(),
+                termsVersion: CURRENT_TERMS_VERSION,
               }
             });
 

@@ -269,6 +269,7 @@ export default function RegisterArtistPage() {
           telefono: selectedCountry ? `${selectedCountry.dialCode}${telefono}` : telefono,
           ciudad, birthDate, documentType, documentNumber,
           documentFrontUrl, documentBackUrl: documentBackUrl || undefined, documentSelfieUrl,
+          acceptedTerms: acceptTerms,
         }),
         credentials: "include",
       });
@@ -527,9 +528,9 @@ export default function RegisterArtistPage() {
                       className="mt-0.5 h-4 w-4 rounded border-white/30 bg-white/10 accent-[#FF6B35]" />
                     <span className="text-sm text-white/60 leading-relaxed">
                       Acepto los{" "}
-                      <a href="/terms" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Términos y Condiciones</a>{" "}
+                      <a href="https://piums.io/terminos" target="_blank" rel="noopener noreferrer" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Términos y Condiciones</a>{" "}
                       y la{" "}
-                      <a href="/privacy" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Política de Privacidad</a>
+                      <a href="https://piums.io/privacidad" target="_blank" rel="noopener noreferrer" className="text-[#FF6B35] hover:text-[#ff8a5e] underline">Política de Privacidad</a>
                     </span>
                   </label>
                   {touched.terms && errors.terms && <p className={errorMsg}>{errors.terms}</p>}
