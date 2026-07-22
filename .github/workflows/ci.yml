@@ -181,3 +181,22 @@ jobs:
           echo "Status: ${{ job.status }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
+
+  # ============================================================================
+  # Gate agregador: un solo check requerido en la protección de `main`.
+  # Falla si lint-and-test (que incluye `next build` de las 3 webs) no pasó.
+  # ============================================================================
+  frontend-ci-gate:
+    name: Frontend CI Gate
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    if: always()
+    steps:
+      - name: Verificar resultado de lint-and-test
+        run: |
+          result="${{ needs.lint-and-test.result }}"
+          echo "lint-and-test => $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::Frontend CI Gate: lint-and-test no pasó ($result)"
+            exit 1
+          fi

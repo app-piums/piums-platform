@@ -360,3 +360,23 @@ jobs:
           # curl -X POST -H 'Content-type: application/json' \
           #   --data "{\"text\":\"Backend CI: ${{ job.status }} on ${{ github.ref_name }}\"}" \
           #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ============================================================================
+  # Gate agregador: un solo check requerido en la protección de `main`.
+  # Falla si lint-and-test (que incluye el build de TypeScript) no pasó.
+  # En PR solo corre lint-and-test (build-images/security-scan son if:push).
+  # ============================================================================
+  ci-gate:
+    name: Backend CI Gate
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    if: always()
+    steps:
+      - name: Verificar resultado de lint-and-test
+        run: |
+          result="${{ needs.lint-and-test.result }}"
+          echo "lint-and-test => $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::Backend CI Gate: lint-and-test no pasó ($result)"
+            exit 1
+          fi
