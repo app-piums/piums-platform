@@ -113,6 +113,8 @@ export function Footer() {
                 { label: "Contacto", href: "/contacto" },
                 { label: "Términos y condiciones", href: "/terminos" },
                 { label: "Privacidad", href: "/privacidad" },
+                { label: "Reclamos y disputas", href: "/reclamos" },
+                { label: "Sistemas automatizados", href: "/automatizacion" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <Link href={href} className="text-sm transition-opacity hover:opacity-90"
