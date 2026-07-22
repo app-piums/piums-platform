@@ -16,6 +16,7 @@ type RegisterBody = {
   documentFrontUrl?: string;
   documentBackUrl?: string;
   documentSelfieUrl?: string;
+  acceptedTerms?: boolean;
 };
 
 type RegisterResponse = {
@@ -57,6 +58,7 @@ const extractRegisterFields = (body: RegisterBody) => ({
   ...(body.documentFrontUrl !== undefined && { documentFrontUrl: body.documentFrontUrl }),
   ...(body.documentBackUrl !== undefined && { documentBackUrl: body.documentBackUrl }),
   ...(body.documentSelfieUrl !== undefined && { documentSelfieUrl: body.documentSelfieUrl }),
+  ...(body.acceptedTerms !== undefined && { acceptedTerms: body.acceptedTerms }),
 });
 
 const isAbortError = (error: unknown): boolean =>

@@ -156,7 +156,9 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
           isBlocked: true,
           isVerified: true,
           createdAt: true,
-          lastLoginAt: true
+          lastLoginAt: true,
+          termsAcceptedAt: true,
+          termsVersion: true
         }
       }),
       prisma.user.count({ where })
@@ -176,6 +178,8 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
       isBlocked: u.isBlocked ?? false,
       createdAt: u.createdAt,
       lastLoginAt: u.lastLoginAt ?? null,
+      termsAcceptedAt: u.termsAcceptedAt ?? null,
+      termsVersion: u.termsVersion ?? null,
     }));
 
     const totalPages = Math.ceil(total / take);
@@ -841,6 +845,8 @@ export const getUserDetail = async (req: Request, res: Response, next: NextFunct
         documentFrontUrl: true,
         documentBackUrl: true,
         documentSelfieUrl: true,
+        termsAcceptedAt: true,
+        termsVersion: true,
       }
     });
 
