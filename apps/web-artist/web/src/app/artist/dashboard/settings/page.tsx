@@ -3,6 +3,7 @@
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { PageHelpButton } from '@/components/PageHelpButton';
 import { cImg } from '@/lib/cloudinaryImg';
+import { uploadToBackend } from '@/lib/uploadToBackend';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DashboardSidebar } from '@/components/artist/DashboardSidebar';
 import { sdk, ArtistProfile } from '@piums/sdk';
@@ -641,7 +642,8 @@ function ArtistSettingsPageInner() {
       const fd = new FormData();
       fd.append('video', file);
       fd.append('title', file.name.replace(/\.[^/.]+$/, ''));
-      const res = await fetch('/api/portafolio/video', { method: 'POST', body: fd, credentials: 'include' });
+      // Directo al backend (Vercel corta el body en ~4.5MB; el video no cabe por el BFF)
+      const res = await uploadToBackend('/api/artists/dashboard/me/portfolio-video', fd);
       const data = await res.json().catch(() => ({}));
       // El servidor manda el motivo real (45s, tope de 3, formato): mostrarlo tal cual.
       if (!res.ok) throw new Error(data?.error || data?.message || 'Error al subir el video');
@@ -694,7 +696,8 @@ function ArtistSettingsPageInner() {
     try {
       const fd = new FormData();
       fd.append('video', file);
-      const res = await fetch('/api/story-video', { method: 'POST', body: fd, credentials: 'include' });
+      // Directo al backend (Vercel corta el body en ~4.5MB; el video no cabe por el BFF)
+      const res = await uploadToBackend('/api/artists/dashboard/me/story-video', fd);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || data?.message || 'Error al subir el video');
       setStoryVideoUrl(data?.artist?.storyVideo ?? null);
