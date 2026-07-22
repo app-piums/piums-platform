@@ -22,10 +22,12 @@ metadata:
     service.beta.kubernetes.io/do-loadbalancer-name: "piums-prod-lb"
     # HTTP en 80 y 443 (Cloudflare hace el TLS). El LB no descifra nada.
     service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
-    # PROXY protocol para conservar la IP real del cliente (rate-limit/slowloris
-    # del ingress dependen de $binary_remote_addr). Requiere habilitarlo también
-    # en el ConfigMap del controller: use-proxy-protocol: "true".
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+    # NOTA: cuentas nuevas de DO crean el LB como tipo REGIONAL_NETWORK (Network
+    # LB, capa 4). Ese tipo NO soporta PROXY protocol: hace passthrough TCP y ya
+    # preserva la IP real del cliente por sí mismo (junto con
+    # externalTrafficPolicy: Local). Por eso NO se habilita proxy-protocol aquí ni
+    # en el ConfigMap (use-proxy-protocol debe quedar en su default "false"):
+    # activarlo rompe nginx con "empty reply from server".
     # Health check contra el healthz del controller.
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/healthz"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "10254"

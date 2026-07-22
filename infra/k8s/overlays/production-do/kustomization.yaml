@@ -278,3 +278,19 @@ patches:
                   httpGet:
                     path: /api/health/ping
                     port: 3000
+
+  # ── gateway-service a ClusterIP: en DO la entrada es el LB del ingress-nginx
+  #    (Cloudflare → ingress → gateway-service). El `type: LoadBalancer` del base
+  #    provisiona un SEGUNDO DO Load Balancer redundante (~12 USD/mes) que además
+  #    saltaría el hardening del ingress. En producción-do el gateway se expone
+  #    SOLO por el ingress. ──────────────────────────────────────────────────────
+  - target:
+      kind: Service
+      name: gateway-service
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: gateway-service
+      spec:
+        type: ClusterIP

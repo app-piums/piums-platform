@@ -113,6 +113,7 @@ jobs:
 
       - name: Smoke test — gateway health
         run: |
+          # gateway-service escucha en el puerto 80 (targetPort 3000), no en 3000
           kubectl -n "$NAMESPACE" run smoke-$RANDOM --rm -i --restart=Never \
             --image=curlimages/curl:8.10.1 --command -- \
-            curl -fsS --max-time 10 http://gateway-service:3000/api/health/ping
+            curl -fsS --max-time 10 http://gateway-service:80/api/health/ping

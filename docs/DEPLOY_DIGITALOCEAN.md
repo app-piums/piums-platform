@@ -144,13 +144,13 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 # metrics-server (lo necesita el HPA)
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-# Anotaciones del LB de DO (nombre, PROXY protocol, healthcheck)
+# Anotaciones del LB de DO (nombre, healthcheck)
 kubectl patch svc ingress-nginx-controller -n ingress-nginx \
   --type merge --patch-file infra/k8s/ingress-nginx/service-patch-do.yaml
 
-# Si activaste PROXY protocol en el patch, habilitarlo también en el controller:
-kubectl patch configmap ingress-nginx-controller -n ingress-nginx \
-  --type merge -p '{"data":{"use-proxy-protocol":"true"}}'
+# NO habilitar use-proxy-protocol: las cuentas nuevas crean el LB como
+# REGIONAL_NETWORK (capa 4), que no soporta PROXY protocol y ya preserva la IP
+# del cliente. Activarlo rompe nginx con "empty reply from server".
 
 # IP pública del LB (para el DNS)
 kubectl get svc ingress-nginx-controller -n ingress-nginx -w
