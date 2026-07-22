@@ -265,7 +265,9 @@ jobs:
     name: Security Scan - ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: build-images
-    if: github.event_name == 'push'
+    # Solo sobre las imágenes de main (producción). En ramas feature el tag lleva
+    # "/" (inválido como image-ref) y las imágenes son efímeras → sería ruido.
+    if: github.event_name == 'push' && github.ref_name == 'main'
 
     permissions:
       contents: read
@@ -299,6 +301,8 @@ jobs:
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        # No bloquear si el repo no tiene GitHub Advanced Security (code scanning)
+        continue-on-error: true
         with:
           sarif_file: 'trivy-results.sarif'
 
