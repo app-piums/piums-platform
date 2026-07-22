@@ -51,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Comando para iniciar
 USER node
-CMD ["sh", "-c", "if [ -f 'prisma/schema.prisma' ]; then npx prisma migrate deploy; fi && node dist/index.js"]
+CMD ["sh", "-c", "if [ -f 'prisma/migrations' ]; then npx prisma migrate deploy; elif [ -f 'prisma/schema.prisma' ]; then npx prisma db push --skip-generate; fi && node dist/index.js"]

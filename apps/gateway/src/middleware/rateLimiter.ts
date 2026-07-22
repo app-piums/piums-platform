@@ -12,6 +12,7 @@ if (process.env.REDIS_HOST) {
     password: process.env.REDIS_PASSWORD || undefined,
     lazyConnect: true,
     retryStrategy: (times) => Math.min(times * 200, 5000),
+    ...(process.env.REDIS_TLS === 'true' ? { tls: { rejectUnauthorized: false } } : {}),
   });
   redisClient.on("error", (err: Error) => logger.error("Rate-limit Redis error", "RATE_LIMITER", { error: err.message }));
   redisClient.connect().catch((err: Error) => logger.warn("Rate-limit Redis connect failed, using memory store", "RATE_LIMITER", { error: err.message }));
