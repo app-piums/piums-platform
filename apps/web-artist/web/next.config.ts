@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  output: 'standalone',
+  output: process.env.DOCKER_BUILD === '1' ? 'standalone' : undefined,
   images: {
     unoptimized: true,
     remotePatterns: [

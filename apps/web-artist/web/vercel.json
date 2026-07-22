@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../../.. && pnpm --filter @piums/sdk build && pnpm --filter web-client build",
+  "buildCommand": "cd ../../.. && pnpm --filter @piums/sdk build && pnpm --filter web-artist build",
   "installCommand": "cd ../../.. && pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
   "outputDirectory": ".next"
