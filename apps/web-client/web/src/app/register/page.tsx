@@ -556,7 +556,7 @@ export default function RegisterPage() {
                   </button>
 
                   <button
-                    type="button" onClick={() => { window.location.href = "/api/auth/tiktok"; }}
+                    type="button" onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || "https://backend.piums.io"}/api/auth/tiktok`; }}
                     className="flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-3 py-2.5 text-xs font-semibold text-white transition-all"
                   >
                     <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">

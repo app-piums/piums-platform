@@ -34,7 +34,7 @@ data:
   ALLOWED_ORIGINS: "https://artist.piums.io,https://client.piums.io,https://admin.piums.io,https://piums.io,https://www.piums.io,https://backend.piums.io"
 
   # Frontend URLs
-  FRONTEND_URL: "https://client.piums.io"
+  FRONTEND_URL: "https://piums.io"
   CLIENT_APP_URL: "https://client.piums.io"
   ARTIST_APP_URL: "https://artist.piums.io"
   ADMIN_APP_URL: "https://admin.piums.io"
