@@ -34,8 +34,8 @@ export default function TerminosPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. Información de la empresa</h2>
             <p>
-              Piums es una plataforma digital operada por <strong>[RAZÓN SOCIAL]</strong>, con NIT{' '}
-              <strong>[NIT]</strong> y domicilio en <strong>[DIRECCIÓN]</strong>, República de Guatemala
+              Piums es una plataforma digital operada por <strong>Sistemas de Control y Automatización Digital Avanzados SCADA, Sociedad Anónima</strong>, con NIT{' '}
+              <strong>120765209</strong> y domicilio en <strong>Chiquimula</strong>, República de Guatemala
               (en adelante, &ldquo;Piums&rdquo;, &ldquo;nosotros&rdquo; o &ldquo;la plataforma&rdquo;). Para
               cualquier consulta legal o de privacidad puedes escribirnos a{' '}
               <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>.
