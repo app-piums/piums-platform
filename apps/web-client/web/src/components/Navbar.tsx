@@ -25,7 +25,7 @@ export const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           {/* Logo & Nav Links */}
           <div className="flex">
-            <Link href="/dashboard" className="flex items-center">
+            <Link href={user ? "/dashboard" : "/"} className="flex items-center">
               <Image 
                 src="/logo.png" 
                 alt="Piúms" 
@@ -37,6 +37,7 @@ export const Navbar: React.FC = () => {
               />
             </Link>
             
+            {user && (
             <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
               <Link
                 href="/dashboard"
@@ -79,6 +80,7 @@ export const Navbar: React.FC = () => {
                 Eventos
               </Link>
             </div>
+            )}
           </div>
 
           {/* User Menu */}
