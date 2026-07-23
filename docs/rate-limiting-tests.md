@@ -33,13 +33,13 @@ Detiene todos los servicios iniciados por `start-test-services.sh`.
 ```bash
 # 1. Iniciar servicios de testing
 cd /Users/piums/Desktop/piums-platform
-./services/start-test-services.sh
+./scripts/start-test-services.sh
 
 # 2. Ejecutar tests de rate limiting
-./services/test-rate-limiting.sh
+./scripts/test-rate-limiting.sh
 
 # 3. Detener servicios
-./services/stop-test-services.sh
+./scripts/stop-test-services.sh
 ```
 
 ## 📊 Rate Limits Configurados
@@ -127,7 +127,7 @@ cd ../booking-service && pnpm install
 ### Error: "Port already in use"
 **Solución**: Detén los servicios que estén corriendo:
 ```bash
-./services/stop-test-services.sh
+./scripts/stop-test-services.sh
 # O manualmente:
 lsof -ti:3001 | xargs kill
 lsof -ti:3002 | xargs kill

@@ -456,7 +456,7 @@ Ejecuta el script de pruebas:
 
 ```bash
 cd /Users/piums/Desktop/piums-platform
-./services/test-pricing.sh
+./scripts/test-pricing.sh
 ```
 
 O prueba manualmente:

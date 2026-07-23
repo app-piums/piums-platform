@@ -527,11 +527,11 @@ logger.error("Error procesando payout", "PAYOUT_SERVICE", {
 
 ## Testing
 
-Ver script: `/services/test-payouts.sh`
+Ver script: `/scripts/test-payouts.sh`
 
 ```bash
-chmod +x services/test-payouts.sh
-./services/test-payouts.sh
+chmod +x scripts/test-payouts.sh
+./scripts/test-payouts.sh
 ```
 
 ## Futuras Mejoras
