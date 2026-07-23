@@ -31,11 +31,13 @@ const MARQUEE_ITEMS = [
   "Video", "Economía Naranja", "Guatemala",
 ];
 
+// La web de artista no tiene páginas legales/institucionales propias; se sirven
+// desde piums.io (fuente única). Enlaces absolutos para no 404-ear en artist.piums.io.
 const NAV_LINKS = [
-  { label: "Privacidad",  href: "/privacidad" },
-  { label: "Términos",    href: "/terminos" },
-  { label: "Contacto",    href: "/contacto" },
-  { label: "Nosotros",    href: "/nosotros" },
+  { label: "Privacidad",  href: "https://piums.io/privacidad" },
+  { label: "Términos",    href: "https://piums.io/terminos" },
+  { label: "Contacto",    href: "https://piums.io/contacto" },
+  { label: "Nosotros",    href: "https://piums.io/nosotros" },
 ];
 
 interface Props {
