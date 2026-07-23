@@ -27,8 +27,8 @@ export default function PrivacidadPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. Responsable del tratamiento</h2>
             <p>
-              El responsable del tratamiento de tus datos es <strong>[RAZÓN SOCIAL]</strong>, NIT{' '}
-              <strong>[NIT]</strong>, con domicilio en <strong>[DIRECCIÓN]</strong>, Guatemala. Para ejercer tus
+              El responsable del tratamiento de tus datos es <strong>Sistemas de Control y Automatización Digital Avanzados SCADA, Sociedad Anónima</strong>, NIT{' '}
+              <strong>120765209</strong>, con domicilio en <strong>Chiquimula</strong>, Guatemala. Para ejercer tus
               derechos o realizar consultas de privacidad, escríbenos a{' '}
               <a href="mailto:soporte@piums.io" className="text-[#FF6B35] hover:underline">soporte@piums.io</a>.
             </p>
