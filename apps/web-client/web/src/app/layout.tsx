@@ -23,10 +23,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Piums - Plataforma de Servicios de Artistas",
-  description: "Conecta con artistas profesionales para tus eventos. Reserva músicos, DJs, fotógrafos y más.",
-  keywords: "artistas, eventos, reservas, música, entretenimiento",
+  metadataBase: new URL("https://piums.io"),
+  title: "Piums | Reserva fotógrafos, músicos y artistas en Guatemala",
+  description:
+    "Conecta con fotógrafos, músicos, videógrafos y animadores en Guatemala. Explora perfiles verificados, cotiza y reserva servicios para tus eventos con Piums.",
+  keywords:
+    "artistas Guatemala, fotógrafos para bodas, músicos para eventos, videógrafos, animadores, reservar artistas, servicios para eventos Guatemala",
+  applicationName: "Piums",
   manifest: "/manifest.json",
+  robots: { index: true, follow: true },
   other: {
     'tiktok-developers-site-verification': 'N0gsVgRuu2gFzosWOzjbgTcl7vtYOPGP',
   },
@@ -36,9 +41,20 @@ export const metadata: Metadata = {
     title: "Piums",
   },
   openGraph: {
-    title: "Piums - Plataforma de Servicios de Artistas",
-    description: "Conecta con artistas profesionales para tus eventos",
     type: "website",
+    siteName: "Piums",
+    locale: "es_GT",
+    title: "Piums | Reserva fotógrafos, músicos y artistas en Guatemala",
+    description:
+      "Conecta con fotógrafos, músicos, videógrafos y animadores en Guatemala. Explora perfiles verificados, cotiza y reserva servicios para tus eventos.",
+    images: [{ url: "/FOOTER.png", width: 1747, height: 900, alt: "Piums — artistas y profesionales creativos" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Piums | Reserva fotógrafos, músicos y artistas en Guatemala",
+    description:
+      "Conecta con fotógrafos, músicos, videógrafos y animadores en Guatemala. Reserva servicios para tus eventos.",
+    images: ["/FOOTER.png"],
   },
 };
 
