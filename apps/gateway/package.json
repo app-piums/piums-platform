@@ -1,5 +1,6 @@
 {
   "name": "@piums/gateway",
+  "private": true,
   "version": "1.0.0",
   "description": "API Gateway for Piums Platform - Centralizes all microservices behind a single entry point",
   "main": "dist/index.js",
@@ -16,7 +17,7 @@
     "microservices"
   ],
   "author": "Piums Team",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "axios": "^1.15.2",
     "cors": "^2.8.5",
