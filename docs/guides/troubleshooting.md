@@ -126,7 +126,7 @@ sleep 10  # esperar que DB esté lista
 
 ---
 
-## Problemas en staging/producción
+## Problemas en producción
 
 ### Pod en estado `CrashLoopBackOff`
 

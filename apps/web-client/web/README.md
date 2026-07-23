@@ -31,4 +31,4 @@ cp .env.example .env.local
 pnpm dev  # http://localhost:3000
 ```
 
-Ver documentación completa en [docs/](../../docs/)
+Ver documentación completa en [docs/](../../../docs/)

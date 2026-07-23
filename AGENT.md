@@ -540,61 +540,52 @@ ARTISTS_SERVICE_URL=https://api.piums.com
 
 > ⚠️ Las apps usan **API Routes** (`/app/api/...`) como proxy BFF hacia el backend. Las variables `*_SERVICE_URL` son **server-side** (sin `NEXT_PUBLIC_`) y apuntan a `https://api.piums.com` en producción.
 
-### Backend — VPS
+### Backend — DigitalOcean Kubernetes (DOKS)
 
-Todo el backend corre en un VPS Ubuntu 22.04 con `docker-compose.prod.yml` y Nginx como reverse proxy.
+El backend corre en el cluster gestionado `do-nyc3-piums-prod` (DOKS), con
+**Postgres y Redis/Valkey gestionados por DO, fuera del cluster**. El deploy por
+Droplet + `docker-compose.prod.yml` + Nginx quedó atrás; esos archivos ya no
+existen en el repo.
 
-**Archivo de referencia**: `infra/docker/docker-compose.prod.yml`  
-**Nginx**: `infra/nginx/nginx.conf` — enruta `api.piums.com` → `gateway:3000` con SSL/TLS.
+**Runbook**: `docs/DEPLOY_DIGITALOCEAN.md` (backend) y `docs/DEPLOY_VERCEL.md` (webs).
 
-**Setup inicial del VPS (una sola vez):**
+- **Overlay que corre**: `infra/k8s/overlays/production-do`, que hereda de
+  `overlays/production` y le agrega lo que ese overlay nunca tuvo: `DATABASE_URL`
+  por servicio (cada microservicio tiene su propia base), `PORT` explícito para
+  payments/reviews/notifications/booking (sus defaults en código están cruzados),
+  health-probe del gateway a `/api/health/ping`, y `gateway-service` en ClusterIP
+  (el `type: LoadBalancer` del base provisionaba un segundo LB redundante).
+- **Entrada HTTP**: Cloudflare → ingress-nginx del cluster → `gateway-service`.
+  El dominio de producción es `backend.piums.io` (apex canónico `piums.io`).
+- **Infra**: `infra/terraform-do` (VPC, DOKS, Postgres, Redis, Spaces).
+- **Secretos**: el Secret `piums-secrets` del namespace `piums` se aplica **fuera
+  de banda** desde `infra/k8s/overlays/production-do/secrets.production.example.yaml`
+  con los outputs de Terraform. No viaja en el repo ni en GitHub Actions.
+
+**Deploy:**
 ```bash
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-sudo apt install -y nginx certbot python3-certbot-nginx
-sudo certbot --nginx -d api.piums.com
-sudo mkdir -p /opt/piums && cd /opt/piums
-cp infra/docker/docker-compose.prod.yml ./docker-compose.yml
-# Crear /opt/piums/.env con las variables de producción
-```
+# Automático: publicar un GitHub Release vX.Y.Z (backend-deploy-doks.yml)
+# Manual: workflow_dispatch indicando image_tag
 
-**Variables de entorno** en `/opt/piums/.env`:
-```env
-NODE_ENV=production
-POSTGRES_USER=piums_prod
-POSTGRES_PASSWORD=<password_seguro>
-REDIS_PASSWORD=<redis_password>
-JWT_SECRET=<64_bytes_hex>
-REFRESH_SECRET=<64_bytes_hex>
-ALLOWED_ORIGINS=https://piums.com,https://artist.piums.com,https://admin.piums.com
-API_URL=https://api.piums.com
-DOCKER_REGISTRY=ghcr.io/app-piums
-IMAGE_TAG=latest
-STRIPE_SECRET_KEY=sk_live_...
-CLOUDINARY_CLOUD_NAME=...
-SMTP_HOST=...
-```
-
-**Deploy del backend:**
-```bash
-cd /opt/piums
-docker compose pull                                      # bajar nuevas imágenes
-docker compose run --rm auth-service npx prisma migrate deploy  # migraciones
-docker compose up -d                                     # reiniciar servicios
-curl https://api.piums.com/health                        # verificar
+# A mano, en emergencia:
+kubectl --context do-nyc3-piums-prod apply -k infra/k8s/overlays/production-do
+kubectl -n piums rollout status deployment/gateway
 ```
 
 **CI/CD** (GitHub Actions):
-- Push a `develop` → deploy automático a staging (`.github/workflows/deploy-staging.yml`)
-- Publicar GitHub Release `vX.Y.Z` → deploy a producción con aprobación manual (`.github/workflows/deploy-prod.yml`)
+- `backend-ci.yml` — build/test y publicación de imágenes a GHCR (push a `main`,
+  `feature/**` y tags `v*`).
+- `backend-deploy-doks.yml` — deploy a producción (release publicado o manual).
+- `ci.yml` — build de las 3 webs. Las webs se despliegan en Vercel, no en el cluster.
+- No hay staging: el flujo es `feature/*` → PR → `main`.
 
 ### Desarrollo Local
 
 Stack completo en Docker para desarrollo local (`infra/docker/docker-compose.dev.yml`):
 - PostgreSQL 16 + script `init-databases.sql` que crea las 9 bases de datos
 - Redis 7
-- API Gateway + 9 microservicios (4001–4009)
-- web-client + web-artist (Next.js en modo dev)
+- API Gateway + los microservicios (4001–4010)
+- Las webs no están en el Compose: se corren con `pnpm dev` o se ven en Vercel
 
 ```bash
 docker compose -f infra/docker/docker-compose.dev.yml up -d
@@ -603,13 +594,14 @@ docker compose -f infra/docker/docker-compose.dev.yml up -d
 > ⚠️ Solo `gateway` y `auth-service` tienen Dockerfile propio. Los demás servicios necesitan sus Dockerfiles para poder levantar con `docker-compose up`.
 
 ### Kubernetes (`/infra/k8s/`)
-Manifiestos Kustomize (base + overlays staging/production) — disponibles pero el deploy activo usa Docker Compose en VPS.
+Manifiestos Kustomize: `base` + `hardening` + overlays `local`, `production` y
+`production-do` (este último es el que corre en producción; hereda de `production`).
+El ingress-nginx del cluster es el reverse proxy: no hay `infra/nginx/`.
 
-### Nginx (`/infra/nginx/`)
-Configuración de reverse proxy para producción. Maneja SSL/TLS, headers de seguridad y enruta subdominios.
-
-### Terraform (`/infra/terraform/`)
-Infraestructura como código para el cloud provider del VPS.
+### Terraform (`/infra/terraform-do/`)
+Infraestructura de DigitalOcean como código: VPC, DOKS, Postgres y Redis
+gestionados, y Spaces. El `tfstate`, el `tfvars` y los planes guardados están
+gitignorados porque llevan credenciales en claro.
 
 ### Scripts (`/scripts/`)
 - `dev.sh` — script maestro: `setup`, `start`, `start-local`, `stop`, `restart`, `status`, `health`, `logs`, `clean`
@@ -882,8 +874,7 @@ TIKTOK_CALLBACK_URL=http://localhost:4001/auth/tiktok/callback
 
 #### CI/CD — GitHub Actions completo
 - `.github/workflows/backend-ci.yml` — lint + test en PR
-- `.github/workflows/backend-deploy-staging.yml` — deploy automático a staging
-- `.github/workflows/backend-deploy-prod.yml` — deploy a producción con aprobación manual
+- `.github/workflows/backend-deploy-doks.yml` — deploy a producción (DOKS)
 
 #### Backup y Restauración
 - `BACKUP_AND_RESTORE.md` — guía completa

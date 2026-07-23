@@ -1,15 +1,18 @@
 # 🐳 Docker Setup - Piums Platform
 
-Configuración completa de Docker para desarrollo y staging.
+Configuración de Docker para **desarrollo local**. Producción no usa Compose:
+corre en DigitalOcean Kubernetes (ver `docs/DEPLOY_DIGITALOCEAN.md`) y las webs
+en Vercel (`docs/DEPLOY_VERCEL.md`).
 
 ## 📋 Estructura
 
 ```
 infra/docker/
-├── docker-compose.dev.yml      # Configuración desarrollo
-├── docker-compose.staging.yml  # Configuración staging
+├── docker-compose.dev.yml      # Backend local: Postgres, Redis y los servicios
 ├── init-databases.sql          # Script de inicialización DB
-└── DOCKER_GUIDE.md            # Esta guía
+├── run-migrations.sh           # Migraciones contra el Compose local
+├── verify-databases.sh         # Chequeo de las bases creadas
+└── DOCKER_GUIDE.md             # Esta guía
 
 scripts/
 ├── setup-docker.sh            # Crear Dockerfiles y .dockerignore
@@ -234,7 +237,7 @@ docker volume inspect docker_postgres_data
 
 ## 🔐 Variables de Entorno
 
-Las variables se configuran en `docker-compose.dev.yml`. Para producción usar variables de entorno del sistema:
+Las variables se configuran en `docker-compose.dev.yml`. En producción vienen del Secret `piums-secrets` del cluster:
 
 ```bash
 # Ejemplo: Configurar Stripe para payments-service
@@ -266,10 +269,10 @@ docker exec -it piums-postgres psql -U piums -d piums_auth
 
 ## 🎯 Próximos Pasos
 
-1. ✅ **Desarrollo Local**: Ya configurado
-2. ⏳ **Staging**: Usar `docker-compose.staging.yml`
-3. ⏳ **Producción**: Kubernetes (pendiente)
-4. ⏳ **CI/CD**: GitHub Actions (pendiente)
+1. ✅ **Desarrollo local**: este Compose
+2. ✅ **CI/CD**: GitHub Actions (`backend-ci.yml` publica las imágenes en GHCR)
+3. ✅ **Producción**: DOKS con el overlay `production-do`
+4. ➖ **Staging**: no existe; el flujo es `feature/*` → PR → `main`
 
 ## 📚 Recursos
 

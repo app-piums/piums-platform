@@ -52,4 +52,4 @@ El middleware automáticamente redirige:
 - **No autenticados → /login**: En rutas protegidas
 - **Solo artistas**: Verificación de rol en cada request
 
-Ver documentación completa en [docs/](../../docs/)
+Ver documentación completa en [docs/](../../../docs/)
