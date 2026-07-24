@@ -11,6 +11,7 @@ import {
 } from "../schemas/artists.schema";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { bookingServiceClient } from "../clients/booking.client";
 
 const artistsService = new ArtistsService();
 
@@ -47,7 +48,11 @@ export const getArtistProfile = async (
     const id = req.params.id as string;
     const artist = await artistsService.getArtistById(id);
 
-    res.json({ artist });
+    // Enriquecer con el conteo de contrataciones completadas (perfil público).
+    // getArtistCompletedCount nunca lanza: devuelve 0 si booking-service falla.
+    const bookingsCount = await bookingServiceClient.getArtistCompletedCount(id);
+
+    res.json({ artist: { ...artist, bookingsCount } });
   } catch (error) {
     next(error);
   }

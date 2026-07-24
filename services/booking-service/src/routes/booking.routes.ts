@@ -44,6 +44,22 @@ router.get(
 );
 
 /**
+ * GET /api/bookings/artists/:artistId/public-stats
+ * Conteo de contrataciones completadas para el perfil público del artista.
+ * Server-to-server: pasa con x-internal-secret; si no, exige admin.
+ */
+router.get(
+  "/bookings/artists/:artistId/public-stats",
+  (req, res, next) => {
+    const secret = req.headers["x-internal-secret"];
+    const INTERNAL_SECRET = process.env.INTERNAL_SERVICE_SECRET || "";
+    if (INTERNAL_SECRET && secret === INTERNAL_SECRET) return next();
+    return authenticateToken(req, res, (err) => { if (err) return next(err); return requireAdmin(req, res, next); });
+  },
+  bookingController.getArtistPublicStats.bind(bookingController)
+);
+
+/**
  * GET /api/bookings/:id
  * Obtener reserva por ID
  * Requiere autenticación (cliente o artista)

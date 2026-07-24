@@ -481,12 +481,12 @@ export default function ArtistProfilePage() {
                   <span>{artist.experienceYears} años de experiencia</span>
                 </div>
               )}
-              {artist.bookingsCount && (
+              {!!artist.bookingsCount && (
                 <div className="flex items-center">
                   <svg className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span>{artist.bookingsCount} reservas completadas</span>
+                  <span>{artist.bookingsCount} {artist.bookingsCount === 1 ? 'contratación' : 'contrataciones'}</span>
                 </div>
               )}
             </div>
