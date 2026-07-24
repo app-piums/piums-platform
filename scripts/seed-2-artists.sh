@@ -141,11 +141,15 @@ do_artist() {
   [ -z "$token" ] && { echo "   ERROR: no se pudo autenticar" >&2; return 1; }
   local full_payload
   full_payload=$(echo "$artist_payload" | jq --arg uid "$uid" --arg email "$email" '. + {authId:$uid, email:$email}')
+  # Imagenes de muestra (temporal, para capturas): avatar tipo retrato + portada
+  local _av="https://i.pravatar.cc/400?img=$((10#$idx))"
+  local _cv="https://picsum.photos/seed/piums${idx}/900/500"
+  full_payload=$(echo "$full_payload" | jq --arg av "$_av" --arg cv "$_cv" '. + {avatar:$av, coverPhoto:$cv}')
   artist_id=$(create_artist "$token" "$full_payload")
   [ -z "$artist_id" ] && { echo "   ERROR: no se pudo crear perfil" >&2; return 1; }
   # Bootstrap crea el perfil con category='OTRO'. Actualizamos con el payload correcto via PUT.
   local update_fields
-  update_fields=$(echo "$full_payload" | jq '{category, nombre, artistName, bio, specialties, yearsExperience, country, city, state, hourlyRateMin, hourlyRateMax, currency, requiresDeposit, depositPercentage, instagram, website, equipment} | with_entries(select(.value != null))')
+  update_fields=$(echo "$full_payload" | jq '{category, nombre, artistName, bio, specialties, yearsExperience, country, city, state, hourlyRateMin, hourlyRateMax, currency, requiresDeposit, depositPercentage, instagram, website, equipment, avatar, coverPhoto} | with_entries(select(.value != null))')
   curl -sf -X PUT "$ARTISTS_URL/artists/$artist_id" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $token" \
