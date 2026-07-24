@@ -2757,6 +2757,18 @@ export class BookingService {
     };
   }
 
+  /**
+   * Conteo de contrataciones completadas de un artista para su perfil público.
+   * Cuenta solo reservas COMPLETED (trabajos ya realizados), excluyendo soft-deleted.
+   * Consulta ligera (un solo count) pensada para llamadas server-to-server.
+   */
+  async getArtistCompletedCount(artistId: string): Promise<{ completed: number }> {
+    const completed = await prisma.booking.count({
+      where: { artistId, status: "COMPLETED", deletedAt: null },
+    });
+    return { completed };
+  }
+
   // ...existing code...
 
   /**

@@ -168,6 +168,49 @@ export class BookingServiceClient {
   }
 
   /**
+   * Conteo de contrataciones completadas del artista, para el perfil público.
+   * Llamada server-to-server con x-internal-secret (no requiere JWT de usuario).
+   * Devuelve 0 ante cualquier error/timeout: nunca lanza, para no romper el perfil.
+   */
+  async getArtistCompletedCount(artistId: string): Promise<number> {
+    try {
+      const secret = process.env.INTERNAL_SERVICE_SECRET || "";
+      if (!secret) {
+        logger.warn("INTERNAL_SERVICE_SECRET not set; skipping bookings count", "BOOKING_CLIENT");
+        return 0;
+      }
+
+      const response = await fetch(
+        `${BOOKING_SERVICE_URL}/api/bookings/artists/${artistId}/public-stats`,
+        {
+          signal: AbortSignal.timeout(10_000),
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": secret,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        logger.error("Error fetching artist completed count", "BOOKING_CLIENT", {
+          status: response.status,
+          statusText: response.statusText,
+        });
+        return 0;
+      }
+
+      const data = await response.json() as any;
+      return data.completed ?? 0;
+    } catch (error: any) {
+      logger.error("Error in getArtistCompletedCount", "BOOKING_CLIENT", {
+        error: error.message,
+      });
+      return 0;
+    }
+  }
+
+  /**
    * Confirmar (aceptar) booking
    */
   async confirmBooking(bookingId: string, artistId: string, authToken?: string): Promise<boolean> {

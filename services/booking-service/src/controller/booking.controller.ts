@@ -545,6 +545,20 @@ export class BookingController {
     }
   }
 
+  /**
+   * Conteo de contrataciones completadas de un artista, para el perfil público.
+   * Ruta protegida por x-internal-secret (llamada desde artists-service).
+   */
+  async getArtistPublicStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { artistId } = req.params;
+      const stats = await bookingService.getArtistCompletedCount(artistId as string);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAdminStats(req: Request, res: Response, next: NextFunction) {
     try {
       const months = req.query.months ? parseInt(req.query.months as string, 10) : 6;
