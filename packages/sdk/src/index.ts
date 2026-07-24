@@ -1004,7 +1004,9 @@ class PiumsSDK {
         nombre: a.nombre ?? a.name,
         rating: a.rating ?? a.averageRating,
         reviewsCount: a.reviewsCount ?? a.totalReviews,
-        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        // Solo COMPLETED: sin fallback a totalBookings (que cuenta todas las
+        // reservas) para no divergir del perfil, que muestra contrataciones completadas.
+        bookingsCount: a.bookingsCount,
         cityId: a.cityId ?? a.city,
       }));
       if (data.pagination) {
@@ -1063,7 +1065,9 @@ class PiumsSDK {
         nombre: a.nombre ?? a.name,
         rating: a.rating ?? a.averageRating,
         reviewsCount: a.reviewsCount ?? a.totalReviews,
-        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        // Solo COMPLETED: sin fallback a totalBookings (que cuenta todas las
+        // reservas) para no divergir del perfil, que muestra contrataciones completadas.
+        bookingsCount: a.bookingsCount,
         cityId: a.cityId ?? a.city,
       }));
       return {
@@ -1098,7 +1102,9 @@ class PiumsSDK {
         nombre: a.nombre ?? a.name,
         rating: a.rating ?? a.averageRating,
         reviewsCount: a.reviewsCount ?? a.totalReviews,
-        bookingsCount: a.bookingsCount ?? a.totalBookings,
+        // Solo COMPLETED: sin fallback a totalBookings (que cuenta todas las
+        // reservas) para no divergir del perfil, que muestra contrataciones completadas.
+        bookingsCount: a.bookingsCount,
         cityId: a.cityId ?? a.city,
       }));
       return {
