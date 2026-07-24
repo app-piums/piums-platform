@@ -1,5 +1,6 @@
 {
   "name": "payments-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Payments Service - Stripe Integration",
   "main": "src/index.ts",
@@ -17,7 +18,7 @@
     "microservice"
   ],
   "author": "Piums Platform",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "cors": "^2.8.5",

@@ -1,5 +1,6 @@
 {
   "name": "@piums/shared-utils",
+  "private": true,
   "version": "1.0.0",
   "description": "Shared utilities for Piums Platform services",
   "main": "dist/index.js",

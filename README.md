@@ -2,7 +2,9 @@
 
 > Marketplace para contratar artistas callejeros - Plataforma completa de servicios artísticos
 
-[![License](https://img.shields.io/badge/license-Proprietary-blue.svg)](LICENSE)
+**Código propietario — repositorio privado.** No se publica ni se distribuye
+(ver [License](#-license)).
+
 [![Node](https://img.shields.io/badge/node-20.x-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/docker-24.x-blue.svg)](https://www.docker.com/)
@@ -316,7 +318,7 @@ SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
 SMTP_USER=apikey
 SMTP_PASS=your_sendgrid_api_key
-SMTP_FROM=noreply@piums.com
+SMTP_FROM=noreply@piums.io
 
 # Twilio (Notifications Service)
 TWILIO_ACCOUNT_SID=your_account_sid
@@ -405,112 +407,34 @@ pnpm dev
 
 ## 🚢 Deployment
 
-### Arquitectura de Deployment
+Producción hoy: **backend en DigitalOcean Kubernetes (DOKS)** con Postgres y
+Redis gestionados, y **las 3 webs Next.js en Vercel**. No hay ambiente de
+staging: el flujo es `feature/*` → PR → `main`.
 
-Piums Platform utiliza una estrategia **Blue-Green** para despliegues sin downtime.
+| Pieza | Dónde | Cómo se despliega |
+|---|---|---|
+| 11 microservicios + gateway | DOKS (`do-nyc3-piums-prod`) | Workflow `backend-deploy-doks.yml` (release o `workflow_dispatch`) |
+| Postgres / Valkey | Servicios gestionados de DO | Terraform (`infra/terraform-do`) |
+| web-client, web-artist, web-admin | Vercel | Push a `main` |
+| Entrada HTTP | Cloudflare → ingress-nginx → `gateway-service` | `infra/k8s/overlays/production-do` |
 
-```
-Production Flow:
-  develop → staging (auto) → production (manual + approval)
-  
-Environments:
-  - Development: docker-compose.dev.yml
-  - Staging: docker-compose.staging.yml (auto-deploy on push to develop)
-  - Production: docker-compose.prod.yml (manual deploy with approval)
-```
+Runbooks completos:
 
-### Guía Completa de Deployment
+- **[docs/DEPLOY_DIGITALOCEAN.md](docs/DEPLOY_DIGITALOCEAN.md)** — backend, base de datos y secretos
+- **[docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md)** — frontends
+- **[docs/guides/deployment.md](docs/guides/deployment.md)** — resumen y comandos de emergencia
 
-Ver documentación detallada: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
-
-### Quick Start - Deployment
-
-#### 1. Configurar GitHub Secrets
-
-En **Settings → Secrets and variables → Actions**:
-
-```
-POSTGRES_USER
-POSTGRES_PASSWORD
-REDIS_PASSWORD
-JWT_SECRET
-REFRESH_SECRET
-STRIPE_SECRET_KEY
-CLOUDINARY_API_KEY
-CLOUDINARY_API_SECRET
-SMTP_PASS
-STAGING_SERVER_HOST
-STAGING_SSH_PRIVATE_KEY
-PRODUCTION_SERVER_HOST
-PRODUCTION_SSH_PRIVATE_KEY
-```
-
-#### 2. Deployment a Staging
-
-```bash
-# Push a develop dispara deployment automático
-git checkout develop
-git merge feature/your-feature
-git push origin develop
-
-# GitHub Actions ejecutará:
-# 1. Build de imágenes Docker
-# 2. Push a ghcr.io
-# 3. Deploy a servidor staging
-# 4. Health checks
-# 5. Smoke tests
-```
-
-#### 3. Deployment a Production
-
-```bash
-# 1. Crear tag de release
-git checkout main
-git merge develop
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin main --tags
-
-# 2. Crear release en GitHub
-# GitHub → Releases → Draft new release
-
-# 3. Aprobar deployment
-# GitHub Actions esperará aprobación manual
-# Revisar → Approve deployment
-
-# 4. Blue-Green deployment se ejecuta automáticamente
-# - Deploy a blue environment
-# - Health checks
-# - Switch traffic
-# - Monitor 5 minutos
-# - Cleanup green (versión anterior)
-```
+Los secretos de la aplicación no viven en el repo ni en GitHub Actions: están en
+el Secret `piums-secrets` del namespace `piums`, aplicado fuera de banda a
+partir de `infra/k8s/overlays/production-do/secrets.production.example.yaml`.
 
 ### Rollback
 
 ```bash
-# Rollback automático si health checks fallan
+# Backend
+kubectl -n piums rollout undo deployment/<servicio>
 
-# Rollback manual
-ssh user@piums.com
-cd /opt/piums
-./scripts/rollback.sh
-
-# Rollback de base de datos
-./scripts/restore-db.sh 20260306_120000
-```
-
-### Monitoreo Post-Deploy
-
-```bash
-# Health check
-curl https://piums.com/api/health
-
-# Ver logs
-ssh user@piums.com
-docker-compose logs -f
-
-# Métricas
-docker stats
+# Webs: promover el deployment anterior desde el panel de Vercel
 ```
 
 ---
@@ -520,8 +444,7 @@ docker stats
 ### Swagger UI (Interactivo)
 
 - **Local**: http://localhost:3000/docs
-- **Staging**: https://staging.piums.com/docs
-- **Production**: https://piums.com/docs
+- **Spec versionada**: [docs/api-contracts/openapi.yaml](docs/api-contracts/openapi.yaml)
 
 ### Especificación OpenAPI
 
@@ -644,36 +567,37 @@ piums-platform/
 │
 ├── infra/                       # Infraestructura
 │   ├── docker/
-│   │   ├── docker-compose.dev.yml       # Desarrollo
-│   │   ├── docker-compose.staging.yml   # Staging
-│   │   └── docker-compose.prod.yml      # Producción
-│   ├── k8s/                     # Kubernetes (futuro)
-│   ├── nginx/                   # Configuración nginx
-│   └── terraform/               # IaC (futuro)
+│   │   └── docker-compose.dev.yml       # Backend local (Postgres, Redis, servicios)
+│   ├── k8s/                     # Kubernetes
+│   │   ├── base/                # Manifests comunes
+│   │   ├── hardening/           # SecurityContext, RBAC, NetworkPolicy
+│   │   └── overlays/            # local · production · production-do (el que corre)
+│   └── terraform-do/            # IaC de DigitalOcean (DOKS, Postgres, Redis, Spaces)
 │
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml               # CI pipeline
-│       ├── deploy-staging.yml   # Deploy staging
-│       └── deploy-prod.yml      # Deploy production
+│       ├── ci.yml               # CI de los frontends
+│       ├── backend-ci.yml       # Build/test/imágenes de los servicios
+│       ├── backend-deploy-doks.yml  # Deploy a producción (DOKS)
+│       └── auto-pr.yml          # Abre el PR al pushear una feature
 │
 ├── docs/                        # Documentación
+│   ├── DEPLOY_DIGITALOCEAN.md   # Runbook de backend
+│   ├── DEPLOY_VERCEL.md         # Runbook de frontends
 │   ├── api-contracts/
 │   │   ├── openapi.yaml         # OpenAPI 3.0 spec
 │   │   ├── index.html           # Swagger UI
 │   │   └── README.md            # Guía API
-│   ├── DEPLOYMENT.md            # Guía de deployment
-│   └── architecture/
-│       ├── decisions/           # ADRs
-│       └── diagrams/            # Diagramas
+│   ├── guides/                  # Getting started, contributing, deployment
+│   ├── architecture/            # ADRs y diagramas
+│   └── archive/                 # Docs de etapas superadas (no usar como referencia)
 │
-├── scripts/                     # Scripts de utilidad
+├── scripts/                     # Scripts de utilidad, seeds y pruebas manuales
 │   ├── dev.sh                   # Iniciar desarrollo
 │   ├── lint.sh                  # Linting
 │   ├── seed.sh                  # Seed databases
 │   └── test.sh                  # Ejecutar tests
 │
-├── .env.staging.example         # Template staging
 ├── .env.production.example      # Template production
 ├── pnpm-workspace.yaml          # Configuración workspace
 ├── package.json                 # Root package.json
@@ -684,25 +608,26 @@ piums-platform/
 
 ## 🤝 Contributing
 
+> Repositorio privado del equipo: no se trabaja con forks.
+
 ### Workflow de Desarrollo
 
-1. **Fork** el repositorio
-2. **Crear rama** desde `develop`:
+1. **Crear rama** desde `main`:
    ```bash
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/your-feature
+   git checkout main
+   git pull origin main
+   git checkout -b feature/tu-cambio
    ```
-3. **Hacer cambios** y commitear:
+2. **Hacer cambios** y commitear:
    ```bash
    git add .
    git commit -m "feat(service): add new feature"
    ```
-4. **Push** a tu fork:
+3. **Push**: el workflow `auto-pr.yml` abre el PR hacia `main` solo.
    ```bash
-   git push origin feature/your-feature
+   git push origin feature/tu-cambio
    ```
-5. **Crear Pull Request** a `develop`
+4. **Revisar y mergear** el PR (squash).
 
 ### Convenciones de Commits
 
@@ -739,7 +664,7 @@ git commit -m "docs(api): update OpenAPI spec"
 - [ ] Documentación actualizada
 - [ ] Linting pasado (`pnpm lint`)
 - [ ] Tests pasados (`pnpm test`)
-- [ ] Branch actualizada con `develop`
+- [ ] Branch actualizada con `main`
 - [ ] Descripción clara del cambio
 - [ ] Screenshots si hay cambios UI
 
@@ -749,9 +674,8 @@ git commit -m "docs(api): update OpenAPI spec"
 
 ### Canales de Soporte
 
-- **GitHub Issues**: [Issues](https://github.com/app-piums/piums-platform/issues)
-- **Email**: support@piums.com
-- **Slack**: #piums-dev (interno)
+- **GitHub Issues**: [Issues](https://github.com/app-piums/piums-platform/issues) (repositorio privado, solo el equipo)
+- **Email**: soporte@piums.io
 - **Documentación**: [docs/](docs/)
 
 ### Reportar Bugs
@@ -778,76 +702,13 @@ Para nuevas funcionalidades:
 
 ## 📄 License
 
-Copyright © 2026 Piums Platform. All rights reserved.
+Copyright © 2026 Piums. Todos los derechos reservados.
 
-Este proyecto es de código propietario. No está permitido usar, copiar, modificar o distribuir sin autorización explícita.
+Código propietario en repositorio privado. No está permitido usar, copiar,
+modificar ni distribuir sin autorización explícita por escrito.
 
-Para licencias comerciales, contactar: legal@piums.com
+Todos los paquetes del workspace declaran `"license": "UNLICENSED"` y
+`"private": true` para que ninguno pueda publicarse por accidente en un
+registro público.
 
----
-
-## 🙏 Agradecimientos
-
-- **Equipo de Desarrollo**: Por el increíble trabajo
-- **Comunidad Open Source**: Por las herramientas increíbles
-- **Artistas Callejeros**: Por inspirar esta plataforma
-
----
-
-## 📊 Métricas del Proyecto
-
-- **Microservicios**: 10
-- **Endpoints API**: 85+
-- **Schemas de Base de Datos**: 15+
-- **Líneas de Código**: 50,000+
-- **Tests**: 200+
-- **Coverage**: 75%+
-
----
-
-## 🗺️ Roadmap
-
-### Q1 2026 ✅
-- [x] MVP Backend (10 microservicios)
-- [x] Frontend web básico
-- [x] Autenticación + OAuth2
-- [x] Sistema de pagos (Stripe)
-- [x] Reservas y gestión
-- [x] Documentación API (OpenAPI)
-- [x] CI/CD pipelines
-- [x] Docker + deployment
-
-### Q2 2026 🚧
-- [ ] App móvil (React Native)
-- [ ] Chat en tiempo real (WebSocket)
-- [ ] Notificaciones push
-- [ ] Panel de administración
-- [ ] Analytics y métricas
-- [ ] Sistema de pagos a artistas
-- [ ] Geolocalización avanzada
-
-### Q3 2026 📋
-- [ ] Kubernetes deployment
-- [ ] Monitoring (Prometheus + Grafana)
-- [ ] CDN para assets
-- [ ] Sistema de cupones/descuentos
-- [ ] Programa de afiliados
-- [ ] Multi-tenancy
-- [ ] API pública para terceros
-
-### Q4 2026 🔮
-- [ ] Machine Learning (recomendaciones)
-- [ ] Videollamadas para consultas
-- [ ] Marketplace de productos
-- [ ] Sistema de badges y gamificación
-- [ ] Internacionalización completa
-
----
-
-<div align="center">
-
-**Hecho con ❤️ por el equipo de Piums**
-
-[Website](https://piums.com) • [API Docs](https://piums.com/docs) • [Blog](https://blog.piums.com)
-
-</div>
+Contacto: soporte@piums.io

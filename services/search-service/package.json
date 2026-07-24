@@ -1,6 +1,8 @@
 {
   "name": "search-service",
+  "private": true,
   "version": "1.0.0",
+  "license": "UNLICENSED",
   "description": "Servicio de búsqueda y descubrimiento para la plataforma Piums",
   "main": "dist/index.js",
   "scripts": {

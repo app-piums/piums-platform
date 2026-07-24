@@ -1,5 +1,6 @@
 {
   "name": "notifications-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Microservicio de notificaciones para la plataforma Piums",
   "main": "dist/index.js",
@@ -19,7 +20,7 @@
     "microservice"
   ],
   "author": "Piums Team",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "firebase-admin": "^12.0.0",
     "@prisma/client": "^6.19.2",

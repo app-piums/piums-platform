@@ -331,7 +331,7 @@ jobs:
       - name: Build & validate overlays
         run: |
           set -e
-          for overlay in base overlays/local overlays/staging overlays/production overlays/production-do; do
+          for overlay in base overlays/local overlays/production overlays/production-do; do
             echo "::group::kustomize build infra/k8s/$overlay"
             kustomize build "infra/k8s/$overlay" \
               | kubeconform -strict -summary -ignore-missing-schemas

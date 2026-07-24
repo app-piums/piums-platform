@@ -1,21 +1,23 @@
 # Guía de Contribución — Piums Platform
 
-## Flujo de trabajo (Git Flow)
+## Flujo de trabajo
+
+Repositorio privado del equipo: no se trabaja con forks, y no hay rama de
+integración (`develop` no existe). Todo sale de `main` y vuelve a `main`.
 
 ```
-main          ← producción (protegida, solo merge via PR)
-  └── develop ← staging (integración)
-        └── feature/nombre-feature   ← nuevas funcionalidades
-        └── fix/nombre-bug           ← correcciones
-        └── chore/nombre-tarea       ← mantenimiento
+main                             ← producción (protegida, solo merge via PR)
+  └── feature/nombre-feature     ← nuevas funcionalidades
+  └── fix/nombre-bug             ← correcciones
+  └── chore/nombre-tarea         ← mantenimiento
 ```
 
 ### Pasos para contribuir
 
 ```bash
-# 1. Asegúrate de estar en develop actualizado
-git checkout develop
-git pull origin develop
+# 1. Asegúrate de estar en main actualizado
+git checkout main
+git pull origin main
 
 # 2. Crea tu branch
 git checkout -b feature/mi-nueva-feature
@@ -24,7 +26,7 @@ git checkout -b feature/mi-nueva-feature
 git add .
 git commit -m "feat(artists): add portfolio image reordering"
 
-# 4. Push y abre PR hacia develop
+# 4. Push: el workflow auto-pr.yml abre el PR hacia main solo
 git push origin feature/mi-nueva-feature
 ```
 
@@ -141,4 +143,4 @@ services/mi-servicio/
 - Reviewer debe verificar lógica de negocio, no solo estilo
 - Usar "Request Changes" con explicación detallada si hay problemas
 - Approved → merge por el **autor del PR**
-- Merge strategy: **Squash and merge** hacia develop
+- Merge strategy: **Squash and merge** hacia main

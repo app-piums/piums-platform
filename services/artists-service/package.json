@@ -1,5 +1,6 @@
 {
   "name": "artists-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Artists profile and portfolio management service for Piums platform",
   "main": "src/index.ts",
@@ -18,7 +19,7 @@
     "microservice"
   ],
   "author": "Piums",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "axios": "^1.15.2",

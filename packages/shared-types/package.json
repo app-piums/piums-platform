@@ -1,5 +1,6 @@
 {
   "name": "@piums/shared-types",
+  "private": true,
   "version": "1.0.0",
   "description": "Shared TypeScript types for Piums Platform",
   "main": "dist/index.js",

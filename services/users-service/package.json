@@ -1,5 +1,6 @@
 {
   "name": "users-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Users profile management service for Piums platform",
   "main": "src/index.ts",
@@ -17,7 +18,7 @@
     "microservice"
   ],
   "author": "Piums",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^6.1.0",
     "cloudinary": "^2.0.0",

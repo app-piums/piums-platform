@@ -1,5 +1,6 @@
 {
   "name": "catalog-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Catalog and services management for Piums platform",
   "main": "src/index.ts",
@@ -13,7 +14,7 @@
   },
   "keywords": ["catalog", "services", "pricing", "microservice"],
   "author": "Piums",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^6.1.0",
     "cors": "^2.8.5",

@@ -1,5 +1,6 @@
 {
   "name": "moderation-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Servicio de moderación de contenido y blacklist para la plataforma Piums",
   "main": "src/index.ts",
@@ -19,7 +20,7 @@
     "microservice"
   ],
   "author": "Piums Platform",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "cors": "^2.8.5",

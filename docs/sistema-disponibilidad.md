@@ -202,7 +202,7 @@ Ejecuta el script de pruebas:
 
 ```bash
 cd /Users/piums/Desktop/piums-platform
-./services/test-availability.sh
+./scripts/test-availability.sh
 ```
 
 O prueba manualmente con curl:

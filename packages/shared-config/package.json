@@ -1,5 +1,6 @@
 {
   "name": "@piums/shared-config",
+  "private": true,
   "version": "1.0.0",
   "description": "Shared configuration constants for Piums Platform",
   "main": "dist/index.js",

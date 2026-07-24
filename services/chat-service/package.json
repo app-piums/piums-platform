@@ -1,6 +1,8 @@
 {
   "name": "chat-service",
+  "private": true,
   "version": "1.0.0",
+  "license": "UNLICENSED",
   "description": "Real-time chat service for Piums platform",
   "main": "dist/index.js",
   "scripts": {

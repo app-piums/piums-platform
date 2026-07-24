@@ -21,5 +21,5 @@ echo "  - service-package-001: Maquillaje (PACKAGE pricing)"
 echo ""
 echo "Ejecuta este comando para insertar los datos:"
 echo ""
-echo '  docker exec -i piums-postgres psql -U postgres -d piums_catalog < services/seed-pricing-data.sql'
+echo '  docker exec -i piums-postgres psql -U postgres -d piums_catalog < scripts/seed-pricing-data.sql'
 echo ""

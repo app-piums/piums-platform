@@ -10,4 +10,10 @@ terraform.tfvars
 *.auto.tfvars
 override.tf
 override.tf.json
+# Los planes guardados y los logs de apply llevan valores resueltos (passwords,
+# hosts, tokens) en claro. Igual de sensibles que el tfstate.
+*.plan
+tf.plan
+apply.log
+*.apply.log
 # El lock de providers SÍ se commitea (.terraform.lock.hcl) para pinnear versiones.

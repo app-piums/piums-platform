@@ -1,5 +1,6 @@
 {
   "name": "booking-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Booking and appointments management for Piums platform",
   "main": "src/index.ts",
@@ -18,7 +19,7 @@
     "microservice"
   ],
   "author": "Piums",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "@types/pdfkit": "^0.17.5",

@@ -1,5 +1,6 @@
 {
   "name": "@piums/auth-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Authentication service for Piums platform",
   "main": "dist/index.js",
@@ -10,7 +11,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "dependencies": {
     "@googleapis/calendar": "^14.2.0",
     "@prisma/client": "^6.19.2",

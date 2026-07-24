@@ -1,5 +1,6 @@
 {
   "name": "web",
+  "private": true,
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,7 +9,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
     "react-intersection-observer": "^10.0.3",

@@ -208,7 +208,6 @@ const allowedOrigins = [
 ## References
 
 - [Next.js Multi-tenancy](https://nextjs.org/docs/app/building-your-application/routing/middleware)
-- [ADR-0002: Monorepo Structure](./adr-0002-monorepo.md)
 - [Separation Implementation PR](https://github.com/app-piums/piums-platform/pull/XX)
 
 ## Notes

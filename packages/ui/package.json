@@ -1,5 +1,6 @@
 {
   "name": "@piums/ui",
+  "private": true,
   "version": "1.0.0",
   "description": "Piums Platform shared UI component library",
   "main": "dist/index.js",

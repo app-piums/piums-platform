@@ -37,6 +37,11 @@ pnpm-debug.log*
 # Kubernetes secrets (never commit real credentials)
 infra/k8s/overlays/**/*secret*.yaml
 infra/k8s/overlays/**/*secrets*.yaml
+# ...pero las plantillas SI se versionan: el runbook y el workflow de deploy las
+# piden por ruta y un clon limpio se quedaba sin ellas.
+!infra/k8s/overlays/**/*secret*.example.yaml
+!infra/k8s/overlays/**/*secrets*.example.yaml
+!infra/k8s/overlays/**/*.example.yaml
 
 # OS
 .DS_Store

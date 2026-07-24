@@ -179,9 +179,9 @@ piums-platform/
 │   ├── ui/                    # @piums/ui (componentes React)
 │   └── sdk/                   # @piums/sdk (cliente HTTP frontend)
 ├── infra/
-│   ├── docker/                # docker-compose.dev/staging/prod.yml
+│   ├── docker/                # docker-compose.dev.yml (backend local)
 │   ├── k8s/                   # Kubernetes (Kustomize)
-│   └── terraform/             # IaC (AWS)
+│   └── terraform-do/          # IaC (DigitalOcean)
 └── scripts/                   # Scripts de automatización
 ```
 

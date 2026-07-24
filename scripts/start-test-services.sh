@@ -98,10 +98,10 @@ if [ $services_ok -eq 3 ]; then
   print_success "✨ Todos los servicios están corriendo correctamente"
   echo ""
   print_info "Para ejecutar los tests de rate limiting, ejecuta:"
-  echo "  ./services/test-rate-limiting.sh"
+  echo "  ./scripts/test-rate-limiting.sh"
   echo ""
   print_info "Para detener todos los servicios, ejecuta:"
-  echo "  ./services/stop-test-services.sh"
+  echo "  ./scripts/stop-test-services.sh"
 else
   print_error "⚠️  Algunos servicios no respondieron. Revisa los logs:"
   echo "  tail -f /tmp/auth-service.log"
